@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Radio
+Comment=Internet radio
+Icon=/usr/share/radio/images/radio.png
+Exec=sudo /usr/share/radio/gradio.py
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Categories=None;
+

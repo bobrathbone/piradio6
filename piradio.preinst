@@ -1,0 +1,51 @@
+#!/bin/bash 
+set -e
+# Radio daemon pre-install script
+# $Id: piradio.preinst,v 1.2 2017/10/12 08:02:00 bob Exp $
+
+RADIOLIB=/var/lib/radiod
+MPDCONF=/etc/mpd.conf
+INITTAB=/etc/inittab
+BOOTCMD=/boot/cmdline.txt
+MODULES=/etc/modules
+INIT=/etc/init.d/radiod
+
+# Check if the script is being run as root
+if [[ $EUID -ne 0 ]]
+then
+    printf 'This script must be run using sudo.\nExiting..\n'
+    exit 1
+fi
+
+echo "Raspberry PI internet radio installation"
+if [[ -d ${RADIOLIB} ]]; then
+	echo "The radio software appears to be already installed"
+	if [[ ! -f  ${MPDCONF}.orig ]]; then
+		echo "Saving current configuration"
+		echo "Copying ${MPDCONF} to ${MPDCONF}.orig"
+		sudo cp -fp ${MPDCONF} ${MPDCONF}.orig
+		echo "Copying ${BOOTCMD} to ${BOOTCMD}.orig"
+		sudo cp -fp ${BOOTCMD} ${BOOTCMD}.orig
+		echo "Copying ${MODULES} to ${MODULES}.orig"
+		sudo cp -fp ${MODULES} ${MODULES}.orig
+
+		# If inittab exists save a copy
+		if [[ ! -f  ${INITTAB}.orig  && -f ${INITTAB} ]]; then
+		    echo "Copying ${INITTAB} to ${INITTAB}.orig"
+		    sudo cp -fp ${INITTAB} ${INITTAB}.orig
+		fi
+	else
+		echo "Software only will be upgraded"
+		echo "Your existing configuration will not be changed"
+	fi
+	sleep 2
+	if [[ -f ${INIT} ]]; then
+		echo "Stopping radiod service"
+		sudo service radiod stop
+	fi
+fi
+
+exit 0
+# End of preinst script
+
+# End of pre-install script

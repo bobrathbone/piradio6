@@ -1,0 +1,74 @@
+Raspberry Pi Internet Radio 
+---------------------------
+Author : Bob Rathbone
+Site   : http://www.bobrathbone.com
+Email  : bob@bobrathbone.com
+
+This program uses  Music Player Daemon 'mpd', its client 'mpc' and the python-mpd library
+See http://www.musicpd.org/
+Use "apt-get install mpd mpc python-mpd" to install the library
+Modified to use python-mpd library. See https://pypi.python.org/pypi/python-mpd/
+
+Version 6.2 release notes
+-------------------------
+Due for release late January 2018
+The main change is the introduction of a Graphical/Touchscreen version of the radio
+This uses the Raspbian desktop and the pygame interface and is designed
+to run on the Raspberry Pi 7 inch touch screen
+2) Introduction of the Graphical/Touchscreen version
+3) remote_control now detects if lircd or lirc service must be started
+4) Missing create_playlist.sh added to build
+5) Correct button versions of the radio not shutting down when menu button held in
+6) Skip RSS and INFO if radio has no display configured
+7) Create playlists splits large playlists into 5,000 line chunks
+8) Create playlists also starts MPD database update
+9) Create playlists selection filter implemented 
+10) Improved overall program response
+
+Version 6.1 release notes
+-------------------------
+1st December 2017
+1) Correct random setting not being stored
+2) Prevent time display in Search,Info,Source modes
+3) Missing i2c_class.py file added 
+4) Correct rotary encoder selection description in configure_radio
+5) Prevent occasional hanging when installing
+6) Correct failure to create default playlists during installation
+
+Version 6.0 release notes
+-------------------------
+28th October 2017
+Version 6.00 release notes
+1) Complete rewrite to use a single radiod program instead of 9 seperate ones
+2) LCD text only displayed if it has change. This removes screen flicker
+3) New common event handler handles all user interfaces such as push buttons, 
+   rotary encoders, IR remote control and web interface
+4) New display module provides a common interface to all supported screens
+5) New configure_radio.py program allows configuration of any hardware combination
+6) PifaceCad display software not supported on Raspbian Stretch. Version 5.11 of the software
+   can still be downloaded allowing PiFaceCad to run on Rspbian Jessie
+7) Due to lack of PiFace software on Raspbian Stretch the IR remote control has been
+   re-written to use the standard LIRC (Linux Remote Control)
+8) Push button handler now in a seperate button_class.py file
+9) Volume can display either as text or a series of blocks (volume_display parameter)
+
+Manual
+------
+Download from http://www.bobrathbone.com/raspberrypi/Raspberry%20PI%20Radio.pdf
+
+Github
+------
+Source available from Github
+See https://github.com/bobrathbone/piradio 
+
+Licenses
+--------
+GNU General Public License. See http://www.gnu.org/licenses/gpl.html
+GNU AFFERO GENERAL PUBLIC LICENSE. See http://www.gnu.org/licenses/agpl.html
+
+Disclaimer 
+----------
+Software is provided as is and absolutly no warranties are implied or given.
+The authors shall not be liable for any loss or damage however caused.
+
+

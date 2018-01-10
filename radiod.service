@@ -1,0 +1,12 @@
+# Radio systemd script
+# $Id: radiod.service,v 1.1 2017/10/05 12:07:30 bob Exp $
+[Unit]
+Description=Radio daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/share/radio/radiod.py nodaemon
+
+[Install]
+WantedBy=multi-user.target

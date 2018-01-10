@@ -1,0 +1,10 @@
+/var/log/radio.log {
+      weekly
+      missingok
+      rotate 4
+      compress
+      notifempty
+      maxsize 150000
+      copytruncate
+      create 600
+}

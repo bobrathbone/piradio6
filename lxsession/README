@@ -1,0 +1,8 @@
+
+The auto start file in ~/.config/lxsession/LXDE-pi needs
+the following line to be added to the end of the autostart file
+
+@sudo /usr/share/radio/gradio.py
+
+This starts the graphical version of the radio 
+See example autostart file in this directory

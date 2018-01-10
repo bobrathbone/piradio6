@@ -1,0 +1,273 @@
+#!/usr/bin/env python
+#
+# Raspberry Pi Radio 
+# The source class handles loading of sources and playlists from
+# the /var/lib/mpd/source.directory including the radio playlist
+# or indicates that airplay needs to be loaded (see radio_class.py)
+#
+# $Id: source_class.py,v 1.20 2017/11/30 19:42:10 bob Exp $
+#
+# Author : Bob Rathbone
+# Site   : http://www.bobrathbone.com
+#
+# License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
+#
+# Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
+#	   The authors shall not be liable for any loss or damage however caused.
+#
+# Playlists for MPD are stored in /var/lib/mpd/source.directory
+# All MPD playlists have the .m3u file extension
+# Airplay is not part of MPD and is not associated with playlists
+# however it is stored as a pseudo playlist called _airplay_ for the
+# purpose of searching through the available sources   
+
+import os,sys,pwd
+from log_class import Log
+from mpd import MPDClient
+
+log = Log()
+
+# Definitions
+PlaylistsDir = "/var/lib/mpd/playlists"
+mpdport = 6600  # MPD port number
+
+class Source:
+
+	client = None	# MPD client
+	playlists = {}	# Dictionary of playlists and their types
+	index = 0	# Index of current playlist/source
+	new_index = 0	# Index of new playlist/source
+	mpdport = 6600	# MPD port
+
+	UP = 0
+	DOWN = 1
+
+	# Source types (There are 3 source types)
+	RADIO = 0 	# Radio usually has one playlist but can have more
+	MEDIA = 1	# Media can have one or more playlists with any name
+	AIRPLAY = 2	# Airplay is not part of MPD and has no associated playlists
+	typeNames = ['RADIO', 'MEDIA' , 'AIRPLAY']
+	
+	type = RADIO
+
+	# Initialise. The airplay parameter adds a dummy entry 
+	# to the list of playlists
+	def __init__(self, client=client, airplay=False):
+		self.client = client
+		self.mpdport = mpdport
+		log.init('radio')
+		return
+
+	# Load the source.
+	def load(self,airplay):
+		log.message("source.load", log.DEBUG)
+
+		try:
+			# Get the list of playlists from MPD
+			mylist = self.client.listplaylists()
+			
+			for i,info in enumerate(mylist):
+				playlist = info['playlist']
+				type = self.getPlaylistType(playlist)
+				self.playlists[playlist] = type
+				
+			if len(self.playlists) > 0:
+				msg = "Loaded " + str(len(self.playlists)) + \
+						 " playlists from " + PlaylistsDir
+				log.message(msg, log.DEBUG)
+			else:
+				log.message("No playlists found in " + PlaylistsDir, log.ERROR)
+
+			# If airplay create a 'dummy' playlist
+			if airplay:
+				self.playlists['_airplay_'] = self.AIRPLAY
+
+		except Exception as e:
+			log.message("source.load: " + str(e), log.DEBUG)
+
+		if len(self.playlists) < 1:
+			self.playlists = {'No playlists': 0}
+		
+		log.message(self.playlists, log.DEBUG)
+
+		return self.playlists
+	
+	# Get current playlist
+	def current(self):
+		playlist = ''
+		try: 
+			playlist = self.playlists.keys()[self.index]
+		except:
+			log.message("Error getting current playlist" + str(self.index), log.DEBUG)
+		return playlist
+
+	# This routine cycles through sources/playlists of the same type
+	# The event comes from the Web interfaces which only has three buttons
+	# namely radio,media or airplay
+	def cycleType(self, type):
+		newtype = -1
+		idx = self.index 
+		playlist = self.getName()
+		while type != newtype: 
+			self.cycle(self.UP)
+			newtype = self.getNewType()
+			if idx == self.new_index:
+				break
+		if type == newtype:	
+			playlist = self.getNewName()
+		return playlist
+
+	# Cycle through playlist
+	def cycle(self, direction):
+		newplaylist = ''
+
+		if direction == self.UP:
+			self.new_index += 1
+		else:
+			self.new_index -= 1
+
+		if self.new_index > len(self.playlists)-1:
+			self.new_index = 0
+
+		elif self.new_index < 0:
+			self.new_index = len(self.playlists)-1
+
+		try:
+			newplaylist = self.playlists.keys()[self.new_index]
+		except:
+			log.message("Error cycling playlist" + str(self.new_index), log.DEBUG)
+		return newplaylist
+
+	# Set new source type (from radio class) 
+	def setNewType(self):
+		self.index = self.new_index
+		return self.index
+
+	# Set source index
+	def setIndex(self,index):
+		index = self.checkIndex(index)
+		self.index = index
+		self.new_index = index
+		return self.index
+
+	# Get source index
+	def getIndex(self):
+		return self.index
+
+	# Get the playlist name for loading into MPD
+	def getName(self):
+		playlist = self.playlists.keys()[self.index]
+		return playlist
+
+	# Get the new playlist name for loading into MPD
+	def getNewName(self):
+		playlist = self.playlists.keys()[self.new_index]
+		return playlist
+
+	# Get the name for displayng on screen 
+	def getDisplayName(self): 
+		return self._getDisplayName(self.index)
+
+	def getNewDisplayName(self): 
+		return self._getDisplayName(self.new_index)
+
+	def _getDisplayName(self,index): 
+		index = self.checkIndex(index)
+		playlist = self.playlists.keys()[self.index]
+		playlist = playlist.replace('_', ' ')
+		playlist = playlist.lstrip()
+		playlist = "%s%s" % (playlist[0].upper(), playlist[1:])
+		playlist = playlist[:1].upper() + playlist[1:]
+		return playlist
+
+	# Get playlist type. RADIO, MEDIA or AIRPLAY
+	def getType(self):
+		return self._getType(self.index)
+
+	# Return the new type (radio, media or airplay)
+	def getNewType(self):
+		return self._getType(self.new_index)
+
+	# Get playlist type Name. RADIO, MEDIA or AIRPLAY
+	def getTypeName(self):
+		return self.typeNames[self.index]
+	
+	# Get NEW playlist type Name. RADIO, MEDIA or AIRPLAY
+	def getNewTypeName(self):
+		return self.typeNames[self.getNewType()]
+	
+	# Get new playlist type. RADIO, MEDIA or AIRPLAY
+	# This routine is only used during loading the available playlists
+	def getPlaylistType(self,playlist):
+		type = self.MEDIA
+	
+		if playlist == '_airplay_':
+			type = self.AIRPLAY 	
+
+		elif playlist[0] == '_':
+			type = self.RADIO	
+			
+		return type
+
+	# Get the playlists dictionary
+	def getPlaylists(self):
+		return self.playlists
+
+	# Get new playlist type. RADIO, MEDIA or AIRPLAY
+	def _getType(self,index):
+	
+		index = self.checkIndex(index)
+		type = self.playlists.values()[index]
+
+		return type
+
+	# Return list of sources
+	def getList(self):
+	    return self.typeNames
+
+	# Protect the routines from a bad index value
+	def checkIndex(self,index):
+		leng = len(self.playlists)
+		if index > leng - 1:
+			msg = "source.checkIndex index " + str(index) \
+				 + " > " + str(leng)
+			log.message(msg, log.ERROR)
+			self.index = 0
+			self.new_index = 0
+		else:
+			self.index = index
+		return self.index
+
+# End of sources class
+
+### Test routine ###
+if __name__ == "__main__":
+	
+	
+	if pwd.getpwuid(os.geteuid()).pw_uid > 0:
+		print "This program must be run with sudo or root permissions!"
+		sys.exit(1)
+
+	client = MPDClient()
+	client.connect("localhost", 6600)
+
+	print "Test Source Class"
+	source = Source(client=client,airplay=True)
+	airplay = True	# Simulate airplay
+	source.load(airplay)
+	print source.current()
+	print
+	print source.getDisplayName()
+	print source.cycle(source.UP),'type',str(source.getNewType())
+	print source.cycle(source.UP),'type',str(source.getNewType())
+	print source.cycle(source.UP),'type',str(source.getNewType())
+	print source.cycle(source.UP),'type',str(source.getNewType())
+	print "New", source.getNewName()
+	print
+	print source.cycle(source.DOWN),source.getNewType()
+	print source.getName(),'type', source.getNewType()
+	print source.cycle(source.UP),'type',str(source.getNewType())
+	sys.exit(0)
+
+# End of test program
+
