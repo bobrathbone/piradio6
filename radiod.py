@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.125 2018/01/08 11:02:16 bob Exp $
+# $Id: radiod.py,v 1.126 2018/01/12 14:47:02 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -777,7 +777,7 @@ def displayOptions(display,radio,menu,message):
 		text = message.getTimerText(option_value)
 
 	else:
-		# Default handling of on/off options such as random etc
+		# Default handling of on/off options such as random,repeat etc
 		text = message.toOnOff(option_value)
 		sText = text
 
@@ -795,6 +795,7 @@ def displayOptions(display,radio,menu,message):
 	if len(sText) > 0:
 		message.speak(option_name + ' ' + sText)
 
+	time.sleep(0.2)	# Prevent skipping of options
 	return 
 
 # Display the RSS feed

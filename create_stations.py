@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.5 2018/01/03 11:42:08 bob Exp $
+# $Id: create_stations.py,v 1.6 2018/01/12 15:25:11 bob Exp $
 #
 # Create playlist files from the following url formats
 #       iPhone stream files (.asx)
@@ -22,9 +22,9 @@
 #	     The authors shall not be liable for any loss or damage however caused.
 #
 
-import os
+import os,sys
 import re
-import sys
+import glob
 import urllib2
 import socket
 import signal
@@ -42,6 +42,7 @@ StationList = RadioLibDir + 'stationlist'
 DistFile =  RadioDir + 'station.urls'
 TempDir = '/tmp/radio_stream_files/'
 PlaylistsDir = RadioDir + 'playlists/'
+ErrorUrls = []
 
 duplicateCount = 0
 TimeOut=15	# Socket time out
@@ -146,6 +147,7 @@ def getParameter(line):
 def parseAsx(title,url,data,filenumber):
 	global errorCount
 	global warningCount
+	global ErrorUrls
 	lcdata = parseHTML(data)
 
 	try:
@@ -154,6 +156,7 @@ def parseAsx(title,url,data,filenumber):
 		print "Error:",e
 		print "ERROR: Could not parse XML data from,", url + '\n'
 		errorCount += 1
+		ErrorUrls.append(url)
 		return
 
 	try:
@@ -181,6 +184,7 @@ def parseAsx(title,url,data,filenumber):
 			print "Error:",e
 			print "ERROR parsing", url
 			errorCount += 1
+			ErrorUrls.append(url)
 			return "# DOM Error" 
 
 	return output
@@ -425,6 +429,7 @@ for line in open(StationList,'r'):
 		stderr("ERROR: Missing left bracket [ in line %s in %s\n" % (lineCount,StationList))
 		format()
 		errorCount += 1
+		ErrorUrls.append("Missing left bracket [ in line %s" % lineCount)
 		continue
 
 	processedCount += 1
@@ -439,6 +444,7 @@ for line in open(StationList,'r'):
 		stderr("ERROR: Missing right bracket [ in line %s in %s\n" % (lineCount,StationList))
 		format()
 		errorCount += 1
+		ErrorUrls.append("Missing right bracket ] in line %s" % lineCount)
 		continue
 
 	# Get title and URL from station definition
@@ -484,6 +490,7 @@ for line in open(StationList,'r'):
 	except:
 		print "ERROR: Failed to retrieve ",title, url
 		errorCount += 1
+		ErrorUrls.append( "Failed to retrieve " + url)
 		continue
 
 
@@ -518,18 +525,20 @@ print ("Processed %s station URLs from %s" % (processedCount,StationList))
 
 # Copy files from temporary directory to playlist directory
 signal.alarm(0)	# Cancel alarm
-oldfiles = os.listdir(PlsDirectory), "_*"
-if len(oldfiles) > 0:
+oldfiles = glob.glob(PlsDirectory + '/_*')
+nOld = len(oldfiles)
+if nOld > 0:
 	if not deleteOld and not noDelete:
-		stderr("There are %s old playlist files in the %s directory.\n" \
-			 % (len(oldfiles),PlsDirectory))
+		stderr("There are %s old radio playlist files in the %s directory.\n" \
+			 % (nOld,PlsDirectory))
 		stderr("Do you wish to remove the old files y/n: ")
 		answer = raw_input("")
 		if answer == 'y':
 			deleteOld = True
 
 	if deleteOld:
-		stderr ("\nRemoving old Radio playlists from directory %s\n" % PlsDirectory)
+		stderr ("\nRemoving %s old Radio playlists from directory %s\n"\
+			 % (nOld,PlsDirectory))
 		execCommand ("rm -f " + PlsDirectory + "_*.m3u" )
 	else:
 		print "Old playlist files not removed"
@@ -543,6 +552,8 @@ print "\nNew radio playlist files will be found in " + PlsDirectory
 
 if errorCount > 0:
 	print str(errorCount) + " error(s)"
+	for line in ErrorUrls:
+		print '\t' + line
 
 if duplicateCount > 0:
 	print str(duplicateCount) + " duplicate file name(s) found and renamed."
@@ -552,4 +563,3 @@ if warningCount > 0:
 	print str(warningCount) + " warning(s)"
 
 # End of script
-

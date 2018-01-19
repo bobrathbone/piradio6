@@ -4,7 +4,7 @@
 # LCD class for  Adafruit RGB-backlit LCD plate for Raspberry Pi.
 # Adapted by Bob Rathbone from code by Adafruit Industries.  MIT license.
 # Amended for version 6.0 and later of the Rathbone Internet Radio
-# $Id: lcd_adafruit_class.py,v 1.4 2017/10/19 13:10:09 bob Exp $
+# $Id: lcd_adafruit_class.py,v 1.5 2018/01/12 18:54:48 bob Exp $
 
 # Original code based on code from lrvick and LiquidCrystal.
 # lrvic - https://github.com/lrvick/raspi-hd44780/blob/master/hd44780.py
@@ -12,6 +12,7 @@
 # Modified by Tomas Gonzalez, Spain to enable GPA5 as an output on the IO extender
 # to enable the backlight on Chinese 1602 I2C LCDs
 
+import time
 from i2c_class import i2c
 from time import sleep
 from log_class import Log
@@ -461,9 +462,11 @@ class Adafruit_lcd(i2c):
 				
 				elif button == self.DOWN:
 					self.event.set(self.event.DOWN_SWITCH)
+					time.sleep(0.1)
 				
 				elif button == self.UP:
 					self.event.set(self.event.UP_SWITCH)
+					time.sleep(0.1)
 				
 				elif button == self.LEFT:
 					self.event.set(self.event.LEFT_SWITCH)

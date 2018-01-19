@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.20 2017/11/30 19:42:10 bob Exp $
+# $Id: source_class.py,v 1.23 2018/01/16 06:39:12 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,6 +24,7 @@
 import os,sys,pwd
 from log_class import Log
 from mpd import MPDClient
+import pdb
 
 log = Log()
 
@@ -150,6 +151,20 @@ class Source:
 		self.new_index = index
 		return self.index
 
+	# Set playlist index by name 
+	def setPlaylist(self,playlist):
+		idx = 0
+		index = 0
+		pl = playlist.lower()
+		for name,value in self.playlists.iteritems():
+			name = name.lower()
+			if name == pl:
+				index = idx
+				break
+			idx += 1	
+		self.setIndex(index)
+		return 
+
 	# Get source index
 	def getIndex(self):
 		return self.index
@@ -183,6 +198,20 @@ class Source:
 	# Get playlist type. RADIO, MEDIA or AIRPLAY
 	def getType(self):
 		return self._getType(self.index)
+
+	# Set the type RADIO, MEDIA or AIRPLAY XXX
+	def setType(self,type):
+		idx = 0
+		newtype = -1
+		playlist = self.getName()
+		while type != newtype: 
+			self.cycle(self.UP)
+			newtype = self.getNewType()
+			if idx == self.new_index:
+				break
+		if type == newtype:	
+			playlist = self.getNewName()
+		return playlist
 
 	# Return the new type (radio, media or airplay)
 	def getNewType(self):

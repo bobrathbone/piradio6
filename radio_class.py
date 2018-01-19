@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.119 2018/01/07 10:55:40 bob Exp $
+# $Id: radio_class.py,v 1.124 2018/01/16 07:13:17 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -136,7 +136,6 @@ class Radio:
 	single = False	# Single play
 
 	# Radio options
-	streaming = False	# Streaming on/off
 	reloadlib = False	# Reload music library yes/no
 
 	# Clock and timer options
@@ -315,8 +314,21 @@ class Radio:
 
 		# Set up source
 		self.getSources()
-		self.source_index = self.getStoredSourceIndex()
-		self.source.setIndex(self.source_index)
+		sourceType = self.config.getSource()
+
+		startup_playlist = self.config.getStartupPlaylist()
+		if len(startup_playlist) > 0:
+			log.message("Startup playlist " + startup_playlist, log.DEBUG)
+			self.source.setPlaylist(startup_playlist)
+
+		elif self.config.loadLast():
+			log.message("Load last playlist", log.DEBUG)
+			self.source_index = self.getStoredSourceIndex()
+			self.source.setIndex(self.source_index)
+		else:
+			# Load either MEDIA or RADIO
+			self.source.setType(sourceType)
+			log.message("Load  MEDIA/RADIO", log.DEBUG)
 
 		# Get stored values from Radio lib directory
 		self.getStoredValue(self.menu.OPTION_RANDOM)
@@ -567,6 +579,10 @@ class Radio:
 
 			consume = int(stats.get("consume"))
 			self.consume = self.convertToTrueFalse(consume)
+
+			single = int(stats.get("single"))
+			self.single = self.convertToTrueFalse(single)
+
 		except Exception as e:
 			log.message("radio.getMpdOptions " + str(e), log.ERROR)
 		return
@@ -959,41 +975,9 @@ class Radio:
 	def getRepeat(self):
 		return self.repeat
 
-	def repeatOn(self):
-		try:
-			client.repeat(1)
-			self.repeat = True
-		except Exception as e:
-			log.message("radio.repeatOn: " + str(e),log.ERROR)
-		return
-
-	def repeatOff(self):
-		try:
-			client.repeat(0)
-			self.repeat = False
-		except Exception as e:
-			log.message("radio.repeatOff: " + str(e),log.ERROR)
-		return
-
 	# Consume
 	def getConsume(self):
 		return self.consume
-
-	def consumeOn(self):
-		try:
-			client.consume(1)
-			self.consume = True
-		except Exception as e:
-			log.message("radio.consumeOn: " + str(e),log.ERROR)
-		return
-
-	def consumeOff(self):
-		try:
-			client.consume(0)
-			self.consume = False
-		except Exception as e:
-			log.message("radio.consumeOff: " + str(e),log.ERROR)
-		return
 
 	# Timer functions
 	def getTimer(self):
@@ -1689,8 +1673,9 @@ class Radio:
 		if source_type == self.source.RADIO:
 			self.current_file = CurrentStationFile
 			self.setRandom(False,store=False)
-			self.consumeOff()
-			self.repeatOff()
+			self.setConsume(False)
+			self.setRepeat(False)
+			self.setSingle(False)
 			self.loadPlaylist()
 		
 		elif source_type == self.source.MEDIA:
@@ -1703,6 +1688,7 @@ class Radio:
 			# Else simply load the playlist
 			if self.getCurrentID() < 1:
 				self.updateLibrary()
+			self.setSingle(False)
 
 		elif source_type == self.source.AIRPLAY:
 			if not airplay.isRunning():
@@ -1997,9 +1983,9 @@ class Radio:
 		return
 
 	# Restart the client after speach finished
-        def clientPlay(self):
-                client.play()
-                return
+	def clientPlay(self):
+		client.play()
+		return
 
 	# Get language text
 	def getLangText(self,label):
@@ -2036,13 +2022,22 @@ class Radio:
 			self.repeat = value
 			self.setRepeat(value)
 
+		elif option_index == self.menu.OPTION_SINGLE:
+			value = self.toggle(self.single)
+			self.single = value
+			self.setSingle(value)
+
 		elif option_index == self.menu.OPTION_RELOADLIB:
 			value = self.toggle(self.reloadlib)
 			self.reloadlib = value
 
 		elif option_index == self.menu.OPTION_STREAMING:
 			value = self.toggle(self.streaming)
-			self.streaming = value
+			self.streaming = value	
+			if self.streaming:
+				self.streamingOn()
+			else:
+				self.streamingOff()
 
 		else:
 			value = False
@@ -2072,6 +2067,9 @@ class Radio:
 
 		elif option_index == self.menu.OPTION_REPEAT:
 			value = self.repeat
+
+		elif option_index == self.menu.OPTION_SINGLE:
+			value = self.single
 
 		elif option_index == self.menu.OPTION_RELOADLIB:
 			value = self.reloadlib

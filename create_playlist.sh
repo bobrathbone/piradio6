@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.15 2018/01/10 13:52:17 bob Exp $
+# $Id: create_playlist.sh,v 1.17 2018/01/14 10:20:36 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -36,19 +36,21 @@ MAX_SIZE=5000
 
 # Make a playlist name from the filter
 make_name(){
-	 str="${1}"
-	 leng=${#str}
-	 name=""
-	 for (( i=0; i<${#str}; i++ )); do
-		  char="${str:$i:1}"
-		  if [[ $char != [A-Za-z0-9] ]];then
-			   name=${name}"_"
-
-		  else
-			   name=${name}$char
-		  fi
-	 done
-	 echo $name
+	str="${1}"
+	leng=${#str}
+	name=""
+	for (( i=0; i<${#str}; i++ )); do
+		char="${str:$i:1}"
+		if [[ $char == "/" ]];then
+			continue
+		fi
+		if [[ $char != [A-Za-z0-9] ]];then
+			name=${name}"_"
+		else
+			name=${name}$char
+		fi
+	done
+	echo $name
 }
 
 CMD="sudo service radio stop"
@@ -82,7 +84,7 @@ do
 		DIR="media"
 		# Mount the USB stick
 		if [[ ${USBDEV} != "" ]]; then
-			sudo mount ${USBDEV} /media
+			sudo mount ${USBDEV} /media >/dev/null 2>&1
 			echo "Mounted  ${USBDEV} on /media"
 		fi
 
@@ -93,7 +95,7 @@ do
 		# Mount the network share specified in /var/lib/radiod/share
 		if [[ -f ${SHARE} ]]; then
 			CMD=$(cat ${SHARE}) 
-			echo ${CMD}; sudo ${CMD}
+			echo ${CMD}; sudo ${CMD} >/dev/null 2>&1
 		fi
 
 	 else
@@ -111,13 +113,13 @@ ans=0
 selection=1
 while [ $selection != 0 ]
 do
-	FILTER=$(whiptail --title "Enter a filter" --inputbox "Example: \"The Beatles\" or blank for no filter" 10 60 "" 3>&1 1>&2 2>&3) 
+	FILTERS=$(whiptail --title "Enter a filter" --inputbox "Example: \"The Beatles\" or blank for no filter" 10 60 "" 3>&1 1>&2 2>&3) 
 	exitstatus=$?
 	if [ $exitstatus != 0 ]; then
 		exit 0
 	fi
-	if [[ ${FILTER} != "" ]]; then
-		whiptail --title "Your filter is: ${FILTER}" --yesno "Is this correct?" 10 60
+	if [[ ${FILTERS} != "" ]]; then
+		whiptail --title "Your filter is: ${FILTERS}" --yesno "Is this correct?" 10 60
 	else
 		whiptail --title "You have not specified a filter" --yesno "Is this correct?" 10 60
 	fi
@@ -125,8 +127,8 @@ do
 done
 
 # Create playlist name from (This becomes the playlist name)
-if [[ ${FILTER} != "" ]];then
-	PLAYLIST=$(make_name "${FILTER}")
+if [[ ${FILTERS} != "" ]];then
+	PLAYLIST=$(make_name "${FILTERS}")
 fi
 
 ans=0
@@ -147,24 +149,34 @@ PLAYLIST=$(make_name "${PLAYLIST}")
 
 # Change directory to MPD music directory
 CMD="cd ${MPD_MUSIC}/"
-echo  ${CMD}
 ${CMD}
-pwd
 
 # Build the create command 
+echo "Processing directory ${DIR}. Please wait."
 CMD="sudo find -L ${DIR} -type f -name *.mp3 -or -name *.ogg -or -name *.flac "
-
-echo "${CMD} > ${TEMPFILE}"
 ${CMD} > ${TEMPFILE}
 
 CMD="sudo mv ${TEMPFILE} /tmp/${PLAYLIST}"
-echo ${CMD};${CMD}
+${CMD}
 
 # Perform the playlist creation
-if [[ ${FILTER} != "" ]];then
-	echo "egrep -i \"${FILTER}\" /tmp/${PLAYLIST} > /tmp/${PLAYLIST}.${EXT}"
-	egrep -i "${FILTER}" /tmp/${PLAYLIST} > /tmp/${PLAYLIST}.${EXT}
-	rm -f /tmp/${PLAYLIST} 
+echo "Processing ${FILTERS}"
+if [[ ${FILTERS} != "" ]];then
+	cat /dev/null > /tmp/${PLAYLIST}.${EXT}
+	# Split filters into seperate lines
+        filters=$(echo ${FILTERS} | tr "|" "\n")
+	
+        echo "${filters}" |
+	while read filter
+        do
+                echo "Processing filter \"${filter}\""
+
+		# Process filter beginning with /
+		if [[ ${filter:0:1} == "/" ]];then
+			filter=$(echo ${filter} | tr "/" "\/")
+		fi
+		egrep -i "${filter}" /tmp/${PLAYLIST} >> /tmp/${PLAYLIST}.${EXT}
+	done
 else
 	mv /tmp/${PLAYLIST}  /tmp/${PLAYLIST}.${EXT}
 fi	
@@ -177,14 +189,14 @@ fi
 echo
 echo "==========================================================="
 size=$(wc -l /tmp/${PLAYLIST}.${EXT} | awk {'print $1'} )
-if [[ ${FILTER} != "" ]];then
-	echo "${size} tracks found in directory ${DIR} matching \"${FILTER}\""
+if [[ ${FILTERS} != "" ]];then
+	echo "${size} tracks found in directory ${DIR} matching \"${FILTERS}\""
 else
 	echo "${size} tracks found in directory ${DIR} (No filter)"
 fi
 
 if [[ ${size} -eq 0 ]];then
-	echo "No matching tracks for filter \"${FILTER}\" found"
+	echo "No matching tracks for filter \"${FILTERS}\" found"
 	echo "No playlist created"
 	exit 1
 fi

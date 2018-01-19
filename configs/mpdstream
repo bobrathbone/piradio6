@@ -1,0 +1,15 @@
+
+# MPD Radio Stream
+audio_output {
+  type            "shout"
+  name            "PI Radio MPD Stream"
+  description     "MPD stream on Raspberry Pi Radio"
+  host            "localhost"
+  port            "8000"
+  mount           "/mpd"
+  password        "mympd"
+  bitrate         "128"
+  format          "44100:16:2"
+  encoding        "mp3"
+}
+

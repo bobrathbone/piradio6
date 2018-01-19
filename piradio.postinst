@@ -1,0 +1,158 @@
+#!/bin/bash 
+set -e
+# Radio daemon post install script
+# $Id: piradio.postinst,v 1.8 2017/12/01 09:50:43 bob Exp $
+# Support for Pulseaudio added
+
+# File locations
+DIR=/usr/share/radio
+RADIOLIB=/var/lib/radiod
+INITTAB=/etc/inittab
+BOOTCMD=/boot/cmdline.txt 
+MODULES=/etc/modules
+MPDCONF=/etc/mpd.conf
+VOICEDIST=voice.dist
+LANGUAGEFILE=language/language.en
+RSSFILE=rss/rss
+CONFIGFILE=/etc/radiod.conf
+DEFAULTRCS=/etc/default/rcS
+
+# Configure radio but skip any other package installation or removal
+# with the -s flag
+CONFIGURATOR="configure_radio.sh -s"
+
+# Check if the script is being run as root
+if [[ $EUID -ne 0 ]]
+then
+    printf 'This script must be run using sudo.\nExiting..\n'
+    exit 1
+fi
+
+# Set up a default radio variant
+sudo mkdir -p ${RADIOLIB}
+
+# Set daemon startup defaults
+systemctl enable radiod.service
+#update-rc.d radiod defaults
+#update-rc.d -f pifacercd defaults
+#update-rc.d -f shairport-sync defaults
+
+# Ensure owner is pi
+sudo chown -R pi:pi ${DIR}
+sudo chmod +x ${DIR}/*.py
+sudo chmod +x ${DIR}/*.sh
+
+# Create configuration file in /etc
+if [[ ! -f   ${CONFIGFILE} ]]; then
+	sudo cp -f ${DIR}/radiod.conf ${CONFIGFILE}
+fi
+
+# Set up radio daemon
+${DIR}/${CONFIGURATOR}
+if [[ $? != 0 ]]; then
+	echo "${DIR}/${CONFIGURATOR} script failed"
+	exit 1
+fi
+
+# If initab exists disable serial (Needs reviewing for Stretch/jessie
+if [[ ! -f   ${INITTAB}.orig  && -f ${INITTAB} ]]; then
+	echo "Disabling serial interface in ${INITTAB}" 
+	sudo cp -f ${INITTAB} ${INITTAB}.orig
+	OLDENTRY="T0\:23\:respawn\:\/sbin\/getty -L ttyAMA0"
+	NEWENTRY="\#T0\:23:respawn\:\/sbin\/getty -L ttyAMA0 115200 vt100"
+	sudo sed -i "s/^${OLDENTRY}.*/${NEWENTRY}/g" ${INITTAB}
+	echo "# Original file stored as ${INITTAB}.orig" >> ${INITTAB} 
+fi
+
+echo "Disabling serial interface in ${BOOTCMD}" 
+if [[ ! -f   ${BOOTCMD}.orig ]]; then
+	sudo cp -f ${BOOTCMD} ${BOOTCMD}.orig
+	echo "# Original file stored as ${BOOTCMD}.orig" >> ${BOOTCMD} 
+fi
+
+OLDENTRY="console=ttyAMA0,115200 "
+sudo sed -i "s/${OLDENTRY}//g" ${BOOTCMD}
+OLDENTRY="kgdboc=ttyAMA0,115200 "
+sudo sed -i "s/${OLDENTRY}//g" ${BOOTCMD}
+REBOOT=1
+
+# Configure the MPD daemon
+if [[ ! -f   ${MPDCONF}.orig ]]; then
+	echo "Modifying ${MPDCONF}"
+	sudo cp -fp ${MPDCONF} ${MPDCONF}.orig
+
+	# Bind to any address
+	OLDENTRY="bind_to_address"
+	NEWENTRY="bind_to_address \"any\""  
+	sudo sed -i "s/^${OLDENTRY}.*/${NEWENTRY}/g" ${MPDCONF}
+
+	# Disable zeroconf
+	OLDENTRY="\#zeroconf_enabled.*"
+	NEWENTRY="zeroconf_enabled \"no\""
+
+	# Add note to the end of file
+	sudo sed -i "s/^${OLDENTRY}.*/${NEWENTRY}/g" ${MPDCONF}
+	echo "# Original file stored as ${MPDCONF}.orig" >> ${MPDCONF} 
+fi
+
+# Disable MPD on startup
+systemctl disable mpd
+
+# Go to radio directory
+cd ${DIR}
+
+# Copy espeak command to the radio lib directory
+if [[ ! -f "${RADIOLIB}/voice" ]]; then
+	echo "Copying ${VOICEDIST} to ${RADIOLIB}/voice"
+	mkdir -p ${RADIOLIB}
+	cp -f ${VOICEDIST} ${RADIOLIB}/voice
+fi
+
+# Copy language file
+if [[ ! -f "${RADIOLIB}/language" ]]; then
+	echo "Copying ${LANGUAGEFILE} to ${RADIOLIB}/language"
+	mkdir -p ${RADIOLIB}
+	cp -f ${LANGUAGEFILE} ${RADIOLIB}/language
+fi
+
+# Copy RSS file
+if [[ ! -f "${RADIOLIB}/rss" ]]; then
+	echo "Copying ${RSSFILE} to ${RADIOLIB}/rss"
+	mkdir -p ${RADIOLIB}
+	cp -f ${RSSFILE} ${RADIOLIB}/rss
+fi
+
+# Create playlists if no station list present
+if [[ ! -f "${RADIOLIB}/stationlist" ]]; then
+	echo "Creating playlists:"
+	echo "This will take a few minutes"
+	${DIR}/create_stations.py --no_delete 2>&1 > ${DIR}/playlists.log
+	echo "Done: See ${DIR}/playlists.log for information about playlists created"
+	echo
+fi
+
+# Force file checks on reboot
+if [[ ! -f ${DEFAULTRCS}.orig && -f ${DEFAULTRCS}.orig ]]; then
+        sudo cp -f -p ${DEFAULTRCS} ${DEFAULTRCS}.orig
+        sudo sed -i -e 's/\#FSCKFIX=no/FSCKFIX=yes/' ${DEFAULTRCS}
+fi
+
+ln -fs /usr/share/radio /home/pi/radio
+
+# Install shairport-sync and metadata reader
+#sudo install bin/shairport-sync /usr/local/bin
+#sudo install bin/shairport-sync-metadata-reader /usr/local/bin
+
+echo
+echo "PI Radio software successfully installed"
+echo "See /usr/share/doc/radiod/README for release information"
+echo
+
+echo "Installation complete"
+if [[ REBOOT -eq 1 ]]; then
+	echo "It is necessary to reboot the system to start the radio"
+fi
+
+exit 0
+
+# End of post-installation script

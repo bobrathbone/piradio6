@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.142 2018/01/10 13:51:19 bob Exp $
+# $Id: gradio.py,v 1.147 2018/01/18 09:09:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -296,7 +296,8 @@ def displayAirplay(display,radio,font):
 	title = info[1]
 	album = info[2]
 
-	color = (255,255,255)
+	lcolor = getLabelColor(display.config.getDisplayLabelsColor())
+	color = pygame.Color(lcolor)
 	column = 4
 	columnPos = display.getColumnPos(column)
 	columns = display.getColumns()
@@ -492,32 +493,14 @@ def handleSourceEvent(event,radio,display):
 		display.setMode(display.MAIN)
 	return display.getSearchMode()
 
-# Handle search event 
+# Handle search event (Search window click)
 def handleSearchEvent(radio,event,SearchWindow,display,searchID):
 	global Artists
 
 	# Event in the search window (Not the slider) 
 	if SearchWindow.clicked(event):
 		idx = SearchWindow.index()
-		search_mode = display.getSearchMode()
-		if search_mode == display.SEARCH_PLAYLIST:
-			radio.source.setIndex(idx + searchID - 1)
-			radio.loadSource()
-			widget.select_list.activate()
-			searchID = radio.setCurrentID(1)
-			display.setSearchMode(display.SEARCH_LIST)
-
-		elif search_mode == display.SEARCH_ARTISTS:
-			if Artists != None:
-				artistKey = SearchWindow.getText()
-				widget.select_list.activate()
-				searchID = Artists.get(artistKey) + 1
-				radio.play(searchID)
-
-		else:
-			# Radio selection
-			searchID = searchID + idx
-			radio.play(searchID)
+		searchID = selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx)
 
 	# Search window slider dragged
 	elif SearchWindow.slider.dragged(event):
@@ -733,11 +716,12 @@ def checkPid(pidfile):
 	return pid	
 
 
-# Select first item from the search window (Keyboard key pressed)
-def selectNew(radio,display,widget,Artists,searchID,SearchWindow):
+# Return ID of selected item from the search window 
+def selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx):
+	id = radio.getCurrentID()
 	search_mode = display.getSearchMode()
 	if search_mode == display.SEARCH_PLAYLIST:
-		radio.source.setIndex(searchID - 1)
+		radio.source.setIndex(searchID + idx - 1)
 		radio.loadSource()
 		widget.select_list.activate()
 		searchID = radio.setCurrentID(1)
@@ -745,16 +729,17 @@ def selectNew(radio,display,widget,Artists,searchID,SearchWindow):
 
 	elif search_mode == display.SEARCH_ARTISTS:
 		if Artists != None:
-			artistKey = SearchWindow.getText()
+			artistKey = SearchWindow.getText(idx)
+			print "Key=",str(artistKey)
 			widget.select_list.activate()
 			searchID = Artists.get(artistKey) + 1
 			radio.play(searchID)
 
 	else:
 		# Radio selection
-		radio.play(searchID)
+		radio.play(searchID + idx)
 
-	return
+	return searchID
 		
 
 # Keyboard toggle radio options
@@ -857,6 +842,7 @@ if __name__ == "__main__":
 	log.init('radio')
 	# Stop command
 	if len(sys.argv) > 1 and sys.argv[1] == 'stop':
+		os.popen("sudo service mpd stop")
 		stop()
 
 	pid = checkPid(pidfile)
@@ -868,13 +854,14 @@ if __name__ == "__main__":
 	radioEvent = Event()	    # Add radio event handler
 	radio = Radio(rmenu,radioEvent)  # Define radio
 
-	# Set up XXauthority for root user
+	# Set up Xauthority for root user
 	radio.execCommand("sudo cp /home/pi/.Xauthority /root/")
 
 	setupRadio(radio)
 	radio.setTranslate(True)	# Switch off text translation
 
-	caption = display.config.getWindowTitle()
+	version = radio.getVersion()
+	caption = display.config.getWindowTitle() + ' ' + version
 	pygame.display.set_caption(caption)
 	wallpaper = display.config.getWallPaper()
 
@@ -1051,12 +1038,15 @@ if __name__ == "__main__":
 		    
 	    	# Temporary exit on ESC key during development
 		elif event.type == KEYDOWN:
+			print "Key", event.key
 			srange = SearchWindow.slider.getRange()
 			searchID = handleKeyEvent(event.key,radioEvent,searchID,srange)
 			toggleOption(radio,event.key,RandomButton,RepeatButton,
 				ConsumeButton,SingleButton,widget)
 			if event.key == K_RETURN:
-				selectNew(radio,display,widget,Artists,searchID,SearchWindow)
+				selectNew(radio,display,widget,Artists,searchID,SearchWindow,0)
+			if event.key == K_d:
+				mode = display.cycleMode()
 
 		# Window quit stops the radio
 		elif event.type == QUIT:

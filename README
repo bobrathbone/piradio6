@@ -15,7 +15,8 @@ Due for release late January 2018
 The main change is the introduction of a Graphical/Touchscreen version of the radio
 This uses the Raspbian desktop and the pygame interface and is designed
 to run on the Raspberry Pi 7 inch touch screen
-2) Introduction of the Graphical/Touchscreen version
+1) Introduction of the Graphical/Touchscreen version
+2) Icecast streaming implemented
 3) remote_control now detects if lircd or lirc service must be started
 4) Missing create_playlist.sh added to build
 5) Correct button versions of the radio not shutting down when menu button held in
@@ -23,7 +24,9 @@ to run on the Raspberry Pi 7 inch touch screen
 7) Create playlists splits large playlists into 5,000 line chunks
 8) Create playlists also starts MPD database update
 9) Create playlists selection filter implemented 
-10) Improved overall program response
+10) Implement MPD single option:
+11) Startup configuration now support options RADIO,MEDIA,LAST or playlist name  
+12) Improved overall program response
 
 Version 6.1 release notes
 -------------------------

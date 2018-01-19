@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: language_class.py,v 1.23 2017/10/31 15:01:33 bob Exp $
+# $Id: language_class.py,v 1.24 2018/01/12 14:47:02 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -67,13 +67,14 @@ class Language:
 		'on': 'on',
 		'yes': 'yes',
 		'no': 'no',
-		'random': 'Random',
 		'radio_version': 'Radio version',
 		'wait': 'Please wait',
 
 		# Options
+		'random': 'Random',
 		'consume': 'Consume',
 		'repeat': 'Repeat',
+		'single': 'Single',
 		'reload': 'Reload',
 		'timer': 'Timer',
 		'alarm': 'Alarm',

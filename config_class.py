@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: config_class.py,v 1.27 2018/01/08 13:24:29 bob Exp $
+# $Id: config_class.py,v 1.29 2018/01/15 18:32:28 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -62,7 +62,7 @@ class Configuration:
 	volume_increment = 1 		# Volume increment 1 to 10
 	display_playlist_number = False # Two line displays only, display station(n)
 	source = RADIO  		# Source RADIO or Player
-	auto_load = False 		# Auto load media if no Internet on startup
+	load_last = False 		# Auto load media if no Internet on startup
 	rotary_class = STANDARD		# Rotary class STANDARD or ALTERNATIVE 
 	display_width = 0		# Line width of display width 0 = use program default
 	display_lines = 2		# Number of display lines
@@ -71,6 +71,7 @@ class Configuration:
 	mixer_volume_id = 1	# Mixer volume id (Run 'amixer controls | grep -i volume')
 	display_blocks = False	# Display volume in blocks
 	fullscreen = True	# Graphics screen fullscreen yes no 
+	startup_playlist = ""	# Startup playlist if defined
 
 	# Remote control parameters 
 	remote_led = 0  # Remote Control activity LED 0 = No LED	
@@ -237,10 +238,16 @@ class Configuration:
 						self.display_playlist_number = True
 
 				elif option == 'startup':
-					if parameter == 'MEDIA':
+					if parameter == 'RADIO': 
+						self.source =  self.RADIO
+					elif parameter == 'MEDIA':
 						self.source =  self.PLAYER
-					elif parameter == 'AUTO': 
-						self.auto_load = True
+					elif parameter == 'AIRPLAY':
+						self.source =  self.AIRPLAY
+					elif parameter == 'LAST': 
+						self.load_last = True
+					elif len(parameter) > 0:
+						self.startup_playlist = parameter
 
 				elif option == 'i2c_address':
 					try:
@@ -541,9 +548,9 @@ class Configuration:
 	def getSource(self):
 		return self.source
 
-	# Get Auto load option 
-	def autoload(self):
-		return self.auto_load
+	# Get load last playlist option
+	def loadLast(self):
+		return self.load_last
 
 	# Get the startup source name RADIO MEDIA
 	def getSourceName(self):
@@ -710,6 +717,10 @@ class Configuration:
 	def getMixerVolumeID(self):
 		return self.mixer_volume_id
 
+	# Get startup playlist
+	def getStartupPlaylist(self):
+		return self.startup_playlist
+
 	# Shutdown option
 	def doShutdown(self):
 		return self.shutdown
@@ -770,7 +781,7 @@ if __name__ == '__main__':
 	print "Date format:", config.getDateFormat()
 	print "Display playlist number:", config.getDisplayPlaylistNumber()
 	print "Source:", config.getSource(), config.getSourceName()
-	print "Auto-load", config.autoload()
+	print "Load last playlist", config.loadLast()
 	print "Background colour number:", config.getBackColor('bg_color')
 	print "Background colour:", config.getBackColorName(config.getBackColor('bg_color'))
 	print "Speech:", config.hasSpeech()

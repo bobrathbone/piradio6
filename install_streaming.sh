@@ -1,7 +1,7 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio - Install Icecast2
 # This script installs and configures Icecast2 to run with MPD 
-# $Id: install_streaming.sh,v 1.1 2017/09/28 07:37:56 bob Exp $
+# $Id: install_streaming.sh,v 1.2 2018/01/13 08:43:27 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -21,7 +21,7 @@ MOUNTPOINT=/mpd
 echo "Starting Icecast2 integration with the Music Player Daemon"
 if [[ $( id -u ) -ne 0 ]]; then
 	echo "This script can only be run as super user"
-	echo "Run the command \"sudo bash\" first"
+	echo "Run the command \"sudo $0\""
 	exit 1
 fi
 
@@ -52,7 +52,11 @@ if [[ !  -f ${XMLCONF}.orig ]]; then
 	NEWENTRY="<mount-name>\/mpd<\/mount>"
 	sed -i "s/${OLDENTRY}.*/${NEWENTRY}/g" ${XMLCONF}
 	mkdir -p ${MOUNTPOINT}
-	service icecast2 restart
+	echo "Starting service icecast2"
+	sudo service icecast2 restart
+	if [[ $? -ne '0' ]]; then 	# Do not seperate from above
+		echo "Failed to start service icecast2"
+	fi
 fi
 
 # Modify mpd.conf

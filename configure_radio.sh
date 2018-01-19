@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.26 2018/01/10 13:52:17 bob Exp $
+# $Id: configure_radio.sh,v 1.30 2018/01/18 10:22:46 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -11,7 +11,7 @@
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
-#            The authors shall not be liable for any loss or damage however caused.
+#	     The authors shall not be liable for any loss or damage however caused.
 #
 # This program uses whiptail. Set putty terminal to use UTF-8 charachter set
 # for best results
@@ -21,10 +21,11 @@ FLAGS=$1
 
 INIT=/etc/init.d/radiod
 SERVICE=/lib/systemd/system/radiod.service
-BINDIR="\/usr\/share\/radio\/"
+BINDIR="\/usr\/share\/radio\/"	# Used for sed
 DIR=/usr/share/radio
 CONFIG=/etc/radiod.conf
-LXSESSION="no"	# Start desktop radio at boot time
+LXSESSION=""	# Start desktop radio at boot time
+FULLSCREEN=""	# Start graphic radio fullscreen
 PROGRAM="Daemon radiod configured"
 
 # Wiring type
@@ -264,7 +265,7 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
  	echo "   P5 Enable/Disable automatic loading of I2C kernel module"
 	echo; echo -n "Press enter to continue: "
 
-        read ans
+	 read ans
 
 	# Enable the I2C libraries 
 	ans=0
@@ -339,7 +340,7 @@ else
 	selection=1 
 	while [ $selection != 0 ]
 	do
-		ans=$(whiptail --title "Select display type" --menu "Choose your option" 15 75 9 \
+		ans=$(whiptail --title "Boot option" --menu "Choose your option" 15 75 9 \
 		"1" "Start radio at boot time" \
 		"2" "Do not start at boot time" \
 		"3" "Do not change configuration" 3>&1 1>&2 2>&3) 
@@ -355,6 +356,7 @@ else
 
 		elif [[ ${ans} == '2' ]]; then
 			DESC="Do not start radio at boot time" 
+			LXSESSION="no"
 
 		else
 			echo "Boot configuration unchanged"	
@@ -364,19 +366,55 @@ else
 		selection=$?
 	done
 
+	ans=0
+	selection=1 
+	while [ $selection != 0 ]
+	do
+		ans=$(whiptail --title "Full screen option" --menu "Choose your option" 15 75 9 \
+		"1" "Start graphical radio full screen" \
+		"2" "Start graphical radio in a desktop window" \
+		"3" "Do not change configuration" 3>&1 1>&2 2>&3) 
+
+		exitstatus=$?
+		if [[ $exitstatus != 0 ]]; then
+			exit 0
+		fi
+
+		if [[ ${ans} == '1' ]]; then
+			DESC="Start graphical radio full screen"
+			FULLSCREEN="yes"
+
+		elif [[ ${ans} == '2' ]]; then
+			DESC="Do not start radio at boot time" 
+			FULLSCREEN="no"
+
+		else
+			echo "Desktop configuration unchanged"	
+		fi
+
+		whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
+		selection=$?
+	done
+
 fi
 
-# Configure lxsession
+# Configure desktop autostart
 cmd="@sudo /usr/share/radio/gradio.py"
 AUTOSTART="/home/pi/.config/lxsession/LXDE-pi/autostart"
 if [[ ${LXSESSION} == "yes" ]]; then
-	echo "Configuring ${AUTOSTART} for automatic start"
-	grep ${cmd} ${AUTOSTART}
-	if [[ $? != 0 ]]; then       # Don't seperate from above
-		sudo echo ${cmd} | sudo tee -a  ${AUTOSTART}
+	 echo "Configuring ${AUTOSTART} for automatic start"
+	 grep ${cmd} ${AUTOSTART}
+	 if [[ $? != 0 ]]; then	# Don't seperate from above
+		  sudo echo ${cmd} | sudo tee -a  ${AUTOSTART}
 
-	fi
+	 else
+		  sudo sed -i -e "0,/gradio\.py/{s/^#@sudo/@sudo/}" ${AUTOSTART}
+	 fi
+
+elif [[ ${LXSESSION} == "no" ]]; then
+	 sudo sed -i -e "0,/gradio\.py/{s/^@sudo/#@sudo/}" ${AUTOSTART}
 fi
+
 
 #######################################
 # Commit changes to radio config file #
@@ -486,7 +524,6 @@ sudo sed -i "s/^ExecStop=.*/ExecStop=${BINDIR}${DAEMON} stop/g" ${SERVICE}
 
 echo
 echo ${PROGRAM};echo
-
 # Update system startup 
 if [[ ${DISPLAY_TYPE} == "GRAPHICAL_DISPLAY" ]]; then
 
@@ -495,16 +532,22 @@ if [[ ${DISPLAY_TYPE} == "GRAPHICAL_DISPLAY" ]]; then
 
 	# Add [SCREEN] section to the configuration file
 	grep "\[SCREEN\]" ${CONFIG} >/dev/null 2>&1
-	if [[ $? != 0 ]]; then       # Don't seperate from above
-		sudo cat gradio.conf | sudo tee -a /etc/radiod.conf
+	if [[ $? != 0 ]]; then	# Don't seperate from above
+		echo "Adding [SCREEN] section to ${CONFIG}"
+		sudo cat ${DIR}/gradio.conf | sudo tee -a ${CONFIG}
 	fi
 	sudo systemctl daemon-reload
 	cmd="sudo systemctl disable radiod.service"
 	echo ${cmd}; ${cmd}  >/dev/null 2>&1
-fi
+
+	# Set fullscreen option (Graphical radio version only)
+	if [[ ${FULLSCREEN} != "" ]]; then
+		sudo sed -i -e "0,/^fullscreen/{s/fullscreen.*/fullscreen=${FULLSCREEN}/}" ${CONFIG}
+		echo "fullscreen=${FULLSCREEN}"
+	fi
 
 # Enable  radio daemon to start radiod
-if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
+elif [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
 	if [[ -x /bin/systemctl ]]; then
 		sudo systemctl daemon-reload
 		cmd="sudo systemctl enable radiod.service"

@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.6 2017/11/21 07:52:45 bob Exp $
+# $Id: station.urls,v 1.7 2018/01/15 15:53:28 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -86,10 +86,11 @@
 [Slam FM] http://vip-icecast.538.lw.triple-it.nl/SLAMFM_MP3.m3u
 [Candlelight] http://candlelight.live-streams.nl/candlelight.m3u
 
-(Air traffic)
-# Live_ATC
-[EHAA Approach Departures] http://d.liveatc.net/eham4
-[EHAA Radar 2 East Inbound] http://d.liveatc.net/eham03_rdr_e_inb 
-[EHAA Radar SW] http://d.liveatc.net/eham02_rdr_sw
-[EHEH Approach] http://d.liveatc.net/eheh2_app
+
+#(Air traffic)
+# Live_ATC (Uncomment to try)
+#[EHAA Approach Departures] http://d.liveatc.net/eham4
+#[EHAA Radar 2 East Inbound] http://d.liveatc.net/eham03_rdr_e_inb 
+#[EHAA Radar SW] http://d.liveatc.net/eham02_rdr_sw
+#[EHEH Approach] http://d.liveatc.net/eheh2_app
 

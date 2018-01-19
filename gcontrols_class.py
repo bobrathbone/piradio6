@@ -3,7 +3,7 @@
 # Raspberry Pi Internet Radio
 # Graphic screen controls
 #
-# $Id: gcontrols_class.py,v 1.13 2018/01/07 11:22:14 bob Exp $
+# $Id: gcontrols_class.py,v 1.14 2018/01/18 09:09:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -318,8 +318,8 @@ class ScrollBox:
 		return 
 
 	# Get the text of the clicked line
-	def getText(self):
-		text = self.textLines[self.click_index]
+	def getText(self,idx):
+		text = self.textLines[idx]
 		return text
 
 	def clicked(self,event):
