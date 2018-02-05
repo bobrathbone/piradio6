@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: config_class.py,v 1.29 2018/01/15 18:32:28 bob Exp $
+# $Id: config_class.py,v 1.36 2018/01/31 12:12:24 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -25,7 +25,6 @@ Airplay = "/usr/local/bin/shairport-sync"
 
 log = Log()
 config = ConfigParser.ConfigParser()
-
 
 class Configuration:
 	# Input source
@@ -93,10 +92,16 @@ class Configuration:
 	display_window_color = 'navy'		# Display window background colour
 	display_window_labels_color = 'white'	# Display window labels colour
 	display_mouse = False	# Hide mouse
-	slider_color = 'green'	# Search window slider default colour 
+	slider_color = 'red'	# Search window slider default colour 
 	banner_color = 'black'	# Time banner text colour
 	wallpaper = ''		# Background wallpaper
 	graphicDateFormat="%H:%M:%S %A %e %B %Y"	# Format for graphic screen
+
+	# Specific to the vintage graphic radio
+	scale_labels_color = 'white'	# Vintage screen labels colour
+	stations_per_page = 50 		# maximum stations per page
+	display_date = True		# Display time and date
+	display_title = True		# Display title play (at bottom of screen)
 
 	shutdown = True		# Shutdown when exiting radio
 	
@@ -455,6 +460,9 @@ class Configuration:
 				elif option == 'labels_color':
 					self.labels_color = parameter
 					
+				elif option == 'scale_labels_color':
+					self.scale_labels_color = parameter
+					
 				elif option == 'display_window_color':
 					self.display_window_color = parameter
 					
@@ -463,6 +471,9 @@ class Configuration:
 					
 				elif option == 'slider_color':
 					self.slider_color = parameter
+
+				elif option == 'stations_per_page':
+					self.stations_per_page = int(parameter)
 
 				elif option == 'wallpaper':
 					if os.path.exists(parameter):
@@ -477,6 +488,18 @@ class Configuration:
 					else:
 						self.display_mouse = False
 					
+				elif option == 'display_date':
+					if parameter == 'yes':
+						self.display_date = True
+					else:
+						self.display_date = False
+					
+				elif option == 'display_title':
+					if parameter == 'yes':
+						self.display_title = True
+					else:
+						self.display_title = False
+
 		except ConfigParser.NoSectionError:
 			msg = ConfigParser.NoSectionError(section),'in',ConfigFile
 			log.message(msg,log.WARNING)
@@ -594,24 +617,6 @@ class Configuration:
 		except:
 			log.message("Invalid option " + sColor, log.ERROR)
 		return color
-
-	# Cycle background colors
-	def XXXXcycleColor(self,direction):
-		color = self.getBackColor('bg_color')
-
-		if direction == self.UP:
-			color += 1
-		else:
-			color -= 1
-
-		if color < 0:
-			color = 0x7
-		elif color > 0x7:
-			color = 0x0
-
-		self.colors['bg_color'] = color
-		return color
-
 
 	# Get the background colour string name
 	def getBackColorName(self,iColor):
@@ -746,6 +751,10 @@ class Configuration:
 	def getLabelsColor(self):
 		return self.labels_color
 
+	# Get graphics labels colour
+	def getScaleLabelsColor(self):
+		return self.scale_labels_color
+
 	# Get display window colour
 	def getDisplayWindowColor(self):
 		return self.display_window_color
@@ -754,17 +763,31 @@ class Configuration:
 	def getDisplayLabelsColor(self):
 		return self.display_window_labels_color
 
-	# Get graphics window colour
+	# Get slider colour
 	def getSliderColor(self):
 		return self.slider_color
+
+	# Get maximum stations displayed per page (vintage graphic radio)
+	def getMaximumStations(self):
+		if self.stations_per_page > 50:
+			self.stations_per_page = 50
+		return self.stations_per_page
 
 	# Get window wallpaper
 	def getWallPaper(self):
 		return self.wallpaper
 
-	# Mouse hidden
+	# Mouse hidden (Not working yet - TO DO)
 	def displayMouse(self):
 		return self.display_mouse
+
+	# Display date and time yes/no
+	def displayDate(self):
+		return self.display_date
+
+	# Display date and time yes/no
+	def displayTitle(self):
+		return self.display_title
 
 # End Configuration of class
 

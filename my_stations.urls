@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: my_stations.urls,v 1.3 2018/01/04 08:44:23 bob Exp $
+# $Id: my_stations.urls,v 1.9 2018/01/31 09:57:24 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -23,7 +23,7 @@
 # Then run create_playlists.py in the /home/pi/radio directory to create PLS files
 
 # Name of playlist file
-(UK stations)
+(Radio)
  
 # United Kingdom
 # The following links are iPhone streams (m3u files)
@@ -43,27 +43,28 @@
 [Jack FM] http://playerservices.streamtheworld.com/pls/JACK_FM.pls 
 [Classic FM] http://media-ice.musicradio.com/ClassicFMMP3
 [Magic Radio] http://icy-e-05.sharp-stream.com/magic1054.mp3
+[The Arrow] http://network.absoluteradio.co.uk/core/audio/mp3/live.pls?service=arbb
 
-(European radio)
 # Dutch stations
 [NPO Radio 1] http://icecast.omroep.nl/radio1-bb-mp3
 [NPO Radio 2] http://icecast.omroep.nl/radio2-bb-mp3
 [NPO Radio 3fm] http://icecast.omroep.nl/3fm-bb-mp3
 [NPO Radio 4] http://icecast.omroep.nl/radio4-bb-mp3.m3u
-[Radio 10 Gold NL] http://stream.radio10.nl/radio10.m3u
 [Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICA.pls
 [Stream Power MP3] http://mp3.streampower.be/radio1-high.mp3
 [Midden Brabant] http://breedband.hollandio.nl:8804/listen.pls
 [Omroep Brabant] http://www.listenlive.eu/omroepbrabant.m3u
 [Q-Music] http://icecast-qmusic.cdp.triple-it.nl/Qmusic_nl_nonstop_96.mp3.m3u
 [Sky Radio] http://provisioning.streamtheworld.com/pls/skyradio.pls
-[Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICAAAC.pls
 [Slam FM] http://vip-icecast.538.lw.triple-it.nl/SLAMFM_MP3.m3u
 [Candlelight] http://candlelight.live-streams.nl/candlelight.m3u
 
 # German Stations
 [Radio 7 Germany] http://srv01.radio7.fmstreams.de/stream1/livestream.mp3.m3u
-[Antenne Bayern Top 40] http://www.antenne.de/webradio/channels/top-40.m3u
+[Bayern Top 40] http://www.antenne.de/webradio/channels/top-40.m3u
+[Antenne Bayern] http://www.antenne.de/webradio/antenne.m3u
+[Das Ding] http://srv04.bigstreams.de/bigfm-mp3-64.m3u
+[Deluxe Gold] http://srv04.bigstreams.de/bigfm-mp3-64.m3u
 
 # Italian Stations
 [RAI Radio Uno] http://www.listenlive.eu/rai1.m3u
@@ -72,14 +73,14 @@
 
 # Country music
 [Dublin Sunshine 106.8] http://www.country108.com/listen.pls
-[977 MIX ASX] http://7639.live.streamtheworld.com:80/977_MIX_SC(stream)
 [Nashville FM] http://server-10.stream-server.nl:8300/listen.pls
 [UK Country Radio] http://s3.xrad.io:8064/listen.pls
 [Radio Lichtenstein] http://live.radiol.li:8000/country.m3u
+[Swiss country] http://www.countryradio.ch/assets/files/listen.pls
 
 # Jazz stations
-[Ghost Sky Jazz] http://streaming.radionomy.com/ghost-sky
-[Radio Sky Music] http://streaming.radionomy.com/RadioSky-Music
+[Ghost Sky Jazz] http://151.80.38.142:7006/live
+[Radio Sky Music] http://live.radioskymusic.com
 
 # France
 [RTL] http://streaming.radio.rtl.fr/rtl-1-44-128.m3u
@@ -87,6 +88,11 @@
 
 # Belgium
 [Crooze FM] http://77.92.64.44:8045/stream
+
+# Classical 
+[Classical 102] http://srv04.bigstreams.de/bigfm-mp3-64.m3u
+#[FM Brussel] http://streams.ffh.de/ffhchannels/mp3/hqjazz.m3u
+#[VRT Radio 1] http://streams.ffh.de/ffhchannels/mp3/hqjazz.m3u
 
 # Live_ATC
 (Air traffic control)

@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.7 2018/01/15 15:53:28 bob Exp $
+# $Id: station.urls,v 1.8 2018/01/31 09:57:24 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -59,8 +59,10 @@
 [Radio Lichtenstein] http://live.radiol.li:8000/country.m3u
 
 # Jazz stations
-[Ghost Sky Jazz] http://streaming.radionomy.com/ghost-sky
-[Radio Sky Music] http://streaming.radionomy.com/RadioSky-Music
+#[Ghost Sky Jazz] http://streaming.radionomy.com/ghost-sky
+#[Radio Sky Music] http://streaming.radionomy.com/RadioSky-Music
+[Ghost Sky Jazz] http://151.80.38.142:7006/live
+[Radio Sky Music] http://live.radioskymusic.com
 
 # France
 [RTL] http://streaming.radio.rtl.fr/rtl-1-44-128.m3u

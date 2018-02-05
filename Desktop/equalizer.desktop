@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Equaliser
+Comment=Internet radio
+Icon=/usr/share/radio/images/speaker.png
+Exec=sudo -H -u mpd alsamixer -c 0 -D equal
+Type=Application
+Encoding=UTF-8
+Terminal=true
+Categories=None;
+

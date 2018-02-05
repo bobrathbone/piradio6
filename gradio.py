@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.147 2018/01/18 09:09:30 bob Exp $
+# $Id: gradio.py,v 1.166 2018/02/03 10:07:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -26,6 +25,8 @@ import pdb
 import random
 import socket
 import signal
+import locale
+import commands
 from time import strftime
 
 # Radio imports
@@ -101,16 +102,6 @@ def setupRadio(radio):
 	# Stop the pygame mixer as it conflicts with MPD
 	pygame.mixer.quit()
 
-	font = pygame.font.SysFont('freesans', 13)
-	display = GraphicDisplay(font)
-
-	if display.config.fullScreen():
-		flags = FULLSCREEN|DOUBLEBUF|RESIZABLE
-	else:
-		flags = 0
-	screen = sgc.surface.Screen((size),flags)  
-	pygame.scrap.init()
-
 	radio.start()		   # Start it
 	radio.loadSource()	      # Load sources and playlists
 
@@ -139,6 +130,26 @@ def displayTimeDate(screen,myfont,radio,message):
 	column = int((size[0] - fontSize[0])/2)
 	renderText(timedate,font,screen,rowPos,column,color)
 	return
+
+
+# Display message popup
+def displayPopup(screen,radio,text):
+	displayPopup = TextRectangle(pygame)    # Text window
+	font = pygame.font.SysFont('freesans', 30, bold=True)
+	fx,fy = font.size(text + "A")
+	xPos = int((size[0]/2) - (fx/2))
+	yPos = size[1]/2
+	xSize = fx
+	ySize = fy
+	color = (50,50,50)
+	bcolor = (255,255,255)
+	border = 4
+	displayPopup.draw(screen,color,bcolor,xPos,yPos,xSize,ySize,border)
+	line = 1        # Not used but required
+	color = (255,255,255)
+	displayPopup.drawText(screen,font,color,line,text)
+	return
+
 
 # Display source load
 def displayLoadingSource(screen,font,radio,message):
@@ -393,10 +404,14 @@ def handleEvent(radio,radioEvent):
 	source_type = radio.getSourceType()
 	msg = "radioEvent.detected " + str(event_type) + ' ' + radioEvent.getName()
 	log.message(msg, log.DEBUG)
-
+	
 	if event_type == radioEvent.SHUTDOWN:
 		radio.stop()
-		sys.exit(0)
+		print "doShutdown", radio.config.doShutdown()
+		if radio.config.doShutdown():
+			radio.shutdown() # Shutdown the system
+		else:
+			sys.exit(0)
 
 	elif event_type == radioEvent.CHANNEL_UP:
 		radio.channelUp()
@@ -468,8 +483,6 @@ def handleSourceChange(event,radio,message):
 		message.speak(msg)
 		if display.config.getAirplay():
 			radio.cycleWebSource(radio.source.AIRPLAY)
-		#else:
-		#	displayDialog("No Airplay")
 
 	new_source = radio.getNewSourceType()
 	log.message("loadSource new type = " + str(new_source), log.DEBUG)
@@ -497,15 +510,18 @@ def handleSourceEvent(event,radio,display):
 def handleSearchEvent(radio,event,SearchWindow,display,searchID):
 	global Artists
 
-	# Event in the search window (Not the slider) 
-	if SearchWindow.clicked(event):
-		idx = SearchWindow.index()
-		searchID = selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx)
+	if event.type == pygame.MOUSEBUTTONDOWN:
+		# Event in the search window (Not the slider) 
+		if SearchWindow.clicked(event):
+			idx = SearchWindow.index()
+			searchID = selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx)
+
+		elif SearchWindow.slider.clicked(event):
+			searchID = SearchWindow.slider.getPosition()
 
 	# Search window slider dragged
 	elif SearchWindow.slider.dragged(event):
 		searchID = SearchWindow.slider.getPosition()
-
 	return searchID
 
 # Draw the radio/media display window
@@ -544,6 +560,14 @@ def drawDownIcon(display,screen,downIcon):
 	xPos = display.getColumnPos(50)
 	yPos = display.getRowPos(13.5)
 	downIcon.draw(screen,xPos,yPos)
+	return 
+
+# Draw Equalizer Icon
+def drawEqualizerIcon(display,screen,equalizerIcon,draw_equalizer_icon):
+	if draw_equalizer_icon:
+		xPos = display.getColumnPos(50)
+		yPos = display.getRowPos(16.3)
+		equalizerIcon.draw(screen,xPos,yPos)
 	return 
 
 # Check that the label colour is valid 
@@ -739,6 +763,7 @@ def selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx):
 		# Radio selection
 		radio.play(searchID + idx)
 
+	display.setMode(display.MAIN)
 	return searchID
 		
 
@@ -812,7 +837,12 @@ def handleKeyEvent(key,radioEvent,searchID,srange):
 	    searchID = srange
 
 	elif key == K_ESCAPE:
-	    radioEvent.set(radioEvent.SHUTDOWN)
+	    quit()
+
+	elif event.key == K_q:
+	    mods = pygame.key.get_mods()
+	    if mods & pygame.KMOD_CTRL:
+		    radioEvent.set(radioEvent.SHUTDOWN)
 
 	if searchID > srange:
 		searchID = srange
@@ -837,19 +867,77 @@ def displayLabels(radio,ChannelUpButton,ChannelDownButton):
 	ChannelDownButton.newLabel(downlabel)
 	return
 
+# Open equalizer window
+def openEqualizer(radio,equalizer_cmd):
+	dir = os.path.dirname(__file__)
+	cmd_file = open(dir + '/' + equalizer_cmd,"r")
+	for line in cmd_file: 
+		if line.startswith('lxterminal'):
+			radio.execCommand(line)
+			break
+	return
+
+# Set draw equalizer true/false
+def displayEqualizerIcon(display):
+	if display.config.fullScreen():
+		draw_equalizer_icon = False
+	else:
+		draw_equalizer_icon = True
+	return draw_equalizer_icon
+
+# Exit the program only
+def quit():
+	radio.stop()
+	if os.path.isfile(pidfile):
+		os.remove(pidfile)
+	sys.exit(0)
+
 # Main routine
 if __name__ == "__main__":
+	# Do not override locale settings
+	locale.setlocale(locale.LC_ALL, '')
+
+	font = pygame.font.SysFont('freesans', 13)
+	display = GraphicDisplay(font)
+
+	if display.config.fullScreen():
+		flags = FULLSCREEN|DOUBLEBUF|RESIZABLE
+	else:
+		flags = 0
+	screen = sgc.surface.Screen((size),flags)  
+
 	log.init('radio')
 	# Stop command
 	if len(sys.argv) > 1 and sys.argv[1] == 'stop':
 		os.popen("sudo service mpd stop")
 		stop()
 
+	os.popen("systemctl stop radiod")
+
 	pid = checkPid(pidfile)
 
 	log.message("gradio running, pid " + str(pid), log.INFO)
 
 	signal.signal(signal.SIGTERM,signalHandler)
+
+	# see https://www.webucator.com/blog/2015/03/python-color-constants-module/
+	# Paint screen background (Keep at start of draw routines)
+	wallpaper = display.config.getWallPaper()
+	if len(wallpaper) > 1:
+		pic=pygame.image.load(wallpaper)
+		screen.blit(pygame.transform.scale(pic,size),(0,0))
+	else:
+		wcolor = display.config.getWindowColor()
+		try:
+			screen.fill(Color(wcolor))
+		except:
+			log.message("Invalid window_color " + wcolor, log.ERROR)
+			wcolor = "blue"
+			screen.fill(Color(wcolor))
+
+	text = "Loading Radio Stations"
+	displayPopup(screen,radio,text)
+	pygame.display.flip()
 
 	radioEvent = Event()	    # Add radio event handler
 	radio = Radio(rmenu,radioEvent)  # Define radio
@@ -861,9 +949,11 @@ if __name__ == "__main__":
 	radio.setTranslate(True)	# Switch off text translation
 
 	version = radio.getVersion()
-	caption = display.config.getWindowTitle() + ' ' + version
+	caption = display.config.getWindowTitle() 
+	caption = caption.replace('%V',version)
 	pygame.display.set_caption(caption)
-	wallpaper = display.config.getWallPaper()
+
+	draw_equalizer_icon = displayEqualizerIcon(display)
 
 	# Create SGC widgets
 	labels_color_name = display.config.getLabelsColor()
@@ -889,10 +979,12 @@ if __name__ == "__main__":
 	downIcon = DownIcon(pygame)
 	LeftArrow = Image(pygame)
 	RightArrow = Image(pygame)
+	equalizerIcon = EqualizerIcon(pygame)
 	drawUpIcon(display,screen,upIcon)
 	drawDownIcon(display,screen,downIcon)
 	drawLeftArrow(display,screen,LeftArrow)
 	drawRightArrow(display,screen,RightArrow)
+	drawEqualizerIcon(display,screen,equalizerIcon,draw_equalizer_icon)
 
 	# Option buttons
 	RandomButton = OptionButton(pygame)
@@ -910,20 +1002,16 @@ if __name__ == "__main__":
 	SearchWindow = drawSearchWindow(surface,screen,display,id)
         ArtworkImage = None
 
-	# Paint background screen
-	# see https://www.webucator.com/blog/2015/03/python-color-constants-module/
-	wcolor = display.config.getWindowColor()
-	try:
-		screen.fill(Color(wcolor))
-	except:
-		log.message("Invalid window_color " + wcolor, log.ERROR)
-		wcolor = "blue"
-		screen.fill(Color(wcolor))
-
 	# Main processing loop
 	while True:
 	    tick = clock.tick(30)
 	    source_type = radio.getSourceType()
+
+	    # Reset the draw equalizer icon flag
+	    if int(commands.getoutput('pidof %s |wc -w' % "alsamixer")) < 1:
+		draw_equalizer_icon = displayEqualizerIcon(display)
+		if draw_equalizer_icon:
+			equalizerIcon.enable()
 
 	    # Handle Widget events
 	    for event in pygame.event.get():
@@ -963,71 +1051,66 @@ if __name__ == "__main__":
 
 		    display.setMode(display.MAIN)
 
+		if event.type == pygame.MOUSEBUTTONDOWN:
+
 		# Display window mouse down changes display mode
-		if DisplayWindow.clicked(event):
-			if event.type == pygame.MOUSEBUTTONDOWN:
+			if DisplayWindow.clicked(event):
 				mode = display.cycleMode()
 
-		elif upIcon.clicked():
-			searchID -= 1
-			if searchID < 1:
+			elif upIcon.clicked():
+				searchID -= 1
+				if searchID < 1:
+					searchID = 1
+
+			elif downIcon.clicked():
+				srange = SearchWindow.slider.getRange()
+				searchID += 1
+				if searchID > srange:
+					searchID = srange
+
+			elif LeftArrow.clicked():
 				searchID = 1
 
-		elif downIcon.clicked():
-			srange = SearchWindow.slider.getRange()
-			searchID += 1
-			if searchID > srange:
-				searchID = srange
+			elif RightArrow.clicked():
+				searchID = SearchWindow.slider.getRange()
 
-		elif LeftArrow.clicked():
-			searchID = 1
+			elif draw_equalizer_icon and equalizerIcon.clicked():
+				openEqualizer(radio,"equalizer.cmd")
+				draw_equalizer_icon = False
+				equalizerIcon.disable()
 
-		elif RightArrow.clicked():
-			searchID = SearchWindow.slider.getRange()
+			elif RandomButton.clicked(event):
+				if RandomButton.isActive():
+					radio.setRandom(False)
+					RandomButton.activate(False)
+				else:
+					radio.setRandom(True)
+					RandomButton.activate(True)
 
-		elif RandomButton.clicked(event):
-			if RandomButton.isActive():
-				radio.setRandom(False)
-				RandomButton.activate(False)
-			else:
-				radio.setRandom(True)
-				RandomButton.activate(True)
-		elif RepeatButton.clicked(event):
-			if RepeatButton.isActive():
-				radio.setRepeat(False)
-				RepeatButton.activate(False)
-			else:
-				radio.setRepeat(True)
-				RepeatButton.activate(True)
+			elif RepeatButton.clicked(event):
+				if RepeatButton.isActive():
+					radio.setRepeat(False)
+					RepeatButton.activate(False)
+				else:
+					radio.setRepeat(True)
+					RepeatButton.activate(True)
 
-		elif ConsumeButton.clicked(event):
-			if ConsumeButton.isActive():
-				radio.setConsume(False)
-				ConsumeButton.activate(False)
-			else:
-				radio.setConsume(True)
-				ConsumeButton.activate(True)
+			elif ConsumeButton.clicked(event):
+				if ConsumeButton.isActive():
+					radio.setConsume(False)
+					ConsumeButton.activate(False)
+				else:
+					radio.setConsume(True)
+					ConsumeButton.activate(True)
 
-		elif SingleButton.clicked(event):
-			if SingleButton.isActive():
-				radio.setSingle(False)
-				SingleButton.activate(False)
-			else:
-				radio.setSingle(True)
-				SingleButton.activate(True)
+			elif SingleButton.clicked(event):
+				if SingleButton.isActive():
+					radio.setSingle(False)
+					SingleButton.activate(False)
+				else:
+					radio.setSingle(True)
+					SingleButton.activate(True)
 
-
-		# Event in the search window or artwork image clicked
-		elif source_type != radio.source.AIRPLAY:
-			if ArtworkImage != None and len(artwork_file) > 0:
-				if ArtworkImage.clicked():
-					print "Artwork click"
-			else:
-				searchID = handleSearchEvent(radio,event,SearchWindow,
-								display,searchID)
-
-		# Handle vanilla PyGame events 
-		if event.type == pygame.MOUSEBUTTONDOWN:
 			if MuteButton.pressed():
 			    if radio.muted():
 				widget.VolumeSlider.label = "Volume"
@@ -1044,16 +1127,18 @@ if __name__ == "__main__":
 			toggleOption(radio,event.key,RandomButton,RepeatButton,
 				ConsumeButton,SingleButton,widget)
 			if event.key == K_RETURN:
-				selectNew(radio,display,widget,Artists,searchID,SearchWindow,0)
-			if event.key == K_d:
+				searchID = selectNew(radio,display,widget,Artists,
+						searchID,SearchWindow,0)
+			elif event.key == K_d:
 				mode = display.cycleMode()
+
+			elif event.key == K_e and draw_equalizer_icon:
+				openEqualizer(radio,"equalizer.cmd")
+				draw_equalizer_icon = False
 
 		# Window quit stops the radio
 		elif event.type == QUIT:
-		    radio.stop()
-		    if os.remove(pidfile):
-			    os.remove(pidfile)
-		    radioEvent.set(radioEvent.SHUTDOWN)
+		    quit()
 
 		else:
 		    volume =  int(widget.VolumeSlider.value)
@@ -1061,6 +1146,14 @@ if __name__ == "__main__":
 			radio.setRealVolume(volume)
 
 
+		# Event in the search window or artwork image clicked
+		if source_type != radio.source.AIRPLAY:
+			if ArtworkImage != None and len(artwork_file) > 0:
+				if ArtworkImage.clicked():
+					print "Artwork click"
+			else:
+				searchID = handleSearchEvent(radio,event,SearchWindow,
+								display,searchID)
 	    # Detect radio events
 	    if radioEvent.detected():
 		log.message("radioEvent.detected", log.DEBUG)
@@ -1085,6 +1178,8 @@ if __name__ == "__main__":
 		    screen.blit(pygame.transform.scale(pic,size),(0,0))
 	    else:
 		    screen.fill(Color(wcolor))
+
+            surface=pygame.Surface((size))
 
 	    # Display the radio details
 	    displayTimeDate(screen,myfont,radio,message)
@@ -1127,6 +1222,8 @@ if __name__ == "__main__":
 		    drawLeftArrow(display,screen,LeftArrow)
 		    drawRightArrow(display,screen,RightArrow)
 
+	    if draw_equalizer_icon:
+		    drawEqualizerIcon(display,screen,equalizerIcon,draw_equalizer_icon)
 	    drawOptionButtons(display,screen,radio,RandomButton,RepeatButton,
 					ConsumeButton,SingleButton)
 	    RandomButton.activate(radio.getRandom())

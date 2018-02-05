@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.30 2018/01/18 10:22:46 bob Exp $
+# $Id: configure_radio.sh,v 1.35 2018/02/02 10:02:29 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -27,6 +27,7 @@ CONFIG=/etc/radiod.conf
 LXSESSION=""	# Start desktop radio at boot time
 FULLSCREEN=""	# Start graphic radio fullscreen
 PROGRAM="Daemon radiod configured"
+GPROG=""	# Which graphical radio (gradio or vgradio)
 
 # Wiring type
 WIRING_TYPE=0
@@ -76,7 +77,7 @@ do
 		USER_INTERFACE=3
 	else
 		DESC="User interface in ${CONFIG} unchanged"	
-		eho ${DESC}
+		echo ${DESC}
 	fi
 
 	whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
@@ -141,12 +142,12 @@ if [[ ${WIRING_TYPE} == "2" ]]; then
 
 		else
 			DESC="Down switch configuration in ${CONFIG} unchanged"	
-			ech {DESC}
+			echo {DESC}
 		fi
 
 		whiptail --title "${DESC} " --yesno "Is this correct?" 10 60
 		selection=$?
-done
+	done
 fi 
 
 
@@ -194,7 +195,6 @@ do
 	elif [[ ${ans} == '5' ]]; then
 		DISPLAY_TYPE="GRAPHICAL_DISPLAY"
 		DESC="HDMI or touch screen display"
-		PROGRAM="Desktop program gradio.py configured"
 		LINES=0
 		WIDTH=0
 
@@ -340,6 +340,46 @@ else
 	selection=1 
 	while [ $selection != 0 ]
 	do
+		ans=$(whiptail --title "Which type of graphical display?" --menu "Choose your option" 15 75 9 \
+		"1" "Full feature radio" \
+		"2" "Vintage look-alike (Radio only)" \
+		"3" "Do not change configuration" 3>&1 1>&2 2>&3) 
+
+		exitstatus=$?
+		if [[ $exitstatus != 0 ]]; then
+			exit 0
+		fi
+
+		if [[ ${ans} == '1' ]]; then
+			DESC="Full feature radio"
+			GPROG="gradio"
+
+		elif [[ ${ans} == '2' ]]; then
+			DESC="Vintage look-alike (Radio only)"
+			GPROG="vgradio"
+
+		else
+			DESC="Graphical display unchanged"	
+			echo {DESC}
+			GPROG=""
+		fi
+
+		whiptail --title "${DESC} " --yesno "Is this correct?" 10 60
+		selection=$?
+		
+	done
+	
+	if [[ ${GPROG}  != "" ]];then
+		PROGRAM="Graphical/touch-screen program ${GPROG} configured"
+	else
+		PROGRAM="Graphical/touch-screen program unchanged"
+	fi
+
+	# Set up boot option for graphical radio
+	ans=0
+	selection=1 
+	while [ $selection != 0 ]
+	do
 		ans=$(whiptail --title "Boot option" --menu "Choose your option" 15 75 9 \
 		"1" "Start radio at boot time" \
 		"2" "Do not start at boot time" \
@@ -396,23 +436,19 @@ else
 		selection=$?
 	done
 
+	echo "Desktop program ${GPROG}.py configured"
 fi
 
 # Configure desktop autostart
-cmd="@sudo /usr/share/radio/gradio.py"
+cmd="@sudo /usr/share/radio/${GPROG}.py"
 AUTOSTART="/home/pi/.config/lxsession/LXDE-pi/autostart"
 if [[ ${LXSESSION} == "yes" ]]; then
-	 echo "Configuring ${AUTOSTART} for automatic start"
-	 grep ${cmd} ${AUTOSTART}
-	 if [[ $? != 0 ]]; then	# Don't seperate from above
-		  sudo echo ${cmd} | sudo tee -a  ${AUTOSTART}
-
-	 else
-		  sudo sed -i -e "0,/gradio\.py/{s/^#@sudo/@sudo/}" ${AUTOSTART}
-	 fi
-
+	# Delete old entry if it exists
+	sudo sed -i -e "/gradio/d" ${AUTOSTART}
+	echo "Configuring ${AUTOSTART} for automatic start"
+	sudo echo ${cmd} | sudo tee -a  ${AUTOSTART}
 elif [[ ${LXSESSION} == "no" ]]; then
-	 sudo sed -i -e "0,/gradio\.py/{s/^@sudo/#@sudo/}" ${AUTOSTART}
+	sudo sed -i -e "/gradio/d" ${AUTOSTART}
 fi
 
 
@@ -523,12 +559,13 @@ sudo sed -i "s/^ExecStart=.*/ExecStart=${BINDIR}${DAEMON} nodaemon/g" ${SERVICE}
 sudo sed -i "s/^ExecStop=.*/ExecStop=${BINDIR}${DAEMON} stop/g" ${SERVICE}
 
 echo
-echo ${PROGRAM};echo
 # Update system startup 
 if [[ ${DISPLAY_TYPE} == "GRAPHICAL_DISPLAY" ]]; then
 
 	# Set up desktop radio execution icon
 	sudo cp ${DIR}/Desktop/gradio.desktop /home/pi/Desktop/.
+	sudo cp ${DIR}/Desktop/vgradio.desktop /home/pi/Desktop/.
+
 
 	# Add [SCREEN] section to the configuration file
 	grep "\[SCREEN\]" ${CONFIG} >/dev/null 2>&1
@@ -556,6 +593,8 @@ elif [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
 		sudo update-rc.d radiod enable
 	fi
 fi
+
+echo ${PROGRAM};echo
 
 # Configure audio device
 ans=0

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.124 2018/01/16 07:13:17 bob Exp $
+# $Id: radio_class.py,v 1.127 2018/02/03 10:07:00 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -153,7 +153,7 @@ class Radio:
 	search_index = 0	# The current search index
 	loadnew = False	  	# Load new track from search
 	streaming = False	# Streaming (Icecast) disabled
-	VERSION	= "6.2"		# Version number
+	VERSION	= "6.3"		# Version number
 
 	playlists = None
 	keepAliveTime = 0	# Keep alive time for MPD pings
@@ -533,7 +533,13 @@ class Radio:
 	def cycleWebSource(self,type):
 		playlist = self.source.cycleType(type)
 		log.message("radio.cycleWebSource (Web) " + playlist, log.DEBUG)
-		return
+		return playlist
+
+	# Cycle playlist (Used by vgradio)
+	def cyclePlaylist(self,type):
+		playlist = self.cycleWebSource(type)
+		self.loadSource()
+		return playlist
 
 	# Get the Raspberry pi board version from /proc/cpuinfo
 	def getBoardRevision(self):
@@ -1617,6 +1623,12 @@ class Radio:
 				client.previous()
 			except:
 				log.message("radio.channelDown error", log.ERROR)
+
+		status = client.status()
+		errorStr = str(status.get("error"))
+		if errorStr != 'None':
+			log.message(errorStr, log.ERROR)
+			self.play(new_id - 2)
 
 		new_id = self.getCurrentID()
 		self.setCurrentID(new_id)

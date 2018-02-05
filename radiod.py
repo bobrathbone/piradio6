@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.126 2018/01/12 14:47:02 bob Exp $
+# $Id: radiod.py,v 1.128 2018/02/01 06:45:52 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -164,6 +164,7 @@ class MyDaemon(Daemon):
 
 			if menu_mode == menu.MENU_TIME and radio.doUpdateLib():
 				updateLibrary(display,radio,message)
+				radio.play(1)
 
 			elif menu_mode == menu.MENU_TIME:
 				displayTimeDate(display,radio,message)
@@ -665,11 +666,11 @@ def displayTimeDate(display,radio,message):
 	width = display.getWidth()
 
 	# Small displays drop day of the week
-	if display.getWidth() < 16:
+	if width < 16:
 		msg = msg[0:5] 
 
 	# If streaming add the streaming indicator
-	if radio.getStreaming():
+	if radio.getStreaming() and width > 16:
 		streaming = '*'
 	else:
 		streaming = ''

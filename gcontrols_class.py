@@ -3,7 +3,7 @@
 # Raspberry Pi Internet Radio
 # Graphic screen controls
 #
-# $Id: gcontrols_class.py,v 1.14 2018/01/18 09:09:30 bob Exp $
+# $Id: gcontrols_class.py,v 1.33 2018/02/02 14:21:47 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -28,14 +28,13 @@ class MuteButton:
 		self.pygame = pygame
 		return
 
-	def draw(self,screen,display,pos,muted):
+	def draw(self,screen,display,pos,muted,size=(60,60)):
 		# Mute image
 		dir = os.path.dirname(__file__)
 		mute_png = dir + "/images/mute.png"
 		speaker_png = dir + "/images/speaker.png"
 		mute_image = self.pygame.image.load(mute_png).convert_alpha()
 		speaker_image = self.pygame.image.load(speaker_png).convert_alpha()
-		size = (60,60)
 		if muted:
 			img = self.pygame.transform.scale(mute_image,(size))
 		else:
@@ -53,6 +52,7 @@ class MuteButton:
 
 # Display an image found in sub-directory images
 class Image:
+	enabled = True	# Allow click detection
 	# Initialisation routine
 	def __init__(self,pygame):
 		self.pygame = pygame
@@ -71,10 +71,18 @@ class Image:
 	# Has a the image been clicked
 	def clicked(self):
 		hit = False
-		pos = self.pygame.mouse.get_pos()
-		if self.image.collidepoint(pos):
-			hit = True
+		if self.enabled:
+			pos = self.pygame.mouse.get_pos()
+			if self.image.collidepoint(pos):
+				hit = True
 		return hit
+
+	# Enable disable clicks
+	def enable(self):	
+		self.enabled = True	
+
+	def disable(self):	
+		self.enabled = False	
 
 # This is the basic rectangle class used in ther other classes
 class Rectangle:
@@ -118,9 +126,10 @@ class Rectangle:
 
 	def dragged(self,event):
 		dragged = False
-		if self.myrect.collidepoint(self.pygame.mouse.get_pos()) \
+		if self.pygame.mouse.get_pressed()[0] == 1:
+			if self.myrect.collidepoint(self.pygame.mouse.get_pos()) \
 					and event.type == self.pygame.MOUSEMOTION:
-			dragged = True
+				dragged = True
 		return dragged
 
 	def getRect(self):
@@ -159,11 +168,67 @@ class TextRectangle:
 
 		# Clip the drawing area to current rectangle only
 		clip =  screen.get_clip()
+		a,b,c,d = rect
+		c -= 5	# Don't clip right to edge
+		rect = (a,b,c,d)
 		screen.set_clip((rect))
 		screen.blit(textsurface,(xPos,yPos))
 		# Restore original surface
 		screen.set_clip(clip)
 		return
+
+# Volume slider (for vintage graphic screen)
+class VolumeScale:
+	slider = None
+	scale = None
+
+	def __init__(self,pygame):
+		self.pygame = pygame
+		return
+
+	# Draw the volume slider window
+	def draw(self,screen,xPos,yPos,xSize,ySize):
+		self.xPos = xPos
+		self.yPos = yPos
+		self.xSize = xSize
+		self.ySize = ySize
+		self.screen = screen
+		color = (0,0,0)
+		bcolor = (0,0,0)
+		border = 0
+		self.scale = Rectangle(self.pygame)
+		self.scale.draw(screen,color,bcolor,xPos,yPos,xSize,ySize,border)
+		return 
+
+	# Draw the slider
+	def drawSlider(self,screen,volume,lmargin):
+		self.lmargin = lmargin
+		xPos = (self.xSize * volume / 100) + lmargin
+		radius = 14
+		yPos = self.yPos + 10
+		color = (100,100,50)
+		self.pygame.draw.circle(screen,color,(xPos,yPos), radius)
+		color = (200,200,130)
+		self.slider = self.pygame.draw.circle(screen,color,(xPos,yPos), radius - 4)
+		return
+
+	def getVolume(self):
+		mpos = self.pygame.mouse.get_pos() 
+		spos = mpos[0] - self.lmargin
+		volume = int(spos * 100/self.xSize)
+		if volume < 0:
+			volume = 0
+		elif volume > 100:
+			volume = 0
+		return volume
+
+  	# Clicked
+	def clicked(self,event):
+		return self.scale.clicked(event)
+
+  	# Clicked
+	def dragged(self,event):
+		return self.scale.dragged(event)
 
 # Vertical slider (for search box)
 class VerticalSlider:
@@ -173,7 +238,7 @@ class VerticalSlider:
 		return
 
 	# Draw the vertical slider window
-	def draw(self,screen,color,bcolor, xPos,yPos,xSize,ySize,border):
+	def draw(self,screen,color,bcolor,xPos,yPos,xSize,ySize,border):
 		self.xPos = xPos
 		self.yPos = yPos
 		self.xSize = xSize
@@ -244,6 +309,49 @@ class VerticalSlider:
 	# Get new index
 	def getIndex(self):
 		return self.index
+
+# End of Vertical slider class
+
+# Tuner scale slider (Vintage Graphic radio)
+class TunerScaleSlider:
+	scale = None
+
+	def __init__(self,pygame):
+		self.pygame = pygame
+		return
+
+	# Draw the tuner slider
+	def draw(self,screen,color,bcolor, xPos,yPos,xSize,ySize,border):
+		self.xPos = xPos
+		self.yPos = yPos
+		self.xSize = xSize
+		self.ySize = ySize
+		self.screen = screen
+		self.rect = Rectangle(self.pygame)
+		self.rect.draw(screen,color,bcolor,xPos,yPos,xSize,ySize,border)
+		return self
+
+	def drawScale(self,screen,size,lmargin,rmargin):
+		self.scale = Rectangle(self.pygame)
+		xPos = lmargin
+		yPos = lmargin * 2
+		xSize = size[0] - rmargin 
+		ySize = size[1] - 150
+		color = (0,0,0)
+		bcolor = (0,0,0)
+		self.scale.draw(screen,color,bcolor,xPos,yPos,xSize,ySize,0)
+		return
+
+  	# Clicked
+	def clicked(self,event):
+		return self.scale.clicked(event)
+
+	# Slider dragged
+	def dragged(self,event):
+		return self.scale.dragged(event)
+
+	def position(self):
+		return self.xPos
 
 # End of Vertical slider class
 
@@ -398,10 +506,10 @@ class UpIcon:
 	def __init__(self,pygame):
 		self.pygame = pygame
 
-	def draw(self,screen,xPos,yPos):
+	def draw(self,screen,xPos,yPos,path="images/up_icon.png"):
 		self.upIcon = Image(self.pygame)
 		mysize = (40,40)
-		path = "images/up_icon.png"
+		#path = "images/up_icon.png"
 		self.upIcon.draw(screen,path,(xPos,yPos),(mysize))
 		return
 	
@@ -415,16 +523,40 @@ class DownIcon(Image):
 		self.pygame = pygame
 		pass
 
-	def draw(self,screen,xPos,yPos):
+	def draw(self,screen,xPos,yPos,path="images/down_icon.png"):
 		self.downIcon = Image(self.pygame)
 		mysize = (40,40)
-		path = "images/down_icon.png"
+		#path = "images/down_icon.png"
 		self.downIcon.draw(screen,path,(xPos,yPos),(mysize))
 		return
 
 	def clicked(self):
 		return self.downIcon.clicked()
 
+# Draw the Equalizer Icon
+class EqualizerIcon(Image):
+	# Initialisation routine
+	def __init__(self,pygame):
+		self.pygame = pygame
+		pass
+
+	def draw(self,screen,xPos,yPos):
+		self.equalizerIcon = Image(self.pygame)
+		mysize = (40,40)
+		path = "images/equalizer.png"
+		self.equalizerIcon.draw(screen,path,(xPos,yPos),(mysize))
+		return
+
+	def clicked(self):
+		return self.equalizerIcon.clicked()
+
+	# Enable disable clicks
+	def enable(self):	
+		self.equalizerIcon.enable()
+
+	def disable(self):	
+		self.equalizerIcon.disable()
+		
 # Draw option button (Random etc)
 class OptionButton:
 	active = False

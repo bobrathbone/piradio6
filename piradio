@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.29 2018/01/13 07:42:15 bob Exp $
+# $Id: piradio,v 1.33 2018/01/26 09:10:24 bob Exp $
 # Source: <source package name; defaults to package name>
 Section: misc
 Priority: optional
@@ -8,7 +8,7 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 3.9.2
 
 Package: radiod
-Version: 6.2
+Version: 6.3
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
@@ -89,6 +89,7 @@ Files:  radiod.py /usr/share/radio/
 	language/language.nl /usr/share/radio/
 	rss/rss /usr/share/radio/
 	gradio.py /usr/share/radio/
+	vgradio.py /usr/share/radio/
 	graphic_display.py /usr/share/radio/
 	gcontrols_class.py /usr/share/radio/
 	images/airplay_icon.png /usr/share/radio/
@@ -97,8 +98,11 @@ Files:  radiod.py /usr/share/radio/
 	images/mute.png /usr/share/radio/
 	images/speaker.png /usr/share/radio/
 	images/radio.png /usr/share/radio/
+	images/Vintage.png /usr/share/radio/
 	images/up_icon.png /usr/share/radio/
 	images/down_icon.png /usr/share/radio/
+	images/equalizer.png /usr/share/radio/
+	images/scale.jpg /usr/share/radio/
 	sgc/LICENSE /usr/share/radio/
 	sgc/__init__.py /usr/share/radio/
 	sgc/locals.py /usr/share/radio/
@@ -121,6 +125,9 @@ Files:  radiod.py /usr/share/radio/
 	sgc/widgets/settings.py /usr/share/radio/
 	sgc/widgets/switch.py /usr/share/radio/
 	Desktop/gradio.desktop /usr/share/radio/
+	Desktop/vgradio.desktop /usr/share/radio/
+	Desktop/equalizer.desktop /usr/share/radio/
+	equalizer.cmd /usr/share/radio/
 	sgc/widgets/composite/dialogs.py /usr/share/radio/
 	sgc/widgets/composite/__init__.py /usr/share/radio/
 	sgc/widgets/_interface/__init__.py /usr/share/radio/

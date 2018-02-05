@@ -7,11 +7,20 @@ Email  : bob@bobrathbone.com
 This program uses  Music Player Daemon 'mpd', its client 'mpc' and the python-mpd library
 See http://www.musicpd.org/
 Use "apt-get install mpd mpc python-mpd" to install the library
-Modified to use python-mpd library. See https://pypi.python.org/pypi/python-mpd/
+This software uses the python-mpd library. See https://pypi.python.org/pypi/python-mpd/
+
+Version 6.3 release notes
+-------------------------
+4th February 2018
+1) Date and time uses correct Locale
+2) Windowed graphic radio now displays launch equalizer icon
+3) Correct mouse wrongly generating click events on hover
+4) Added vintage graphic radio
+5) Correct hanging after reloading media  
 
 Version 6.2 release notes
 -------------------------
-Due for release late January 2018
+18 January 2018
 The main change is the introduction of a Graphical/Touchscreen version of the radio
 This uses the Raspbian desktop and the pygame interface and is designed
 to run on the Raspberry Pi 7 inch touch screen
@@ -48,21 +57,26 @@ Version 6.00 release notes
    rotary encoders, IR remote control and web interface
 4) New display module provides a common interface to all supported screens
 5) New configure_radio.py program allows configuration of any hardware combination
-6) PifaceCad display software not supported on Raspbian Stretch. Version 5.11 of the software
+6) PifaceCad display software not supported on Raspbian Stretch. Version 5.12 of the software
    can still be downloaded allowing PiFaceCad to run on Rspbian Jessie
 7) Due to lack of PiFace software on Raspbian Stretch the IR remote control has been
    re-written to use the standard LIRC (Linux Remote Control)
 8) Push button handler now in a seperate button_class.py file
 9) Volume can display either as text or a series of blocks (volume_display parameter)
 
-Manual
-------
-Download from http://www.bobrathbone.com/raspberrypi/Raspberry%20PI%20Radio.pdf
+Manuals
+-------
+Version 6.x
+http://www.bobrathbone.com/raspberrypi/Raspberry%20PI%20Radio.pdf
+
+Version 5.x
+http://www.bobrathbone.com/raspberrypi/Raspberry%20PI%20Radio%20V5.pdf
 
 Github
 ------
 Source available from Github
-See https://github.com/bobrathbone/piradio 
+Version 6.x see:  https://github.com/bobrathbone/piradio6
+Version 5.x see:  https://github.com/bobrathbone/piradio 
 
 Licenses
 --------

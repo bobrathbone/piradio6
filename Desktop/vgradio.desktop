@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Vintage Radio
+Comment=Vintage Internet radio
+Icon=/usr/share/radio/images/Vintage.png
+Exec=sudo /usr/share/radio/vgradio.py
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Categories=None;
+
