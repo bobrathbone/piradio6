@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# Raspberry Pi Internet Radio Class
-# $Id: config_class.py,v 1.36 2018/01/31 12:12:24 bob Exp $
+# Raspberry Pi Internet Radio Configuration Class
+# $Id: config_class.py,v 1.57 2018/06/26 07:51:53 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -39,15 +39,18 @@ class Configuration:
 	LCD_I2C_ADAFRUIT = 3	# Adafruit I2C LCD backpack
 	LCD_ADAFRUIT_RGB = 4	# Adafruit RGB plate
 	GRAPHICAL_DISPLAY = 5	# Graphical or touchscreen  display
+	OLED_128x64 = 6		# OLED 128 by 64 pixels
 
 	display_type = LCD
 	DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574', 
-			 'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 'GRAPHICAL_DISPLAY']
+			 'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 
+			 'GRAPHICAL_DISPLAY', 'OLED_128x64']
 
 	# User interface ROTARY or BUTTONS
 	ROTARY_ENCODER = 0
 	BUTTONS = 1
 	GRAPHICAL=2
+	COSMIC_CONTROLLER = 3	# IQAudio cosmic controller
 	user_interface = ROTARY_ENCODER
 
 	# Rotary class selection
@@ -71,6 +74,8 @@ class Configuration:
 	display_blocks = False	# Display volume in blocks
 	fullscreen = True	# Graphics screen fullscreen yes no 
 	startup_playlist = ""	# Startup playlist if defined
+	screen_saver = 0	# Screen saver time 0 = No screen save
+	flip_display_vertically = False	# Flip OLED display vertically
 
 	# Remote control parameters 
 	remote_led = 0  # Remote Control activity LED 0 = No LED	
@@ -84,14 +89,18 @@ class Configuration:
 	isVerbose = False     	# Extra speech verbosity
 	speech_volume = 80  	# Percentage speech volume 
 
+	# Shoutcast ID
+	shoutcast_key = "anCLSEDQODrElkxl"
+
 	# Graphics screen default parameters [SCREEN] section
 	full_screen = True	# Display graphics fulll screen
-	window_title = "Bob Rathbone Internet Radio"	# Window title
+	window_title = "Bob Rathbone Internet Radio %V - %H"	# Window title
 	window_color = 'blue'	# Graphics screen background colour
 	labels_color = 'white'	# Graphics screen labels colour
 	display_window_color = 'navy'		# Display window background colour
 	display_window_labels_color = 'white'	# Display window labels colour
 	display_mouse = False	# Hide mouse
+	switch_programs = False	# Allow switch between gradio and vgradio
 	slider_color = 'red'	# Search window slider default colour 
 	banner_color = 'black'	# Time banner text colour
 	wallpaper = ''		# Background wallpaper
@@ -102,6 +111,8 @@ class Configuration:
 	stations_per_page = 50 		# maximum stations per page
 	display_date = True		# Display time and date
 	display_title = True		# Display title play (at bottom of screen)
+	splash_screen = 'bitmaps/raspberry-pi-logo.bmp'	# Splash screen (OLED)
+	screen_size = (800,480)		# Screen size 800x480 (7 inch) or 720x480 (3.5 inch)
 
 	shutdown = True		# Shutdown when exiting radio
 	
@@ -129,13 +140,13 @@ class Configuration:
 	UP = 0
 	DOWN = 1
 
-	#  GPIOs for switches and rotary encoder configuration
-	switches = { "menu_switch": 25,
+	#  GPIOs for switches and rotary encoder configuration (40 pin wiring)
+	switches = { "menu_switch": 17,
 		     "mute_switch": 4,
 		     "left_switch": 14,
 		     "right_switch": 15,
-		     "up_switch": 17,
-		     "down_switch": 18,
+		     "up_switch": 24,
+		     "down_switch": 23,
 		     "aux_switch": 0,
 		   }
 
@@ -210,6 +221,8 @@ class Configuration:
 						self.user_interface =  self.ROTARY_ENCODER
 					elif parameter == 'graphical':
 						self.user_interface =  self.GRAPHICAL
+					elif parameter == 'cosmic_controller':
+						self.user_interface =  self.COSMIC_CONTROLLER
 
 				elif option == 'remote_led':
 					try:
@@ -241,6 +254,13 @@ class Configuration:
 				elif option == 'display_playlist_number':
 					if parameter == 'yes':
 						self.display_playlist_number = True
+
+				elif option == 'flip_display_vertically':
+					if parameter == 'yes':
+						self.flip_display_vertically = True
+
+				elif option == 'splash':
+					self.splash_screen = parameter
 
 				elif option == 'startup':
 					if parameter == 'RADIO': 
@@ -359,8 +379,11 @@ class Configuration:
 					elif parameter == 'NO_DISPLAY':
 						self.display_type = self.NO_DISPLAY
 
-					elif parameter == 'GRAPHICAL_DISPLAY':
+					elif parameter == 'GRAPHICAL':
 						self.display_type = self.GRAPHICAL_DISPLAY
+
+					elif parameter == 'OLED_128x64':
+						self.display_type = self.OLED_128x64
 
 					else:
 						self.invalidParameter(ConfigFile,option,parameter)
@@ -376,6 +399,9 @@ class Configuration:
 						self.shutdown = False
 					else:
 						self.shutdown = True
+
+				elif option == 'shoutcast_key':
+					self.shoutcast_key = parameter
 
 				else:
 					msg = "Invalid option " + option + ' in section ' \
@@ -403,7 +429,8 @@ class Configuration:
 					if parameter == 'yes' and os.path.isfile(Airplay):
 						self.airplay = True
 
-				elif option == 'mixer_volume':
+				# Name has been changed from mixer_volume to mixer_preset in v6.7
+				elif option == 'mixer_volume' or option == 'mixer_preset':
 					volume = 100
 					try:
 						volume = int(parameter)
@@ -442,6 +469,12 @@ class Configuration:
 				
 				self.configOptions[option] = parameter
 
+				if option == 'screen_size':
+					sW,sH = parameter.split('x')	
+					w = int(sW)
+					h = int(sH)
+					self.screen_size = (w,h)
+			
 				if option == 'fullscreen':
 					if parameter == 'yes':
 						self.full_screen = True
@@ -475,6 +508,9 @@ class Configuration:
 				elif option == 'stations_per_page':
 					self.stations_per_page = int(parameter)
 
+				elif option == 'screen_saver':
+					self.screen_saver = int(parameter)
+
 				elif option == 'wallpaper':
 					if os.path.exists(parameter):
 						self.wallpaper = parameter
@@ -487,6 +523,12 @@ class Configuration:
 						self.display_mouse = True
 					else:
 						self.display_mouse = False
+					
+				elif option == 'switch_programs':
+					if parameter == 'yes':
+						self.switch_programs = True
+					else:
+						self.switch_programs = False
 					
 				elif option == 'display_date':
 					if parameter == 'yes':
@@ -636,7 +678,7 @@ class Configuration:
 		return self.isVerbose	
 
 	# Get speech volume % of normal volume level
-	def getSpeechVolume(self):
+	def getSpeechVolumeAdjust(self):
 		return self.speech_volume
 
 	# Display parameters
@@ -732,6 +774,9 @@ class Configuration:
 
 	# SCREEN section
 	# Fullscreen option for graphical screen
+	def getSize(self):
+		return self.screen_size
+
 	def fullScreen(self):
 		return self.full_screen
 
@@ -777,9 +822,13 @@ class Configuration:
 	def getWallPaper(self):
 		return self.wallpaper
 
-	# Mouse hidden (Not working yet - TO DO)
+	# Mouse hidden 
 	def displayMouse(self):
 		return self.display_mouse
+
+	# Allow program switch
+	def switchPrograms(self):
+		return self.switch_programs
 
 	# Display date and time yes/no
 	def displayDate(self):
@@ -788,6 +837,22 @@ class Configuration:
 	# Display date and time yes/no
 	def displayTitle(self):
 		return self.display_title
+
+	# Screensaver time
+	def screenSaverTime(self):
+		return self.screen_saver
+
+	# Shoutcast key
+	def getShoutcastKey(self):
+		return self.shoutcast_key
+
+	# Oled flip display setting
+	def flipVertical(self):
+		return self.flip_display_vertically
+
+	# Oled flip display setting
+	def getSplash(self):
+		return self.splash_screen
 
 # End Configuration of class
 
@@ -808,10 +873,8 @@ if __name__ == '__main__':
 	print "Background colour number:", config.getBackColor('bg_color')
 	print "Background colour:", config.getBackColorName(config.getBackColor('bg_color'))
 	print "Speech:", config.hasSpeech()
-	print "Speech volume:", str(config.getSpeechVolume()) + '%'
+	print "Speech volume adjustment:", str(config.getSpeechVolumeAdjust()) + '%'
 	print "Verbose:", config.verbose()
-	print "Station names source:",sSource
-	print "Use playlist extensions:", config.getPlaylistExtensions()
 
 	for switch in config.switches:
 		print switch, config.getSwitchGpio(switch)
@@ -828,9 +891,9 @@ if __name__ == '__main__':
 	rclass = ['Standard', 'Alternative']
 	rotary_class = config.getRotaryClass()
 	print "Rotary class:", rotary_class, rclass[rotary_class]
-	print "LCD type:", config.getDisplayType(), config.getDisplayName()
-	print "LCD lines:", config.getLines()
-	print "LCD width:", config.getWidth()
+	print "Display type:", config.getDisplayType(), config.getDisplayName()
+	print "Display lines:", config.getLines()
+	print "Display width:", config.getWidth()
 	print "Airplay:", config.getAirplay()
 	print "Mixer Volume Preset:", config.getMixerPreset()
 	print "Mixer Volume ID:", config.getMixerVolumeID()
@@ -838,6 +901,13 @@ if __name__ == '__main__':
 	# I2C parameters
 	print "I2C bus", config.getI2Cbus()
 	print "I2C address:", hex(config.getI2Caddress())
+	
+	# Shoucast
+	print "Shoutcast key:", config.getShoutcastKey()
+	
+	# OLED
+	print "Flip screen vertical:",config.flipVertical()
+	print "Splash screen:",config.getSplash()
 
-# End of file
+# End of __main__
 

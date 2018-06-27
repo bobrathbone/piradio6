@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.23 2018/01/16 06:39:12 bob Exp $
+# $Id: source_class.py,v 1.30 2018/06/19 07:20:24 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -17,9 +17,9 @@
 #
 # Playlists for MPD are stored in /var/lib/mpd/source.directory
 # All MPD playlists have the .m3u file extension
-# Airplay is not part of MPD and is not associated with playlists
-# however it is stored as a pseudo playlist called _airplay_ for the
-# purpose of searching through the available sources   
+# Airplay and Spotify are not part of MPD and are not associated with playlists
+# however they is stored as a pseudo playlists called _airplay_ and _spotify_ 
+# respectively for the purpose of searching through the available sources   
 
 import os,sys,pwd
 from log_class import Log
@@ -43,24 +43,28 @@ class Source:
 	UP = 0
 	DOWN = 1
 
-	# Source types (There are 3 source types)
+	# Source types (There are 4 source types)
 	RADIO = 0 	# Radio usually has one playlist but can have more
 	MEDIA = 1	# Media can have one or more playlists with any name
 	AIRPLAY = 2	# Airplay is not part of MPD and has no associated playlists
-	typeNames = ['RADIO', 'MEDIA' , 'AIRPLAY']
+	SPOTIFY = 3	# Spotify is not part of MPD and has no associated playlists
+
+	typeNames = ['RADIO','MEDIA','AIRPLAY','SPOTIFY']
 	
 	type = RADIO
 
 	# Initialise. The airplay parameter adds a dummy entry 
 	# to the list of playlists
-	def __init__(self, client=client, airplay=False):
+	def __init__(self, client=client, airplay=False, spotify=False):
+		self.airplay = airplay
+		self.spotify = spotify
 		self.client = client
 		self.mpdport = mpdport
 		log.init('radio')
 		return
 
 	# Load the source.
-	def load(self,airplay):
+	def load(self):
 		log.message("source.load", log.DEBUG)
 
 		try:
@@ -80,8 +84,12 @@ class Source:
 				log.message("No playlists found in " + PlaylistsDir, log.ERROR)
 
 			# If airplay create a 'dummy' playlist
-			if airplay:
+			if self.airplay:
 				self.playlists['_airplay_'] = self.AIRPLAY
+
+			# If spotify create a 'dummy' playlist
+			if self.spotify:
+				self.playlists['_spotify_'] = self.SPOTIFY
 
 		except Exception as e:
 			log.message("source.load: " + str(e), log.DEBUG)
@@ -191,15 +199,16 @@ class Source:
 		playlist = self.playlists.keys()[self.index]
 		playlist = playlist.replace('_', ' ')
 		playlist = playlist.lstrip()
+		playlist = playlist.rstrip()
 		playlist = "%s%s" % (playlist[0].upper(), playlist[1:])
 		playlist = playlist[:1].upper() + playlist[1:]
 		return playlist
 
-	# Get playlist type. RADIO, MEDIA or AIRPLAY
+	# Get playlist type. RADIO, MEDIA, AIRPLAY or SPOTIFY
 	def getType(self):
 		return self._getType(self.index)
 
-	# Set the type RADIO, MEDIA or AIRPLAY XXX
+	# Set the type RADIO, MEDIA, AIRPLAY or SPOTIFY
 	def setType(self,type):
 		idx = 0
 		newtype = -1
@@ -210,8 +219,7 @@ class Source:
 			if idx == self.new_index:
 				break
 		if type == newtype:	
-			playlist = self.getNewName()
-		return playlist
+			return playlist
 
 	# Return the new type (radio, media or airplay)
 	def getNewType(self):
@@ -225,13 +233,16 @@ class Source:
 	def getNewTypeName(self):
 		return self.typeNames[self.getNewType()]
 	
-	# Get new playlist type. RADIO, MEDIA or AIRPLAY
+	# Get new playlist type. RADIO, MEDIA,AIRPLAY or SPOTIFY
 	# This routine is only used during loading the available playlists
 	def getPlaylistType(self,playlist):
 		type = self.MEDIA
 	
 		if playlist == '_airplay_':
 			type = self.AIRPLAY 	
+
+		if playlist == '_spotify_':
+			type = self.SPOTIFY 	
 
 		elif playlist[0] == '_':
 			type = self.RADIO	
@@ -242,7 +253,7 @@ class Source:
 	def getPlaylists(self):
 		return self.playlists
 
-	# Get new playlist type. RADIO, MEDIA or AIRPLAY
+	# Get new playlist type. RADIO, MEDIA, AIRPLAY or SPOTIFY
 	def _getType(self,index):
 	
 		index = self.checkIndex(index)

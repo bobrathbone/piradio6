@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.17 2018/01/14 10:20:36 bob Exp $
+# $Id: create_playlist.sh,v 1.19 2018/06/13 07:34:56 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -53,10 +53,19 @@ make_name(){
 	echo $name
 }
 
-CMD="sudo service radio stop"
+# Stop the radio and mpd
+CMD="sudo systemctl stop radiod.service"
 echo ${CMD};${CMD}
-CMD="sudo service mpd stop"
+CMD="sudo systemctl stop mpd.service"
 echo ${CMD};${CMD}
+
+sleep 2
+
+# If the above fails check pid
+rpid=$(cat /var/run/radiod.pid)
+if [[ $? == 0 ]]; then  # Don't seperate from above
+        sudo kill -TERM ${rpid}
+fi
 
 # Find which device is in use
 if [[ -b /dev/sda1 ]]; then
@@ -85,6 +94,10 @@ do
 		# Mount the USB stick
 		if [[ ${USBDEV} != "" ]]; then
 			sudo mount ${USBDEV} /media >/dev/null 2>&1
+			if [[ $? != 0 ]]; then
+				echo "Failed to mount USB stick"
+				exit 1
+			fi
 			echo "Mounted  ${USBDEV} on /media"
 		fi
 
@@ -96,6 +109,11 @@ do
 		if [[ -f ${SHARE} ]]; then
 			CMD=$(cat ${SHARE}) 
 			echo ${CMD}; sudo ${CMD} >/dev/null 2>&1
+			if [[ $? != 0 ]]; then
+				echo "Failed to mount network drive"
+				exit 1
+				echo "Mounted network drive on /share"
+			fi
 		fi
 
 	 else

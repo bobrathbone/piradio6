@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.56 2018/02/03 11:29:16 bob Exp $
+# $Id: vgradio.py,v 1.83 2018/06/17 15:38:11 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -12,6 +12,10 @@
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 #	  The authors shall not be liable for any loss or damage however caused.
+#
+# Icons used in the graphic versions of the radio.
+# Clipart library http://clipart-library.com
+# IconSeeker http://www.iconseeker.com
 
 import os,sys
 import locale
@@ -19,6 +23,8 @@ import pygame
 import time
 import pdb
 import signal
+import socket
+import commands
 from time import strftime
 
 # Pygame controls
@@ -45,6 +51,7 @@ pygame.display.init()
 pygame.font.init()
 myfont = pygame.font.SysFont('freesans', 20, bold=True)
 screen = None
+run = True
 
 # Tuner scale range
 margin = 50 	# Top bottom
@@ -55,6 +62,19 @@ pidfile = "/var/run/radiod.pid"
 
 playlist = []
 plName = ''	# Playlist name if more than one
+
+# Signal SIGTERM handler
+def signalHandler(signal,frame):
+	global display
+	global radio
+	global log
+	pid = os.getpid()
+
+	print "signalHandler",signal
+
+	log.message("Radio stopped, PID " + str(pid), log.INFO)
+	radio.stop()
+	exit()
 
 # Start the radio and MPD
 def setupRadio(radio):
@@ -77,13 +97,17 @@ def getPage(currentID,maxStations):
 
 # Get the maximum stations labels to be displayed per page
 def getMaximumLabels(display,radio): 
+	#pdb.set_trace()
 	maxLabels = display.config.getMaximumStations()
 	plsize = radio.getPlayListLength()
 	currentID = radio.getCurrentID()
 	page = getPage(currentID,maxLabels)
 	last_page = page + 1
-	#pdb.set_trace()
-	if plsize < maxLabels * last_page:
+
+	# If no playlist loaded
+	if plsize < 1:
+		maxLabels = 40 
+	elif plsize < maxLabels * last_page:
 		maxLabels = plsize - maxLabels * page  
 	return maxLabels
 
@@ -105,7 +129,7 @@ def drawTunerSlider(tunerSlider,screen,display,currentID):
 def drawVolumeScale(volumeScale,screen,volume):
 	xPos = lmargin
 	yPos = size[1] - margin
-	xSize = size[0] - lmargin - rmargin
+	xSize = size[0] - lmargin - rmargin/3
 	ySize = size[1] - margin * 2
 	volumeScale.draw(screen,xPos,yPos,xSize,ySize)
 	return 
@@ -120,8 +144,7 @@ def getColor(lcolor):
 
 # Handle radio event
 def handleEvent(radio,radioEvent):
-	global artwork_file
-	artwork_file = ''
+	global plName
 	event_type = radioEvent.getType()
 	source_type = radio.getSourceType()
 	msg = "radioEvent.detected " + str(event_type) + ' ' + radioEvent.getName()
@@ -133,6 +156,8 @@ def handleEvent(radio,radioEvent):
 		if radio.config.doShutdown():
 			radio.shutdown() # Shutdown the system
 		else:
+			print "Exiting"
+			#pdb.set_trace()
 			sys.exit(0)
 
 	elif event_type == radioEvent.CHANNEL_UP:
@@ -147,6 +172,9 @@ def handleEvent(radio,radioEvent):
 	elif event_type == radioEvent.VOLUME_DOWN:
 		radio.decreaseVolume()
 
+	elif event_type == radioEvent.MENU_BUTTON_DOWN:
+		pageUp(display,radio)
+
 	elif event_type == radioEvent.MUTE_BUTTON_DOWN:
 		if radio.muted():
 			radio.unmute()
@@ -155,8 +183,6 @@ def handleEvent(radio,radioEvent):
 
 	elif event_type == radioEvent.MPD_CLIENT_CHANGE:
 		log.message("radioEvent Client Change",log.DEBUG)
-		if source_type == radio.source.MEDIA:
-			artwork_file = getArtWork(radio)
 
 	elif event_type == radioEvent.LOAD_RADIO or event_type == radioEvent.LOAD_MEDIA \
 			   or event_type == radioEvent.LOAD_AIRPLAY:
@@ -165,8 +191,45 @@ def handleEvent(radio,radioEvent):
 	radioEvent.clear()
 	return
 
+# Handler for source change events (also from the web interface)
+def handleSourceChange(event,radio,message):
+        msg = ''
+        event_type = event.getType()
+
+        if event_type == event.LOAD_RADIO:
+                msg = message.get('loading_radio')
+                message.speak(msg)
+                radio.cycleWebSource(radio.source.RADIO)
+
+        elif event_type == event.LOAD_MEDIA:
+                msg = message.get('loading_media')
+                message.speak(msg)
+                radio.cycleWebSource(radio.source.MEDIA)
+
+        elif event_type == event.LOAD_AIRPLAY:
+                msg = message.get('starting_airplay')
+                message.speak(msg)
+                if display.config.getAirplay():
+                        radio.cycleWebSource(radio.source.AIRPLAY)
+
+        new_source = radio.getNewSourceType()
+        log.message("loadSource new type = " + str(new_source), log.DEBUG)
+        if new_source >= 0:
+                radio.loadSource()
+        return
 # Handle keyboard key event See https://www.pygame.org/docs/ref/key.html
 def handleKeyEvent(key,display,radio,radioEvent):
+	global run
+	if key == K_KP_PLUS or  key == K_PLUS:
+		radioEvent.set(radioEvent.VOLUME_UP)
+
+	elif key == K_KP_MINUS  or  key == K_MINUS:
+		radioEvent.set(radioEvent.VOLUME_DOWN)
+
+	# Shift "=" is capital A
+	if  key == K_EQUALS and pygame.key.get_mods() & pygame.KMOD_SHIFT:
+		radioEvent.set(radioEvent.VOLUME_UP)
+
 	if key == K_DOWN:
 		radioEvent.set(radioEvent.CHANNEL_DOWN)
 
@@ -179,6 +242,9 @@ def handleKeyEvent(key,display,radio,radioEvent):
 	elif key == K_RIGHT:
 		radioEvent.set(radioEvent.VOLUME_UP)
 
+        elif key == K_m:
+		radioEvent.set(radioEvent.MUTE_BUTTON_DOWN)
+
 	elif key == K_PAGEUP:
 		pageUp(display,radio)
 
@@ -188,6 +254,11 @@ def handleKeyEvent(key,display,radio,radioEvent):
 	elif key == K_ESCAPE:
 		radio.stop()
 		quit()
+
+	elif event.key == K_x and display.config.switchPrograms():
+		dir = os.path.dirname(__file__)
+		os.popen("sudo " + dir + "/gradio.py&")
+		run = False
 
 	elif event.key == K_q:
 		mods = pygame.key.get_mods()
@@ -226,12 +297,16 @@ def displayTimeDate(screen,radio,message):
 	return
 
 # Display currently playing radio station 
-def displayTitle(screen,radio,plsize):
+def displayTitle(screen,radio,message,plsize):
 	title = radio.getCurrentTitle()
 	if len(title) < 1:
 		current_id = radio.getCurrentID()
 		bitrate = radio.getBitRate()
-		title = "Station %s/%s: Bitrate %sk" % (current_id,plsize,bitrate)
+		if int(bitrate) > 0:
+			title = "Station %s/%s: Bitrate %sk" % (current_id,plsize,bitrate)
+		else:
+			eMsg = message.get('connecting')
+			title = "Station %s/%s: %s" % (current_id,plsize,eMsg)
 	else:
 		title = title[0:80]
 		
@@ -389,7 +464,6 @@ def drawRightArrow(display,screen,RightArrow):
 def drawUpIcon(display,screen,upIcon):
 	xPos = size[0]-margin
 	yPos = 80
-	#upIcon.draw(screen,xPos,yPos,path="images/Up-arrow-circle.png")
 	upIcon.draw(screen,xPos,yPos)
 	return
 
@@ -397,8 +471,21 @@ def drawUpIcon(display,screen,upIcon):
 def drawDownIcon(display,screen,downIcon):
 	xPos = size[0]-margin
 	yPos = size[1] - 120
-	#downIcon.draw(screen,xPos,yPos,path="images/Down-arrow-circle.png")
 	downIcon.draw(screen,xPos,yPos)
+	return
+
+# Draw switch program icon
+def drawSwitchIcon(display,screen,switchIcon):
+	xPos = size[0]-margin
+	yPos = 150
+	switchIcon.draw(screen,xPos,yPos)
+	return
+
+# Draw Equalizer Icon
+def drawEqualizerIcon(display,screen,equalizerIcon):
+	xPos = display.getColumnPos(69)
+	yPos = display.getRowPos(13)
+	equalizerIcon.draw(screen,xPos,yPos)
 	return
 
 # Page up through playlist
@@ -438,11 +525,11 @@ def pageDown(display,radio):
 
 # Get pid
 def getPid():
-        pid = None
-        if os.path.exists(pidfile):
-                pf = file(pidfile,'r')
-                pid = int(pf.read().strip())
-        return pid
+	 pid = None
+	 if os.path.exists(pidfile):
+		  pf = file(pidfile,'r')
+		  pid = int(pf.read().strip())
+	 return pid
 
 # Check if program already running
 def checkPid(pidfile):
@@ -454,7 +541,7 @@ def checkPid(pidfile):
 			   log.message(msg,log.ERROR)
 			   print msg
 			   exit()
-		  except Exception as e:
+		  except:
 			   os.remove(pidfile)
 	 # Write the pidfile
 	 pid = str(os.getpid())
@@ -463,17 +550,44 @@ def checkPid(pidfile):
 	 pf.close()
 	 return pid
 
+# Open equalizer window
+def openEqualizer(radio,equalizer_cmd):
+	 dir = os.path.dirname(__file__)
+	 cmd_file = open(dir + '/' + equalizer_cmd,"r")
+	 for line in cmd_file:
+		  if line.startswith('lxterminal'):
+			   radio.execCommand(line)
+			   break
+	 return
+
+# Set draw equalizer true/false
+def displayEqualizerIcon(display):
+	 if display.config.fullScreen():
+		  draw_equalizer_icon = False
+	 else:
+		  draw_equalizer_icon = True
+	 return draw_equalizer_icon
+
 # Stop program if stop specified on the command line
 def stop():
-        pid = getPid()
-        if pid != None:
-                os.kill(pid, signal.SIGHUP)
-        exit(0)
+	 pid = getPid()
+	 if pid != None:
+		  os.kill(pid, signal.SIGHUP)
+	 exit(0)
 
 # Main routine
 if __name__ == "__main__":
 
+	signal.signal(signal.SIGTERM,signalHandler)
+	signal.signal(signal.SIGHUP,signalHandler)
+
 	locale.setlocale(locale.LC_ALL, '')
+
+	try:
+		os.environ['DISPLAY']
+	except:
+		print "This program requires an X-Windows desktop"
+		sys.exit(1)
 
 	# Stop command
 	if len(sys.argv) > 1 and sys.argv[1] == 'stop':
@@ -495,7 +609,19 @@ if __name__ == "__main__":
 		flags = FULLSCREEN|DOUBLEBUF
 	else:
 		flags = DOUBLEBUF
+
+	# Setup radio
+	log.init('radio')
+	radioEvent = Event()	# Add radio event handler
+	radio = Radio(rmenu,radioEvent)  # Define radio
+
+	# Set up the screen
+	size = radio.config.getSize()
 	screen = pygame.display.set_mode(size,flags)
+
+	# Hide mouse if configured
+	if display.config.fullScreen() and not display.config.displayMouse():
+		pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 
 	# Paint screen background (Keep at start of draw routines)
 	dir = os.path.dirname(__file__)
@@ -512,19 +638,13 @@ if __name__ == "__main__":
 	pygame.display.flip()
 	surface=pygame.Surface((size))
 
-	# Setup radio
-	log.init('radio')
-	radioEvent = Event()	# Add radio event handler
-	radio = Radio(rmenu,radioEvent)  # Define radio
 	radio.execCommand("systemctl stop radiod")
 	setupRadio(radio)
 	radio.setTranslate(True)	# Switch on text translation
 
 	# Set up window title
-	version = radio.getVersion()
-	caption = display.config.getWindowTitle()
-	caption = caption.replace('%V',version)
-	pygame.display.set_caption(caption)
+	window_title = display.getWindowTitle(radio)
+	pygame.display.set_caption(window_title)
 
 	tunerSlider = TunerScaleSlider(pygame)
 	currentID = radio.getCurrentID()
@@ -543,11 +663,18 @@ if __name__ == "__main__":
 	drawRightArrow(display,screen,RightArrow)
 	upIcon = UpIcon(pygame)
 	downIcon = DownIcon(pygame)
+	switchIcon = SwitchIcon(pygame)
+	equalizerIcon = EqualizerIcon(pygame)
 	drawUpIcon(display,screen,upIcon)
 	drawDownIcon(display,screen,downIcon)
+	if display.config.switchPrograms():
+		drawSwitchIcon(display,screen,switchIcon)
 	MuteButton = MuteButton(pygame)
 	MuteButton.draw(screen,display,(size[0]-(rmargin/2)-5,size[1]/2),
 					radio.muted(), size=(35,35))
+	draw_equalizer_icon = displayEqualizerIcon(display)
+	if draw_equalizer_icon:
+		drawEqualizerIcon(display,screen,equalizerIcon)
 
 	playlist = radio.getPlayList()
 	maxLabels = getMaximumLabels(display,radio)
@@ -556,52 +683,88 @@ if __name__ == "__main__":
 	keyPress = -1
 	sliderIndex = 0
 
+	# Screen saver times
+	screenBlank = False
+	screenMinutes = display.config.screenSaverTime()
+	if screenMinutes > 0:
+		blankTime = int(time.time()) + screenMinutes*60
+	else:
+		blankTime = 0
+
 	# Start of main processing loop
-	while True:
+	while run:
+
+		# Blank screen after blank time exceeded
+		if screenMinutes > 0 and int(time.time()) > blankTime:
+			screenBlank = True
+
+		# Reset the draw equalizer icon flag
+		if int(commands.getoutput('pidof %s |wc -w' % "alsamixer")) < 1:
+			draw_equalizer_icon = displayEqualizerIcon(display)
+			if draw_equalizer_icon:
+				equalizerIcon.enable()
+
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				radio.stop()
 				quit()
 
 			elif event.type == pygame.MOUSEBUTTONDOWN:
-				radio.unmute()
+				blankTime = int(time.time()) + screenMinutes*60
 
-				if tunerSlider.clicked(event):
+				if screenBlank:
+					screenBlank = False
+
+				elif tunerSlider.clicked(event):
+					radio.unmute()
 					newID = calculateID(radio,listIndex)
 					radio.play(newID)
 
 				elif volumeScale.clicked(event):
 					volume = volumeScale.getVolume()
-					radio.setRealVolume(volume)
+					radio.setVolume(volume)
 
 				elif LeftArrow.clicked():
+					radio.unmute()
 					pageDown(display,radio)
 
 				elif RightArrow.clicked():
+					radio.unmute()
 					pageUp(display,radio)
 
 				elif upIcon.clicked():
+					radio.unmute()
 					radioEvent.set(radioEvent.CHANNEL_UP)
 					
 				elif downIcon.clicked():
+					radio.unmute()
 					radioEvent.set(radioEvent.CHANNEL_DOWN)
 
+				elif draw_equalizer_icon and equalizerIcon.clicked():
+					openEqualizer(radio,"equalizer.cmd")
+					draw_equalizer_icon = False
+					equalizerIcon.disable()
+					
+				elif display.config.switchPrograms() and switchIcon.clicked():
+					dir = os.path.dirname(__file__)
+					os.popen("sudo " + dir + "/gradio.py&")
+					run = False
+
 			elif event.type == pygame.MOUSEMOTION:
-				#mButton = pygame.mouse.get_pressed()[0]
-				#if volumeScale.dragged(event) and mButton == 1:
 				if volumeScale.dragged(event):
 					volume = volumeScale.getVolume()
-					radio.setRealVolume(volume)
+					radio.setVolume(volume)
 
 			elif event.type == KEYDOWN:
-				keyPress = handleKeyEvent(event.key,display,radio,radioEvent)
+				blankTime = int(time.time()) + screenMinutes*60
+				if screenBlank:
+					screenBlank = False
+				else:
+					keyPress = handleKeyEvent(event.key,display,
+								radio,radioEvent)
 
 			elif MuteButton.pressed():
-				if radio.muted():
-					radio.unmute()
-				else:
-					radio.mute()
-				time.sleep(0.5)
+				radioEvent.set(radioEvent.MUTE_BUTTON_DOWN)
 
 		# Handle radio events
 		if radioEvent.detected():
@@ -638,6 +801,11 @@ if __name__ == "__main__":
 		drawRightArrow(display,screen,RightArrow)
 		drawUpIcon(display,screen,upIcon)
 		drawDownIcon(display,screen,downIcon)
+		if draw_equalizer_icon:
+			drawEqualizerIcon(display,screen,equalizerIcon)
+
+		if display.config.switchPrograms():
+			drawSwitchIcon(display,screen,switchIcon)
 
 		volumeScale.drawSlider(screen,volume,lmargin)
 		MuteButton.draw(screen,display,(size[0]-(rmargin/2)-7,(size[1]/2)-18),
@@ -646,8 +814,12 @@ if __name__ == "__main__":
 		# Display title and page position
 		plsize = len(playlist)
 		if display.config.displayTitle():
-			displayTitle(screen,radio,plsize)
+			displayTitle(screen,radio,message,plsize)
 		displayPagePosition(page,maxStations,plsize)
+	
+		if screenBlank and display.config.fullScreen(): 
+			screen.fill(Color(0,0,0))
+
 		pygame.display.flip()
 
 	# End of main while loop

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Menu Class
-# $Id: menu_class.py,v 1.11 2018/01/12 12:41:49 bob Exp $
+# $Id: menu_class.py,v 1.12 2018/05/30 08:21:14 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -52,14 +52,14 @@ class Menu:
 	OPTION_ALARMSETMINS = 8
 	OPTION_TIMER = 9
 	OPTION_SELECTCOLOR = 10
-	OPTION_LAST = OPTION_TIMER 
+	OPTION_WIFI = 11
 	OPTION_ADA_LAST = OPTION_SELECTCOLOR
 
 	OptionNames = [ 'Random', 'Consume', 'Repeat', 'Single', 'Reload media', \
-			 'Streaming', 'Alarm', 'Hours', 'Minutes', 'Timer', 'Colour' ] 
+			 'Streaming', 'Alarm', 'Hours', 'Minutes', 'Timer', 'Setup WIFI', 'Colour' ] 
 
 	option = OPTION_RANDOM
-	option_last = OPTION_LAST
+	option_last = OPTION_TIMER
 	option_changed = False
 
 	# Other definitions

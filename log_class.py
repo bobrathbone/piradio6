@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: log_class.py,v 1.3 2017/11/21 07:43:57 bob Exp $
+# $Id: log_class.py,v 1.4 2018/03/24 11:42:53 bob Exp $
 # Raspberry Pi Internet Radio Logging class
 #
 # Author : Bob Rathbone
@@ -75,7 +75,7 @@ class Log:
 			logger.removeHandler(hdlr)
 			hdlr.close()
 		   except Exception as e:
-			print e
+			print str(e)
 		return
 
 	# Temporary set log level

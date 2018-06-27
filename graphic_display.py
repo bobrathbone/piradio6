@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: graphic_display.py,v 1.16 2017/12/12 14:05:28 bob Exp $
+# $Id: graphic_display.py,v 1.17 2018/06/11 09:44:11 bob Exp $
 # Raspberry Pi display routines
 # Graphic screen routines used by touch graphic screen
 #
@@ -11,11 +11,12 @@
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
-#             The authors shall not be liable for any loss or damage however caused.
+#	     The authors shall not be liable for any loss or damage however caused.
 #
 
 import os,sys
 import time,pwd
+import socket
 import pdb
 from config_class import Configuration
 
@@ -53,7 +54,7 @@ class GraphicDisplay:
 	holdCountEnd = [delay,delay,delay,delay,delay]
 	lineText = ['','','','','']
 
-        def __init__(self,font):
+	def __init__(self,font):
 		self.font = font
 		return
 
@@ -90,6 +91,15 @@ class GraphicDisplay:
 		w = self.averageFontSize[0]
 		pos =  int(column * w / 1.1)
 		return pos
+
+	# Get window title 
+	def getWindowTitle(self,radio):
+		version = radio.getVersion()
+		hostname = socket.gethostname()
+		title = self.config.getWindowTitle()
+		title = title.replace('%V',version)
+		title = title.replace('%H',hostname)
+		return title
 
 	# Set the display size, rows and columns
 	def setSize(self,size):

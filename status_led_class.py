@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: status_led_class.py,v 1.2 2017/10/23 06:22:32 bob Exp $
+# $Id: status_led_class.py,v 1.4 2018/04/09 13:22:17 bob Exp $
 # Raspberry Retro Pi Internet Radio
 #
 # Author : Bob Rathbone
@@ -21,6 +21,13 @@ class StatusLed:
 	BUSY   = 2
 	SELECT = 3 
 	ERROR  = 4 
+
+	# For IQAudio cosmic controller
+	LED1 = ERROR
+	LED2 = NORMAL
+	LED3 = BUSY
+	ALL = 7
+
 	red_led = None
 	blue_led = None
 	green_led = None
@@ -36,10 +43,10 @@ class StatusLed:
 		GPIO.setwarnings(False)
 		if self.red_led > 0:
 			GPIO.setup(self.red_led, GPIO.OUT)
-		if self.blue_led > 0:
-			GPIO.setup(self.blue_led, GPIO.OUT)
 		if self.green_led > 0:
 			GPIO.setup(self.green_led, GPIO.OUT)
+		if self.blue_led > 0:
+			GPIO.setup(self.blue_led, GPIO.OUT)
                 return
 
 	# Set the status to normal, busy, error or clear
@@ -64,6 +71,10 @@ class StatusLed:
 				GPIO.output(self.green_led, True)
 				if self.red_led > 0:
 					GPIO.output(self.red_led, True)
+			elif status is self.ALL and self.green_led > 0:
+				GPIO.output(self.red_led, True)
+				GPIO.output(self.green_led, True)
+				GPIO.output(self.blue_led, True)
 			self.status = status
 		return self.status
 

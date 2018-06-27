@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.8 2017/10/27 09:31:24 bob Exp $
+# $Id: lcd_class.py,v 1.10 2018/04/26 10:28:11 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 LCD display
 #
@@ -243,10 +243,6 @@ class Lcd:
 		self._byte_out(line, LCD_CMD)
 		self._string(text[0:self.width + 1], no_interrupt)
 	
-		# If message fits on the screen do not scroll
-		#if (ilen <= self.width):
-		#	skip = True
-
 		# Small delay before scrolling
 		if not skip:
 			for i in range(0, 10):
@@ -290,7 +286,7 @@ class Lcd:
 		return
 
 	# Clear display
-	def clearDisplay(self):
+	def clear(self):
 		self._byte_out(0x01,LCD_CMD) # 000001 Clear display
 		time.sleep(E_POSTCLEAR)
 		return

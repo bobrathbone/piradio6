@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: test_stations.urls,v 1.5 2018/02/02 16:13:20 bob Exp $
+# $Id: test_stations.urls,v 1.14 2018/03/08 14:29:05 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -19,6 +19,7 @@
 #   http://www.internet-radio.com  
 #   http://www.radio-locator.com
 #   http://bbcstreams.com/ 
+#   http://radiomap.eu/
 #
 # Then run create_playlists.py in the /home/pi/radio directory to create PLS files
 
@@ -44,6 +45,8 @@
 [Classic FM] http://media-ice.musicradio.com/ClassicFMMP3
 [Magic Radio] http://icy-e-05.sharp-stream.com/magic1054.mp3
 [The Arrow] http://network.absoluteradio.co.uk/core/audio/mp3/live.pls?service=arbb
+[Radio City] http://live-bauer-al.sharp-stream.com/city.mp3.m3u
+[Gold Radio] http://media-ice.musicradio.com/GoldMP3.m3u
 
 # Dutch stations
 [NPO Radio 1] http://icecast.omroep.nl/radio1-bb-mp3
@@ -52,7 +55,6 @@
 [NPO Radio 4] http://icecast.omroep.nl/radio4-bb-mp3.m3u
 [Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICA.pls
 [Stream Power MP3] http://mp3.streampower.be/radio1-high.mp3
-[Midden Brabant] http://breedband.hollandio.nl:8804/listen.pls
 [Omroep Brabant] http://www.listenlive.eu/omroepbrabant.m3u
 [Q-Music] http://icecast-qmusic.cdp.triple-it.nl/Qmusic_nl_nonstop_96.mp3.m3u
 [Sky Radio] http://provisioning.streamtheworld.com/pls/skyradio.pls
@@ -65,16 +67,62 @@
 [Antenne Bayern] http://www.antenne.de/webradio/antenne.m3u
 [Das Ding] http://srv04.bigstreams.de/bigfm-mp3-64.m3u
 [Deluxe Gold] http://srv04.bigstreams.de/bigfm-mp3-64.m3u
+[HR Info] http://metafiles.gl-systemhaus.de/hr/hrinfo_2.m3u
+[HR1] http://metafiles.gl-systemhaus.de/hr/hr1_2.m3u
+[HR2] http://metafiles.gl-systemhaus.de/hr/hr2_2.m3u
+[HR3] http://metafiles.gl-systemhaus.de/hr/hr3_2.m3u
+[SWR3] http://mp3-live.swr3.de/swr3_m.m3u
+[SWR3Lyrix] http://mp3-live.swr3.de/swr3raka01_m.m3u
+[SWR1] http://mp3-live.swr.de/swr1rp_m.m3u
+[SWR Aktuell] http://mp3-live.swr.de/swraktuell_m.m3u
+[RBB Radio Eins] http://www.radioeins.de/live.m3u
+[DRadio Wissen] http://www.dradio.de/streaming/dradiowissen_lq_mp3.m3u
+[Deutschlandradio Kultur] http://www.deutschlandradio.de/streaming/dkultur.m3u
+[Deutschlandfunk] http://www.deutschlandradio.de/streaming/dlf.m3u
+
+[Alt Berlin] http://streaming.radionomy.com/Stereo99SwinginHits
+# St. Louis Classic Rock et al
+[SLCR1] http://74.208.89.18:8000/SLCR__highdef.mp3
+[SLCR2] http://74.208.89.18:8020/SLCR2_highdef.mp3
+[SLCR3] http://74.208.89.18:8030/SLCR3_highdef.mp3
+[Handcrafted Radio] http://66.85.88.18:5044/
+[The Oasis] http://162.244.80.140:8058
+[Planet Radio] http://66.85.88.18:5475/
+[Psychedelicized Radio] http://s1.castserver.net:8006
+
+# Spain
+[Radio Nacional de Espana] http://195.55.74.203/rtve/rne.mp3
+[Radio 2 Clasica] http://195.55.74.207/rtve/radioclasica.mp3
+[Radio 3] http://195.55.74.208/rtve/radio3.mp3
+[Radio Exterior] http://195.10.10.201/rtve/radioexterior.mp3
+[Radio 5] http://195.10.10.213/rtve/radio5.mp3
+[Rock FM] http://195.10.10.222/cope/rockfm.mp3
+[RTVA Canal Flamenco Radio] http://195.10.10.221/rtva/canalflamenco.mp3
+[Atlantis-FM Radio] http://radionetz.de:8000/atlantisfm.mp3.m3u
+[Sintonia] http://5.135.183.124:9268/stream
 
 # Italian Stations
 [RAI Radio Uno] http://www.listenlive.eu/rai1.m3u
 [RAI Radio Duo] http://www.listenlive.eu/rai2.m3u
 [Prima Radio Napoli] http://kemoniastreaming2.net:8010/listen.pls
 
+# Ireland
+[Dublin Today FM] http://ice1.gocaster.net/td.m3u
+
+# Austria
+[Radio FM4 Austria] http://mp3stream1.apasf.apa.at/listen.pls
+
 # Norwegian stations
 [NRK1 Oslo] http://lyd.nrk.no/nrk_radio_p1_ostlandssendingen_mp3_h.m3u
 [P6 Rock] http://www.listenlive.eu/p6_aac_hq.m3u
 [Radio Nova Oslo] http://stream.radionova.no/fm993.mp3.m3u
+[Kanal1 Drammen] http://kanal1drammen.no/
+[Ariel Radio] https://streams.radio.co/sf069f3c03/listen
+[Epic sound tracks] http://listen.radionomy.com/unleashingepicsoundtracks
+[Ordentlig Radio] http://www.ordentligradio.no/console/index.html
+[Radio Rock] http://www.radioplay.no/radiorock
+[The Beat] http://tunein.com/radio/Beat-FM-1048-s122025/
+[P5 Hits] http://www.p4.no/player/?channel=8
 
 # Country music
 [Dublin Sunshine 106.8] http://www.country108.com/listen.pls
@@ -103,6 +151,7 @@
 
 # Belgium
 [Crooze FM] http://77.92.64.44:8045/stream
+[Nostalgia Radio] http://nostalgiewhatafeeling.ice.infomaniak.ch/nostalgiewhatafeeling-128.mp3
 
 # Blues
 [HD Radio - The Blues] http://167.114.64.181:8389/stream
@@ -201,6 +250,132 @@
 [Radio SPA] http://chai5she.cdn.dvmr.fr/spa
 [CALM RADIO - BALANCE - Sampler] http://184.173.142.117:10728/stream
 [CALM RADIO - POSITIVITY - Sampler] http://184.173.142.117:30528/stream
+
+# Australia
+[New South Wales Music] http://eno.emit.com:8000/2mbs_live_128.mp3
+[Adaleide] http://stream.5mbs.com/5mbs-128-mp3
+[Swiss classical] http://stream.srg-ssr.ch/m/rsc_de/mp3_128
+[Brisbane classical] http://s9.viastreaming.net:9620/;stream.mp3
+
+
+# USA
+[KEXP] http://live-aacplus-64.kexp.org/kexp64.aa
+[WFMU live stream] http://wfmu.org/wfmu.pls 
+[GiveTheDrummerSome] http://wfmu.org/wfmu_drummer.pls 
+[UBUradio] http://wfmu.org/wfmu_ubu.pls 
+[Rock 'n' Roll Ichiban] http://wfmu.org/wfmu_rock.pl
+
+#Soma FM
+[Fluid] http://somafm.com/fluid.pls 
+[Left Coast 70s] http://somafm.com/seventies.pls 
+[ThistleRadio] http://somafm.com/thistle.pls 
+[Drone Zone] http://somafm.com/dronezone.pls 
+[Groove Salad] http://somafm.com/groovesalad.pls 
+[Lush] http://somafm.com/lush.pls 
+[Space Station] http://somafm.com/spacestation.pls 
+[Digitalis] http://somafm.com/digitalis.pls 
+[Underground 80s] http://somafm.com/u80s.pls 
+[Indie Pop Rocks!] http://somafm.com/indiepop.pls 
+[BAGeL Radio] http://somafm.com/bagel.pls 
+[PopTron] http://somafm.com/poptron.pls 
+[Folk Forward] http://somafm.com/folkfwd.pls 
+[Boot Liquor] http://somafm.com/bootliquor.pls 
+[Seven Inch Soul] http://somafm.com/7soul.pls 
+[Secret Agent] http://somafm.com/secretagent.pls 
+[Sonic Universe] http://somafm.com/sonicuniverse.pls 
+[Suburbs of Goa] http://somafm.com/suburbsofgoa.pls 
+[Deep Space One] http://somafm.com/deepspaceone.pls 
+[DEF CON Radio] http://somafm.com/defcon.pls 
+[The Trip] http://somafm.com/thetrip.pls 
+[Black Rock FM] http://somafm.com/brfm.pls 
+[cliqhop idm] http://somafm.com/cliqhop.pls 
+[Dub Step Beyond] http://somafm.com/dubstep.pls 
+[Earwaves] http://somafm.com/earwaves.pls 
+[Mission Control] http://somafm.com/missioncontrol.pls 
+[Illinois Street Lounge] http://somafm.com/illstreet.pls 
+[Beat Blender] http://somafm.com/beatblender.pls 
+[SF 10-33] http://somafm.com/sf1033.pls 
+[Doomed] http://somafm.com/doomed.pls
+
+#WFMU Via WFMU listener-supported, non-commercial radio station
+[WFMU live stream] http://wfmu.org/wfmu.pls 
+[GiveTheDrummerSome] http://wfmu.org/wfmu_drummer.pls 
+[UBUradio] http://wfmu.org/wfmu_ubu.pls 
+[Rock 'n' Roll Ichiban] http://wfmu.org/wfmu_rock.pls
+
+
+#Russia
+[Echo Moskvy] http://radio-echo.melodix.ru:8080/echo.mp3
+
+#Israel
+[Radio Kol aGalil aElion 103 FM] http://1053.cdnwz.net/galil_aac 
+[88FM] http://iba-s.vidnt.com/iba_radio-88fmMRepeat/_definst_/smil:radio-88fmM.smil/playlist.m3u8 
+[106FM] http://106fm.livecdn.biz:7075/ 
+[KZ radio] http://s2.kzradio.net/live/mp3/icecast.audio 
+#[Galgalatz] http://glzwizzlv.bynetcdn.com/glglz_mp3 
+#[Reshet Gimmel] http://radiocast-rr-d.vidnt.com/ipbc_IPBCgimmelLAM
+
+[Reshet Alef 1458 AM] http://www.iba.org.il/bet_m/
+#[Reshet Aleph 531 AM] http://radiocast-rr-d.vidnt.com:8000/ipbc_IPBCtarbutLAM
+#[Reshet Bet 1080 AM] http://radiocast-rr-d.vidnt.com:8000/ipbc_IPBCbetLAM
+[Reshet Bet 95.5 FM] http://radiocast-rr-d.vidnt.com:8000/ipbc_IPBCbetLAM
+[Reshet Gimmel 97.8 FM] http://radiocast-rr-d.vidnt.com:8000/ipbc_IPBCgimmelLAM
+[90.3 Kol Israel Reshet Dalet] http://radiocast-rr-d.vidnt.com:8000/ipbc_IPBCmakanradioLAM
+[Aruz Sheva] http://www.inn.co.il/Radio/Player.htm
+[Israel National Radio] http://www.israelnationalnews.com/Radio/Live.html
+
+[Galei Zahal 102.3 FM] http://glzicelv01.vds-is.bynetcdn.com/glz.mp3
+[Galgalatz 91.8FM] http://glzwizzlv.bynetcdn.com/glglz_mp3
+[Kol HaMusica 91.3 FM] http://radiocast-rr-d.vidnt.com:8000/ipbc_IPBCkolhamusicaLAM
+
+[Radio Haifa] http://ads11.livecdn.biz:80/radiohaifa
+#[Radio Kol Raga 91.5 FM] http://96.cdnwz.net/96fm
+[Radio Kol Rega 96 FM] http://96.cdnwz.net:80/96fm
+[Pervoe Radio 89.1 FM] http://891fm.streamgates.net/891Fm
+[Radio Reka 103 FM] http://radiocast-rr-d.vidnt.com:8000/ipbc_IPBCrekaLAM
+[FM 103] http://103fm.live.streamgates.net/103fm_live/1multix/icecast.audio
+[FM 102] http://eilat.cdnwz.net/102fm
+[Radio Tel Aviv 102 FM] rtmp://fms3.mediacast.co.il/liveradio/102.stream
+[Jerusalem FM 101] http://101.cdnwz.net/101fm
+[109FM Israel] http://cuead.cdnwiz.com/cuead-109fmmp3-64
+[1540 The Voice of Peace] http://uk2-vn.mixstream.net:8004
+[Radio Kol Barama] http://kb.cdnwz.net/kol_barama
+[Radio Lev Hamedina 91 FM] http://91fm.streamgates.net/Lev91Fm
+
+# Australian stations
+[ABC RN] http://www.abc.net.au/res/streaming/audio/aac/radio_national.pls
+[ABC News Radio] http://www.abc.net.au/res/streaming/audio/aac/news_radio.pls
+[ABC Brisbane] http://www.abc.net.au/res/streaming/audio/aac/local_brisbane.pls
+[ABC Classic FM] http://www.abc.net.au/res/streaming/audio/aac/classic_fm.pls
+[ABC Classic 2] http://www.abc.net.au/res/streaming/audio/aac/classic_two.pls
+[ABC Extra] http://www.abc.net.au/res/streaming/audio/aac/extra.pls
+[ABC Jazz] http://www.abc.net.au/res/streaming/audio/aac/abc_jazz.pls
+[ABC Radio Australia] http://live-radio01.mediahubaustralia.com/RAPW/mp3
+[SBS 4] http://shoutcast.sbs.com.au/SBS_SBS6
+[SBS Chill] http://shoutcast.sbs.com.au/SBSChill
+[4EB Global] http://stream.4eb.org.au:8100/;stream.mp3
+
+(Finland)
+[Radio Rex] http://stream2.bauermedia.fi/isk-rex.mp3
+[YLE Radio Suomi] mmsh://mediau.yle.fi/liveradiosuomi?MSWMExt=.asf
+[YLE Puhe] mmsh://mediau.yle.fi/liveradiopuhe?MSWMExt=.asf
+[Radio Aalto] http://icelive0.80692-icelive0.cdn.qbrick.com/10564/80692_RadioAalto.mp3
+[Radio Nova] http://stream3.bauermedia.fi/nova.mp3
+[Radio Nostalgia] http://cdn.nrjaudio.fm/adwz1/fi/35059/mp3_128.mp3
+[Iskelma Kuopio] http://stream2.bauermedia.fi/isk-kuo.mp3
+[Radio Rock] http://icelive0.80692-icelive0.cdn.qbrick.com/10565/80692_RadioRock.mp3
+[HitMix Kuopio] http://hel2-77-86-247-184.ext.nebulacloud.fi:8000/kuopio.m3u
+[YLE Ylex] mmsh://mediau.yle.fi/liveylex?MSWMExt=.asf
+[Suomipop] http://icelive0.80692-icelive0.cdn.qbrick.com/10566/80692_RadioSuomipop.mp
+#[YLE Kuopio] mmsh://mediau.yle.fi/a_radiosavo?MSWMExt=.asf
+
+# Chrismas season section
+(Christmas)
+[181.FM Chrismas Rock] http://listen.181fm.com/181-xrock_128k.mp3
+[181.FM Chrismas RnB] http://listen.181fm.com/181-xtrue_128k.mp3
+[181.FM Christmas Mix] http://listen.181fm.com/181-xmix_128k.mp3
+[181.FM Christmas Gospel] http://listen.181fm.com/181-xgospel_128k.mp3
+[1.FM Blues Radio] http://sc-baroque.1.fm:8030/
 
 
 # Live_ATC

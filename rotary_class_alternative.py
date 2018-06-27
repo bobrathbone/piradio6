@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: rotary_class_alternative.py,v 1.4 2017/10/21 11:48:28 bob Exp $
+# $Id: rotary_class_alternative.py,v 1.5 2018/04/04 07:30:41 bob Exp $
 #
 # Raspberry Pi Alternative Rotary Encoder Class
 # Certain Rotary Encoders will not work with the current version of the Rotary class.
@@ -121,8 +121,9 @@ class RotaryEncoderAlternative:
 
 ### Test routine ###
 
-Names = ['NO_EVENT', 'CLOCKWISE', 'ANTICLOCKWISE', 'BUTTON_DOWN', 'BUTTON UP']
+Names = ['NO_EVENT', 'CLOCKWISE', 'ANTICLOCKWISE', 'BUTTONDOWN', 'BUTTONUP']
 
+# Volume event - test only - no event generation
 def volume_event(event):
         name = ''
         try:
@@ -133,6 +134,7 @@ def volume_event(event):
         print "Volume event ", event, name
         return
 
+# Tuner event - test only - no event generation
 def tuner_event(event):
         name = ''
         try:

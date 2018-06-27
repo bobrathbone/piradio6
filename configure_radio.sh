@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.35 2018/02/02 10:02:29 bob Exp $
+# $Id: configure_radio.sh,v 1.50 2018/06/23 08:36:14 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -21,11 +21,12 @@ FLAGS=$1
 
 INIT=/etc/init.d/radiod
 SERVICE=/lib/systemd/system/radiod.service
-BINDIR="\/usr\/share\/radio\/"	# Used for sed
+BINDIR="\/usr\/share\/radio\/"	# Used for sed so \ needed
 DIR=/usr/share/radio
 CONFIG=/etc/radiod.conf
 LXSESSION=""	# Start desktop radio at boot time
-FULLSCREEN=""	# Start graphic radio fullscreen
+FULL_SCREEN=""	# Start graphic radio fullscreen
+SCREENSIZE="800x480"	# Screen size 800x480 or 720x480
 PROGRAM="Daemon radiod configured"
 GPROG=""	# Which graphical radio (gradio or vgradio)
 
@@ -48,6 +49,37 @@ USER_INTERFACE=0
 # Old wiring down switch
 DOWN_SWITCH=10
 
+# Check if user wants to configure radio if upgrading
+if [[ -f ${CONFIG}.org ]]; then
+	ans=0
+	ans=$(whiptail --title "Upgrading, Re-configure radio?" --menu "Choose your option" 15 75 9 \
+	"1" "Run radio configuration?" \
+	"2" "Do not change configuration?" 3>&1 1>&2 2>&3) 
+
+	exitstatus=$?
+	if [[ $exitstatus != 0 ]] || [[ ${ans} == '2' ]]; then
+		echo "Current configuration in ${CONFIG} unchanged"
+		exit 0
+	fi
+fi
+
+# Copy the distribution configuration
+ans=$(whiptail --title "Replace your configuration file ?" --menu "Choose your option" 15 75 9 \
+"1" "Replace configuration file" \
+"2" "Do not replace configuration" 3>&1 1>&2 2>&3) 
+
+exitstatus=$?
+if [[ $exitstatus != 0 ]]; then
+	exit 0
+
+elif [[ ${ans} == '1' ]]; then
+	pwd 
+	sudo mv ${CONFIG} ${CONFIG}.save	
+	echo "Existing configuration  copied to ${CONFIG}.save"
+	sudo cp ${DIR}/radiod.conf ${CONFIG}
+	echo "Current configuration ${CONFIG} replaced with distribution"
+fi
+
 # Select the user interface (Buttons or Rotary encoders)
 ans=0
 selection=1 
@@ -57,7 +89,8 @@ do
 	"1" "Push button radio" \
 	"2" "Radio with Rotary Encoders" \
 	"3" "HDMI or touch screen only" \
-	"4" "Do not change configuration" 3>&1 1>&2 2>&3) 
+	"4" "IQAudio Cosmic Controller" \
+	"5" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
 	exitstatus=$?
 	if [[ $exitstatus != 0 ]]; then
@@ -75,6 +108,11 @@ do
 	elif [[ ${ans} == '3' ]]; then
 		DESC="HDMI or touch screen only"
 		USER_INTERFACE=3
+
+	elif [[ ${ans} == '4' ]]; then
+		DESC="IQAudio Cosmic Controller"
+		USER_INTERFACE=4
+		WIRING_TYPE=3
 	else
 		DESC="User interface in ${CONFIG} unchanged"	
 		echo ${DESC}
@@ -85,36 +123,38 @@ do
 done
 
 # Select the wiring type (40 or 26 pin)
-ans=0
-selection=1 
-while [ $selection != 0 ]
-do
-	ans=$(whiptail --title "Select wiring version" --menu "Choose your option" 15 75 9 \
-	"1" "40 pin version wiring" \
-	"2" "26 pin version wiring" \
-	"3" "Do not change configuration" 3>&1 1>&2 2>&3) 
+if [[ ${WIRING_TYPE} == "0" ]]; then
+	ans=0
+	selection=1 
+	while [ $selection != 0 ]
+	do
+		ans=$(whiptail --title "Select wiring version" --menu "Choose your option" 15 75 9 \
+		"1" "40 pin version wiring" \
+		"2" "26 pin version wiring" \
+		"3" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
-	exitstatus=$?
-	if [[ $exitstatus != 0 ]]; then
-		exit 0
-	fi
+		exitstatus=$?
+		if [[ $exitstatus != 0 ]]; then
+			exit 0
+		fi
 
-	if [[ ${ans} == '1' ]]; then
-		DESC="40 pin version selected"
-		WIRING_TYPE=1
+		if [[ ${ans} == '1' ]]; then
+			DESC="40 pin version selected"
+			WIRING_TYPE=1
 
-	elif [[ ${ans} == '2' ]]; then
-		DESC="26 pin version selected"
-		WIRING_TYPE=2
+		elif [[ ${ans} == '2' ]]; then
+			DESC="26 pin version selected"
+			WIRING_TYPE=2
 
-	else
-		DESC="Wiring configuration in ${CONFIG} unchanged"	
-		echo ${DESC}
-	fi
+		else
+			DESC="Wiring configuration in ${CONFIG} unchanged"	
+			echo ${DESC}
+		fi
 
-	whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
-	selection=$?
-done
+		whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
+		selection=$?
+	done
+fi
 
 # Configure the down switch
 if [[ ${WIRING_TYPE} == "2" ]]; then
@@ -162,8 +202,9 @@ do
 	"3" "LCD with Adafruit (MCP23017) backpack" \
 	"4" "Adafruit RGB LCD plate with 5 push buttons" \
 	"5" "HDMI or touch screen display" \
-	"6" "No display used" \
-	"7" "Do not change display type" 3>&1 1>&2 2>&3) 
+	"6" "Olimex 128x64 pixel OLED display" \
+	"7" "No display used" \
+	"8" "Do not change display type" 3>&1 1>&2 2>&3) 
 
 	exitstatus=$?
 	if [[ $exitstatus != 0 ]]; then
@@ -193,12 +234,20 @@ do
 		DESC="Adafruit RGB LCD plate with 5 push buttons" 
 
 	elif [[ ${ans} == '5' ]]; then
-		DISPLAY_TYPE="GRAPHICAL_DISPLAY"
+		DISPLAY_TYPE="GRAPHICAL"
 		DESC="HDMI or touch screen display"
 		LINES=0
 		WIDTH=0
 
 	elif [[ ${ans} == '6' ]]; then
+		DISPLAY_TYPE="OLED_128x64"
+		I2C_ADDRESS="0x3C"
+		I2C_REQUIRED=1
+		DESC="Olimex 128x64 pixel OLED display"
+		LINES=5
+		WIDTH=20
+
+	elif [[ ${ans} == '7' ]]; then
 		DISPLAY_TYPE="NO_DISPLAY"
 		DESC="No display used"
 
@@ -223,8 +272,9 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
 		"1" "Hex 0x20 (Adafruit devices)" \
 		"2" "Hex 0x27 (PCF8574 devices)" \
 		"3" "Hex 0x37 (PCF8574 devices alternative address)" \
-		"4" "Manually configure i2c_address in ${CONFIG}" \
-		"5" "Do not change configuration" 3>&1 1>&2 2>&3) 
+		"4" "Hex 0x3C (Olimex OLED with Cosmic controller)" \
+		"5" "Manually configure i2c_address in ${CONFIG}" \
+		"6" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
 		exitstatus=$?
 		if [[ $exitstatus != 0 ]]; then
@@ -244,6 +294,10 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
 			I2C_ADDRESS="0x37"
 
 		elif [[ ${ans} == '4' ]]; then
+			DESC="Hex 0x3C selected"
+			I2C_ADDRESS="0x3C"
+
+		elif [[ ${ans} == '5' ]]; then
 			DESC="Manually configure i2c_address in ${CONFIG} "
 			echo ${DESC}
 
@@ -295,7 +349,7 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
 fi
 
 # Select the display type (Lines and Width)
-if [[ ${DISPLAY_TYPE} != "GRAPHICAL_DISPLAY" ]]; then
+if [[ ${DISPLAY_TYPE} != "GRAPHICAL" ]]; then
 	ans=0
 	selection=1 
 	while [ $selection != 0 ]
@@ -305,7 +359,8 @@ if [[ ${DISPLAY_TYPE} != "GRAPHICAL_DISPLAY" ]]; then
 		"2" "Four line 16 character LCD" \
 		"3" "Two line 16 character LCD" \
 		"4" "Two line 8 character LCD" \
-		"5" "Do not change display type" 3>&1 1>&2 2>&3) 
+		"5" "Olimex 128x64 pixel OLED" \
+		"6" "Do not change display type" 3>&1 1>&2 2>&3) 
 
 		exitstatus=$?
 		if [[ $exitstatus != 0 ]]; then
@@ -328,6 +383,10 @@ if [[ ${DISPLAY_TYPE} != "GRAPHICAL_DISPLAY" ]]; then
 			DESC="Two line 8 character LCD" 
 			LINES=2;WIDTH=8
 
+		elif [[ ${ans} == '5' ]]; then
+			DESC="Olimex 128x64 OLED display" 
+			LINES=5;WIDTH=20
+
 		else
 			echo "Wiring configuration in ${CONFIG} unchanged"	
 		fi
@@ -336,6 +395,45 @@ if [[ ${DISPLAY_TYPE} != "GRAPHICAL_DISPLAY" ]]; then
 		selection=$?
 	done
 else
+	# Configure graphical display
+	ans=0
+	selection=1 
+	while [ $selection != 0 ]
+	do
+		ans=$(whiptail --title "Select graphical display type?" --menu "Choose your option" 15 75 9 \
+		"1" "Raspberry Pi 7 inch touch-screen (800x480)" \
+		"2" "Adafruit 3.5 inch TFT touch-screen (720x480)" \
+		"3" "HDMI television or monitor (800x480)" \
+		"4" "Do not change configuration" 3>&1 1>&2 2>&3) 
+
+		exitstatus=$?
+		if [[ $exitstatus != 0 ]]; then
+			exit 0
+		fi
+
+		if [[ ${ans} == '1' ]]; then
+			DESC="Raspberry Pi 7 inch touch-screen"
+			SCREEN_SIZE="800x480"
+
+		elif [[ ${ans} == '2' ]]; then
+			DESC="Adafruit 3.5 inch TFT touch-screen"
+			SCREEN_SIZE="720x480"
+
+		elif [[ ${ans} == '3' ]]; then
+			DESC="HDMI television or monitor"
+			SCREEN_SIZE="800x480"
+
+		else
+			DESC="Graphical displayn type unchanged"	
+			echo {DESC}
+			GPROG=""
+		fi
+
+		whiptail --title "${DESC} " --yesno "Is this correct?" 10 60
+		selection=$?
+		
+	done
+	
 	ans=0
 	selection=1 
 	while [ $selection != 0 ]
@@ -444,11 +542,12 @@ cmd="@sudo /usr/share/radio/${GPROG}.py"
 AUTOSTART="/home/pi/.config/lxsession/LXDE-pi/autostart"
 if [[ ${LXSESSION} == "yes" ]]; then
 	# Delete old entry if it exists
-	sudo sed -i -e "/gradio/d" ${AUTOSTART}
+	sudo sed -i -e "/radio/d" ${AUTOSTART}
 	echo "Configuring ${AUTOSTART} for automatic start"
 	sudo echo ${cmd} | sudo tee -a  ${AUTOSTART}
-elif [[ ${LXSESSION} == "no" ]]; then
-	sudo sed -i -e "/gradio/d" ${AUTOSTART}
+#elif [[ ${LXSESSION} == "no" ]]; then
+else
+	sudo sed -i -e "/radio/d" ${AUTOSTART}
 fi
 
 
@@ -469,6 +568,11 @@ if [[ $DISPLAY_TYPE != "" ]]; then
 	sudo sed -i -e "0,/^display_width/{s/display_width.*/display_width=${WIDTH}/}" ${CONFIG}
 fi
 
+# Set up graphical screen size
+if [[ $DISPLAY_TYPE == "GRAPHICAL" ]]; then
+	sudo sed -i -e "0,/^screen_size/{s/screen_size.*/screen_size=${SCREEN_SIZE}/}" ${CONFIG}
+fi
+
 # Configure user interface (Buttons or Rotary encoders)
 if [[ ${USER_INTERFACE} == "1" ]]; then
 	sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=buttons/}" ${CONFIG}
@@ -478,6 +582,9 @@ elif [[ ${USER_INTERFACE} == "2" ]]; then
 
 elif [[ ${USER_INTERFACE} == "3" ]]; then
 	sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=graphical/}" ${CONFIG}
+
+elif [[ ${USER_INTERFACE} == "4" ]]; then
+	sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=cosmic_controller/}" ${CONFIG}
 fi
 
 # Configure user interface (Buttons or Rotary encoders)
@@ -489,7 +596,7 @@ fi
 if [[ ${WIRING_TYPE} == "1" ]]; then
 	echo "Configuring 40 Pin wiring" 
 	# Switches
-	sudo sed -i -e "0,/^menu_switch/{s/menu_switch.*/menu_switch=17/}" ${CONFIG}
+	sudo sed -i -e "0,/^menu_switch=/{s/menu_switch=.*/menu_switch=17/}" ${CONFIG}
 	sudo sed -i -e "0,/^mute_switch/{s/mute_switch.*/mute_switch=4/}" ${CONFIG}
 	sudo sed -i -e "0,/^up_switch/{s/up_switch.*/up_switch=24/}" ${CONFIG}
 	sudo sed -i -e "0,/^down_switch/{s/down_switch.*/down_switch=23/}" ${CONFIG}
@@ -506,7 +613,7 @@ if [[ ${WIRING_TYPE} == "1" ]]; then
 elif [[ ${WIRING_TYPE} == "2" ]]; then
 	echo "Configuring 26 Pin wiring" 
 	# Switches
-	sudo sed -i -e "0,/^menu_switch/{s/menu_switch.*/menu_switch=25/}" ${CONFIG}
+	sudo sed -i -e "0,/^menu_switch=/{s/menu_switch=.*/menu_switch=25/}" ${CONFIG}
 	sudo sed -i -e "0,/^mute_switch/{s/mute_switch.*/mute_switch=4/}" ${CONFIG}
 	sudo sed -i -e "0,/^up_switch/{s/up_switch.*/up_switch=17/}" ${CONFIG}
 	sudo sed -i -e "0,/^down_switch/{s/down_switch.*/down_switch=${DOWN_SWITCH}/}" ${CONFIG}
@@ -519,8 +626,22 @@ elif [[ ${WIRING_TYPE} == "2" ]]; then
 	sudo sed -i -e "0,/^lcd_data5/{s/lcd_data5.*/lcd_data5=22/}" ${CONFIG}
 	sudo sed -i -e "0,/^lcd_data6/{s/lcd_data6.*/lcd_data6=23/}" ${CONFIG}
 	sudo sed -i -e "0,/^lcd_data7/{s/lcd_data7.*/lcd_data7=24/}" ${CONFIG}
+
+elif [[ ${WIRING_TYPE} == "3" ]]; then
+	echo "Configuring Cosmic Controller Pin wiring" 
+	# Switches
+	sudo sed -i -e "0,/^menu_switch/{s/menu_switch.*/menu_switch=5/}" ${CONFIG}
+	sudo sed -i -e "0,/^mute_switch/{s/mute_switch.*/mute_switch=27/}" ${CONFIG}
+	sudo sed -i -e "0,/^up_switch/{s/up_switch.*/up_switch=6/}" ${CONFIG}
+	sudo sed -i -e "0,/^down_switch/{s/down_switch.*/down_switch=4/}" ${CONFIG}
+	sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=23/}" ${CONFIG}
+	sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=24/}" ${CONFIG}
+	# Configure status LEDs
+	sudo sed -i -e "0,/^rgb_red/{s/rgb_red.*/rgb_red=14/}" ${CONFIG}
+	sudo sed -i -e "0,/^rgb_green/{s/rgb_green.*/rgb_green=15/}" ${CONFIG}
+	sudo sed -i -e "0,/^rgb_blue/{s/rgb_blue.*/rgb_blue=16/}" ${CONFIG}
 else
-	echo "No changes to LCD and switch wiring configuration" 
+	echo "No changes to display and switch wiring configuration" 
 
 fi
 
@@ -537,6 +658,10 @@ if [[ $DISPLAY_TYPE != "" ]]; then
 	echo $(grep "^display_type=" ${CONFIG} )
 	echo $(grep "^display_lines=" ${CONFIG} )
 	echo $(grep "^display_width=" ${CONFIG} )
+fi
+
+if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
+	echo $(grep "^screen_size=" ${CONFIG} )
 fi
 
 if [[ ${WIRING_TYPE} != "0" ]]; then
@@ -560,7 +685,7 @@ sudo sed -i "s/^ExecStop=.*/ExecStop=${BINDIR}${DAEMON} stop/g" ${SERVICE}
 
 echo
 # Update system startup 
-if [[ ${DISPLAY_TYPE} == "GRAPHICAL_DISPLAY" ]]; then
+if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
 
 	# Set up desktop radio execution icon
 	sudo cp ${DIR}/Desktop/gradio.desktop /home/pi/Desktop/.
@@ -613,6 +738,7 @@ else
 	echo "Audio configuration unchanged"	
 fi
 
+echo "Reboot Raspberry Pi to enable changes"
 exit 0
 
 # End of configuration script

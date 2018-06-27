@@ -4,7 +4,7 @@
 # LCD class for  Adafruit RGB-backlit LCD plate for Raspberry Pi.
 # Adapted by Bob Rathbone from code by Adafruit Industries.  MIT license.
 # Amended for version 6.0 and later of the Rathbone Internet Radio
-# $Id: lcd_adafruit_class.py,v 1.5 2018/01/12 18:54:48 bob Exp $
+# $Id: lcd_adafruit_class.py,v 1.8 2018/04/09 07:18:57 bob Exp $
 
 # Original code based on code from lrvick and LiquidCrystal.
 # lrvic - https://github.com/lrvick/raspi-hd44780/blob/master/hd44780.py
@@ -450,16 +450,21 @@ class Adafruit_lcd(i2c):
 		  self.i2c.address, self.MCP23017_GPIOB, self.portb)
 
 
-	# Check which button was 
+	# Check which button was pressed
 	def checkButtons(self):
 		for button in range (0,5):
 			if self.buttonPressed(button) > 0:
 				if button == self.MENU:
 					self.event.set(self.event.MENU_BUTTON_DOWN)
-				
-				elif button == self.RIGHT:
-					self.event.set(self.event.RIGHT_SWITCH)
-				
+					# 3 seconds down shuts down the radio
+					count = 10
+					while self.buttonPressed(self.MENU):
+						time.sleep(0.2)
+						count -= 1
+						if count < 0:
+							self.event.set(self.event.SHUTDOWN)
+							break
+
 				elif button == self.DOWN:
 					self.event.set(self.event.DOWN_SWITCH)
 					time.sleep(0.1)
@@ -470,6 +475,15 @@ class Adafruit_lcd(i2c):
 				
 				elif button == self.LEFT:
 					self.event.set(self.event.LEFT_SWITCH)
+					time.sleep(0.05)
+					if self.buttonPressed(self.RIGHT):
+						self.event.set(self.event.MUTE_BUTTON_DOWN)
+				
+				elif button == self.RIGHT:
+					self.event.set(self.event.RIGHT_SWITCH)
+					time.sleep(0.05)
+					if self.buttonPressed(self.LEFT):
+						self.event.set(self.event.MUTE_BUTTON_DOWN)
 				
 		return
 		

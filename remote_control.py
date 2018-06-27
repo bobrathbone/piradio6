@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #       
 # Raspberry Pi remote control daemon
-# $Id: remote_control.py,v 1.10 2017/12/06 08:51:50 bob Exp $
+# $Id: remote_control.py,v 1.12 2018/03/24 11:42:53 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -151,7 +151,7 @@ def listener():
 
 	except Exception as e:
 		log.message(str(e), log.ERROR)
-		print e
+		print str(e)
 		mesg = "Possible configuration error, check /etc/lirc/lircd.conf"
 		log.message(mesg, log.ERROR)
 		print mesg
@@ -174,6 +174,7 @@ def udpSend(button):
 		clientsocket.settimeout(3)
 		clientsocket.sendto(button, (udphost, udpport))
 		data = clientsocket.recv(100).strip()
+		clientsocket.close()
 
 	except socket.error, e:
 		err = e.args[0]

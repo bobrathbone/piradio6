@@ -4,7 +4,7 @@
 # This program produces a wiring diagram based on the 
 #      configuration in the /etc/radiod.conf file
 
-# $Id: wiring.py,v 1.1 2017/10/01 12:21:39 bob Exp $
+# $Id: wiring.py,v 1.2 2018/03/25 10:07:03 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -12,11 +12,11 @@
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
-#            The authors shall not be liable for any loss or damage however caused.
+#	    The authors shall not be liable for any loss or damage however caused.
 #
 
-import os
-import sys
+import os,sys
+import pwd
 import commands
 
 from config_class import Configuration
@@ -177,6 +177,12 @@ def usage():
 	sys.exit(0)
 
 # Main program
+
+if pwd.getpwuid(os.geteuid()).pw_uid > 0:
+	print "This program must be run with sudo or root permissions!"
+	sys.exit(1)
+
+print "Test rotary encoder Class"
 
 params = False 
 if len(sys.argv) > 1:

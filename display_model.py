@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-$Id: display_model.py,v 1.2 2017/11/06 07:21:02 bob Exp $
+$Id: display_model.py,v 1.4 2018/03/17 10:48:01 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -72,8 +72,9 @@ model_data = {
     '9000c1': ('Pi Zero W', '1.1', 512, 'Sony', 'Onboard WiFi and Bluetooth 4.1'),
     'a02082': ('3 Model B', '1.2', 1024, 'Sony', 'Onboard WiFi and Bluetooth 4.1'),
     'a020a0': ('Compute Module 3 (and CM3 Lite)', '1.0', 1024, 'Sony', 'Onboard WiFi and Bluetooth 4.1'),
-    'a22082': ('3 Model b', '1.2', 1024, 'Embest', 'Onboard WiFi and Bluetooth 4.1'),
-    'a32082': ('3 Model b', '1.2', 1024, 'Sony', 'Onboard WiFi and Bluetooth 4.1'),
+    'a22082': ('3 Model B', '1.2', 1024, 'Embest', 'Onboard WiFi and Bluetooth 4.1'),
+    'a32082': ('3 Model B', '1.2', 1024, 'Sony', 'Onboard WiFi and Bluetooth 4.1'),
+    'a020d3': ('3 Model B+', '?', 1024, 'Sony', '1.4GHz quad core, Blutooth 4.2, POE support'),
 }
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_daemon.py,v 1.2 2017/10/23 06:43:00 bob Exp $
+# $Id: radio_daemon.py,v 1.4 2018/06/12 10:29:45 bob Exp $
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
 #
@@ -96,7 +96,7 @@ class Daemon:
 		try:
 			self.begin(False)
 		except KeyboardInterrupt:
-			print "\nRadio stopped"
+			self.stop()
 
 	def begin(self,daemonize):
 		"""

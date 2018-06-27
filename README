@@ -9,6 +9,53 @@ See http://www.musicpd.org/
 Use "apt-get install mpd mpc python-mpd" to install the library
 This software uses the python-mpd library. See https://pypi.python.org/pypi/python-mpd/
 
+Version 6.7 release notes
+-------------------------
+27th July 2018
+1) Spotify (raspotify) implemented
+2) Missing [SCREEN] section in radiod.conf added
+3) Improved volume slider for OLED version of the radio
+4) Correct shift A for volume up in gradio.py and vgradiod.py
+5) Keyboard key M mutes vgradio
+7) All volume and and mixer functions moved to a new volume_class.py file
+7) Support for Adafruit 3.5 inch TFT touch-screen added
+8) Auto-load Media (USB stick) if no network
+
+Version 6.6 release notes
+-------------------------
+1 May 2018
+1) vgradio and gradio check for X-windows desktop
+2) Cosmic controller from IQAudio (3 button + Rotary encoder) added
+3) Olimex 128x64 pixel OLED screen support added (connects to Cosmic controller)
+4) Check if user wishes to re-configure radio if upgrading
+
+Version 6.5 release notes
+-------------------------
+5th April 2018
+Version 6.5 release notes
+-------------------------
+5th April 2018
+1) Display model changed to support the Raspberry PI 3B Plus
+2) Correct information display (IP, hosname and version info) in gradio.py
+3) Shoutcast playlist creation from either command line or web interface added
+4) Error in config_class.py test routine corrected
+5) UDP clients (remote_control) now close socket after send/receive 
+6) New script install_airplay.sh created to install shairport-sync
+7) Airplay volume stored in /var/lib/radiod/airplay_volume
+8) Improved bad station URL error handling
+9) Correct RSS feed and title display end of text being clipped
+10) Correct button/rotary encoder insensitivity when in mute 
+
+Version 6.4 release notes
+-------------------------
+16th February 2018
+1) Hide cursor if display_cursor=no
+2) Screen blanking implemented and screen_saver=<minutes>
+3) Report if a stream isn't transmitting
+4) Switch between gradio and vgradio.py (if configured)
+5) Menu button long press on Adafruit RGB plate issues shutdown
+6) Correct radio configuration program when switching from graphic radio to LCD version
+
 Version 6.3 release notes
 -------------------------
 4th February 2018
@@ -80,8 +127,10 @@ Version 5.x see:  https://github.com/bobrathbone/piradio
 
 Licenses
 --------
-GNU General Public License. See http://www.gnu.org/licenses/gpl.html
-GNU AFFERO GENERAL PUBLIC LICENSE. See http://www.gnu.org/licenses/agpl.html
+The licences for the source and documentation for this project are:
+GNU General Public License. 		http://www.gnu.org/licenses/gpl.html
+GNU AFFERO General Public License.	http://www.gnu.org/licenses/agpl.html
+GNU Free Documentation License. 	http://www.gnu.org/licenses/fdl.html
 
 Disclaimer 
 ----------

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet language Class
-# $Id: message_class.py,v 1.22 2018/01/03 08:47:47 bob Exp $
+# $Id: message_class.py,v 1.27 2018/06/13 09:41:11 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -39,14 +39,14 @@ class Message:
 	speech_text = ''  # Prevent text from being repeatedly spoken
 
 	# Initialisation routine - Load language
-	def __init__(self,radio, display):
+	def __init__(self,radio,display):
 		global language
 		self.radio = radio
 		self.display = display
 		self.lines = display.getLines()
 		self.width = display.getWidth()
 
-		# Is speach enabled
+		# Is speech enabled
 		self.speech = config.hasSpeech()
 		language = Language(self.speech)
 		return
@@ -110,7 +110,7 @@ class Message:
 	# Get source text by source id
 	def getSourceText(self,source):
 		sSource = "Source error"
-		sLabels = ['source_radio', 'source_media', 'source_airplay']
+		sLabels = ['source_radio','source_media', 'source_airplay','source_spotify']
 		try:
 			sSource =  language.getText(sLabels[source])
 		except:
@@ -159,12 +159,14 @@ class Message:
 			self.speech_text = ''
 
 		if self.speech and len(text) > 1 and text != self.speech_text:
-			if text[0] != '!':
-				speech_volume = config.getSpeechVolume()
-				volume = self.radio.getVolume()
-				volume = volume * speech_volume/100
+			if not self.radio.spotify.isRunning() and \
+					not self.radio.airplay.isRunning():
+				volume = self.radio.getVolume()/2
+				speech_volume_adjust = config.getSpeechVolumeAdjust()
+				volume = (volume * speech_volume_adjust/100)
 				if volume < 5:
 					volume = 5
+
 				self.radio.clientPause()
 				language.speak(text,volume)
 				self.speech_text = text	# Prevent repeating

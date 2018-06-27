@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio
-# $Id: configure_audio.sh,v 1.9 2018/01/05 11:31:31 bob Exp $
+# $Id: configure_audio.sh,v 1.12 2018/06/07 11:42:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -50,9 +50,20 @@ if [[ $? == 0 ]]; then 	# Don't seperate from above
 	exit 1
 fi
 
-# Stop the radio
-echo "Stopping the radio"
-sudo service radiod stop
+# Stop the radio and MPD
+CMD="sudo systemctl stop radiod.service"
+echo ${CMD};${CMD}
+CMD="sudo systemctl stop mpd.service"
+echo ${CMD};${CMD}
+
+sleep 2
+
+# If the above fails check pid
+rpid=$(cat /var/run/radiod.pid)
+if [[ $? == 0 ]]; then 	# Don't seperate from above
+	sudo kill -TERM ${rpid}
+fi
+
 sudo service mpd stop
 
 selection=1 
@@ -62,7 +73,7 @@ do
 	"1" "On-board audio output jack" \
 	"2" "HDMI output" \
 	"3" "USB DAC" \
-	"4" "HiFiBerry DAC" \
+	"4" "HiFiBerry DAC/Pimoroni pHat" \
 	"5" "HiFiBerry DAC plus" \
 	"6" "HiFiBerry DAC Digi" \
 	"7" "HiFiBerry Amp" \

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: no_display.py,v 1.2 2017/10/22 08:53:14 bob Exp $
+# $Id: no_display.py,v 1.3 2018/04/22 13:13:31 bob Exp $
 # Raspberry Pi display routines
 # Null screen routines used by retro radio 
 #
@@ -53,7 +53,7 @@ class No_Display:
                 return
 
 	# Clear display
-	def clearDisplay(self):
+	def clear(self):
                 return
 
 	# Return colour False

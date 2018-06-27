@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Airplay receiver Class
-# $Id: airplay_class.py,v 1.9 2017/12/01 12:55:09 bob Exp $
+# $Id: airplay_class.py,v 1.12 2018/06/06 13:17:57 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -19,7 +19,6 @@
 import os
 import sys
 import pwd
-import pwd
 import pdb
 import time
 import ConfigParser
@@ -36,20 +35,12 @@ AirplayMetadata =  AirplayDir + "/metadata"
 AirplayPipe = "/tmp/shairport-sync-metadata"
 ShairportReader = "/usr/local/bin/shairport-sync-metadata-reader"
 
-# Stored mixer volume
-RadioLibDir = "/var/lib/radiod"
-MixerVolumeFile = RadioLibDir + "/mixer_volume"
-
 log = Log()
 translate = Translate()
 config = Configuration()
 
 class AirplayReceiver:
 
-	mixerVolume = 100 # Mixer volume 
-	saveMixerVolume = 0 # Saved Mixer volume for mute functions 
-	mixerPreset = 100 # Mixer preset volume 
-	mixerMuted = False # Mixer muted yes no
 	AirplayRunning = False
 	hostname = None
 	title = 'Uknown title'
@@ -74,8 +65,6 @@ class AirplayReceiver:
 	def start(self):
 		log.message("Starting Airplay", log.DEBUG)
 		self.hostname = socket.gethostname()
-		if not os.path.isfile(MixerVolumeFile) or os.path.getsize(MixerVolumeFile) == 0:
-				self.execCommand ("echo " + str(100) + " > " + MixerVolumeFile)
 
 		if os.path.exists(AirplayPipe):
 			log.message("Deleting old pipe " + AirplayPipe, log.DEBUG)
@@ -92,8 +81,7 @@ class AirplayReceiver:
 		self.execCommand(cmd)
 		time.sleep(0.5)	 # Allow shairport-sync to start-up
 
-		# setup mixer volume etc
-		self.setMixerVolume(self.getStoredMixerVolume())
+		# Set Airplay running
 		self.airplay_scrolling = 0
 		self.AirplayRunning = True
 		log.message("Airplay running "+ str(self.AirplayRunning), log.DEBUG)
@@ -196,103 +184,6 @@ class AirplayReceiver:
 		self.interrupt = False
 		return interrupt
 
-	# Get mixer volume
-	def getMixerVolume(self):
-		volume =  self.mixerVolume
-		return volume
-
-	# Increase mixer volume
-	def increaseMixerVolume(self):
-		volume = self.mixerVolume
-		range = config.getVolumeRange()
-		volume += int(100/range)
-		self.mixerVolume = self.setMixerVolume(volume)
-		return self.mixerVolume
-
-	# Decrease mixer volume
-	def decreaseMixerVolume(self):
-		volume = self.mixerVolume
-		range = config.getVolumeRange()
-		volume -= int(100/range)
-		self.mixerVolume = self.setMixerVolume(volume)
-		return self.mixerVolume
-
-	# Set mixer volume
-	def setMixerVolume(self,volume):
-		if volume > 100:
-			volume = 100
-		if volume < 0:
-			volume = 0
-
-		mixer_volume_id = config.getMixerVolumeID()
-		cmd = "sudo amixer cset numid=" + str(mixer_volume_id) + " -- " + str(volume) + "%"
-		log.message(cmd,log.DEBUG)
-		self.execCommand(cmd)
-
-		if volume > 0:
-			self.mixerMuted = False
-		else:
-			self.mixerMuted = True
-
-		# Store Airplay mixer volume level
-		self.mixerVolume = volume
-		self.storeMixerVolume(self.mixerVolume)
-		return self.mixerVolume
-
-	# Is mixer muted
-	def mixerIsMuted(self):
-		return self.mixerMuted
-
-	# Mute the mixer
-	def muteMixer(self):
-		self.saveMixerVolume = self.mixerVolume  
-		self.setMixerVolume(0)
-		self.mixerMuted = True
-		return self.mixerVolume
-
-	# unmute the mixer
-	def unmuteMixer(self):
-		self.setMixerVolume(self.saveMixerVolume)
-		self.mixerMuted = False
-		return self.mixerVolume
-
-	# Get the stored mixer volume
-	def getStoredMixerVolume(self):
-		volume = 100
-		if os.path.isfile(MixerVolumeFile):
-			try:
-				volume = int(self.execCommand("cat " + MixerVolumeFile) )
-			except ValueError:
-				volume = 100
-		else:
-			log.message("Error reading " + MixerVolumeFile, log.ERROR)
-
-		return volume
-
-	# Store mixer volume
-	def storeMixerVolume(self, volume):
-		if volume > 100:
-			volume = 100
-		if volume < 0:
-			volume = 0
-
-		try:
-			self.execCommand("echo " + str(volume) + " > " + MixerVolumeFile) 
-		except:
-			log.message("Error writing " + MixerVolumeFile, log.ERROR)
-
-		return volume
-
-	# Get the mixer preset (Sound cards)
-	def setMixerPreset(self):
-		mixer_preset = config.getMixerPreset()
-
-		# If preset=0 (On-board audio) do not change mixer level as this is done by MPD
-		if mixer_preset != 0:
-			log.message("Set mixer preset volume " + str(mixer_preset), log.DEBUG)
-			self.setMixerVolume(mixer_preset)
-		return mixer_preset
-
 	# Execute system command
 	def execCommand(self,cmd):
 		p = os.popen(cmd)
@@ -304,19 +195,5 @@ class AirplayReceiver:
 if __name__ == "__main__":
 	print "Test airplay_class.py"
 	airplay = AirplayReceiver()
-	airplay.start()
-	airplay.setMixerVolume(70)
-	time.sleep(4)
-	airplay.setMixerVolume(90)
-	time.sleep(4)
-	airplay.setMixerVolume(80)
-	time.sleep(4)
-	airplay.muteMixer()
-	time.sleep(4)
-	airplay.unmuteMixer()
-	time.sleep(4)
-	airplay.stop()
-
-	# Exit
 	sys.exit(0)
 

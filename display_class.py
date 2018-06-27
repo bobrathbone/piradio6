@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.24 2018/01/03 08:47:47 bob Exp $
+# $Id: display_class.py,v 1.35 2018/05/10 12:31:50 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -38,6 +38,8 @@ class Display:
 
 	lines = SCREEN_LINES	# Default lines
 	width = SCREEN_WIDTH	# Default width
+	saved_volume = 0
+	saved_font_size = 1
 
 	delay = 0  # Delay (volume) display for n cycles (2 line displays)
 
@@ -110,6 +112,14 @@ class Display:
 			#This device has its own buttons on the I2C intertface
 			self.has_buttons = True
 
+		elif dtype == config.OLED_128x64:
+			from oled_class import Oled
+			screen = Oled()
+			self.width = 20
+			self.lines = 5
+			# Set vertical display
+			screen.flip_display_vertically(config.flipVertical())
+
 		else:
 			from lcd_class import Lcd
 			screen = Lcd()
@@ -132,6 +142,8 @@ class Display:
 			msg = msg + ' Address=' + hex(i2c_address)
 
 		log.message(msg, log.DEBUG)
+
+		self.splash()
 
 		# Set up number of lines and display buffer
 		for i in range(0, self.lines):
@@ -163,32 +175,57 @@ class Display:
 			self.lines = 2
 		return self.lines
 
+	# Set font
+	def setFont(self,size):
+		displayType = config.getDisplayType()
+		if displayType == config.OLED_128x64 and size != self.saved_font_size:
+			screen.setFont(size)
+			self.saved_font_size = size
+
 	# Send string to display if it has not already been displayed
 	def out(self,line,message,interrupt=no_interrupt):
 		global screen
 		leng = len(message)
 		index = line-1
+		displayType = config.getDisplayType()
+		#pdb.set_trace()
 
 		if leng < 1:
 			message = " "
+			leng = 1
 		
-		# If screen has enough lines display message
+		# Check if screen has enough lines display message
 		if line <= self.lines:
 			# Always display messages that need to be scrolled
 			if leng > self.width:
 				screen.out(line,message,interrupt)
+				self.update(screen,displayType)
 
 			# Only display if this is a different message on this line
 			elif message !=  self.lineBuffer[index]:
+				message = translate.toLCD(message)
 				screen.out(line,message,interrupt)
+				self.update(screen,displayType)
 
 			# Store the message in the line buffer for comparison
 			# with the next message
 			self.lineBuffer[index] = message	
 		return
 
-	# Clear display
-	def clearDisplay(self):
+	# Update screen (Only OLED)
+	def update(self,screen,displayType):
+		if displayType == config.OLED_128x64:
+			screen.update()
+		return
+
+	# Clear display and line buffer
+	def clear(self):
+		if config.getDisplayType() == config.OLED_128x64:
+			screen.clear()
+			self.lineBuffer = []		# Line buffer 
+			for i in range(0, self.lines):
+				self.lineBuffer.insert(i,'')	
+			self.saved_volume = 0
 		return
 
 	# Set get delay cycles ( Used for temporary message displays)
@@ -233,7 +270,28 @@ class Display:
 	# Get background colour by name index. Returns a color name
 	def getBackColorName(self, index):
 		return config.getBackColorName(index)
-		
+
+	# Oled volume bar
+	def volume(self,volume):
+		if self.saved_volume != volume:
+			screen.volume(volume)
+			self.saved_volume = volume
+
+	# Display splash logo
+	def splash(self):
+		delay = 3
+		dtype = config.getDisplayType()
+		if dtype == config.OLED_128x64:
+			dir = os.path.dirname(__file__)
+			bitmap = dir + '/' + config.getSplash()
+			try:
+				if os.path.exists(bitmap):
+					screen.drawSplash(bitmap,delay)
+				else:
+					print bitmap,"does not exist"
+			except Exception as e:
+				print "Splash:",e
+			
 # End of Display class
 
 
@@ -255,6 +313,7 @@ if __name__ == "__main__":
 		color = display.getBackColor('bg_color')
 		print "bg_color",color,display.getBackColorName(display.getBackColor('bg_color'))
 		display.backlight('search_color')
+		#display.splash()
 		display.out(1,"bobrathbone.com")
 		display.out(2,"Line 2 123456789")
 		display.out(3,"Line 3 123456789")

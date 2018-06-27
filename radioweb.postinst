@@ -1,0 +1,29 @@
+#!/bin/bash 
+# Radio daemon post install script
+# $Id: radioweb.postinst,v 1.1 2018/03/15 15:28:12 bob Exp $
+
+# File locations
+DIR=/usr/share/radio
+TARFILE=${DIR}/piradio_web.tar.gz
+SNOOPY=/var/www/html/snoopy
+APACHE_CONFIG=/etc/apache2
+CGILOAD=cgi.load
+
+if [[ -d ${SNOOPY} ]]; then
+	echo "The web pages appear to be already installed"
+	echo "Updating web pages and CGI scripts in Apache"
+else 
+	echo "Installing web pages and CGI scripts in Apache"
+fi
+
+# Change to root
+cd /
+sudo tar -xvf ${TARFILE} > /dev/null
+
+# Enable cgi scripts
+ln -s ${APACHE_CONFIG}/mods-available/${CGILOAD}  ${APACHE_CONFIG}/mods-enabled/${CGILOAD}
+
+# Restart web server
+apachectl restart
+
+# End of post-installation script

@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # Raspberry Pi Internet Radio remote control daemon
-# $Id: irradiod,v 1.1 2017/10/14 10:51:04 bob Exp $
+# $Id: irradiod,v 1.2 2018/05/21 10:13:51 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,8 +24,6 @@
 # Short-Description: Raspberry pi Internet radio remote control daemon
 # Description:       Start the Remote control daemon Daemon service
 ### END INIT INFO
-
-. /lib/lsb/init-functions
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 

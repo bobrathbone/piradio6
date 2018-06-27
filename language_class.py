@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: language_class.py,v 1.24 2018/01/12 14:47:02 bob Exp $
+# $Id: language_class.py,v 1.34 2018/06/13 12:49:48 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -45,11 +45,15 @@ class Language:
 		'the_time': 'The time is',
 		'loading': 'Loading',
 		'airplay': 'Airplay',
+		'spotify': 'Spotify',
 		'loading_radio': 'Loading radio stations',
 		'updating_media': 'Updating media',
 		'update_complete': 'Update complete',
 		'loading_media': 'Loading media library',
+		'loading_playlists': 'Loading playlists',
 		'starting_airplay': 'Starting Airplay',
+		'starting_spotify': 'Starting Spotify',
+		'waiting_for_spotify_client': 'Waiting for Spotify client',
 		'radio_stations' : 'Radio stations',
 		'media_library': 'Media library',
 		'updatng_media': 'Updating media',
@@ -57,8 +61,11 @@ class Language:
 		'source_radio': 'Internet Radio',
 		'source_media': 'Media library',
 		'source_airplay': 'Airplay receiver',
+		'source_soptify': 'Spotify receiver',
 		'stopping_radio': 'Stopping radio',
 		'current_station': 'Current station',
+		'connecting': 'Connecting',
+		'connection_error': 'Connection error',
 		'station': 'Station',
 		'track': 'Track',
 		'sleep': 'Sleep',

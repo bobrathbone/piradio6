@@ -1,7 +1,13 @@
 #!/bin/bash
-# $Id: build.sh,v 1.4 2017/11/30 09:57:51 bob Exp $
+# $Id: build.sh,v 1.6 2018/05/21 10:13:51 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
+
+# Install the following packages before using this script
+# sudo apt-get -y install equivs apt-file lintian
+
+# Compatability rules
+# Edit the compat file and chjange 7 to 9
 # sudo vi /usr/share/equivs/template/debian/compat (Replace 7 with 9)
 
 PKGDEF=piradio
@@ -18,10 +24,8 @@ tar -cvzf ${BUILDTAR} ${BUILDFILES} > /dev/null
 
 echo "Building package ${PKG} version ${VERSION}" | tee ${BUILDLOG}
 echo "from input file ${PKGDEF}" | tee -a ${BUILDLOG}
-sudo chown pi:pi *.py
-sudo chmod +x *.py
-sudo chown pi:pi *.sh
-sudo chmod +x *.sh
+sudo chown pi:pi *.py *.cmd *.sh
+sudo chmod +x *.py *.cmd *.sh
 sudo chmod -x language/* voice.dist
 
 # Create tar (optional)

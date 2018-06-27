@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: latin-1 -*-
 #
-# $Id: rss_class.py,v 1.5 2018/01/04 12:25:27 bob Exp $
+# $Id: rss_class.py,v 1.6 2018/04/02 11:52:43 bob Exp $
 # Raspberry Pi RSS feed class
 #
 # Author : Bob Rathbone
@@ -193,7 +193,7 @@ class Rss:
 
 	# Scroll RSS feed (Used by gradio.py)
 	def scrollRssFeed(self,display):
-		max_columns = display.getColumns() - 9
+		max_columns = display.getColumns() - 20
 
 		leng = len(self.rss_line1)
 		if leng < 1:

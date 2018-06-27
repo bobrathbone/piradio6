@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.166 2018/02/03 10:07:00 bob Exp $
+# $Id: gradio.py,v 1.209 2018/06/26 10:50:58 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -17,6 +17,9 @@
 # Copyright (C) SGC widget routines 2010-2013  Sam Bull
 # SGC documentation: https://program.sambull.org/sgc/sgc.widgets.html
 #
+# Icons used in the graphic versions of the radio.
+# Clipart library http://clipart-library.com
+# IconSeeker http://www.iconseeker.com
 
 import os
 import sys
@@ -49,14 +52,12 @@ rss = Rss()
 display = None
 radioEvent = None
 message = None
+run = True
 
 import pygame
 from pygame.locals import *
-try:
-    from OpenGL.GL import *
-except: pass
 
-size = (640,480)
+size = (800,480)
 pygame.display.init()
 pygame.font.init()
 myfont = pygame.font.SysFont('freesans', 20, bold=True)
@@ -156,7 +157,7 @@ def displayLoadingSource(screen,font,radio,message):
 	lcolor = getLabelColor(display.config.getDisplayLabelsColor())
 	color = pygame.Color(lcolor)
 	sourceName = radio.getSourceName()
-	column = 7
+	column = 12
 	columnPos = display.getColumnPos(column)
 	rowPos = display.getRowPos(3)
 	msg = "Loading playlist " + sourceName
@@ -173,7 +174,7 @@ def displayLoadingSource(screen,font,radio,message):
 def displayInfo(screen,font,radio,message):
 	lcolor = getLabelColor(display.config.getDisplayLabelsColor())
 	color = pygame.Color(lcolor)
-	column = 7
+	column = 12
 	columnPos = display.getColumnPos(column)
 	columns = display.getColumns()
 	max_columns = columns - 8
@@ -186,7 +187,7 @@ def displayInfo(screen,font,radio,message):
 	if len(ipaddr) < 1:
 		ipaddr = message.storeIpAddress(radio.execCommand('hostname -I'))
 	sIP = "IP address: " + ipaddr
-	sHostname = 'Hostname: ' + socket.gethostname() 
+	sHostname = 'Hostname: ' +  socket.gethostname()
 
 	# Display it 
 	row = 3
@@ -205,11 +206,14 @@ def displayCurrent(screen,font,radio,message):
 	global rss_delay,rss_line
 	column = 5
 	columns = display.getColumns()
-	max_columns = columns - 14
+	max_columns = columns - 20
 	search_name = radio.getSearchName()
 	columnPos = display.getColumnPos(column)
 	title = radio.getCurrentTitle()
-	errorStr = radio.getErrorString()
+
+	errorStr = ''
+	if radio.gotError():
+		errorStr = radio.getErrorString()
 
 	# Scroll if necessary
 	linebuf = 1
@@ -232,6 +236,7 @@ def displayCurrent(screen,font,radio,message):
 	lcolor = getLabelColor(display.config.getDisplayLabelsColor())
 	color = pygame.Color(lcolor)
 	rowPos = display.getRowPos(row)
+
 	if source_type == radio.source.MEDIA:
 		progress = radio.getProgress()
 		current_artist = radio.getCurrentArtist()
@@ -260,7 +265,6 @@ def displayCurrent(screen,font,radio,message):
 		row = 3
 		DisplayWindow.drawText(screen,font,color,row,text)
 	else:
-
 		station_name = radio.getCurrentStationName()[:max_columns]
 		linebuf += 1
 		if len(station_name) > max_columns:
@@ -278,9 +282,9 @@ def displayCurrent(screen,font,radio,message):
 		DisplayWindow.drawText(screen,font,color,row,station_name)
 
 		# Second row
-		if len(errorStr) > 0:
-			station_name = errorStr
 		row = 2
+		if len(errorStr) > 0:
+			title = errorStr
 		DisplayWindow.drawText(screen,font,color,row,title)
 
 		# Third row
@@ -294,10 +298,56 @@ def displayCurrent(screen,font,radio,message):
 		else:
 			text = "Station " + str(current_id)
 			if bitrate > 0:
-				text = text + ' ' + str(bitrate) + 'k'
+				text = text + ": " + str(bitrate) + 'Kb'
+			else:
+				if len(errorStr) > 0:
+					text = text + ': ' + message.get('connection_error')
+				else:
+					text = text + ': ' + message.get('connecting')
 
 		DisplayWindow.drawText(screen,font,color,row,text)
 
+	return
+
+
+# Display Spotify information and logo
+def displaySpotify(display,radio,font):
+	lcolor = getLabelColor(display.config.getDisplayLabelsColor())
+	color = pygame.Color(lcolor)
+	columns = display.getColumns()
+	max_columns = columns - 20
+
+	row = 1
+	text = "Spotify receiver running"
+	DisplayWindow.drawText(screen,font,color,row,text)
+
+	row += 1
+	info = radio.getSpotifyInfo()
+	
+	if len(info) < 1:
+		info = message.get('waiting_for_spotify_client')
+	else:
+		elements = info.split('"')
+		if len(elements) >= 3:
+			info = elements[1]
+		
+	if len(info) > max_columns:
+		info = display.scroll(info,2,max_columns)
+
+	DisplayWindow.drawText(screen,font,color,row,info)
+
+	sHostname = 'Raspotify: ' + socket.gethostname() 
+	row += 1
+	DisplayWindow.drawText(screen,font,color,row,sHostname)
+
+	# Display Spotify icon
+	SpotifyImage = Image(pygame)
+	mysize = (390,110)
+	path = "images/spotify_logo.png"
+	xpos = screen.rect.center[0] - 195
+	ypos = display.getRowPos(8.5)
+	mypos = (xpos,ypos)
+	SpotifyImage.draw(screen,path,(mypos),(mysize))
 	return
 
 # Display Airplay info
@@ -346,9 +396,9 @@ def displayAirplay(display,radio,font):
 	return
 
 # Display left arrow (Position on first station/track)
-def drawLeftArrow(display,screen,LeftArrow):
+def drawLeftArrow(display,screen,LeftArrow,startColumn):
 	mysize = (30,30)
-	xPos = display.getColumnPos(50.5)
+	xPos = display.getColumnPos(startColumn + 48.5)
 	yPos = display.getRowPos(9)
 	myPos = (xPos,yPos)
 	path = "images/arrow_left_double.png"
@@ -356,9 +406,9 @@ def drawLeftArrow(display,screen,LeftArrow):
 	return 
 
 # Display right arrow (Position on first station/track)
-def drawRightArrow(display,screen,RightArrow):
+def drawRightArrow(display,screen,RightArrow,startColumn):
 	mysize = (30,30)
-	xPos = display.getColumnPos(50.5)
+	xPos = display.getColumnPos(startColumn + 48.5)
 	yPos = display.getRowPos(11.75)
 	myPos = (xPos,yPos)
 	dir = os.path.dirname(__file__)
@@ -411,6 +461,7 @@ def handleEvent(radio,radioEvent):
 		if radio.config.doShutdown():
 			radio.shutdown() # Shutdown the system
 		else:
+			print "radioEvent.SHUTDOWN"
 			sys.exit(0)
 
 	elif event_type == radioEvent.CHANNEL_UP:
@@ -429,6 +480,9 @@ def handleEvent(radio,radioEvent):
 	elif event_type == radioEvent.VOLUME_DOWN:
 		radio.decreaseVolume()
 
+	elif event_type == radioEvent.MENU_BUTTON_DOWN:
+		mode = display.cycleMode()
+
 	elif event_type == radioEvent.MUTE_BUTTON_DOWN:
 		if radio.muted():
 			radio.unmute()
@@ -441,7 +495,8 @@ def handleEvent(radio,radioEvent):
 			artwork_file = getArtWork(radio)
 		
 	elif event_type == radioEvent.LOAD_RADIO or event_type == radioEvent.LOAD_MEDIA \
-			   or event_type == radioEvent.LOAD_AIRPLAY:
+			   or event_type == radioEvent.LOAD_AIRPLAY\
+			   or event_type == radioEvent.LOAD_SPOTIFY:
 		handleSourceChange(radioEvent,radio,message)
 
 	radioEvent.clear()
@@ -483,6 +538,11 @@ def handleSourceChange(event,radio,message):
 		message.speak(msg)
 		if display.config.getAirplay():
 			radio.cycleWebSource(radio.source.AIRPLAY)
+
+	elif event_type == event.LOAD_SPOTIFY:
+		msg = message.get('starting_spotify')
+		message.speak(msg)
+		radio.cycleWebSource(radio.source.SPOTIFY)
 
 	new_source = radio.getNewSourceType()
 	log.message("loadSource new type = " + str(new_source), log.DEBUG)
@@ -528,9 +588,11 @@ def handleSearchEvent(radio,event,SearchWindow,display,searchID):
 def drawDisplayWindow(surface,screen,display):
 	# Create display window for radio/media information
 	DisplayWindow = TextRectangle(pygame)
-	xPos = display.getColumnPos(6)
+	wsize = 50
+	cols = display.getColumns()
+	xPos = display.getColumnPos((cols/2)-(wsize/2))
 	yPos = display.getRowPos(3)	
-	xSize = display.getColumnPos(47)
+	xSize = display.getColumnPos(wsize)
 	ySize = display.getRowPos(3)	
 	border = 4
 	wcolor = getLabelColor(display.config.getDisplayWindowColor())
@@ -549,25 +611,31 @@ def setSearchID(array,searchID):
 	return newID
 
 # Draw Up Icon
-def drawUpIcon(display,screen,upIcon):
-	xPos = display.getColumnPos(50)
+def drawUpIcon(display,screen,upIcon,startColumn):
+	xPos = display.getColumnPos(startColumn + 48)
 	yPos = display.getRowPos(7)
 	upIcon.draw(screen,xPos,yPos)
 	return 
 
 # Draw Down Icon
-def drawDownIcon(display,screen,downIcon):
-	xPos = display.getColumnPos(50)
+def drawDownIcon(display,screen,downIcon,startColumn):
+	xPos = display.getColumnPos(startColumn + 48)
 	yPos = display.getRowPos(13.5)
 	downIcon.draw(screen,xPos,yPos)
 	return 
 
+# Draw switch program icon
+def drawSwitchIcon(display,screen,switchIcon):
+	xPos = size[0]-50
+	yPos = 5
+	switchIcon.draw(screen,xPos,yPos)
+	return
+
 # Draw Equalizer Icon
-def drawEqualizerIcon(display,screen,equalizerIcon,draw_equalizer_icon):
-	if draw_equalizer_icon:
-		xPos = display.getColumnPos(50)
-		yPos = display.getRowPos(16.3)
-		equalizerIcon.draw(screen,xPos,yPos)
+def drawEqualizerIcon(display,screen,equalizerIcon,startColumn):
+	xPos = display.getColumnPos(startColumn + 48)
+	yPos = display.getRowPos(16.3)
+	equalizerIcon.draw(screen,xPos,yPos)
 	return 
 
 # Check that the label colour is valid 
@@ -579,10 +647,10 @@ def getLabelColor(lcolor):
 	return lcolor
 
 # Draw option buttons (Random,Repeat and Consume)
-def drawOptionButtons(display,screen,radio,RandomButton,RepeatButton,ConsumeButton,SingleButton):
+def drawOptionButtons(display,screen,radio,RandomButton,RepeatButton,ConsumeButton,SingleButton,column):
 	lcolor = getLabelColor(display.config.getLabelsColor())
 	row = 13.5
-	xPos = display.getColumnPos(3)
+	xPos = display.getColumnPos(column + 1)
 	yPos = display.getRowPos(row)
 	label = "Random"
 	RandomButton.draw(screen,xPos,yPos,label,lcolor)
@@ -606,10 +674,12 @@ def drawSearchWindow(surface,screen,display,searchID):
 	global Artists
 	textArray=[]
 	Artists = {}
+	wsize = 30
 	SearchWindow = ScrollBox(pygame)
-	xPos = display.getColumnPos(14)
-	yPos = display.getRowPos(7)	
-	xSize = display.getColumnPos(30)
+	cols = display.getColumns()
+	xPos = display.getColumnPos((cols/2)-(wsize/2))
+	yPos = display.getRowPos(7)
+	xSize = display.getColumnPos(wsize)
 	lines = 8
 	ySize = display.getRowPos(lines)	
 	border = 3
@@ -674,32 +744,36 @@ def getPlaylists():
 	return list
 
 # Create Channel Up button (Also exits Airplay)
-def drawChannelUpButton(source_type,sgc,display):
+def drawChannelUpButton(source_type,sgc,display,column):
 	# Set button label
+	print "source_type",source_type
 	if source_type == radio.source.AIRPLAY:
 		label = "Exit\nAirplay"
+
+	elif source_type == radio.source.SPOTIFY:
+		label = "Exit\nSpotify"
+
 	elif source_type == radio.source.MEDIA:
 		label = "Track\nUp"
+
 	else:
 		label = "Station\nUp"
 
-	column = 14
-	xPos = display.getColumnPos(column)
+	xPos = display.getColumnPos(startColumn + 10.5)
 	yPos = display.getRowPos(16)
 	ChannelUpButton = sgc.Button(label=label, pos=(xPos,yPos))
 	ChannelUpButton.add(order=1)
 	return ChannelUpButton
 
 # Channel Down button
-def drawChannelDownButton(source_type,sgc,display):
+def drawChannelDownButton(source_type,sgc,display,startColumn):
 	# Set button label
 	if source_type == radio.source.MEDIA:
 		label = "Track\nDown"
 	else:
 		label = "Station\nDown"
 
-	column = 34
-	xPos = display.getColumnPos(column)
+	xPos = display.getColumnPos(startColumn + 31)
 	yPos = display.getRowPos(16)
 	ChannelDownButton = sgc.Button(label=label, pos=(xPos,yPos))
 	ChannelDownButton.add(order=2)
@@ -730,7 +804,7 @@ def checkPid(pidfile):
 			log.message(msg,log.ERROR)
 			print msg
 			exit()
-		except Exception as e:
+		except:
 			os.remove(pidfile)
 	# Write the pidfile
 	pid = str(os.getpid())
@@ -744,6 +818,7 @@ def checkPid(pidfile):
 def selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx):
 	id = radio.getCurrentID()
 	search_mode = display.getSearchMode()
+
 	if search_mode == display.SEARCH_PLAYLIST:
 		radio.source.setIndex(searchID + idx - 1)
 		radio.loadSource()
@@ -812,7 +887,13 @@ def toggleOption(radio,key,RandomButton,RepeatButton,ConsumeButton,SingleButton,
 
 # Handle keyboard key event See https://www.pygame.org/docs/ref/key.html
 def handleKeyEvent(key,radioEvent,searchID,srange):
-	if key == K_KP_PLUS or  key == K_PLUS:
+	global run
+
+	# Shift "=" is capital A 
+	if  key == K_EQUALS and pygame.key.get_mods() & pygame.KMOD_SHIFT:
+	    radioEvent.set(radioEvent.VOLUME_UP)
+
+	if key == K_KP_PLUS or key == K_PLUS:
 	    radioEvent.set(radioEvent.VOLUME_UP)
 
 	elif key == K_KP_MINUS  or  key == K_MINUS:
@@ -839,6 +920,11 @@ def handleKeyEvent(key,radioEvent,searchID,srange):
 	elif key == K_ESCAPE:
 	    quit()
 
+	elif event.key == K_x and display.config.switchPrograms():
+	    dir = os.path.dirname(__file__)
+	    os.popen("sudo " + dir + "/vgradio.py&")
+	    run = False
+
 	elif event.key == K_q:
 	    mods = pygame.key.get_mods()
 	    if mods & pygame.KMOD_CTRL:
@@ -854,6 +940,9 @@ def handleKeyEvent(key,radioEvent,searchID,srange):
 def displayLabels(radio,ChannelUpButton,ChannelDownButton):
 	if source_type == radio.source.AIRPLAY:
 		uplabel = "Exit\nAirplay"
+		downlabel = "   \n    "
+	elif source_type == radio.source.SPOTIFY:
+		uplabel = "Exit\nSpotify"
 		downlabel = "   \n    "
 	elif source_type == radio.source.MEDIA:
 		uplabel = "Track\nUp"
@@ -897,6 +986,13 @@ if __name__ == "__main__":
 	# Do not override locale settings
 	locale.setlocale(locale.LC_ALL, '')
 
+	# Check we have a desktop
+	try:
+		os.environ['DISPLAY']
+	except:
+		print "This program requires an X-Windows desktop"
+		sys.exit(1)
+
 	font = pygame.font.SysFont('freesans', 13)
 	display = GraphicDisplay(font)
 
@@ -904,21 +1000,32 @@ if __name__ == "__main__":
 		flags = FULLSCREEN|DOUBLEBUF|RESIZABLE
 	else:
 		flags = 0
+
+	radioEvent = Event()	    # Add radio event handler
+	radio = Radio(rmenu,radioEvent)  # Define radio
+	size = radio.config.getSize()
+
 	screen = sgc.surface.Screen((size),flags)  
+
+	# Hide mouse if configured
+	if display.config.fullScreen() and not display.config.displayMouse():
+		pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 
 	log.init('radio')
 	# Stop command
 	if len(sys.argv) > 1 and sys.argv[1] == 'stop':
-		os.popen("sudo service mpd stop")
+		os.popen("sudo systemctl stop mpd")
 		stop()
 
-	os.popen("systemctl stop radiod")
+	# Stop LCD version (Not allowed to run at the same time) 
+	os.popen("sudo systemctl stop radiod")
 
 	pid = checkPid(pidfile)
 
 	log.message("gradio running, pid " + str(pid), log.INFO)
 
 	signal.signal(signal.SIGTERM,signalHandler)
+	signal.signal(signal.SIGHUP,signalHandler)
 
 	# see https://www.webucator.com/blog/2015/03/python-color-constants-module/
 	# Paint screen background (Keep at start of draw routines)
@@ -935,12 +1042,9 @@ if __name__ == "__main__":
 			wcolor = "blue"
 			screen.fill(Color(wcolor))
 
-	text = "Loading Radio Stations"
+	text = "Loading playlists"
 	displayPopup(screen,radio,text)
 	pygame.display.flip()
-
-	radioEvent = Event()	    # Add radio event handler
-	radio = Radio(rmenu,radioEvent)  # Define radio
 
 	# Set up Xauthority for root user
 	radio.execCommand("sudo cp /home/pi/.Xauthority /root/")
@@ -948,10 +1052,9 @@ if __name__ == "__main__":
 	setupRadio(radio)
 	radio.setTranslate(True)	# Switch off text translation
 
-	version = radio.getVersion()
-	caption = display.config.getWindowTitle() 
-	caption = caption.replace('%V',version)
-	pygame.display.set_caption(caption)
+	# Set up window title
+	window_title = display.getWindowTitle(radio)
+	pygame.display.set_caption(window_title)
 
 	draw_equalizer_icon = displayEqualizerIcon(display)
 
@@ -963,12 +1066,19 @@ if __name__ == "__main__":
 		log.message("Invalid labels_color " + labels_color_name, log.ERROR)
 		label_col = pygame.Color('white')
 
-	widget = Widgets(sgc,radio,display,label_col)
+	cols = display.getColumns()
+	print "Cols",cols
+	if cols < 70:
+		startColumn = 7.5
+	else:
+		startColumn = 10
+	log.message("Cols=" + str(cols), log.DEBUG)
+	widget = Widgets(sgc,radio,display,startColumn,label_col)
 
 	# Draw the Up/Down buttons
 	source_type = radio.getSourceType()
-	ChannelUpButton = drawChannelUpButton(source_type,sgc,display)
-	ChannelDownButton = drawChannelDownButton(source_type,sgc,display)
+	ChannelUpButton = drawChannelUpButton(source_type,sgc,display,startColumn)
+	ChannelDownButton = drawChannelDownButton(source_type,sgc,display,startColumn)
 	volume = radio.getVolume()
 	widget.VolumeSlider.value = volume
 	current_volume = 0
@@ -979,12 +1089,17 @@ if __name__ == "__main__":
 	downIcon = DownIcon(pygame)
 	LeftArrow = Image(pygame)
 	RightArrow = Image(pygame)
+	switchIcon = SwitchIcon(pygame)
 	equalizerIcon = EqualizerIcon(pygame)
-	drawUpIcon(display,screen,upIcon)
-	drawDownIcon(display,screen,downIcon)
-	drawLeftArrow(display,screen,LeftArrow)
-	drawRightArrow(display,screen,RightArrow)
-	drawEqualizerIcon(display,screen,equalizerIcon,draw_equalizer_icon)
+	drawUpIcon(display,screen,upIcon,startColumn)
+	drawDownIcon(display,screen,downIcon,startColumn)
+	drawLeftArrow(display,screen,LeftArrow,startColumn)
+	drawRightArrow(display,screen,RightArrow,startColumn)
+	if draw_equalizer_icon:
+		drawEqualizerIcon(display,screen,equalizerIcon,startColumn)
+
+	if display.config.switchPrograms():
+		drawSwitchIcon(display,screen,switchIcon)
 
 	# Option buttons
 	RandomButton = OptionButton(pygame)
@@ -992,7 +1107,7 @@ if __name__ == "__main__":
 	ConsumeButton = OptionButton(pygame)
 	SingleButton = OptionButton(pygame)
         drawOptionButtons(display,screen,radio,RandomButton,RepeatButton,
-				ConsumeButton,SingleButton)
+				ConsumeButton,SingleButton,startColumn)
         RandomButton.activate(radio.getRandom())
 
 	# Create display window for radio/media information
@@ -1002,10 +1117,22 @@ if __name__ == "__main__":
 	SearchWindow = drawSearchWindow(surface,screen,display,id)
         ArtworkImage = None
 
+        # Screen saver times
+        screenBlank = False
+        screenMinutes = display.config.screenSaverTime()
+        if screenMinutes > 0:
+                blankTime = int(time.time()) + screenMinutes*60
+        else:
+                blankTime = 0
+
 	# Main processing loop
-	while True:
+	while run:
 	    tick = clock.tick(30)
 	    source_type = radio.getSourceType()
+
+	    # Blank screen after blank time exceeded
+	    if screenMinutes > 0 and int(time.time()) > blankTime:
+		screenBlank = True
 
 	    # Reset the draw equalizer icon flag
 	    if int(commands.getoutput('pidof %s |wc -w' % "alsamixer")) < 1:
@@ -1018,7 +1145,12 @@ if __name__ == "__main__":
 		# Send event to widgets
 		sgc.event(event)
 		if event.type == GUI:
-		    if event.widget_type is sgc.Button:
+
+		    blankTime = int(time.time()) + screenMinutes*60
+		    if screenBlank:
+			screenBlank = False
+
+		    elif event.widget_type is sgc.Button:
 			print "Button event",event.gui_type
 
 		    # Radio source type buttons
@@ -1039,22 +1171,28 @@ if __name__ == "__main__":
 
 		    # Up and down channel/track buttons
 		    if event.widget is ChannelUpButton and event.gui_type == "click":
-			if source_type == radio.source.AIRPLAY:
+			if source_type == radio.source.AIRPLAY or source_type == radio.source.SPOTIFY:
 				radio.source.cycleType(radio.source.RADIO)
 				radio.setReload(True)
 			else: 
+				radio.unmute()
 				radioEvent.set(radioEvent.CHANNEL_UP)
 
 		    elif event.widget is ChannelDownButton and event.gui_type == "click":
 			if source_type != radio.source.AIRPLAY:
+				radio.unmute()
 				radioEvent.set(radioEvent.CHANNEL_DOWN)
 
 		    display.setMode(display.MAIN)
 
 		if event.type == pygame.MOUSEBUTTONDOWN:
 
-		# Display window mouse down changes display mode
-			if DisplayWindow.clicked(event):
+			blankTime = int(time.time()) + screenMinutes*60
+			if screenBlank:
+				screenBlank = False
+
+			# Display window mouse down changes display mode
+			elif DisplayWindow.clicked(event):
 				mode = display.cycleMode()
 
 			elif upIcon.clicked():
@@ -1067,6 +1205,13 @@ if __name__ == "__main__":
 				searchID += 1
 				if searchID > srange:
 					searchID = srange
+
+			elif display.config.switchPrograms() and switchIcon.clicked():
+				if radio.spotify.isRunning():
+					radio.spotify.stop()
+				dir = os.path.dirname(__file__)
+				os.popen("sudo " + dir + "/vgradio.py&")
+				run = False
 
 			elif LeftArrow.clicked():
 				searchID = 1
@@ -1121,12 +1266,16 @@ if __name__ == "__main__":
 		    
 	    	# Temporary exit on ESC key during development
 		elif event.type == KEYDOWN:
-			print "Key", event.key
 			srange = SearchWindow.slider.getRange()
 			searchID = handleKeyEvent(event.key,radioEvent,searchID,srange)
 			toggleOption(radio,event.key,RandomButton,RepeatButton,
 				ConsumeButton,SingleButton,widget)
-			if event.key == K_RETURN:
+
+			blankTime = int(time.time()) + screenMinutes*60
+			if screenBlank:
+				screenBlank = False
+
+			elif event.key == K_RETURN:
 				searchID = selectNew(radio,display,widget,Artists,
 						searchID,SearchWindow,0)
 			elif event.key == K_d:
@@ -1143,17 +1292,17 @@ if __name__ == "__main__":
 		else:
 		    volume =  int(widget.VolumeSlider.value)
 		    if volume != current_volume:
-			radio.setRealVolume(volume)
+			radio.setVolume(volume)
 
 
 		# Event in the search window or artwork image clicked
-		if source_type != radio.source.AIRPLAY:
+		if source_type != radio.source.AIRPLAY and source_type != radio.source.SPOTIFY:
 			if ArtworkImage != None and len(artwork_file) > 0:
 				if ArtworkImage.clicked():
 					print "Artwork click"
 			else:
-				searchID = handleSearchEvent(radio,event,SearchWindow,
-								display,searchID)
+				searchID = handleSearchEvent(radio,event,
+						SearchWindow,display,searchID)
 	    # Detect radio events
 	    if radioEvent.detected():
 		log.message("radioEvent.detected", log.DEBUG)
@@ -1172,6 +1321,7 @@ if __name__ == "__main__":
 		widget.VolumeSlider.value = volume
 		current_volume = volume
 
+	    # Start of screen paint routines
 	    # Paint screen background (Keep at start of draw routines)
 	    if len(wallpaper) > 1:
 		    pic=pygame.image.load(wallpaper)
@@ -1191,6 +1341,10 @@ if __name__ == "__main__":
 
 	    if source_type == radio.source.AIRPLAY:
 		displayAirplay(display,radio,myfont)
+
+	    elif source_type == radio.source.SPOTIFY:
+		displaySpotify(display,radio,myfont)
+
 	    else:
 		if radio.getCurrentID() < 1 and source_type == radio.source.MEDIA:
 		 	display.setSearchMode(display.SEARCH_PLAYLIST)
@@ -1211,25 +1365,36 @@ if __name__ == "__main__":
 				displayCurrent(screen,myfont,radio,message)
 
 	    # Draw options and other controls
-	    xPos = display.getColumnPos(26)
+	    cols = display.getColumns()
+	    xPos = display.getColumnPos((cols/2)-2)
 	    yPos = display.getRowPos(18)
 	    MuteButton.draw(screen,display,(xPos,yPos),radio.muted())
 
 	    # Draw navigation buttons if no artwork displayed
 	    if len(artwork_file) < 1:
-		    drawUpIcon(display,screen,upIcon)
-		    drawDownIcon(display,screen,downIcon)
-		    drawLeftArrow(display,screen,LeftArrow)
-		    drawRightArrow(display,screen,RightArrow)
+		if source_type == radio.source.RADIO or source_type == radio.source.MEDIA:
+		    drawUpIcon(display,screen,upIcon,startColumn)
+		    drawDownIcon(display,screen,downIcon,startColumn)
+		    drawLeftArrow(display,screen,LeftArrow,startColumn)
+		    drawRightArrow(display,screen,RightArrow,startColumn)
+
+	    if display.config.switchPrograms():
+		    drawSwitchIcon(display,screen,switchIcon)
 
 	    if draw_equalizer_icon:
-		    drawEqualizerIcon(display,screen,equalizerIcon,draw_equalizer_icon)
-	    drawOptionButtons(display,screen,radio,RandomButton,RepeatButton,
-					ConsumeButton,SingleButton)
-	    RandomButton.activate(radio.getRandom())
+		    drawEqualizerIcon(display,screen,equalizerIcon,startColumn)
+
+	    if source_type == radio.source.RADIO or source_type == radio.source.MEDIA:
+		    drawOptionButtons(display,screen,radio,RandomButton,RepeatButton,
+						ConsumeButton,SingleButton,startColumn)
+		    RandomButton.activate(radio.getRandom())
 
 	    # Update SGC and pygame displays
 	    sgc.update(tick)
+
+	    # Screen blanking
+	    if screenBlank and display.config.fullScreen():
+		    screen.fill(Color(0,0,0))
 	    pygame.display.flip()
 
 	# End of while loop

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.7 2017/10/21 11:34:16 bob Exp $
+# $Id: button_class.py,v 1.13 2018/04/09 10:25:27 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,36 +16,36 @@
 import os,sys,pwd
 import time
 import RPi.GPIO as GPIO
-from log_class import Log
-
-log = Log()
 
 class Button:
 
-	def __init__(self, button,callback):
+	def __init__(self,button,callback,log):
 		self.button = button
 		self.callback = callback
+		self.log = log
 
-		log.init('radio')
-		msg = "Button created for GPIO " +  str(self.button)
-		log.message(msg, log.DEBUG)
-		GPIO.setmode(GPIO.BCM)
-		GPIO.setwarnings(False)
+		if self.button > 0:
+			msg = "Creating button for GPIO " +  str(self.button)
+			log.message(msg, log.DEBUG)
+			GPIO.setmode(GPIO.BCM)
+			GPIO.setwarnings(False)
 
-		try:
-			# The following lines enable the internal pull-up resistor
-			GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+			try:
+				# The following lines enable the internal pull-up resistor
+				GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-			# Add event detection to the GPIO inputs
-			GPIO.add_event_detect(self.button, GPIO.RISING, callback=self.button_event,
-						bouncetime=200)
-		except Exception as e:
-			log.message("Button GPIO initialise error " + str(e), log.DEBUG)
-			sys.exit(1)
-	 
+				# Add event detection to the GPIO inputs
+				GPIO.add_event_detect(self.button, GPIO.RISING, 
+							callback=self.button_event,
+							bouncetime=200)
+			except Exception as e:
+				log.message("Button GPIO " + str(self.button)\
+						 + " initialise error: " + str(e), log.ERROR)
+				sys.exit(1)
+		 
 	# Push button event
 	def button_event(self,button):
-		log.message("Push button event GPIO " + str(button), log.DEBUG)
+		self.log.message("Push button event GPIO " + str(button), self.log.DEBUG)
 	    	event_button = self.button
 		self.callback(event_button)	# Pass button event to event class
 		return
@@ -70,7 +70,9 @@ def interrupt(gpio):
 if __name__ == "__main__":
 
 	from config_class import Configuration
+	from log_class import Log
 	config = Configuration()
+	log = Log()
 
         if pwd.getpwuid(os.geteuid()).pw_uid > 0:
                 print "This program must be run with sudo or root permissions!"
@@ -93,12 +95,12 @@ if __name__ == "__main__":
 	print "Mute switch GPIO", mute_switch
 	print "Menu switch GPIO", menu_switch
 
-        Button(left_switch, interrupt)
-        Button(right_switch, interrupt)
-        Button(mute_switch, interrupt)
-        Button(down_switch, interrupt)
-        Button(up_switch, interrupt)
-        Button(menu_switch, interrupt)
+        Button(left_switch, interrupt, log)
+        Button(right_switch, interrupt, log)
+        Button(mute_switch, interrupt, log)
+        Button(down_switch, interrupt, log)
+        Button(up_switch, interrupt, log)
+        Button(menu_switch, interrupt, log)
 
         try:
                 while True:

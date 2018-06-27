@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.35 2018/01/09 07:32:09 bob Exp $
+# $Id: event_class.py,v 1.43 2018/06/10 07:12:35 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -23,7 +23,6 @@ import time,pwd
 from rotary_class import RotaryEncoder
 from rotary_class_alternative import RotaryEncoderAlternative
 from config_class import Configuration
-from button_class import Button
 from log_class import Log
 from rotary_switch_class import RotarySwitch
 
@@ -70,19 +69,20 @@ class Event():
 	KEY_LANGUAGE = 11
 	KEY_INFO = 12
 
-	# Events from the Web interface
-	LOAD_RADIO = 13
-	LOAD_MEDIA = 14
-	LOAD_AIRPLAY = 15
-
 	# Event from the retro radio rotary switch (not encoder!)
-	ROTARY_SWITCH_CHANGED = 16
+	ROTARY_SWITCH_CHANGED = 13
 	
 	# MP client change
-	MPD_CLIENT_CHANGE = 17
+	MPD_CLIENT_CHANGE = 14
+
+	# Events from the Web interface
+	LOAD_RADIO = 15
+	LOAD_MEDIA = 16
+	LOAD_AIRPLAY = 17
+	LOAD_SPOTIFY = 18
 
 	# Shutdown radio
-	SHUTDOWN = 18
+	SHUTDOWN = 19
 
 	# Alternate event names (easier to understand code )
 	VOLUME_UP = RIGHT_SWITCH
@@ -210,6 +210,7 @@ class Event():
 
 		elif event == self.menu_switch:
 			self.event_type = self.MENU_BUTTON_DOWN
+			displayType = config.getDisplayType()
 
 			# Holding the menu button for 3 seconds down shuts down the radio
 			count = 15 
@@ -220,7 +221,6 @@ class Event():
 					self.event_type = self.SHUTDOWN
 					self.event_triggered = True
 					break
-
 		else:
 			self.event_triggered = False
 		return
@@ -254,8 +254,9 @@ class Event():
 
 	# Clear event an set triggered to False
 	def clear(self):
-		sName = " " + self.getName()
-		log.message("Clear event " + str(self.event_type) + sName, log.DEBUG)
+		if self.event_type != self.NO_EVENT:
+			sName = " " + self.getName()
+			log.message("Clear event " + str(self.event_type) + sName, log.DEBUG)
 		self.event_triggered = False
 		self.event_type = self.NO_EVENT
 		return 
@@ -302,9 +303,11 @@ class Event():
 		return pressed
 
 	def getConfiguration(self):
+		userInterfaces = ["Rotary encoders", "Buttons", "Touchscreen","Cosmic controller"]
+		rotaryClasses = ["Standard", "Alternative"]
 		self.user_interface = config.getUserInterface()
+		log.message("User interface: " + userInterfaces[self.user_interface], log.DEBUG)
 		self.rotary_class = config.getRotaryClass()
-		log.message("Rotary class " + str(self.rotary_class), log.DEBUG)
 		return
 
 	# Get switches configuration
@@ -341,6 +344,9 @@ class Event():
 		elif self.user_interface == config.BUTTONS:
 			self.setButtonInterface()
 				
+		elif self.user_interface == config.COSMIC_CONTROLLER:
+			self.setCosmicInterface()
+				
 		elif self.user_interface == config.GRAPHICAL:
 			# Log only
 			log.message("event.setInterface Graphical/Touchscreen", log.DEBUG)
@@ -376,15 +382,33 @@ class Event():
 
 	# Set up buttons interface
 	def setButtonInterface(self):
+		from button_class import Button
 		global left_button,right_button,mute_button  
 		global up_button,down_button,menu_button 
 		log.message("event.setInterface Push Buttons", log.DEBUG)
-		left_button = Button(self.left_switch,self.button_event)
-		right_button = Button(self.right_switch,self.button_event)
-		down_button = Button(self.down_switch,self.button_event)
-		up_button = Button(self.up_switch,self.button_event)
-		mute_button = Button(self.mute_switch,self.button_event)
-		menu_button = Button(self.menu_switch,self.button_event)
+		left_button = Button(self.left_switch,self.button_event,log)
+		right_button = Button(self.right_switch,self.button_event,log)
+		down_button = Button(self.down_switch,self.button_event,log)
+		up_button = Button(self.up_switch,self.button_event,log)
+		mute_button = Button(self.mute_switch,self.button_event,log)
+		menu_button = Button(self.menu_switch,self.button_event,log)
+		return
+
+	# Set up IQAudio cosmic controller interface
+	def setCosmicInterface(self):
+		from cosmic_class import Button
+		global left_button,right_button,mute_button  
+		global up_button,down_button,menu_button 
+		log.message("event.setInterface Cosmic interface", log.DEBUG)
+
+		# Buttons
+		down_button = Button(self.down_switch,self.button_event,log)
+		up_button = Button(self.up_switch,self.button_event,log)
+		menu_button = Button(self.menu_switch,self.button_event,log)
+
+		# Rotary encoder
+		volumeknob = RotaryEncoder(self.left_switch, self.right_switch,
+				self.mute_switch,self.volume_event)
 		return
 
 	# Get the volume knob interface
@@ -404,7 +428,6 @@ if __name__ == "__main__":
                 print "This program must be run with sudo or root permissions!"
                 sys.exit(1)
 
-	interface = 0 	# Buttons or Rotary encoders etc
 	event = Event()
 
 	try: 
@@ -412,6 +435,9 @@ if __name__ == "__main__":
 			if event.detected():
 				print "Event detected " + str(event.getType()) + " " + event.getName()
 				event.clear()
+			else:
+				# This delay must be >= any GPIO bounce times
+				time.sleep(0.2)
 		
 
 	except KeyboardInterrupt:

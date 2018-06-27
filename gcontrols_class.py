@@ -3,7 +3,7 @@
 # Raspberry Pi Internet Radio
 # Graphic screen controls
 #
-# $Id: gcontrols_class.py,v 1.33 2018/02/02 14:21:47 bob Exp $
+# $Id: gcontrols_class.py,v 1.38 2018/06/19 14:38:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -449,12 +449,12 @@ class ScrollBox:
 class Widgets:
 
 	# Initialisation routine
-	def __init__(self,sgc,radio,display,lcolor):
+	def __init__(self,sgc,radio,display,column,lcolor):
 		self.radio = radio
-		self.create(sgc,display,lcolor)
+		self.create(sgc,display,column,lcolor)
 
 	# Create other widgets
-	def create(self,sgc,display,label_col):
+	def create(self,sgc,display,column,label_col):
 
 		# Widget overrides and new functions
 		sgc.Button.newLabel = newLabel	# New button labels
@@ -462,7 +462,7 @@ class Widgets:
 		sgc.Simple._switch = _switch 	# Prevent widget focusing from keyboard
 
 		source_type = self.radio.getSourceType()
-		xPos = display.getColumnPos(2)
+		xPos = display.getColumnPos(column)
 
 		# Create search selection box
 		yPos = display.getRowPos(7.5)
@@ -480,7 +480,7 @@ class Widgets:
 		self.search_box.add(order=3)
 
 		# Scale widget
-		xPos = display.getColumnPos(3)
+		xPos = display.getColumnPos(8)
 		yPos = display.getRowPos(18.5)
 		if self.radio.muted():
 			sVolume = "Muted"
@@ -493,10 +493,10 @@ class Widgets:
 		# Sources combo box
 		sources = self.radio.source.getList()
 		index = 0
-		xPos = display.getColumnPos(34)
+		xPos = display.getColumnPos(50)
 		yPos = display.getRowPos(19)
 		self.sourceCombo = sgc.Combo(pos=(xPos,yPos),selection=index, values=(sources),
-					label="Sources", label_side="bottom",label_col=(label_col))
+					label="Sources", label_side="bottom", label_col=(label_col))
 		self.sourceCombo.add(order=6)
 		return
 
@@ -509,7 +509,6 @@ class UpIcon:
 	def draw(self,screen,xPos,yPos,path="images/up_icon.png"):
 		self.upIcon = Image(self.pygame)
 		mysize = (40,40)
-		#path = "images/up_icon.png"
 		self.upIcon.draw(screen,path,(xPos,yPos),(mysize))
 		return
 	
@@ -526,12 +525,27 @@ class DownIcon(Image):
 	def draw(self,screen,xPos,yPos,path="images/down_icon.png"):
 		self.downIcon = Image(self.pygame)
 		mysize = (40,40)
-		#path = "images/down_icon.png"
 		self.downIcon.draw(screen,path,(xPos,yPos),(mysize))
 		return
 
 	def clicked(self):
 		return self.downIcon.clicked()
+
+# Draw the search Down Icon
+class SwitchIcon(Image):
+	# Initialisation routine
+	def __init__(self,pygame):
+		self.pygame = pygame
+		pass
+
+	def draw(self,screen,xPos,yPos,path="images/switch_program.png"):
+		self.switchIcon = Image(self.pygame)
+		mysize = (40,40)
+		self.switchIcon.draw(screen,path,(xPos,yPos),(mysize))
+		return
+
+	def clicked(self):
+		return self.switchIcon.clicked()
 
 # Draw the Equalizer Icon
 class EqualizerIcon(Image):

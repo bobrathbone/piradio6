@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.6 2018/01/12 15:25:11 bob Exp $
+# $Id: create_stations.py,v 1.7 2018/03/08 09:29:02 bob Exp $
 #
 # Create playlist files from the following url formats
 #       iPhone stream files (.asx)
@@ -490,7 +490,7 @@ for line in open(StationList,'r'):
 	except:
 		print "ERROR: Failed to retrieve ",title, url
 		errorCount += 1
-		ErrorUrls.append( "Failed to retrieve " + url)
+		ErrorUrls.append( "Failed to retrieve " + url + " on line " + str(lineCount))
 		continue
 
 

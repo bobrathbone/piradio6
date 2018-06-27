@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.10 2017/10/21 11:48:28 bob Exp $
+# $Id: rotary_class.py,v 1.11 2018/04/04 07:30:41 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -169,7 +169,7 @@ class RotaryEncoder:
 		GPIO.add_event_detect(self.pinA, GPIO.BOTH, callback=self.rotary_event)
 		GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.rotary_event)
 		GPIO.add_event_detect(self.button, GPIO.FALLING, callback=self.button_event, 
-					bouncetime=200)
+					bouncetime=150)
 	except Exception as e:
 		print "Rotary Encoder initialise error " + str(e)
 		sys.exit(1)
@@ -214,8 +214,9 @@ class RotaryEncoder:
 
 ### Test routine ###
 
-Names = ['NO_EVENT', 'CLOCKWISE', 'ANTICLOCKWISE', 'BUTTON_DOWN', 'BUTTON UP']
+Names = ['NO_EVENT', 'CLOCKWISE', 'ANTICLOCKWISE', 'BUTTON DOWN', 'BUTTON UP']
 
+# Volume event - test only - No event generation
 def volume_event(event):
 	name = ''
 	try:
@@ -226,6 +227,7 @@ def volume_event(event):
 	print "Volume event ", event, name
 	return
 
+# Tuner event - test only - No event generation
 def tuner_event(event):
 	name = ''
 	try:
