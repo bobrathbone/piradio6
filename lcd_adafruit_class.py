@@ -4,7 +4,7 @@
 # LCD class for  Adafruit RGB-backlit LCD plate for Raspberry Pi.
 # Adapted by Bob Rathbone from code by Adafruit Industries.  MIT license.
 # Amended for version 6.0 and later of the Rathbone Internet Radio
-# $Id: lcd_adafruit_class.py,v 1.8 2018/04/09 07:18:57 bob Exp $
+# $Id: lcd_adafruit_class.py,v 1.11 2018/12/07 14:21:36 bob Exp $
 
 # Original code based on code from lrvick and LiquidCrystal.
 # lrvic - https://github.com/lrvick/raspi-hd44780/blob/master/hd44780.py
@@ -40,11 +40,11 @@ class Adafruit_lcd(i2c):
 	MCP23017_GPIOB		  = 0x19
 
 	# Port expander input pin definitions
-	MENU  = 0
-	RIGHT = 1
-	DOWN  = 2
-	UP    = 3
-	LEFT  = 4
+	MENU_BUTTON  = 0
+	RIGHT_BUTTON = 1
+	DOWN_BUTTON  = 2
+	UP_BUTTON    = 3
+	LEFT_BUTTON  = 4
 
 	# LED colors
 	OFF = 0x00
@@ -454,36 +454,38 @@ class Adafruit_lcd(i2c):
 	def checkButtons(self):
 		for button in range (0,5):
 			if self.buttonPressed(button) > 0:
-				if button == self.MENU:
+				if button == self.MENU_BUTTON:
 					self.event.set(self.event.MENU_BUTTON_DOWN)
 					# 3 seconds down shuts down the radio
 					count = 10
-					while self.buttonPressed(self.MENU):
+					while self.buttonPressed(self.MENU_BUTTON):
 						time.sleep(0.2)
 						count -= 1
 						if count < 0:
 							self.event.set(self.event.SHUTDOWN)
 							break
 
-				elif button == self.DOWN:
+				elif button == self.DOWN_BUTTON:
 					self.event.set(self.event.DOWN_SWITCH)
 					time.sleep(0.1)
 				
-				elif button == self.UP:
+				elif button == self.UP_BUTTON:
 					self.event.set(self.event.UP_SWITCH)
 					time.sleep(0.1)
 				
-				elif button == self.LEFT:
+				elif button == self.LEFT_BUTTON:
 					self.event.set(self.event.LEFT_SWITCH)
 					time.sleep(0.05)
-					if self.buttonPressed(self.RIGHT):
+					if self.buttonPressed(self.RIGHT_BUTTON):
 						self.event.set(self.event.MUTE_BUTTON_DOWN)
+						time.sleep(0.5) # Prevent bounce
 				
-				elif button == self.RIGHT:
+				elif button == self.RIGHT_BUTTON:
 					self.event.set(self.event.RIGHT_SWITCH)
 					time.sleep(0.05)
-					if self.buttonPressed(self.LEFT):
+					if self.buttonPressed(self.LEFT_BUTTON):
 						self.event.set(self.event.MUTE_BUTTON_DOWN)
+						time.sleep(0.5) # Prevent bounce
 				
 		return
 		

@@ -4,7 +4,7 @@
 # This program produces a wiring diagram based on the 
 #      configuration in the /etc/radiod.conf file
 
-# $Id: wiring.py,v 1.2 2018/03/25 10:07:03 bob Exp $
+# $Id: wiring.py,v 1.3 2018/12/11 08:53:29 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -65,6 +65,9 @@ other_labels = ['remote_led',
 		'IR_Remote',
 	     ]
 
+pullupdown = ['DOWN', 'UP']
+voltages   = ['+3.3V', 'GND(0V)']
+
 
 # GPIO to Physical pins translation Format: <gpio>:<pysical pin>
 pins = { 0:6, 2:3, 3:5, 4:7, 5:29, 6:31, 7:26, 8:24, 9:21, 10:19, 
@@ -91,8 +94,11 @@ def displaySwitch(config,params):
 		except:
 			print "Invalid GPIO", label + '=' + str(gpio)
 	print
-	print "Button switches must be wired to 3.3V"
-	print "Rotary push switches must be wired to GND 0V"
+	pull_up_down = config.getPullUpDown()
+	print "Pull Up/Down resistors", pullupdown[pull_up_down]
+	print
+	print "Push button switches must be wired to " + voltages[pull_up_down]
+	print "Rotary push switches must always be wired to GND 0V"
 	print
 	return
 

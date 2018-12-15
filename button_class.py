@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.13 2018/04/09 10:25:27 bob Exp $
+# $Id: button_class.py,v 1.18 2018/12/11 07:58:11 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,26 +16,38 @@
 import os,sys,pwd
 import time
 import RPi.GPIO as GPIO
+from __init__ import *
 
 class Button:
 
-	def __init__(self,button,callback,log):
+	def __init__(self,button,callback,log,pull_up_down=DOWN):
 		self.button = button
 		self.callback = callback
+		self.pull_up_down = pull_up_down
 		self.log = log
 
 		if self.button > 0:
-			msg = "Creating button for GPIO " +  str(self.button)
-			log.message(msg, log.DEBUG)
 			GPIO.setmode(GPIO.BCM)
 			GPIO.setwarnings(False)
 
+			if pull_up_down == DOWN:
+				resistor = GPIO.PUD_DOWN
+				edge = GPIO.RISING
+				sEdge = 'Rising'
+			else:
+				resistor = GPIO.PUD_UP
+				edge = GPIO.FALLING
+				sEdge = 'Falling'
+
 			try:
+				msg = "Creating button for GPIO " +  str(self.button) \
+					 + " edge=" +  sEdge
+				log.message(msg, log.DEBUG)
 				# The following lines enable the internal pull-up resistor
-				GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+				GPIO.setup(self.button, GPIO.IN, pull_up_down=resistor)
 
 				# Add event detection to the GPIO inputs
-				GPIO.add_event_detect(self.button, GPIO.RISING, 
+				GPIO.add_event_detect(self.button, edge, 
 							callback=self.button_event,
 							bouncetime=200)
 			except Exception as e:
@@ -50,10 +62,13 @@ class Button:
 		self.callback(event_button)	# Pass button event to event class
 		return
 
-	# Was a button pressed (goes from 0 to 1)
+	# Was a button pressed (goes from 0 to 1 or 1 to 0 depending upon pull_up_down )
 	def pressed(self):
+		level = 1
+		if self.pull_up_down == UP:
+			level = 0
 		state = GPIO.input(self.button)
-		if state == 1:
+		if state == level:
 			pressed = True
 		else:
 			pressed = False
@@ -73,6 +88,8 @@ if __name__ == "__main__":
 	from log_class import Log
 	config = Configuration()
 	log = Log()
+
+	pullupdown = ['DOWN','UP'] 
 
         if pwd.getpwuid(os.geteuid()).pw_uid > 0:
                 print "This program must be run with sudo or root permissions!"
@@ -94,13 +111,15 @@ if __name__ == "__main__":
 	print "Down switch GPIO", down_switch
 	print "Mute switch GPIO", mute_switch
 	print "Menu switch GPIO", menu_switch
+	pull_up_down = config.getPullUpDown()
+	print "Pull Up/Down resistors", pullupdown[pull_up_down]
 
-        Button(left_switch, interrupt, log)
-        Button(right_switch, interrupt, log)
-        Button(mute_switch, interrupt, log)
-        Button(down_switch, interrupt, log)
-        Button(up_switch, interrupt, log)
-        Button(menu_switch, interrupt, log)
+        Button(left_switch, interrupt, log, pull_up_down)
+        Button(right_switch, interrupt, log, pull_up_down)
+        Button(mute_switch, interrupt, log, pull_up_down)
+        Button(down_switch, interrupt, log, pull_up_down)
+        Button(up_switch, interrupt, log, pull_up_down)
+        Button(menu_switch, interrupt, log, pull_up_down)
 
         try:
                 while True:

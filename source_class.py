@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.30 2018/06/19 07:20:24 bob Exp $
+# $Id: source_class.py,v 1.32 2018/12/04 09:57:04 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,6 +24,7 @@
 import os,sys,pwd
 from log_class import Log
 from mpd import MPDClient
+from __init__ import *
 import pdb
 
 log = Log()
@@ -39,9 +40,6 @@ class Source:
 	index = 0	# Index of current playlist/source
 	new_index = 0	# Index of new playlist/source
 	mpdport = 6600	# MPD port
-
-	UP = 0
-	DOWN = 1
 
 	# Source types (There are 4 source types)
 	RADIO = 0 	# Radio usually has one playlist but can have more
@@ -118,7 +116,7 @@ class Source:
 		idx = self.index 
 		playlist = self.getName()
 		while type != newtype: 
-			self.cycle(self.UP)
+			self.cycle(UP)
 			newtype = self.getNewType()
 			if idx == self.new_index:
 				break
@@ -130,7 +128,7 @@ class Source:
 	def cycle(self, direction):
 		newplaylist = ''
 
-		if direction == self.UP:
+		if direction == UP:
 			self.new_index += 1
 		else:
 			self.new_index -= 1
@@ -214,7 +212,7 @@ class Source:
 		newtype = -1
 		playlist = self.getName()
 		while type != newtype: 
-			self.cycle(self.UP)
+			self.cycle(UP)
 			newtype = self.getNewType()
 			if idx == self.new_index:
 				break
@@ -294,19 +292,19 @@ if __name__ == "__main__":
 	print "Test Source Class"
 	source = Source(client=client,airplay=True)
 	airplay = True	# Simulate airplay
-	source.load(airplay)
+	source.load()
 	print source.current()
 	print
 	print source.getDisplayName()
-	print source.cycle(source.UP),'type',str(source.getNewType())
-	print source.cycle(source.UP),'type',str(source.getNewType())
-	print source.cycle(source.UP),'type',str(source.getNewType())
-	print source.cycle(source.UP),'type',str(source.getNewType())
+	print source.cycle(UP),'type',str(source.getNewType())
+	print source.cycle(UP),'type',str(source.getNewType())
+	print source.cycle(UP),'type',str(source.getNewType())
+	print source.cycle(UP),'type',str(source.getNewType())
 	print "New", source.getNewName()
 	print
-	print source.cycle(source.DOWN),source.getNewType()
+	print source.cycle(DOWN),source.getNewType()
 	print source.getName(),'type', source.getNewType()
-	print source.cycle(source.UP),'type',str(source.getNewType())
+	print source.cycle(UP),'type',str(source.getNewType())
 	sys.exit(0)
 
 # End of test program

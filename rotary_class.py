@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.11 2018/04/04 07:30:41 bob Exp $
+# $Id: rotary_class.py,v 1.12 2018/08/06 07:39:18 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -158,18 +158,21 @@ class RotaryEncoder:
 
 	GPIO.setmode(GPIO.BCM)
 	GPIO.setwarnings(False)
-	
+
 	try:
 		# The following lines enable the internal pull-up resistors
-		GPIO.setup(self.pinA, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		GPIO.setup(self.pinB, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-		# Add event detection to the GPIO inputs
-		GPIO.add_event_detect(self.pinA, GPIO.BOTH, callback=self.rotary_event)
-		GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.rotary_event)
-		GPIO.add_event_detect(self.button, GPIO.FALLING, callback=self.button_event, 
+		if pinA > 0 and pinB > 0:
+			GPIO.setup(self.pinA, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+			GPIO.setup(self.pinB, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+			# Add event detection to the GPIO inputs
+			GPIO.add_event_detect(self.pinA, GPIO.BOTH, callback=self.rotary_event)
+			GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.rotary_event)
+		if button > 0:
+			GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+			# Add event detection to the GPIO input
+			GPIO.add_event_detect(self.button, GPIO.FALLING, callback=self.button_event, 
 					bouncetime=150)
+
 	except Exception as e:
 		print "Rotary Encoder initialise error " + str(e)
 		sys.exit(1)

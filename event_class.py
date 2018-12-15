@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.43 2018/06/10 07:12:35 bob Exp $
+# $Id: event_class.py,v 1.51 2018/11/19 14:06:46 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -96,9 +96,9 @@ class Event():
 	eventNames = ['NO_EVENT', 'RIGHT_SWITCH', 'LEFT_SWITCH', 'MUTE_BUTTON_DOWN', 
 		      'MUTE_BUTTON_UP', 'UP_SWITCH', 'DOWN_SWITCH', 'MENU_BUTTON_DOWN',
 		      'MENU_BUTTON_UP', 'ALARM_FIRED', 'TIMER_FIRED', 'KEY_LANGUAGE',
-		      'KEY_INFO', 'LOAD_RADIO', 'LOAD_MEDIA', 'LOAD_AIRPLAY', 
-		      'ROTARY_SWITCH_CHANGED', 'MPD_CLIENT_CHANGE', 'SHUTDOWN',
-		      
+		      'KEY_INFO', 'ROTARY_SWITCH_CHANGE', 'MPD_CLIENT_CHANGE', 
+		      'LOAD_RADIO', 'LOAD_MEDIA', 'LOAD_AIRPLAY', 'LOAD_SPOTIFY',
+		      'SHUTDOWN',
 		     ]
 
 	encoderEventNames = [ 'NONE', 'CLOCKWISE', 'ANTICLOCKWISE',
@@ -116,12 +116,13 @@ class Event():
 
 	# Configuration 
 	user_interface = 0
+	display_type = 0
 
 	# Initialisation routine
         def __init__(self):
 		log.init('radio')
 		self.getConfiguration()
-		self.setInterface(self.user_interface)
+		self.setInterface()
 		self.setupRotarySwitch()
 		return
 
@@ -210,7 +211,6 @@ class Event():
 
 		elif event == self.menu_switch:
 			self.event_type = self.MENU_BUTTON_DOWN
-			displayType = config.getDisplayType()
 
 			# Holding the menu button for 3 seconds down shuts down the radio
 			count = 15 
@@ -303,9 +303,11 @@ class Event():
 		return pressed
 
 	def getConfiguration(self):
-		userInterfaces = ["Rotary encoders", "Buttons", "Touchscreen","Cosmic controller"]
+		userInterfaces = ["Rotary encoders", "Buttons", "Touchscreen",
+				  "Cosmic controller", "Piface CAD"]
 		rotaryClasses = ["Standard", "Alternative"]
 		self.user_interface = config.getUserInterface()
+		self.display_type = config.getDisplayType()
 		log.message("User interface: " + userInterfaces[self.user_interface], log.DEBUG)
 		self.rotary_class = config.getRotaryClass()
 		return
@@ -334,22 +336,25 @@ class Event():
 		return
 
 	# Configure the user interface (either buttons or rotary encoders)
-	def setInterface(self,user_interface):
-		log.message("event.setInterface", log.DEBUG)
+	def setInterface(self):
+		log.message("event.setInterface " + str(self.user_interface), log.DEBUG)
 		self.getGPIOs() 	# Get GPIO configuration
 
 		if self.user_interface == config.ROTARY_ENCODER:
 			self.setRotaryInterface()
 
-		elif self.user_interface == config.BUTTONS:
+		# The Adafruit and Piface CAD interfaces use I2C and SPI respectively
+		elif self.user_interface == config.BUTTONS \
+					and self.display_type != config.LCD_ADAFRUIT_RGB \
+					and self.display_type != config.PIFACE_CAD:
 			self.setButtonInterface()
-				
-		elif self.user_interface == config.COSMIC_CONTROLLER:
-			self.setCosmicInterface()
 				
 		elif self.user_interface == config.GRAPHICAL:
 			# Log only
 			log.message("event.setInterface Graphical/Touchscreen", log.DEBUG)
+
+		elif self.user_interface == config.COSMIC_CONTROLLER:
+			self.setCosmicInterface()
 				
 		return 
 
@@ -385,18 +390,24 @@ class Event():
 		from button_class import Button
 		global left_button,right_button,mute_button  
 		global up_button,down_button,menu_button 
-		log.message("event.setInterface Push Buttons", log.DEBUG)
-		left_button = Button(self.left_switch,self.button_event,log)
-		right_button = Button(self.right_switch,self.button_event,log)
-		down_button = Button(self.down_switch,self.button_event,log)
-		up_button = Button(self.up_switch,self.button_event,log)
-		mute_button = Button(self.mute_switch,self.button_event,log)
-		menu_button = Button(self.menu_switch,self.button_event,log)
+
+		# Get pull up/down resistor configuration
+		up_down = config.getPullUpDown()
+		
+		log.message("event.setInterface Push Buttons pull_up_down=" + str(up_down), 
+						log.DEBUG)
+		left_button = Button(self.left_switch,self.button_event,log,pull_up_down=up_down)
+		right_button = Button(self.right_switch,self.button_event,log,pull_up_down=up_down)
+		down_button = Button(self.down_switch,self.button_event,log,pull_up_down=up_down)
+		up_button = Button(self.up_switch,self.button_event,log,pull_up_down=up_down)
+		mute_button = Button(self.mute_switch,self.button_event,log,pull_up_down=up_down)
+		menu_button = Button(self.menu_switch,self.button_event,log,pull_up_down=up_down)
 		return
 
 	# Set up IQAudio cosmic controller interface
 	def setCosmicInterface(self):
 		from cosmic_class import Button
+		global volumeknob
 		global left_button,right_button,mute_button  
 		global up_button,down_button,menu_button 
 		log.message("event.setInterface Cosmic interface", log.DEBUG)

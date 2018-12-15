@@ -1,15 +1,64 @@
-# English text for speech 
-main_display: Main display
-search_menu: Search menu
-select_source: Select source
-options_menu: Options menu
-rss_display: RSS display
-information: Information display
-the_time: The time is
-loading_radio: Loading radio stations
-loading_media: Loading media library
-search: Search
-source_radio: Internet Radio
-source_media: Music library
-sleeping: Sleeping
-volume: Volume
+airplay: Airplay
+alarm: Alarm
+alarmhours: Alarm hours
+alarmminutes: Alarm minutes
+colour: Colour
+connecting: Connecting
+connection_error: Connection error
+consume: Consume
+current_station: Current station
+information:  Information display
+loading: Loading
+loading_media:  Loading media library
+loading_playlists: Loading playlists
+loading_radio:  Loading radio stations
+main_display:  Main display
+media_library: Media library
+menu_find: Find
+menu_option: Menu option
+menu_search: Search
+menu_source: Input Source
+muted: Sound muted
+no: no
+off: off
+on: on
+options_menu:  Options menu
+radio_stations: Radio stations
+radio_version: Radio version
+random: Random
+reload: Reload
+repeat: Repeat
+rss_display:  RSS display
+search:  Search
+search_menu:  Search menu
+select_source:  Select source
+shutdown: Shutting down system
+single: Single
+sleep: Sleep
+sleeping:  Sleeping
+source_airplay: Airplay receiver
+source_media:  Music library
+source_radio:  Internet Radio
+source_soptify: Spotify receiver
+spotify: Spotify
+starting_airplay: Starting Airplay
+starting_spotify: Starting Spotify
+station: Station
+stop: Stopping radio
+stopped: Radio stopped
+stopping_radio: Stopping radio
+streaming: Streaming
+the_time:  The time is
+timer: Timer
+title_unknown: Title unknown
+track: Track
+track_unknown: Track unknown
+update_complete: Update complete
+updating_media: Updating media
+updatng_media: Updating media
+voice: voice
+vol: Vol
+volume:  Volume
+wait: Please wait
+waiting_for_spotify_client: Waiting for Spotify client
+yes: yes

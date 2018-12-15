@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.57 2018/06/26 07:51:53 bob Exp $
+# $Id: config_class.py,v 1.72 2018/12/04 07:59:51 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -18,6 +18,7 @@ import os
 import sys
 import ConfigParser
 from log_class import Log
+from __init__ import *
 
 # System files
 ConfigFile = "/etc/radiod.conf"
@@ -32,6 +33,13 @@ class Configuration:
 	PLAYER = 1
 	AIRPLAY = 2
 
+	"""
+	Station name source. LIST= from stationlist file 
+	or STREAM from radio stream
+	"""
+	LIST = 0
+        STREAM = 1
+
 	# Display types
 	NO_DISPLAY = 0		# No screen attached
 	LCD = 1	   		# Directly connected LCD
@@ -40,18 +48,25 @@ class Configuration:
 	LCD_ADAFRUIT_RGB = 4	# Adafruit RGB plate
 	GRAPHICAL_DISPLAY = 5	# Graphical or touchscreen  display
 	OLED_128x64 = 6		# OLED 128 by 64 pixels
+	PIFACE_CAD = 7		# Piface CAD 
 
 	display_type = LCD
 	DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574', 
 			 'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 
-			 'GRAPHICAL_DISPLAY', 'OLED_128x64']
+			 'GRAPHICAL_DISPLAY', 'OLED_128x64', 'PIFACE_CAD']
 
 	# User interface ROTARY or BUTTONS
 	ROTARY_ENCODER = 0
 	BUTTONS = 1
 	GRAPHICAL=2
 	COSMIC_CONTROLLER = 3	# IQAudio cosmic controller
+	PIFACE_BUTTONS = 4	# PiFace CAD buttons 
+	ADAFRUIT_RGB = 5	# Adafruit RGB I2C 5 button interface
 	user_interface = ROTARY_ENCODER
+
+	UserInterfaces = [ 'ROTARY_ENCODER','BUTTONS', 'GRAPHICAL', 
+			 'COSMIC_CONTROLLER', 'PIFACE_BUTTONS', 'ADAFRUIT_RGB', 
+			 ] 
 
 	# Rotary class selection
 	STANDARD = 0	# Select rotary_class.py
@@ -70,12 +85,12 @@ class Configuration:
 	display_lines = 2		# Number of display lines
 	airplay = False		# Use airplay
 	mixerPreset = 0		# Mixer preset volume (0 disable setting as MPD controls it)
-	mixer_volume_id = 1	# Mixer volume id (Run 'amixer controls | grep -i volume')
 	display_blocks = False	# Display volume in blocks
 	fullscreen = True	# Graphics screen fullscreen yes no 
 	startup_playlist = ""	# Startup playlist if defined
-	screen_saver = 0	# Screen saver time 0 = No screen save
+	screen_saver = 0	# Screen saver time n minutes, 0 = No screen save
 	flip_display_vertically = False	# Flip OLED display vertically
+	stationNamesSource = LIST # Station names from playlist names or STREAM
 
 	# Remote control parameters 
 	remote_led = 0  # Remote Control activity LED 0 = No LED	
@@ -87,6 +102,7 @@ class Configuration:
 	i2c_bus = 1		# The I2C bus is normally 1
 	speech = False 	    	# Speech on for visually impaired or blind persons
 	isVerbose = False     	# Extra speech verbosity
+	speak_info = False	# If speach enable also speak info (IP address and hostname)
 	speech_volume = 80  	# Percentage speech volume 
 
 	# Shoutcast ID
@@ -136,10 +152,6 @@ class Configuration:
 	# List of loaded options for display
 	configOptions = {}
 
-	# Other definitions
-	UP = 0
-	DOWN = 1
-
 	#  GPIOs for switches and rotary encoder configuration (40 pin wiring)
 	switches = { "menu_switch": 17,
 		     "mute_switch": 4,
@@ -147,8 +159,10 @@ class Configuration:
 		     "right_switch": 15,
 		     "up_switch": 24,
 		     "down_switch": 23,
-		     "aux_switch": 0,
 		   }
+
+	# Pull up/down resistors (For button class only)
+	pull_up_down = DOWN	# Default
 
 	# Values for the rotary switch on vintage radio (Not rotary encoders)
 	# Zero values disable usage 
@@ -223,6 +237,10 @@ class Configuration:
 						self.user_interface =  self.GRAPHICAL
 					elif parameter == 'cosmic_controller':
 						self.user_interface =  self.COSMIC_CONTROLLER
+					elif parameter == 'phatbeat':
+						self.user_interface =  self.BUTTONS
+					elif parameter == 'pifacecad':
+						self.user_interface =  self.PIFACE_BUTTONS
 
 				elif option == 'remote_led':
 					try:
@@ -254,6 +272,12 @@ class Configuration:
 				elif option == 'display_playlist_number':
 					if parameter == 'yes':
 						self.display_playlist_number = True
+
+				elif option == 'station_names':
+					if parameter == 'stream':
+						self.stationNamesSource =  self.STREAM
+					else:
+						self.stationNamesSource =  self.LIST
 
 				elif option == 'flip_display_vertically':
 					if parameter == 'yes':
@@ -311,6 +335,12 @@ class Configuration:
 					else:
 						self.isVerbose = False
 
+				elif option == 'speak_info':
+					if parameter == 'yes':
+						self.speak_info = True
+					else:
+						self.speak_info = False
+
 				elif option == 'volume_display':
 					if parameter == 'blocks':
 						self.display_blocks = True
@@ -320,6 +350,12 @@ class Configuration:
 						self.speech_volume = int(parameter)
 					except:
 						self.invalidParameter(ConfigFile,option,parameter)
+
+				elif option == 'pull_up_down':
+					if parameter == 'up':
+						self.pull_up_down = UP
+					else:
+						self.pull_up_down = DOWN
 
 				elif '_switch' in option and not 'menu_switch_value'in option:
 					try:
@@ -334,10 +370,10 @@ class Configuration:
 						self.invalidParameter(ConfigFile,option,parameter)
 
 				elif 'display_lines' in option:
-                                        try:
-                                                self.display_lines = int(parameter)
-                                        except:
-                                                self.invalidParameter(ConfigFile,option,parameter)
+					try:
+						self.display_lines = int(parameter)
+					except:
+						self.invalidParameter(ConfigFile,option,parameter)
 
 				elif 'lcd_' in option:
 					try:
@@ -384,6 +420,9 @@ class Configuration:
 
 					elif parameter == 'OLED_128x64':
 						self.display_type = self.OLED_128x64
+
+					elif parameter == 'PIFACE_CAD':
+						self.display_type = self.PIFACE_CAD
 
 					else:
 						self.invalidParameter(ConfigFile,option,parameter)
@@ -443,10 +482,7 @@ class Configuration:
 						self.invalidParameter(ConfigFile,option,parameter)
 
 				elif option == 'mixer_volume_id':
-					try:
-						self.mixer_volume_id = int(parameter)
-					except:
-						self.invalidParameter(ConfigFile,option,parameter)
+					next	# No longer used 
 
 				else:
 					msg = "Invalid option " + option + ' in section ' \
@@ -677,6 +713,10 @@ class Configuration:
 	def verbose(self):
 		return self.isVerbose	
 
+	# Get verbose
+	def speakInfo(self):
+		return self.speak_info	
+
 	# Get speech volume % of normal volume level
 	def getSpeechVolumeAdjust(self):
 		return self.speech_volume
@@ -732,9 +772,14 @@ class Configuration:
 			msg = "Invalid menu switch configuration label " + label
 			log.message(msg, log.ERROR)
 		return menuswitch
-	# User interface (Buttons or Rotary encoders)
+
+	# User interface (Buttons or Rotary encoders or uther)
 	def getUserInterface(self):
 		return self.user_interface
+
+	# User interface (Buttons or Rotary encoders)
+	def getUserInterfaceName(self):
+		return self.UserInterfaces[self.user_interface]
 
 	# Get Display type
 	def getDisplayType(self):
@@ -749,8 +794,8 @@ class Configuration:
 		return self.display_width
 
 	# Get Display lines
-        def getLines(self):
-                return self.display_lines
+	def getLines(self):
+		return self.display_lines
 
 	# Get airplay option
 	def getAirplay(self):
@@ -760,10 +805,6 @@ class Configuration:
 	def getMixerPreset(self):
 		return self.mixerPreset
 
-	# Get mixer volume ID
-	def getMixerVolumeID(self):
-		return self.mixer_volume_id
-
 	# Get startup playlist
 	def getStartupPlaylist(self):
 		return self.startup_playlist
@@ -771,6 +812,10 @@ class Configuration:
 	# Shutdown option
 	def doShutdown(self):
 		return self.shutdown
+
+	# Pull Up/Down resistors (Button interface only)
+	def getPullUpDown(self):
+		return self.pull_up_down
 
 	# SCREEN section
 	# Fullscreen option for graphical screen
@@ -854,13 +899,18 @@ class Configuration:
 	def getSplash(self):
 		return self.splash_screen
 
+	# Station names from playlist names or from the stream 
+	def getStationNamesSource(self):
+		return self.stationNamesSource
+
 # End Configuration of class
 
 # Test Configuration class
 if __name__ == '__main__':
 
 	config = Configuration()
-	print "Configuration file", ConfigFile
+	print "User interface:", config.getUserInterface(), config.getUserInterfaceName()
+	print "Configuration file:", ConfigFile
 	print "Volume range:", config.getVolumeRange()
 	print "Volume increment:", config.getVolumeIncrement()
 	print "Mpd port:", config.getMpdPort()
@@ -875,7 +925,9 @@ if __name__ == '__main__':
 	print "Speech:", config.hasSpeech()
 	print "Speech volume adjustment:", str(config.getSpeechVolumeAdjust()) + '%'
 	print "Verbose:", config.verbose()
+	print "Speak info:", config.speakInfo()
 
+	print "pull_up_down:", config.getPullUpDown()
 	for switch in config.switches:
 		print switch, config.getSwitchGpio(switch)
 	
@@ -896,7 +948,6 @@ if __name__ == '__main__':
 	print "Display width:", config.getWidth()
 	print "Airplay:", config.getAirplay()
 	print "Mixer Volume Preset:", config.getMixerPreset()
-	print "Mixer Volume ID:", config.getMixerVolumeID()
 
 	# I2C parameters
 	print "I2C bus", config.getI2Cbus()

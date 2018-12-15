@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# Raspberry Pi OLED 128x64 class
-# This class drives the SDolomon Systech SSD1306 128 by 64 pixel OLED
+# This class drives the Solomon Systech SSD1306 128 by 64 pixel OLED
 #
-# $Id: oled_class.py,v 1.22 2018/05/18 06:00:48 bob Exp $
+# $Id: oled_class.py,v 1.25 2018/11/28 12:34:38 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -209,6 +208,8 @@ class 	Oled:
 	# Clear line (Line 1 is double size font)
 	def clearLine(self,line):
 		page = (line-1) * 2
+		if page >= 8: 	# Last line on page 7
+			page = 7
 		self.clearPage(page)
 		if  line == 1:
 			self.clearPage(page + 1)
@@ -362,7 +363,6 @@ if __name__ == "__main__":
 	mesg = "B.Rathbone abcdefghijklmonopqrstuvwxyz 123456789 ABCDE"
 
 	try:
-		#pdb.set_trace()
 		oled = Oled()
 		oled.clear()
 

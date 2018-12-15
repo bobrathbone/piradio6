@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: latin-1 -*-
 #
-# $Id: rss_class.py,v 1.6 2018/04/02 11:52:43 bob Exp $
+# $Id: rss_class.py,v 1.9 2018/07/11 16:43:23 bob Exp $
 # Raspberry Pi RSS feed class
 #
 # Author : Bob Rathbone
@@ -50,6 +50,8 @@ class Rss:
 	rss_line1 = ''
 	rss_line2 = ''
 
+	translate = True
+
 	length = 0	# Number of RSS news items
 	feed_available = False
 	rss_error = False # RSS Error (prevents repetitive error logging)
@@ -75,11 +77,17 @@ class Rss:
 			self.length -= 1
 			
 			line = line.lstrip('<')
-			feed = translate.all(line)
-			feed = feed.lstrip('u"')
-			feed = feed.lstrip("u'")
+			if self.translate:
+				feed = translate.all(line)
+				feed = feed.lstrip('u"')
+				feed = feed.lstrip("u'")
+			else: 
+				feed = line
+
 			feed = feed.lstrip('"')
 			feed = feed.rstrip('"')
+			feed = feed.rstrip()
+
 			if not self.rss_error:
 				log.message(feed,log.DEBUG)
 		return feed
@@ -87,6 +95,10 @@ class Rss:
 	# Is an RSS news feed available
 	def isAvailable(self):
 		return self.feed_available
+
+	# Switch translation on off
+	def setTranslate(self,true_false):
+		self.translate = true_false
 
 	# Get a new feed and put it into the rss array
 	def get_new_feed(self,url):
@@ -193,7 +205,8 @@ class Rss:
 
 	# Scroll RSS feed (Used by gradio.py)
 	def scrollRssFeed(self,display):
-		max_columns = display.getColumns() - 20
+		startColumn = display.getStartColumn()
+		max_columns = int(display.getColumns() - startColumn*2)
 
 		leng = len(self.rss_line1)
 		if leng < 1:

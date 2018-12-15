@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: rotary_class_alternative.py,v 1.5 2018/04/04 07:30:41 bob Exp $
+# $Id: rotary_class_alternative.py,v 1.6 2018/08/06 07:39:18 bob Exp $
 #
 # Raspberry Pi Alternative Rotary Encoder Class
 # Certain Rotary Encoders will not work with the current version of the Rotary class.
@@ -50,14 +50,16 @@ class RotaryEncoderAlternative:
 		
 		# The following lines enable the internal pull-up resistors
 		# on version 2 (latest) boards
-		GPIO.setup(self.pinA, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		GPIO.setup(self.pinB, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-		# Add event detection to the GPIO inputs
-		GPIO.add_event_detect(self.pinA, GPIO.FALLING, callback=self.switch_event)
-		GPIO.add_event_detect(self.pinB, GPIO.FALLING, callback=self.switch_event)
-		GPIO.add_event_detect(self.button, GPIO.BOTH, callback=self.button_event, bouncetime=200)
+		if pinA > 0 and pinB > 0:
+			GPIO.setup(self.pinA, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+			GPIO.setup(self.pinB, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+			# Add event detection to the GPIO inputs
+			GPIO.add_event_detect(self.pinA, GPIO.FALLING, callback=self.switch_event)
+			GPIO.add_event_detect(self.pinB, GPIO.FALLING, callback=self.switch_event)
+		if button > 0:
+			GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+			# Add event detection to the GPIO inputs
+			GPIO.add_event_detect(self.button, GPIO.BOTH, callback=self.button_event, bouncetime=200)
 		return
 
 	# Call back routine called by switch events

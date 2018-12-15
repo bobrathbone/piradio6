@@ -9,9 +9,42 @@ See http://www.musicpd.org/
 Use "apt-get install mpd mpc python-mpd" to install the library
 This software uses the python-mpd library. See https://pypi.python.org/pypi/python-mpd/
 
+Version 6.9 release notes
+-------------------------
+1 December 2018
+1) Re-implement verbose=yes feature
+2) Added speak_info configuration item
+3) Support for Pimoroni pHAT-Beat added 
+4) Correct language file minor read error
+5) Improve response of volume control
+6) Add set_mixer_id.sh program to set mixer_volume_id in /etc/radiod.conf
+7) PiFace CAD support added
+8) Create stations program skips unsupported UDP protocol
+9) mixer_volume_id parameter removed. Mixer ID now stored /var/lib/radiod/mixer_volume_id
+10) Correct iqaudio DAC configuration in /boot/config.txt
+11) Add hostname to info display on two line LCDs
+12) Create install.log when running configure_radio.py
+
+Version 6.8 release notes
+-------------------------
+18 July 2018
+1) Support for small screens 480x320 added
+2) Correct display of artwork exiting if mouse hover
+3) Playlist creation for music library on an SD card
+4) New pull_up_down parameter for configuring button interface pull up/down resistors
+5) Improved Cyrillic character handling for LCD versions
+6) Support for pulseaudio (if installed) added
+7) Allow disabling of rotary encoders to be disabled by setting switch settings to 0
+8) Set short date format if using Olimex OLED display
+9) Set volume range to 10 if using Olimex OLED display
+10) Correct mute function if espeak  enabled and using IQaudIO Cosmic Controller
+11) Correct clear OLED last line (Volume text display overwrite error)
+12) Display of special characters in graphic versions of radio (gradio and vgradio)
+13) Popup messages use language file
+
 Version 6.7 release notes
 -------------------------
-27th July 2018
+27th June 2018
 1) Spotify (raspotify) implemented
 2) Missing [SCREEN] section in radiod.conf added
 3) Improved volume slider for OLED version of the radio
@@ -114,10 +147,15 @@ Version 6.00 release notes
 Manuals
 -------
 Version 6.x
-http://www.bobrathbone.com/raspberrypi/Raspberry%20PI%20Radio.pdf
+https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio.pdf
 
-Version 5.x
-http://www.bobrathbone.com/raspberrypi/Raspberry%20PI%20Radio%20V5.pdf
+Vintage radio
+https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Vintage%20Radio.pdf
+https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Vintage%20Radio%20Operating%20Instructions.pdf
+
+Version 5.x (For PiFace CAD support only)
+https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio%20V5.pdf
+
 
 Github
 ------

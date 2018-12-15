@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.177 2018/06/27 08:53:57 bob Exp $
+# $Id: radiod.py,v 1.183 2018/12/04 08:55:27 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -13,6 +13,7 @@
 #	    The authors shall not be liable for any loss or damage however caused.
 #
 
+from __init__ import *
 import os,sys
 import time
 import signal
@@ -174,6 +175,8 @@ class MyDaemon(Daemon):
 
 		time.sleep(2.5)
 		loadSource(display,radio)
+		current_id = radio.getCurrentID()
+		radio.play(current_id)
 
 		progcall = str(sys.argv)
 		log.message('Radio running pid ' + str(os.getpid()), log.INFO)
@@ -408,6 +411,8 @@ def handleRadioEvent(event,display,radio,menu):
 		display.setDelay(0)	# Cancel delayed display of volume
 		if menu_mode == menu.MENU_INFO:
 			menu.set(menu.MENU_TIME)
+		if radio.config.verbose():
+			speakCurrent(message,radio,speak_title=False)
 
 	elif event_type == event.CHANNEL_DOWN:
 		log.message('Channel DOWN', log.DEBUG)
@@ -415,6 +420,8 @@ def handleRadioEvent(event,display,radio,menu):
 		display.setDelay(0)	# Cancel delayed display of volume
 		if menu_mode == menu.MENU_INFO:
 			menu.set(menu.MENU_TIME)
+		if radio.config.verbose():
+			speakCurrent(message,radio,speak_title=False)
 
 	elif event_type == event.MENU_BUTTON_DOWN:
 		if radio.muted():
@@ -445,11 +452,11 @@ def handleSourceEvent(event,display,radio,menu):
 	radio.getSources()
 	
 	if event_type == event.UP_SWITCH:
-		radio.cycleSource(radio.UP)
+		radio.cycleSource(UP)
 		radio.setReload(True)
 
 	elif event_type == event.DOWN_SWITCH:
-		radio.cycleSource(radio.DOWN)
+		radio.cycleSource(DOWN)
 		radio.setReload(True)
 
 	elif event_type == event.MENU_BUTTON_DOWN:
@@ -470,19 +477,19 @@ def handleSearchEvent(event,display,radio,menu):
 	source_type = radio.getSourceType()
 
 	if event_type == event.UP_SWITCH:
-		radio.getNext(radio.UP)
+		radio.getNext(UP)
 		radio.setLoadNew(True)
 
 	elif event_type == event.DOWN_SWITCH:
-		radio.getNext(radio.DOWN)
+		radio.getNext(DOWN)
 		radio.setLoadNew(True)
 
 	elif event_type == event.LEFT_SWITCH and source_type == radio.source.MEDIA:
-		radio.findNextArtist(radio.DOWN)
+		radio.findNextArtist(DOWN)
 		radio.setLoadNew(True)
 
 	elif event_type == event.RIGHT_SWITCH and source_type == radio.source.MEDIA:
-		radio.findNextArtist(radio.UP)
+		radio.findNextArtist(UP)
 		radio.setLoadNew(True)
 
 	elif event_type == event.MENU_BUTTON_DOWN:
@@ -504,6 +511,8 @@ def handleMenuChange(display,radio,menu,message):
 	menu_mode = menu.cycle()
 	menu_name = menu.getName()
 	log.message('Menu mode ' + str(menu_mode) + ' ' + str(menu_name), log.DEBUG)
+	hostname = socket.gethostname()
+	ip_addr = radio.execCommand('hostname -I')
 
 	source_type = radio.getSourceType()
 
@@ -517,7 +526,7 @@ def handleMenuChange(display,radio,menu,message):
 		radio.optionChangedFalse()
 
 	elif menu_mode == menu.MENU_INFO:
-		message.storeIpAddress(radio.execCommand('hostname -I'))
+		message.storeIpAddress(ip_addr)
 
 	# In Airplay and Spotify mode only the TIME and SOURCE modes are relevant
 	elif source_type == radio.source.AIRPLAY or source_type == radio.source.SPOTIFY:
@@ -537,14 +546,37 @@ def handleMenuChange(display,radio,menu,message):
 	if menu_mode != menu.MENU_SLEEP:
 		display_mode = menu.mode()
 		sMenu = menu_name.replace('_', ',')
+
+		if display_mode == menu.MENU_RSS:
+			sMenu = "Main"
+		
+			# Speak info if speak info true
+			if radio.config.hasSpeech() and radio.config.speakInfo() :
+				menu.set(menu.MENU_INFO)
+				sMenu = hostname +  " IP " + str(ip_addr)
+				sMenu = convertInfo(hostname,ip_addr)
+
 		if display.hasScreen():
 			sMenu = sMenu.lower()
-		elif display_mode == menu.MENU_RSS:
-			sMenu = "Main"
+
 		message.speak(sMenu)
 
 	time.sleep(0.2)	# Prevent skipping next menu
 	return menu_mode
+
+# Convert IP address and hostname to speach string
+def convertInfo(hostname,ip_addr):
+	global message
+	info = ""
+	dot = message.get('dot')
+	for i in range(len(ip_addr)):
+		c = ip_addr[i]
+		if  c == '.':
+			info = info + ' ' + dot + '. '
+		else :
+			info = info + c + ' '
+	info = 'Host. ' + hostname + ' IP ' + info
+	return info 
 
 # Handle menu option events
 def handleOptionEvent(event,display,radio,menu):
@@ -552,10 +584,10 @@ def handleOptionEvent(event,display,radio,menu):
 	option_index = menu.getOption()
 
 	if event_type == event.UP_SWITCH:
-		menu.getNextOption(radio.UP)
+		menu.getNextOption(UP)
 
 	elif event_type == event.DOWN_SWITCH:
-		menu.getNextOption(radio.DOWN)
+		menu.getNextOption(DOWN)
 
 	elif event_type == event.LEFT_SWITCH or event_type == event.RIGHT_SWITCH:
 		changeOption(event, display, radio, menu)
@@ -630,15 +662,15 @@ def changeOption(event, display, radio, menu):
 	
 	if option_index == menu.OPTION_ALARM:
 		if event_type == event.RIGHT_SWITCH:
-			radio.alarmCycle(menu.UP)
+			radio.alarmCycle(UP)
 		elif event_type == event.LEFT_SWITCH:
-			radio.alarmCycle(menu.DOWN)
+			radio.alarmCycle(g)
 
 	elif option_index == menu.OPTION_ALARMSETHOURS or option_index == menu.OPTION_ALARMSETMINS:
 		if event_type == event.RIGHT_SWITCH:
-			radio.cycleAlarmValue(menu.UP, option_index)
+			radio.cycleAlarmValue(UP, option_index)
 		else:
-			radio.cycleAlarmValue(menu.DOWN, option_index)
+			radio.cycleAlarmValue(g, option_index)
 
 	elif option_index == menu.OPTION_TIMER:
 		if event_type == event.RIGHT_SWITCH:
@@ -881,8 +913,8 @@ def displayInfo(display,radio,message):
 	display.backlight('info_color')
 	msg = message.get('radio_version') + ' '
 	display.out(1, msg + version, interrupt )
-	display.out(2, 'IP: ' + ipaddr, interrupt )
 	if nlines > 2:
+		display.out(2, 'IP: ' + ipaddr, interrupt )
 		MpdVersion = radio.getMpdVersion()
 		display.out(3, 'MPD version ' + MpdVersion, interrupt )
 
@@ -892,6 +924,9 @@ def displayInfo(display,radio,message):
 		else:
 			msg = 'Hostname: ' + socket.gethostname()
 			display.out(4,msg,interrupt)
+	else:
+		sHost = ' ' + socket.gethostname()
+		display.out(2, 'IP: ' + ipaddr + sHost, interrupt )
 	return 
 
 
@@ -1075,10 +1110,13 @@ def displayCurrent(display,radio,message):
 	return
 
 # Display current playing selection or station
-def speakCurrent(message,radio):
+def speakCurrent(message,radio, speak_title=True):
+	title = ''
 	source_type = radio.getSourceType()
 	id = radio.getCurrentID()
-	title = radio.getCurrentTitle()
+
+	if speak_title:
+		title = radio.getCurrentTitle()
 	
 	if source_type == radio.source.RADIO:
 		station = radio.getCurrentStationName()

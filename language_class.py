@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: language_class.py,v 1.34 2018/06/13 12:49:48 bob Exp $
+# $Id: language_class.py,v 1.38 2018/10/30 13:35:44 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -65,6 +65,7 @@ class Language:
 		'stopping_radio': 'Stopping radio',
 		'current_station': 'Current station',
 		'connecting': 'Connecting',
+		'connected': 'Connected',
 		'connection_error': 'Connection error',
 		'station': 'Station',
 		'track': 'Track',
@@ -76,6 +77,8 @@ class Language:
 		'no': 'no',
 		'radio_version': 'Radio version',
 		'wait': 'Please wait',
+		'title_unknown': 'Title unknown',
+		'track_unknown': 'Track unknown',
 
 		# Options
 		'random': 'Random',
@@ -89,6 +92,7 @@ class Language:
 		'alarmminutes': 'Alarm minutes',
 		'streaming': 'Streaming',
 		'colour': 'Colour',
+		'dot': 'dot',
 
 		# Volume and speech
 		'voice': 'voice',
@@ -121,17 +125,24 @@ class Language:
 			try:
 				with open(LanguageFile) as f:
 					lines = f.readlines()
-				for line in lines:
-					if line.startswith('#'):
-						continue
-					if len(line) < 1:
-						continue
-					line = line.rstrip()
-					param,value = line.split(':')
-					self.LanguageText[param] = str(value)
+				try:
+					for line in lines:
+						line = line.rstrip() 	# Remove LF
+						line = line.rstrip(':')	# Remove any : 
+						if line.startswith('#'):
+							continue
+						if len(line) < 1:
+							continue
+						line = line.rstrip()
+						param,value = line.split(':')
+						self.LanguageText[param] = str(value)
 
-			except:
+				except Exception as e:
+					log.message(LanguageFile + ":" + str(e), log.ERROR)
+
+			except Exception as e:
 				log.message("Error reading " + LanguageFile, log.ERROR)
+
 		return
 
 	# Get the text by label

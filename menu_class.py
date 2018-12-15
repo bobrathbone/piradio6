@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Menu Class
-# $Id: menu_class.py,v 1.12 2018/05/30 08:21:14 bob Exp $
+# $Id: menu_class.py,v 1.13 2018/12/04 07:59:51 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -17,6 +17,7 @@ import sys
 
 from config_class import Configuration
 from language_class import Language
+from __init__ import *
 
 config = Configuration()
 language = Language()
@@ -62,10 +63,6 @@ class Menu:
 	option_last = OPTION_TIMER
 	option_changed = False
 
-	# Other definitions
-	UP = 0
-	DOWN = 1
-
 	# Initialisation routine
 	def __init__(self):
 		return
@@ -100,7 +97,7 @@ class Menu:
 
 	# Get the option name
         def getNextOption(self, direction):
-		if direction == self.UP:
+		if direction == UP:
 			self.option += 1
 		else:
 			self.option -= 1

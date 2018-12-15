@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: log_class.py,v 1.4 2018/03/24 11:42:53 bob Exp $
+# $Id: log_class.py,v 1.8 2018/11/14 13:15:39 bob Exp $
 # Raspberry Pi Internet Radio Logging class
 #
 # Author : Bob Rathbone
@@ -9,7 +9,7 @@
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
-#             The authors shall not be liable for any loss or damage however caused.
+#	     The authors shall not be liable for any loss or damage however caused.
 #
 # Log levels are :
 # 	CRITICAL 50 
@@ -22,11 +22,11 @@
 #  See https://docs.python.org/2/library/logging.html
 #
 
-import os
+import os,sys
 import logging
 import ConfigParser
-
 config = ConfigParser.ConfigParser()
+
 ConfigFile = "/etc/radiod.conf"
 
 class Log:
@@ -41,41 +41,41 @@ class Log:
 	module = '' 	# Module name for log entries
 	loglevel = logging.INFO
 
-        def __init__(self):
-                return 
+	def __init__(self):
+		return 
 
 	def init(self,module):
 		self.module = module
 		self.loglevel = self.getConfig()
-                return 
+		return 
 
 	def message(self,message,level):
 		# Set up logging, level 
 		if level != self.NONE:
-		   try:
-			logger = logging.getLogger('gipiod')
-			hdlr = logging.FileHandler('/var/log/' + self.module + '.log')
-			formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-			hdlr.setFormatter(formatter)
-			logger.addHandler(hdlr)
-			logger.setLevel(self.loglevel)
+			try:
+				logger = logging.getLogger('gipiod')
+				hdlr = logging.FileHandler('/var/log/' + self.module + '.log')
+				formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+				hdlr.setFormatter(formatter)
+				logger.addHandler(hdlr)
+				logger.setLevel(self.loglevel)
 
-			# write to log
-			if level == self.CRITICAL:
-				logger.critical(message)
-			elif level == self.ERROR:
-				logger.error(message)
-			elif level == self.WARNING:
-				logger.warning(message)
-			elif level == self.INFO:
-				logger.info(message)
-			elif level == self.DEBUG:
-				logger.debug(message)
+				# write to log
+				if level == self.CRITICAL:
+					logger.critical(message)
+				elif level == self.ERROR:
+					logger.error(message)
+				elif level == self.WARNING:
+					logger.warning(message)
+				elif level == self.INFO:
+					logger.info(message)
+				elif level == self.DEBUG:
+					logger.debug(message)
 
-			logger.removeHandler(hdlr)
-			hdlr.close()
-		   except Exception as e:
-			print str(e)
+				logger.removeHandler(hdlr)
+				hdlr.close()
+			except Exception as e:
+				print (str(e))
 		return
 
 	# Temporary set log level
@@ -84,8 +84,8 @@ class Log:
 		return
 
 	# Get the log level from the configuration file
-        def getLevel(self):
-                return self.loglevel
+	def getLevel(self):
+		return self.loglevel
 
 	# Get configuration loglevel option
 	def getConfig(self):

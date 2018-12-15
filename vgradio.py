@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.83 2018/06/17 15:38:11 bob Exp $
+# $Id: vgradio.py,v 1.94 2018/11/26 16:53:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -84,8 +84,7 @@ def setupRadio(radio):
 	radio.start()	      # Start it
 	radio.loadSource()	    # Load sources and playlists
 
-	display.setSize(size)
-	message = Message(radio,display)
+	#display.setSize(size)
 	return
 
 # Return the page that this station is to be displayed on
@@ -129,6 +128,10 @@ def drawTunerSlider(tunerSlider,screen,display,currentID):
 def drawVolumeScale(volumeScale,screen,volume):
 	xPos = lmargin
 	yPos = size[1] - margin
+
+	# Handle 1024 x 600 screens
+	if display.getRows() > 24:
+		yPos -= 9
 	xSize = size[0] - lmargin - rmargin/3
 	ySize = size[1] - margin * 2
 	volumeScale.draw(screen,xPos,yPos,xSize,ySize)
@@ -296,9 +299,20 @@ def displayTimeDate(screen,radio,message):
 	screen.blit(textsurface,(xPos,yPos))
 	return
 
+# Encode text to UTF-8
+def uEncode(text):
+        string = text
+        try:
+                string = unicode(text,"utf-8")
+        except:
+                pass
+        return string
+
 # Display currently playing radio station 
 def displayTitle(screen,radio,message,plsize):
 	title = radio.getCurrentTitle()
+	title = uEncode(title)
+
 	if len(title) < 1:
 		current_id = radio.getCurrentID()
 		bitrate = radio.getBitRate()
@@ -342,7 +356,7 @@ def displayPagePosition(page,maxStations,plsize):
 		page = 0
 	font = pygame.font.SysFont('freesans', 15, bold=False)
 	xPos = size[0] - int(margin * 1.1)
-	yPos = size[1] - int(margin * 1.5)
+	ypos = yPos = size[1] - int(font.size('A')[1] * 1.2)
 	color = pygame.Color('white')
 	text = str(page) + '/' + str(nPages)
 	textsurface = font.render(text, False, (color))
@@ -351,6 +365,7 @@ def displayPagePosition(page,maxStations,plsize):
 
 # Display message popup
 def displayPopup(screen,radio,text):
+	text = uEncode(text)
 	displayPopup = TextRectangle(pygame) 	# Text window
 	font = pygame.font.SysFont('freesans', 30, bold=True)
 	fx,fy = font.size(text + "A")
@@ -365,11 +380,12 @@ def displayPopup(screen,radio,text):
 	line = 1 	# Not used but required
 	color = (255,255,255)
 	displayPopup.drawText(screen,font,color,line,text)
+	pygame.display.flip()
 	return
 
 # Display the radio station name
 def displayStationName(screen,radio):
-	text = radio.getSearchName()[0:40]
+	sname = uEncode(radio.getSearchName()[0:40])
 	font = pygame.font.SysFont('freesans', 20, bold=True)
 
 	displayRect = TextRectangle(pygame) 	# Blank out background
@@ -377,8 +393,8 @@ def displayStationName(screen,radio):
 	color = (0,0,0)
 	bcolor = (0,0,0)
 	height = 28
-	leng = len(text)
-	fx,fy = font.size(text + "A")
+	leng = len(sname)
+	fx,fy = font.size(sname + "A")
 	width = fx
 	xPos = int((size[0]/2) - (width/2))
 	yPos = 37
@@ -390,7 +406,7 @@ def displayStationName(screen,radio):
 
 	line = 1 	# Not used but required
 	color = (255,230,153)
-	displayWindow.drawText(screen,font,color,line,text)
+	displayWindow.drawText(screen,font,color,line,sname)
 	return displayWindow
 
 # Display the station names on the scale 
@@ -409,15 +425,25 @@ def drawScaleNames(screen,radio,playlist,index,maxLabels,lmargin):
 	range = size[0] - lmargin - rmargin
 	xInc= int(range / maxLabels)
 	firstLine = 75
-	yInc = 57
-	xPos = 25
+	rows = display.getRows()
+	xPos = 35
+
+	# Handle 1024x600 screens
+	if rows > 24:
+		yInc = 71
+		firstLine = 95
+	else:
+		# All other smaller sizes
+		yInc = 57
+		firstLine = 75
+
 	yPos = firstLine 
 	screen.set_clip(xPos,0,size[0]-rmargin,size[1])
 	x = 0
 	lineInc = 1
 	while x < maxLabels:
 		try:
-			text = playlist[index]
+			text = uEncode(playlist[index])
 		except:
 			break
 		text = text[0:tSize]
@@ -441,8 +467,12 @@ def drawScaleNames(screen,radio,playlist,index,maxLabels,lmargin):
 # Display left arrow (Position on first station/track)
 def drawLeftArrow(display,screen,LeftArrow):
 	mysize = (30,30)
+	rows = display.getRows()
+	if rows > 24:
+		yPos = 44
+	else:
+		yPos = 32
 	xPos = 15
-	yPos = 32
 	myPos = (xPos,yPos)
 	path = "images/arrow_left_double.png"
 	LeftArrow.draw(screen,path,(myPos),(mysize))
@@ -451,8 +481,15 @@ def drawLeftArrow(display,screen,LeftArrow):
 # Display right arrow (Position on first station/track)
 def drawRightArrow(display,screen,RightArrow):
 	mysize = (30,30)
-	xPos = 755
-	yPos = 32
+	rows = display.getRows()
+	columns = display.getColumns()
+	#xPos = 755
+	xPos = display.getColumnPos(columns - 3)
+	#yPos = 32
+	if rows > 24:
+		yPos = 44
+	else:
+		yPos = 32
 	myPos = (xPos,yPos)
 	dir = os.path.dirname(__file__)
 	path = "images/arrow_right_double.png"
@@ -483,8 +520,13 @@ def drawSwitchIcon(display,screen,switchIcon):
 
 # Draw Equalizer Icon
 def drawEqualizerIcon(display,screen,equalizerIcon):
-	xPos = display.getColumnPos(69)
-	yPos = display.getRowPos(13)
+        columns = display.getColumns()
+        rows = display.getRows()
+        xPos = display.getColumnPos(columns - 4)
+	if rows > 25:
+		yPos = display.getRowPos(int(rows*0.67))
+	else:
+		yPos = display.getRowPos(int(rows*0.62))
 	equalizerIcon.draw(screen,xPos,yPos)
 	return
 
@@ -562,11 +604,11 @@ def openEqualizer(radio,equalizer_cmd):
 
 # Set draw equalizer true/false
 def displayEqualizerIcon(display):
-	 if display.config.fullScreen():
-		  draw_equalizer_icon = False
-	 else:
-		  draw_equalizer_icon = True
-	 return draw_equalizer_icon
+	if display.config.fullScreen():
+		draw_equalizer_icon = False
+	else:
+		draw_equalizer_icon = True
+	return draw_equalizer_icon
 
 # Stop program if stop specified on the command line
 def stop():
@@ -589,6 +631,13 @@ if __name__ == "__main__":
 		print "This program requires an X-Windows desktop"
 		sys.exit(1)
 
+	# Do not override locale settings
+	try:
+		locale.setlocale(locale.LC_ALL, '')
+	except:
+		pass
+	log.message("locale " + str(locale.getdefaultlocale()), log.DEBUG)
+
 	# Stop command
 	if len(sys.argv) > 1 and sys.argv[1] == 'stop':
 		os.popen("sudo service mpd stop")
@@ -604,6 +653,7 @@ if __name__ == "__main__":
 
 	font = pygame.font.SysFont('freesans', 13)
 	display = GraphicDisplay(font)
+	size = display.getSize()
 
 	if display.config.fullScreen():
 		flags = FULLSCREEN|DOUBLEBUF
@@ -633,14 +683,33 @@ if __name__ == "__main__":
 	else:
 		screen.fill(Color(wcolor))
 
-	text = "Loading Radio Stations"
+	# If screen is too small report and exit to gradio
+	if display.getRows() < 20:
+		msg = "Screen size is too small!"
+		print msg
+		displayPopup(screen,radio,msg)
+		time.sleep(7)
+		dir = os.path.dirname(__file__)
+		os.popen("sudo " + dir + "/gradio.py&")
+		sys.exit(1)
+
+	message = Message(radio,display)
+        text = message.get('loading_radio')
+
 	displayPopup(screen,radio,text)
-	pygame.display.flip()
 	surface=pygame.Surface((size))
 
+	# Set up Xauthority for root user
+	radio.execCommand("sudo cp /home/pi/.Xauthority /root/")
+
+	# Prevent LCD version of program from running
 	radio.execCommand("systemctl stop radiod")
+
+	# Switch off character translation
+	radio.setTranslate(False)	# Switch on text translation
+
+	# Initialise radio
 	setupRadio(radio)
-	radio.setTranslate(True)	# Switch on text translation
 
 	# Set up window title
 	window_title = display.getWindowTitle(radio)
@@ -801,7 +870,8 @@ if __name__ == "__main__":
 		drawRightArrow(display,screen,RightArrow)
 		drawUpIcon(display,screen,upIcon)
 		drawDownIcon(display,screen,downIcon)
-		if draw_equalizer_icon:
+		
+		if drawEqualizerIcon:
 			drawEqualizerIcon(display,screen,equalizerIcon)
 
 		if display.config.switchPrograms():

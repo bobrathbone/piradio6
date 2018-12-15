@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.19 2018/06/13 07:34:56 bob Exp $
+# $Id: create_playlist.sh,v 1.21 2018/07/06 09:30:21 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -33,6 +33,8 @@ SHARE="/var/lib/radiod/share"
 TEMPFILE="/tmp/list$$"
 USBDEV=""
 MAX_SIZE=5000
+SDCARD="sdcard"
+LOCATION="/home/pi/mymusic"
 
 # Make a playlist name from the filter
 make_name(){
@@ -80,7 +82,8 @@ while [ $selection != 0 ]
 do
 	 ans=$(whiptail --title "Create playlist" --menu "Choose your option" 15 75 9 \
 	 "1" "From USB stick" \
-	 "2" "From network share" 3>&1 1>&2 2>&3)
+	 "2" "From network share" \
+	 "3" "From SD card" 3>&1 1>&2 2>&3)
 
 	 exitstatus=$?
 	 if [[ $exitstatus != 0 ]]; then
@@ -116,15 +119,54 @@ do
 			fi
 		fi
 
+	 elif [[ ${ans} == '3' ]]; then
+		DESC="SD card selected"
+		PLAYLIST="SD_Card"
+		DIR=${SDCARD}
 	 else
-		  DESC="User interface in ${CONFIG} unchanged"
-		  echo ${DESC}
+		DESC="User interface in ${CONFIG} unchanged"
+		echo ${DESC}
 		exit 0
 	 fi
 
 	 whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
 	 selection=$?
 done
+
+# Soft link SD card music location to /var/lib/mpd/music/sdcard
+if [[ ${DIR} == ${SDCARD} ]]; then
+	file_exists=0
+	while [[ file_exists -eq 0 ]]
+	do
+		ans=0
+		selection=1
+		while [ $selection != 0 ]
+		do
+			LOCATION=$(whiptail --title "Enter music location" --inputbox "Example: /home/pi/mymusic" 10 60 "/home/pi/mymusic" 3>&1 1>&2 2>&3) 
+			exitstatus=$?
+			if [ $exitstatus != 0 ]; then
+				exit 0
+			fi
+			if [[ ${LOCATION} != "" ]]; then
+				whiptail --title "Your location is: ${LOCATION}" --yesno "Is this correct?" 10 60
+			fi
+			selection=$?
+		done
+		if [[ -d  ${LOCATION} ]]; then
+			echo "SD card music location is ${LOCATION}"
+			CMD="sudo rm -f ${MPD_MUSIC}/${SDCARD}" 
+			echo ${CMD};${CMD}
+			CMD="sudo ln -s ${LOCATION} ${MPD_MUSIC}/${SDCARD}" 
+			echo ${CMD};${CMD}
+			file_exists=1
+		else
+			msg="Directory ${LOCATION} does not exist. Create it or use another location."
+			echo ${msg}
+			whiptail --title "Error" --msgbox "${msg}" 10 60
+			
+		fi
+	done
+fi
 
 # Set up a filter (This becomes the playlist name)
 ans=0

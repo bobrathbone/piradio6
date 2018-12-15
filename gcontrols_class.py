@@ -3,7 +3,7 @@
 # Raspberry Pi Internet Radio
 # Graphic screen controls
 #
-# $Id: gcontrols_class.py,v 1.38 2018/06/19 14:38:08 bob Exp $
+# $Id: gcontrols_class.py,v 1.48 2018/11/26 08:20:59 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,6 +24,7 @@ from sgc.widgets.base_widget import Simple
 # Objects: Mute Button
 class MuteButton:
 	# Initialisation routine
+	mute_button = None
 	def __init__(self,pygame):
 		self.pygame = pygame
 		return
@@ -46,8 +47,9 @@ class MuteButton:
 	def pressed(self):
 		hit = False
 		pos = self.pygame.mouse.get_pos()
-		if self.mute_button.collidepoint(pos):
-			hit = True
+		if self.mute_button != None:
+			if self.mute_button.collidepoint(pos):
+				hit = True
 		return hit
 
 # Display an image found in sub-directory images
@@ -73,6 +75,7 @@ class Image:
 		hit = False
 		if self.enabled:
 			pos = self.pygame.mouse.get_pos()
+			#if self.image.collidepoint(pos) and event.type == self.pygame.MOUSEBUTTONDOWN:
 			if self.image.collidepoint(pos):
 				hit = True
 		return hit
@@ -186,7 +189,7 @@ class VolumeScale:
 		self.pygame = pygame
 		return
 
-	# Draw the volume slider window
+	# Draw the (invisible) volume slider window
 	def draw(self,screen,xPos,yPos,xSize,ySize):
 		self.xPos = xPos
 		self.yPos = yPos
@@ -361,8 +364,9 @@ class ScrollBox:
 	click_index = -1 # Click index
 	iWidth = 20 	# Slider width
 
-	def __init__(self,pygame):
+	def __init__(self,pygame,display):
 		self.pygame = pygame
+		self.display = display
 		return
 
 	# Draw the scroll box
@@ -387,11 +391,13 @@ class ScrollBox:
 			yPos2 += yLineSize
 
 		# Draw the slider on the RH side
-		self.slider = VerticalSlider(self.pygame)
-		xPos = self.xPos + xSize + self.iWidth/2
-		xSize = self.iWidth
-		border = 2
-		self.slider.draw(screen,color,bcolor,xPos,yPos,xSize,ySize,border)
+		rows = self.display.getRows()
+		if rows >= 20:
+			self.slider = VerticalSlider(self.pygame)
+			xPos = self.xPos + xSize + self.iWidth/2
+			xSize = self.iWidth
+			border = 2
+			self.slider.draw(screen,color,bcolor,xPos,yPos,xSize,ySize,border)
 		return 
 
 	# Detect button down
@@ -441,9 +447,16 @@ class ScrollBox:
 				break
 		return clicked
 	
+	# Return index of clicked line
 	def index(self):
 		return self.click_index
 				
+	# Set search window rannge (Used if no slider draw)
+	def setRange(self,range):
+		self.range = range
+
+	def getRange(self):
+		return self.range
 
 # Create SGC screen widgets
 class Widgets:
@@ -465,6 +478,10 @@ class Widgets:
 		xPos = display.getColumnPos(column)
 
 		# Create search selection box
+		largeDisplay = True
+		rows = display.getRows()
+		if rows < 20:
+			largeDisplay = False
 		yPos = display.getRowPos(7.5)
 
 		self.select_list = sgc.Radio(group="group1", label="List", active=True,
@@ -477,11 +494,18 @@ class Widgets:
 		self.search_box = sgc.VBox(widgets=(self.select_list,self.select_playlists,
 					self.select_artists), pos=(xPos,yPos),selection=0,
 					label="Search",label_side="top",label_col=(label_col))
-		self.search_box.add(order=3)
 
-		# Scale widget
-		xPos = display.getColumnPos(8)
-		yPos = display.getRowPos(18.5)
+		if largeDisplay:
+			self.search_box.add(order=3)
+
+		# Scale widget for volume control
+		rows = display.getRows()
+		startColumn = display.getStartColumn()
+		if largeDisplay:
+			xPos = display.getColumnPos(startColumn)
+		else:
+			xPos = display.getColumnPos(1)
+		yPos = display.getRowPos(rows - 2.5)
 		if self.radio.muted():
 			sVolume = "Muted"
 		else:
@@ -493,8 +517,12 @@ class Widgets:
 		# Sources combo box
 		sources = self.radio.source.getList()
 		index = 0
-		xPos = display.getColumnPos(50)
-		yPos = display.getRowPos(19)
+		columns = display.getColumns()
+		if largeDisplay:
+			xPos = display.getColumnPos(50)
+		else:
+			xPos = display.getColumnPos(columns - 15)
+		yPos = display.getRowPos(rows-2.1)
 		self.sourceCombo = sgc.Combo(pos=(xPos,yPos),selection=index, values=(sources),
 					label="Sources", label_side="bottom", label_col=(label_col))
 		self.sourceCombo.add(order=6)
@@ -530,6 +558,22 @@ class DownIcon(Image):
 
 	def clicked(self):
 		return self.downIcon.clicked()
+
+# Draw the search Down Icon (Small screens only)
+class SearchCycleIcon(Image):
+	# Initialisation routine
+	def __init__(self,pygame):
+		self.pygame = pygame
+		pass
+
+	def draw(self,screen,xPos,yPos,path="images/search_cycle_icon.png"):
+		self.searchCycleIcon = Image(self.pygame)
+		mysize = (30,30)
+		self.searchCycleIcon.draw(screen,path,(xPos,yPos),(mysize))
+		return
+
+	def clicked(self):
+		return self.searchCycleIcon.clicked()
 
 # Draw the search Down Icon
 class SwitchIcon(Image):

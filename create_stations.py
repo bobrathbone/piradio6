@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.7 2018/03/08 09:29:02 bob Exp $
+# $Id: create_stations.py,v 1.8 2018/11/20 08:33:45 bob Exp $
 #
 # Create playlist files from the following url formats
 #       iPhone stream files (.asx)
@@ -266,8 +266,15 @@ def parseM3u(title,url,lines,filenumber):
 	for line in lines:
 		line = line.replace('\r','')
 		line = line.replace('\n','')
+
+		# Skip UDP protocol (Not supported)
+		if line.startswith('udp:'):
+			next
+
+		# Save stream URL
 		if line.startswith('http:'):
 			url = line
+
 		elif line.startswith('#EXTINF:'):
 			info = line
 			

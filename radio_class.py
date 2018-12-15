@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.168 2018/06/26 09:22:11 bob Exp $
+# $Id: radio_class.py,v 1.177 2018/12/04 07:59:51 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -26,6 +26,9 @@ import re
 import SocketServer
 from time import strftime
 import pdb
+
+from __init__ import __version__
+from __init__ import *
 
 from udp_server_class import UDPServer
 from udp_server_class import RequestHandler
@@ -52,7 +55,9 @@ CurrentTrackFile = RadioLibDir + "/current_track"
 CurrentSourceFile = RadioLibDir + "/source"
 VolumeFile = RadioLibDir + "/volume"
 MixerVolumeFile = RadioLibDir + "/mixer_volume"
+MixerIdFile = RadioLibDir + "/mixer_volume_id"
 BoardRevisionFile = RadioLibDir + "/boardrevision"
+
 Icecast = "/usr/bin/icecast2"
 
 # Option values
@@ -88,8 +93,6 @@ class Radio:
 	ALARM_LAST = ALARM_WEEKDAYS
 
 	# Other definitions
-	UP = 0
-	DOWN = 1
 	LEFT = 2
 	RIGHT = 3
 
@@ -154,11 +157,11 @@ class Radio:
 	alarmTriggered = False	# Alarm fired
 
 	stationTitle = ''		# Radio station title
+	stationName = ''		# Radio station name
 
 	search_index = 0	# The current search index
 	loadnew = False	  	# Load new track from search
 	streaming = False	# Streaming (Icecast) disabled
-	VERSION	= "6.7"		# Version number
 
 	playlists = None
 	keepAliveTime = 0	# Keep alive time for MPD pings
@@ -219,11 +222,16 @@ class Radio:
 				self.execCommand("chown pi:pi /share")
 			self.execCommand("sudo ln -f -s /share /var/lib/mpd/music")
 
+		# Set up mixer ID file
+		if not os.path.isfile(MixerIdFile):
+			dir = os.path.dirname(__file__)
+			self.execCommand("sudo " + dir + "/set_mixer_id.sh")
 
 		self.execCommand("chown -R pi:pi " + RadioLibDir)
 		self.execCommand("chmod -R 764 " + RadioLibDir)
 		self.current_file = CurrentStationFile
 		self.current_id = self.getStoredID(self.current_file)
+
 		return
 
 	# Call back routine for the IR remote
@@ -313,7 +321,7 @@ class Radio:
 		self.execCommand("service mpd start")
 
 		# Connect to MPD
-		#client = MPDClient()	# Create the MPD client
+		client = MPDClient()	# Create the MPD client
 		self.connect(self.mpdport)
 		client.stop()	# Wait for stations to be loaded before playing
 
@@ -429,10 +437,11 @@ class Radio:
 			# Try restarting MPD
 			if not connected:
 				log.message('radio.connect: Restarting MPD', log.DEBUG)
-				self.execCommand("sudo service mpd start")
-				time.sleep(6)
+				self.execCommand("sudo systemctl restart mpd")
+				time.sleep(3)
 				client = MPDClient()	# Create the MPD client
-
+				self.current_id += 1 # Skip bad station
+				self.setCurrentID(self.current_id)
 		return connected
 
 	# Scroll up and down between stations/tracks
@@ -445,7 +454,7 @@ class Radio:
 		if not self.displayArtist():
 			leng = len(playlist)
 			if leng > 0:
-				if direction == self.UP:
+				if direction == UP:
 					index = index + 1
 					if index >= leng:
 						index = 0
@@ -475,7 +484,7 @@ class Radio:
 		leng = len(playlist)
 		count = leng
 		while not found:
-			if direction == self.UP:
+			if direction == UP:
 				index = index + 1
 				if index >= leng:
 					index = 0
@@ -497,7 +506,7 @@ class Radio:
 
 		# If a Backward Search find start of this list
 		found = False
-		if direction == self.DOWN:
+		if direction == DOWN:
 			self.current_artist = new_artist
 			while not found:
 				index = index - 1
@@ -660,6 +669,10 @@ class Radio:
 	# Get mixer volume
 	def getMixerVolume(self):
 		return self.airplay.getMixerVolume()
+		
+	# Get mixer ID
+	def getMixerID(self):
+		return self.mixer_volume_id
 		
 	# Increase mixer volume
 	def increaseMixerVolume(self):
@@ -947,7 +960,7 @@ class Radio:
 
 	# Cycle through alarm types
 	def alarmCycle(self,direction):
-		if direction == self.UP:
+		if direction == UP:
 			self.alarmType += 1
 		else:
 			self.alarmType -= 1
@@ -1070,7 +1083,7 @@ class Radio:
 		# Set hours
 		if option_index == self.menu.OPTION_ALARMSETHOURS:
 			value = 60
-		if direction == self.menu.UP:
+		if direction == UP:
 			self.incrementAlarm(value)
 		else:
 			self.decrementAlarm(value)
@@ -1187,7 +1200,6 @@ class Radio:
 			pos = currentsong.get("pos")
 			if pos == None:
 				currentid = self.current_id
-				#currentid = 0
 			else:
 				currentid = int(pos) + 1
 
@@ -1378,9 +1390,9 @@ class Radio:
 
 		if title == 'None':
 			title = ''
-
+		
 		if len(title) > 0:
-			title = translate.escape(title)
+			title = translate.escape_translate(title)
 
 		if self.channelChanged: 
 			self.channelChanged = False
@@ -1683,9 +1695,11 @@ class Radio:
 			client.play(self.current_id-1)
 			self.checkStatus()
 		except Exception as e:
-			log.message("radio.play FAILED ", log.ERROR)
+			log.message("radio.play FAILED id=" + str(self.current_id), log.ERROR)
 			log.message("radio.play " + str(e), log.ERROR)
-		self.clearErrorString() # Clear any error message
+			self.current_id += 1
+			self.clearErrorString() # Clear any error message
+		#self.clearErrorString() # Clear any error message
 		return self.current_id
 
 	# Clear streaming and other errors
@@ -1755,19 +1769,24 @@ class Radio:
 
 	# Get Radio station name by Index (Used in search routines)
 	def getStationName(self,index):
-		station = ""
+		stationName = ""
 		source_type = self.source.getType()
 
 		if source_type == self.source.RADIO:
-			station = "No stations found"
+			stationName = "No stations found"
 		else:
-			station = "No tracks found"
+			stationName = "No tracks found"
 		try:
 			if len(self.searchlist) > 0:
-				station = self.searchlist[index] 
+				stationName = self.searchlist[index] 
+
+			if stationName != self.stationName and len(stationName) > 0:
+				log.message ("Station " + str(index+1) + ": " \
+					+ str(stationName), log.DEBUG)	
+				self.stationName = stationName
 		except:
 			log.message("radio.getStationName bad index " + str(index), log.ERROR)
-		return station
+		return stationName
 
 	# Get track name by Index
 	def getTrackNameByIndex(self,index):
@@ -1801,7 +1820,7 @@ class Radio:
 
 	# Version number
 	def getVersion(self):
-		return self.VERSION
+		return __version__
 
 	# Set an interrupt received
 	def setInterrupt(self):
@@ -1986,6 +2005,7 @@ class Radio:
 
 	# Translate on/off (Used by gradio)
 	def setTranslate(self,true_false):
+		log.message("setTranslate " + str(true_false), log.DEBUG)
 		translate.setTranslate(true_false)
 
 	# Return option value indexed by menu class options

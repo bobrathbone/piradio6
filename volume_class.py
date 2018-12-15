@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.16 2018/06/18 17:52:14 bob Exp $
+# $Id: volume_class.py,v 1.23 2018/11/21 12:46:27 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -29,6 +29,7 @@ import pdb
 RadioLibDir = "/var/lib/radiod"
 VolumeFile = RadioLibDir + "/volume"	# MPD volume level
 MixerVolumeFile = RadioLibDir + "/mixer_volume"  # Alsa mixer file
+MixerIdFile = RadioLibDir + "/mixer_volume_id" 	# Alsa mixer volume ID 
 
 log = None
 
@@ -48,7 +49,8 @@ class Volume:
 		self.spotify = spotify
 		self.airplay = airplay
 		log = logging
-		self.mixer_volume_id = config.getMixerVolumeID()
+		#self.mixer_volume_id = config.getMixerVolumeID()
+		self.mixer_volume_id = self.getMixerVolumeID()
 		self.mixer_preset = config.getMixerPreset()
 	
 		# Set up initial volume
@@ -114,12 +116,17 @@ class Volume:
 
 	# Set the MPD volume level
 	def _setMpdVolume(self,volume,store=True):
+	
+		if volume < 0:	
+			volume = 0
+
+		if self.volume != volume:
+			log.message("volume._setMpdVolume " + str(volume), log.DEBUG)
 		try:
 			self.mpd_client.setvol(volume)
 			self.volume = volume
 			if store:
 				self.storeVolume(self.volume)
-			log.message("volume._setMpdVolume " + str(self.volume), log.DEBUG)
 
 		except Exception as e:
 			log.message("volume._setVolume error vol=" \
@@ -128,14 +135,16 @@ class Volume:
 		return self.volume
 		
 	# Set the Mixer volume level
-	def _setMixerVolume(self,volume, store):
-		cmd = "sudo amixer cset numid=" + str(self.mixer_volume_id) + \
-						" -- " + str(volume) + "%"
-                self.execCommand(cmd)
-		self.mixer_volume = volume
-		
-		if store:
-			self._storeMixerVolume(volume)	
+	def _setMixerVolume(self,volume,store):
+		if self.mixer_volume_id > 0 and volume != self.mixer_volume:
+			cmd = "sudo -u pi amixer cset numid=" + str(self.mixer_volume_id) \
+						  	      + " " + str(volume) + "%"
+			log.message(cmd, log.DEBUG)
+			self.execCommand(cmd)
+			self.mixer_volume = volume
+			
+			if store:
+				self._storeMixerVolume(volume)	
 		return self.mixer_volume
 
 	# Store the vloume in /var/lib/radiod
@@ -196,6 +205,11 @@ class Volume:
 			self.volume = self.getStoredInteger(VolumeFile,75)
 			volume = self.volume
 		return volume	
+
+	# Get mixer volume ID
+	def getMixerVolumeID(self):
+		self.mixer_volume_id = self.getStoredInteger(MixerIdFile,0)
+		return self.mixer_volume_id
 
 	# Increase volume using range value
 	def increase(self):

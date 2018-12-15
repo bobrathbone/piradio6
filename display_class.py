@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.35 2018/05/10 12:31:50 bob Exp $
+# $Id: display_class.py,v 1.36 2018/11/14 13:15:39 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -109,7 +109,7 @@ class Display:
 			screen.init(address = i2c_address, busnum = self.i2c_bus, \
 				    callback = self.callback)
 
-			#This device has its own buttons on the I2C intertface
+			# This device has its own buttons on the I2C intertface
 			self.has_buttons = True
 
 		elif dtype == config.OLED_128x64:
@@ -119,6 +119,15 @@ class Display:
 			self.lines = 5
 			# Set vertical display
 			screen.flip_display_vertically(config.flipVertical())
+
+		elif dtype == config.PIFACE_CAD:
+			from lcd_piface_class import Lcd_Piface_Cad
+			screen = Lcd_Piface_Cad()
+
+			screen.init(callback = self.callback)
+
+			# This device has its own buttons on the SPI intertface
+			self.has_buttons = True
 
 		else:
 			from lcd_class import Lcd

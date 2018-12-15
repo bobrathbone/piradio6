@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 #
-# $Id: rotary_switch_class.py,v 1.1 2017/10/23 11:40:11 bob Exp $
+# $Id: rotary_switch_class.py,v 1.2 2018/12/04 12:58:42 bob Exp $
 # Raspberry Retro Pi Internet Radio
 # Retro radio rotary menu switch
+# This class allows a rotary switch (not encoder) to operate a simple menu for
+# the Vintage radio 
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -10,11 +12,12 @@
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 
+import sys
 import RPi.GPIO as GPIO
 import time
 
 
-# Status LED class
+# Rotary switch class (Not rotary encoder)
 class RotarySwitch:
 	# Status settings
 	CLEAR = 0
@@ -43,15 +46,23 @@ class RotarySwitch:
 			GPIO.setup(self.switch4, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 		# Add event detection to the GPIO inputs
-		if self.switch1 > 0:
-			GPIO.add_event_detect(self.switch1, GPIO.FALLING, \
-				 callback=self.callback, bouncetime=100)
-		if self.switch2 > 0:
-			GPIO.add_event_detect(self.switch2, GPIO.FALLING, \
-				 callback=self.callback, bouncetime=100)
-		if self.switch4 > 0:
-			GPIO.add_event_detect(self.switch4, GPIO.FALLING, \
-				callback=self.callback, bouncetime=100)
+		switch = 0
+		try:
+			switch = self.switch1
+			if self.switch1 > 0:
+				GPIO.add_event_detect(self.switch1, GPIO.FALLING, \
+					 callback=self.callback, bouncetime=100)
+			switch = self.switch2
+			if self.switch2 > 0:
+				GPIO.add_event_detect(self.switch2, GPIO.FALLING, \
+					 callback=self.callback, bouncetime=100)
+			switch = self.switch4
+			if self.switch4 > 0:
+				GPIO.add_event_detect(self.switch4, GPIO.FALLING, \
+					callback=self.callback, bouncetime=100)
+		except Exception as e:
+			print "RotaryClass error setting GPIO " + str(switch)
+			print e
                 return
 
 	# Get switch state

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet language Class
-# $Id: message_class.py,v 1.27 2018/06/13 09:41:11 bob Exp $
+# $Id: message_class.py,v 1.29 2018/08/12 08:42:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -71,6 +71,10 @@ class Message:
 			if label == 'muted':
 				self.line = self.lines 	# Display on last line
 			message = language.getText(label)
+
+		# If message get fails display label
+		if len(message) < 1:
+			message = label.replace('_',' ')
 
 		return message
 
@@ -157,8 +161,8 @@ class Message:
 		# Allow repeat of same message
 		if repeat:
 			self.speech_text = ''
-
-		if self.speech and len(text) > 1 and text != self.speech_text:
+		try: 
+		    if self.speech and len(text) > 1 and text != self.speech_text:
 			if not self.radio.spotify.isRunning() and \
 					not self.radio.airplay.isRunning():
 				volume = self.radio.getVolume()/2
@@ -170,7 +174,14 @@ class Message:
 				self.radio.clientPause()
 				language.speak(text,volume)
 				self.speech_text = text	# Prevent repeating
-				self.radio.clientPlay()
+
+		except Exception as e:
+			print "Error speak:", e
+
+		type = self.radio.getSourceType()
+		if type == self.radio.source.RADIO or type == self.radio.source.MEDIA:
+			self.radio.clientPlay()
+
 		return
 
 	# Get the volume display in blocks

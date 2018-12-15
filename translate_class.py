@@ -4,7 +4,7 @@
 # Raspberry Pi Radio Character translation class
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: translate_class.py,v 1.4 2018/01/03 11:42:08 bob Exp $
+# $Id: translate_class.py,v 1.11 2018/11/14 13:15:39 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -35,7 +35,7 @@ class Translate:
 	# Escaped codes (from unicode)
 	codes = {
 		'//' : '/', 	   # Double /
-		'  ' : ' ',        # Double spaces
+		'  ' : ' ',	# Double spaces
 		'\\n' : ' ',       # Line feed  to space
 
 		# German UTF8 codes
@@ -45,38 +45,38 @@ class Translate:
 		'\\xe2\\x82\\xac' : ' Euro ',
 
 		# Special characters
-		'\\x80\\x99' : "'",        # Single quote 
-		'\\xc2\\xa1' : '!',        # Inverted exclamation
-		'\\xc2\\xa2' : 'c',        # Cent sign
-		'\\xc2\\xa3' : '#',        # Pound sign
-		'\\xc2\\xa4' : '$',        # Currency sign
-		'\\xc2\\xa5' : 'Y',        # Yen sign
-		'\\xc2\\xa6' : '|',        # Broken bar
-		'\\xc2\\xa7' : '?',        # Section sign
-		'\\xc2\\xa8' : ':',        # Diaerisis
+		'\\x80\\x99' : "'",	# Single quote 
+		'\\xc2\\xa1' : '!',	# Inverted exclamation
+		'\\xc2\\xa2' : 'c',	# Cent sign
+		'\\xc2\\xa3' : '#',	# Pound sign
+		'\\xc2\\xa4' : '$',	# Currency sign
+		'\\xc2\\xa5' : 'Y',	# Yen sign
+		'\\xc2\\xa6' : '|',	# Broken bar
+		'\\xc2\\xa7' : '?',	# Section sign
+		'\\xc2\\xa8' : ':',	# Diaerisis
 		'\\xc2\\xa9' : '(C)',      # Copyright
-		'\\xc2\\xaa' : '?',        # Feminal ordinal
+		'\\xc2\\xaa' : '?',	# Feminal ordinal
 		'\\xc2\\xab' : '<<',       # Double left
-		'\\xc2\\xac' : '-',        # Not sign
-		'\\xc2\\xad' : '',         # Soft hyphen
+		'\\xc2\\xac' : '-',	# Not sign
+		'\\xc2\\xad' : '',	 # Soft hyphen
 		'\\xc2\\xae' : '(R)',      # Registered sign
-		'\\xc2\\xaf' : '-',        # Macron
-		'\\xc2\\xb0' : 'o',        # Degrees sign
+		'\\xc2\\xaf' : '-',	# Macron
+		'\\xc2\\xb0' : 'o',	# Degrees sign
 		'\\xc2\\xb1' : '+-',       # Plus minus
-		'\\xc2\\xb2' : '2',        # Superscript 2
-		'\\xc2\\xb3' : '3',        # Superscript 3
-		'\\xc2\\xb4' : '',         # Acute accent
-		'\\xc2\\xb5' : 'u',        # Micro sign
-		'\\xc2\\xb6' : '',         # Pilcrow
-		'\\xc2\\xb7' : '.',        # Middle dot
-		'\\xc2\\xb8' : '',         # Cedilla
-		'\\xc2\\xb9' : '1',        # Superscript 1
-		'\\xc2\\xba' : '',         # Masculine indicator
+		'\\xc2\\xb2' : '2',	# Superscript 2
+		'\\xc2\\xb3' : '3',	# Superscript 3
+		'\\xc2\\xb4' : '',	 # Acute accent
+		'\\xc2\\xb5' : 'u',	# Micro sign
+		'\\xc2\\xb6' : '',	 # Pilcrow
+		'\\xc2\\xb7' : '.',	# Middle dot
+		'\\xc2\\xb8' : '',	 # Cedilla
+		'\\xc2\\xb9' : '1',	# Superscript 1
+		'\\xc2\\xba' : '',	 # Masculine indicator
 		'\\xc2\\xbb' : '>>',       # Double right
 		'\\xc2\\xbc' : '1/4',      # 1/4 fraction
 		'\\xc2\\xbd' : '1/2',      # 1/2 Fraction
 		'\\xc2\\xbe' : '3/4',      # 3/4 Fraction
-		'\\xc2\\xbf' : '?',        # Inverted ?
+		'\\xc2\\xbf' : '?',	# Inverted ?
 
 		# German unicode escape sequences
 		'\\xc3\\x83' : chr(223),   # Sharp s es-zett
@@ -106,132 +106,132 @@ class Translate:
 		'\\xc3\\xb8' : 'o',   # oslash
 
 		# French (Latin) unicode escape sequences
-		'\\xc3\\x80' : 'A',        # A grave
-		'\\xc3\\x81' : 'A',        # A acute
-		'\\xc3\\x82' : 'A',        # A circumflex
-		'\\xc3\\x83' : 'A',        # A tilde
-		'\\xc3\\x88' : 'E',        # E grave
-		'\\xc3\\x89' : 'E',        # E acute
-		'\\xc3\\x8a' : 'E',        # E circumflex
+		'\\xc3\\x80' : 'A',	# A grave
+		'\\xc3\\x81' : 'A',	# A acute
+		'\\xc3\\x82' : 'A',	# A circumflex
+		'\\xc3\\x83' : 'A',	# A tilde
+		'\\xc3\\x88' : 'E',	# E grave
+		'\\xc3\\x89' : 'E',	# E acute
+		'\\xc3\\x8a' : 'E',	# E circumflex
 		'\\xc3\\xa0' : 'a',   	   # a grave
 		'\\xc3\\xa1' : 'a',   	   # a acute
 		'\\xc3\\xa2' : 'a',   	   # a circumflex
-		'\\xc3\\xa7' : 'c',        # c cedilla
-		'\\xc3\\xa8' : 'e',        # e grave
+		'\\xc3\\xa7' : 'c',	# c cedilla
+		'\\xc3\\xa8' : 'e',	# e grave
 		'\\xc3\\xa9' : 'e',   	   # e acute
-		'\\xc3\\xaa' : 'e',        # e circumflex
-		'\\xc3\\xab' : 'e',        # e diaeresis
-		'\\xc3\\xae' : 'i',        # i circumflex
-		'\\xc3\\xaf' : 'i',        # i diaeresis
-		'\\xc3\\xb7' : "/",        # Division sign
+		'\\xc3\\xaa' : 'e',	# e circumflex
+		'\\xc3\\xab' : 'e',	# e diaeresis
+		'\\xc3\\xae' : 'i',	# i circumflex
+		'\\xc3\\xaf' : 'i',	# i diaeresis
+		'\\xc3\\xb7' : "/",	# Division sign
 		'\\xc5\\x93' : 'oe',       # oe joined
 
 		# Hungarian lower case
-		'\\xc3\\xb3' : 'o',        # o circumflex 
+		'\\xc3\\xb3' : 'o',	# o circumflex 
 		'\\xc3\\xad' : 'i',   	   # i accent
-		'\\xc3\\xb5' : 'o',        # o tilde
+		'\\xc3\\xb5' : 'o',	# o tilde
 		'\\xc5\\x91' : 'o',   	   #  o 
 		'\\xc5\\xb1' : chr(252),   # 
-		'\\xc3\\xba' : 'u',        # u acute
+		'\\xc3\\xba' : 'u',	# u acute
 
 		# Polish unicode escape sequences
-		'\\xc4\\x84' : 'A',        # A,
-		'\\xc4\\x85' : 'a',        # a,
-		'\\xc4\\x86' : 'C',        # C'
-		'\\xc4\\x87' : 'c',        # c'
-		'\\xc4\\x98' : 'E',        # E,
-		'\\xc4\\x99' : 'e',        # e,
-		'\\xc5\\x81' : 'L',        # L/
-		'\\xc5\\x82' : 'l',        # l/
-		'\\xc5\\x83' : 'N',        # N'
-		'\\xc5\\x84' : 'n',        # n'
-		'\\xc5\\x9a' : 'S',        # S'
-		'\\xc5\\x9b' : 's',        # s'
-		'\\xc5\\xb9' : 'Z',        # Z'
-		'\\xc5\\xba' : 'z',        # z'
-		'\\xc5\\xbb' : 'Z',        # Z.
-		'\\xc5\\xbc' : 'z',        # z.
+		'\\xc4\\x84' : 'A',	# A,
+		'\\xc4\\x85' : 'a',	# a,
+		'\\xc4\\x86' : 'C',	# C'
+		'\\xc4\\x87' : 'c',	# c'
+		'\\xc4\\x98' : 'E',	# E,
+		'\\xc4\\x99' : 'e',	# e,
+		'\\xc5\\x81' : 'L',	# L/
+		'\\xc5\\x82' : 'l',	# l/
+		'\\xc5\\x83' : 'N',	# N'
+		'\\xc5\\x84' : 'n',	# n'
+		'\\xc5\\x9a' : 'S',	# S'
+		'\\xc5\\x9b' : 's',	# s'
+		'\\xc5\\xb9' : 'Z',	# Z'
+		'\\xc5\\xba' : 'z',	# z'
+		'\\xc5\\xbb' : 'Z',	# Z.
+		'\\xc5\\xbc' : 'z',	# z.
 
 		# Greek upper case
-		'\\xce\\x91' : 'A',        # Alpha
-		'\\xce\\x92' : 'B',        # Beta
-		'\\xce\\x93' : 'G',        # Gamma
-		'\\xce\\x94' : 'D',        # Delta
-		'\\xce\\x95' : 'E',        # Epsilon
-		'\\xce\\x96' : 'Z',        # Zeta
-		'\\xce\\x97' : 'H',        # Eta
+		'\\xce\\x91' : 'A',	# Alpha
+		'\\xce\\x92' : 'B',	# Beta
+		'\\xce\\x93' : 'G',	# Gamma
+		'\\xce\\x94' : 'D',	# Delta
+		'\\xce\\x95' : 'E',	# Epsilon
+		'\\xce\\x96' : 'Z',	# Zeta
+		'\\xce\\x97' : 'H',	# Eta
 		'\\xce\\x98' : 'TH',       # Theta
-		'\\xce\\x99' : 'I',        # Iota
-		'\\xce\\x9a' : 'K',        # Kappa
-		'\\xce\\x9b' : 'L',        # Lamda
-		'\\xce\\x9c' : 'M',        # Mu
-		'\\xce\\x9e' : 'N',        # Nu
-		'\\xce\\x9f' : 'O',        # Omicron
+		'\\xce\\x99' : 'I',	# Iota
+		'\\xce\\x9a' : 'K',	# Kappa
+		'\\xce\\x9b' : 'L',	# Lamda
+		'\\xce\\x9c' : 'M',	# Mu
+		'\\xce\\x9e' : 'N',	# Nu
+		'\\xce\\x9f' : 'O',	# Omicron
 		'\\xce\\xa0' : 'Pi',       # Pi
 		'\\xce '     : 'Pi',       # Pi ?
-		'\\xce\\xa1' : 'R',        # Rho
-		'\\xce\\xa3' : 'S',        # Sigma
-		'\\xce\\xa4' : 'T',        # Tau
-		'\\xce\\xa5' : 'Y',        # Upsilon
-		'\\xce\\xa6' : 'F',        # Fi
-		'\\xce\\xa7' : 'X',        # Chi
+		'\\xce\\xa1' : 'R',	# Rho
+		'\\xce\\xa3' : 'S',	# Sigma
+		'\\xce\\xa4' : 'T',	# Tau
+		'\\xce\\xa5' : 'Y',	# Upsilon
+		'\\xce\\xa6' : 'F',	# Fi
+		'\\xce\\xa7' : 'X',	# Chi
 		'\\xce\\xa8' : 'PS',       # Psi
-		'\\xce\\xa9' : 'O',        # Omega
+		'\\xce\\xa9' : 'O',	# Omega
 
 		# Greek lower case
-		'\\xce\\xb1' : 'a',        # Alpha
-		'\\xce\\xb2' : 'b',        # Beta
-		'\\xce\\xb3' : 'c',        # Gamma
-		'\\xce\\xb4' : 'd',        # Delta
-		'\\xce\\xb5' : 'e',        # Epsilon
-		'\\xce\\xb6' : 'z',        # Zeta
-		'\\xce\\xb7' : 'h',        # Eta
+		'\\xce\\xb1' : 'a',	# Alpha
+		'\\xce\\xb2' : 'b',	# Beta
+		'\\xce\\xb3' : 'c',	# Gamma
+		'\\xce\\xb4' : 'd',	# Delta
+		'\\xce\\xb5' : 'e',	# Epsilon
+		'\\xce\\xb6' : 'z',	# Zeta
+		'\\xce\\xb7' : 'h',	# Eta
 		'\\xce\\xb8' : 'th',       # Theta
-		'\\xce\\xb9' : 'i',        # Iota
-		'\\xce\\xba' : 'k',        # Kappa
-		'\\xce\\xbb' : 'l',        # Lamda
-		'\\xce\\xbc' : 'm',        # Mu
-		'\\xce\\xbd' : 'v',        # Nu
+		'\\xce\\xb9' : 'i',	# Iota
+		'\\xce\\xba' : 'k',	# Kappa
+		'\\xce\\xbb' : 'l',	# Lamda
+		'\\xce\\xbc' : 'm',	# Mu
+		'\\xce\\xbd' : 'v',	# Nu
 		'\\xce\\xbe' : 'ks',       # Xi
-		'\\xce\\xbf' : 'o',        # Omicron
-		'\\xce\\xc0' : 'p',        # Pi
-		'\\xce\\xc1' : 'r',        # Rho
-		'\\xce\\xc3' : 's',        # Sigma
-		'\\xce\\xc4' : 't',        # Tau
-		'\\xce\\xc5' : 'y',        # Upsilon
-		'\\xce\\xc6' : 'f',        # Fi
-		'\\xce\\xc7' : 'x',        # Chi
+		'\\xce\\xbf' : 'o',	# Omicron
+		'\\xce\\xc0' : 'p',	# Pi
+		'\\xce\\xc1' : 'r',	# Rho
+		'\\xce\\xc3' : 's',	# Sigma
+		'\\xce\\xc4' : 't',	# Tau
+		'\\xce\\xc5' : 'y',	# Upsilon
+		'\\xce\\xc6' : 'f',	# Fi
+		'\\xce\\xc7' : 'x',	# Chi
 		'\\xce\\xc8' : 'ps',       # Psi
-		'\\xce\\xc9' : 'o',        # Omega
+		'\\xce\\xc9' : 'o',	# Omega
 
 		# Icelandic 
-		'\\xc3\\xbe' : 'p',        # Like a p with up stroke
-		'\\xc3\\xbd' : 'y',        # y diaeresis
+		'\\xc3\\xbe' : 'p',	# Like a p with up stroke
+		'\\xc3\\xbd' : 'y',	# y diaeresis
 
 		# Italian characters
-		'\\xc3\\xac' : 'i',        # i reverse circumflex
-		'\\xc3\\xb9' : 'u',        # u reverse circumflex
+		'\\xc3\\xac' : 'i',	# i reverse circumflex
+		'\\xc3\\xb9' : 'u',	# u reverse circumflex
 
 		# Polish (not previously covered)
-		'\\xc3\\xa3' : 'a',        # a tilde
+		'\\xc3\\xa3' : 'a',	# a tilde
 
 		# Romanian
-		'\\xc4\\x83' : 'a',        # a circumflex variant
-		'\\xc3\\xa2' : 'a',        # a circumflex 
-		'\\xc3\\xae' : 'i',        # i circumflex 
-		'\\xc5\\x9f' : 's',        # s cedilla ?
-		'\\xc5\\xa3' : 's',        # t cedilla ?
-		'\\xc8\\x99' : 's',        # s with down stroke
-		'\\xc8\\x9b' : 't',        # t with down stroke
+		'\\xc4\\x83' : 'a',	# a circumflex variant
+		'\\xc3\\xa2' : 'a',	# a circumflex 
+		'\\xc3\\xae' : 'i',	# i circumflex 
+		'\\xc5\\x9f' : 's',	# s cedilla ?
+		'\\xc5\\xa3' : 's',	# t cedilla ?
+		'\\xc8\\x99' : 's',	# s with down stroke
+		'\\xc8\\x9b' : 't',	# t with down stroke
 
 		# Spanish not covered above
-		'\\xc3\\xb1' : 'n',        # n tilde
+		'\\xc3\\xb1' : 'n',	# n tilde
 
 		# Turkish not covered above
-		'\\xc3\\xbb' : 'u',        # u circumflex
-		'\\xc4\\x9f' : 'g',        # g tilde
-		'\\xc4\\xb1' : 'i',        # Looks like an i
-		'\\xc4\\xb0' : 'I',        # Looks like an I
+		'\\xc3\\xbb' : 'u',	# u circumflex
+		'\\xc4\\x9f' : 'g',	# g tilde
+		'\\xc4\\xb1' : 'i',	# Looks like an i
+		'\\xc4\\xb0' : 'I',	# Looks like an I
 	}
 
 	# UTF8 codes (Must be checked after above codes checked)
@@ -294,6 +294,7 @@ class Translate:
 		'\\xf9' : 'u',    # Small u circumflex
 		'\\xfa' : 'u',    # Small u acute
 		'\\xfb' : 'u',    # u circumflex
+		'\\xfd' : 'y',    # y circumflex
 		'\\xc0' : 'A',    # Small A grave
 		'\\xc1' : 'A',    # Capital A acute
 		'\\xc7' : 'C',    # Capital C Cedilla
@@ -360,6 +361,32 @@ class Translate:
 		'\\u2013' : '-',       # Long dash to minus sign
 		'\\u2018' : "'",       # Left single quote
 		'\\u2019' : "'",       # Right single quote
+
+		# Czech
+		'\\u010c' : "C",       # C cyrillic
+		'\\u010d' : "c",       # c cyrillic
+		'\\u010e' : "D",       # D cyrillic
+		'\\u010f' : "d",       # d cyrillic
+		'\\u011a' : "E",       # E cyrillic
+		'\\u011b' : "e",       # e cyrillic
+		'\\u013a' : "I",       # I cyrillic
+		'\\u013d' : "D",       # D cyrillic
+		'\\u013e' : "I",       # I cyrillic
+		'\\u0139' : "L",       # L cyrillic
+		'\\u0147' : "N",       # N cyrillic
+		'\\u0148' : "n",       # n cyrillic
+		'\\u0154' : "R",       # R cyrillic
+		'\\u0155' : "r",       # r cyrillic
+		'\\u0158' : "R",       # R cyrillic
+		'\\u0159' : "r",       # r cyrillic
+		'\\u0160' : "S",       # S cyrillic
+		'\\u0161' : "s",       # s cyrillic
+		'\\u0164' : "T",       # T cyrillic
+		'\\u0165' : "t",       # t cyrillic
+		'\\u016e' : "U",       # U cyrillic
+		'\\u016f' : "u",       # u cyrillic
+		'\\u017d' : "Z",       # Z cyrillic
+		'\\u017e' : "z",       # z cyrillic
 		}
 
 	def __init__(self):
@@ -381,7 +408,6 @@ class Translate:
 	def _convert2escape(self,text):
 		s = repr(text)
 		if s.__len__() > 2: 
-			#s= s[1:-1]      # Strip ' characters
 			s = s.lstrip('\'')
 			s = s.rstrip('\'')
 		return s
@@ -397,6 +423,15 @@ class Translate:
 				s = s.rstrip('"')
 		else:
 			s = text
+		return s
+
+	def escape_translate(self,text):
+		s = text
+		if self._translate:
+			s = self._convert2escape(text)
+			s = self._escape(s)
+			s = s.lstrip('"')
+			s = s.rstrip('"')
 		return s
 
 	# Convert escaped characters (umlauts etc.) to normal characters
@@ -443,8 +478,10 @@ class Translate:
 
 	# Unicodes etc (callable)
 	def unicode(self,text):
-		s = self._convert2escape(text)
-		s = self._unicode(s)
+		s = text
+		if self._translate:
+			s = self._convert2escape(text)
+			s = self._unicode(s)
 		return s
 
 	# Unicodes etc
@@ -492,18 +529,18 @@ class Translate:
 # Test translate class
 if __name__ == '__main__':
 
-        translate = Translate()
+	translate = Translate()
 
 	if len(sys.argv) > 1:
 		text = sys.argv[1]
 	else:
 		text = 'æ Æ ø Ø å Å'
-        print text
+	print (text)
 	s = translate._convert2escape(text)
-        print s
+	print (s)
 
 	# Complete text
-	print translate.all(text)
-	print
+	print (translate.all(text))
+	print()
 	sys.exit(0)
 # End of file

@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.10 2018/04/06 09:30:24 bob Exp $
+# $Id: station.urls,v 1.12 2018/08/31 07:34:56 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -37,6 +37,7 @@
 [BBC Radio Bristol] http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/http-icy-mp3-a/vpid/bbc_radio_bristol/format/pls.pls
 [BBC Radio 4 extra] http://www.radiofeeds.co.uk/bbcradio4extra.pls
 [BBC World service] http://wsdownload.bbc.co.uk/worldservice/meta/live/shoutcast/mp3/eieuk.pls
+[BBC Radio 4 LW] http://www.listenlive.eu/bbcradio4lw.m3u
 
 # UK stations
 [Jack FM] http://playerservices.streamtheworld.com/pls/JACK_FM.pls 
@@ -83,6 +84,7 @@
 [Sky Radio] http://provisioning.streamtheworld.com/pls/skyradio.pls
 [Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICAAAC.pls
 [Candlelight] http://candlelight.live-streams.nl/candlelight.m3u
+[Pure Radio One] http://listento.pureradio.one:8000/pure_128aacp.m3u
 
 # USA
 [WFMU live stream] http://wfmu.org/wfmu.pls

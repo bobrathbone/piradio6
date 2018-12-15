@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: graphic_display.py,v 1.17 2018/06/11 09:44:11 bob Exp $
+# $Id: graphic_display.py,v 1.22 2018/11/26 16:53:08 bob Exp $
 # Raspberry Pi display routines
 # Graphic screen routines used by touch graphic screen
 #
@@ -27,7 +27,7 @@ def no_interrupt():
 # Lcd Class 
 class GraphicDisplay:
 	columns = 100
-	rows = 10
+	rows = 21
 	size = [600,400]
 	font = None
 	current_row = 1
@@ -56,6 +56,8 @@ class GraphicDisplay:
 
 	def __init__(self,font):
 		self.font = font
+		self.size = self.config.getSize()
+		self.setSize(self.size)
 		return
 
 	# Get display columns 
@@ -110,6 +112,10 @@ class GraphicDisplay:
 		self.columns = int(1.1 * self.size[0]/w)
 		self.rows = int(self.size[1]/(h*1.5))
 		return size 
+
+	# Get the display size, rows and columns
+	def getSize(self):
+		return self.size
 
 	# Scroll text routine
 	def scroll(self,text,line,max_columns):
@@ -171,6 +177,26 @@ class GraphicDisplay:
 	# Get search mode
 	def setSearchMode(self,mode):
 		self.search_mode = mode
+
+	# Cycle search mode
+	def cycleSearchMode(self):
+		self.search_mode += 1
+		if self.search_mode > self.SEARCH_ARTISTS:
+			self.search_mode = self.SEARCH_LIST
+		return self.search_mode
+
+	# Start column
+	def getStartColumn(self):
+		cols = self.columns
+		if cols < 50:
+			startColumn = 3
+		elif cols < 70:
+			startColumn = 7.5
+		elif cols < 90:
+			startColumn = 10
+		else:
+			startColumn = 20
+		return startColumn
 
 # End of Graphic Screen class
 

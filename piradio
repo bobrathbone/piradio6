@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.45 2018/06/06 14:07:44 bob Exp $
+# $Id: piradio,v 1.52 2018/11/15 08:45:26 bob Exp $
 # Source: <source package name; defaults to package name>
 Section: misc
 Priority: optional
@@ -8,7 +8,7 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 3.9.2
 
 Package: radiod
-Version: 6.7
+Version: 6.9
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
@@ -32,6 +32,7 @@ Extra-Files: README
 
 # Files: <pair of space-separated paths; First is file to include, second is destination>
 Files:  radiod.py /usr/share/radio/
+	__init__.py /usr/share/radio/
 	config_class.py /usr/share/radio/
 	web_config_class.py /usr/share/radio/
 	airplay_class.py /usr/share/radio/
@@ -62,11 +63,13 @@ Files:  radiod.py /usr/share/radio/
 	lcd_i2c_adafruit.py /usr/share/radio/
 	lcd_i2c_pcf8574.py /usr/share/radio/
 	lcd_adafruit_class.py /usr/share/radio/
+	lcd_piface_class.py /usr/share/radio/
 	no_display.py /usr/share/radio/
 	radio_daemon.py /usr/share/radio/
 	wiring.py /usr/share/radio/
 	configure_radio.sh /usr/share/radio/
 	configure_audio.sh /usr/share/radio/
+	set_mixer_id.sh /usr/share/radio/
 	install_streaming.sh /usr/share/radio/
 	install_airplay.sh /usr/share/radio/
 	station.urls /usr/share/radio/
@@ -117,6 +120,7 @@ Files:  radiod.py /usr/share/radio/
 	images/equalizer.png /usr/share/radio/
 	images/switch_program.png /usr/share/radio/
 	images/scale.jpg /usr/share/radio/
+	images/search_cycle_icon.png /usr/share/radio/
 	bitmaps/raspberry-pi-logo.bmp /usr/share/radio/
 	sgc/LICENSE /usr/share/radio/
 	sgc/__init__.py /usr/share/radio/

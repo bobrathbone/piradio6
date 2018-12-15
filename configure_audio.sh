@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio
-# $Id: configure_audio.sh,v 1.12 2018/06/07 11:42:08 bob Exp $
+# $Id: configure_audio.sh,v 1.24 2018/12/13 08:16:44 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -26,6 +26,9 @@ ASOUNDCONF=/etc/asound.conf
 MODPROBE=/etc/modprobe.d/alsa-base.conf
 MODULES=/proc/asound/modules
 DIR=/usr/share/radio
+AUDIO_INTERFACE="alsa"
+LIBDIR=/var/lib/radiod
+PIDFILE=/var/run/radiod.pid
 
 # Audio types
 JACK=1	# Audio Jack or Sound Cards
@@ -56,12 +59,14 @@ echo ${CMD};${CMD}
 CMD="sudo systemctl stop mpd.service"
 echo ${CMD};${CMD}
 
-sleep 2
+sleep 2	# Allow time for service to stop
 
 # If the above fails check pid
-rpid=$(cat /var/run/radiod.pid)
-if [[ $? == 0 ]]; then 	# Don't seperate from above
-	sudo kill -TERM ${rpid}
+if [[ -f  ${PIDFILE} ]];then
+	rpid=$(cat ${PIDFILE})
+	if [[ $? == 0 ]]; then 	# Don't seperate from above
+		sudo kill -TERM ${rpid} 2>&1 >/dev/null
+	fi
 fi
 
 sudo service mpd stop
@@ -77,7 +82,7 @@ do
 	"5" "HiFiBerry DAC plus" \
 	"6" "HiFiBerry DAC Digi" \
 	"7" "HiFiBerry Amp" \
-	"8" "IQAudio DAC" \
+	"8" "IQAudio DAC/Zero DAC" \
 	"9" "IQAudio DAC plus and Digi/AMP " \
 	"10" "JustBoom DAC/Zero/Amp" \
 	"11" "JustBoom Digi HAT/zero" \
@@ -129,9 +134,9 @@ do
 		MIXER="software"
 
 	elif [[ ${ans} == '8' ]]; then
-		DESC="IQAudio DAC"
+		DESC="IQAudio DAC/Zero DAC"
 		NAME=${DESC}
-		DTOVERLAY="iqaudio-dacplus,unmute_amp"
+		DTOVERLAY="iqaudio-dac"
 		MIXER="software"
 
 	elif [[ ${ans} == '9' ]]; then
@@ -150,7 +155,6 @@ do
 		DESC="JustBoom DAC/Amp"
 		NAME="JustBoom Digi HAT"
 		DTOVERLAY="justboom-digi"
-		#DEVICE="1,0"
 		MIXER="software"
 
 	elif [[ ${ans} == '12' ]]; then
@@ -170,36 +174,22 @@ fi
 
 # Install alsa-utils if not already installed
 PKG="alsa-utils"
-if [[ ! -x /usr/bin/amixer && ${SKIP_PKG_CHANGE} != "-s" ]]; then
+if [[ -x /usr/bin/amixer && ${SKIP_PKG_CHANGE} != "-s" ]]; then
 	echo "Installing ${PKG} package"
 	sudo apt-get --yes install ${PKG}
 fi
 
-# Remove pulseaudio package
+# Configure pulseaudio package
 PKG="pulseaudio"
-if [[ -x /usr/bin/${PKG} && ${SKIP_PKG_CHANGE} != "-s" ]]; then
-	echo "Removing ${PKG} package"
-	sudo apt-get --yes purge ${PKG}
+if [[ -x /usr/bin/${PKG} ]]; then
+	echo "Package ${PKG} found"
+	AUDIO_INTERFACE="pulse"
 fi
 
 # Select HDMI or audio jack/DACs Alsa output
 if [[ ${TYPE} == ${HDMI} ]]; then
 	echo "Configuring HDMI as output"
-	cmd="sudo amixer cset numid=${NUMID} 2" 2>&1 >/dev/null
-	echo ${cmd}
-	${cmd} 2>&1 >/dev/null
-else
-	cmd="sudo amixer cset numid=3 1"
-	echo ${cmd}
-	${cmd} 2>&1 >/dev/null
-fi
-
-# Configure the Alsa sound mixer for maximum volume
-cmd="sudo amixer cset numid=1 100%" 
-echo ${cmd} 
-${cmd} 2>&1 >/dev/null
-if [[ $? != 0 ]]; then 	# Don't seperate from above
-	echo "Failed to configure Alsa mixer"
+	sudo touch ${LIBDIR}/hdmi 
 fi
 
 # Set up asound configuration for espeak and aplay
@@ -226,6 +216,7 @@ sudo cp -f -p ${MPDCONFIG}.orig ${MPDCONFIG}
 sudo sed -i -e "0,/^\sname/{s/\sname.*/\tname\t\t\"${NAME}\"/}" ${MPDCONFIG}
 sudo sed -i -e "0,/device/{s/.*device.*/\tdevice\t\t\"hw:${DEVICE}\"/}" ${MPDCONFIG}
 sudo sed -i -e "0,/mixer_type/{s/.*mixer_type.*/\tmixer_type\t\"${MIXER}\"/}" ${MPDCONFIG}
+sudo sed -i -e "/^#/ ! {s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
 
 # Save all new alsa settings
 sudo alsactl store
@@ -258,41 +249,18 @@ if [[ ${DTOVERLAY} != "" ]]; then
 		dtcommand=$(echo ${DTOVERLAY} | sudo sed 's/\,/ /' )
 		cmd="sudo dtoverlay ${dtcommand}"
 		echo ${cmd}; ${cmd}
-		cmd="sudo dtparam audio=off"
-		echo ${cmd}; ${cmd}
 	else
 		echo "Skipping dtoverlay command"
 	fi
-	sudo sed -i -e "/^dtparam=audio=.*$/{s/${1}/dtparam=audio=off/}" ${BOOTCONFIG}
-else 	
-	if [[ ${NAME} == "USB DAC" ]]; then
-		sudo sed -i -e "/^dtparam=audio=.*$/{s/${1}/dtparam=audio=off/}" ${BOOTCONFIG}
-		cmd="sudo dtparam audio=off"
-		echo ${cmd}; ${cmd}
-	else
-		sudo sed -i -e "/^dtparam=audio=.*$/{s/${1}/dtparam=audio=on/}" ${BOOTCONFIG}
-		cmd="sudo dtparam audio=on"
-		echo ${cmd}; ${cmd}
-	fi
+	echo "Disable on-board audio"
+	sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
+	sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
+
+else
+	sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=on/g'  ${BOOTCONFIG}
+	sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=on/g'  ${BOOTCONFIG}
 fi
 
-# Configure the Alsa sound mixer on second card for 100 volume
-# This must be done after the dtoverlay command above
-aplay -l | grep "card 1"  2>&1 >/dev/null
-if [[ $? == 0 ]]; then 	# Don't seperate from above
-	cmd="sudo amixer -c1 cset numid=${NUMID} 100%"
-	${cmd} 2>&1 >/dev/null
-	if [[ $? != 0 ]]; then 	# Don't seperate from above
-		echo "Failed to configure second Alsa mixer"
-	fi
-else
-	cmd="sudo amixer -c0 cset numid=${NUMID} 100%"
-	echo $cmd
-	${cmd} 2>&1 >/dev/null
-	if [[ $? != 0 ]]; then 	# Don't seperate from above
-		echo "Failed to configure first Alsa mixer"
-	fi
-fi
 echo; echo ${BOOTCONFIG}
 echo ----------------
 grep ^dtparam=audio ${BOOTCONFIG}
@@ -300,9 +268,10 @@ grep ^dtoverlay ${BOOTCONFIG}
 
 echo
 echo "${DESC} configured"
-echo
-aplay -l
-sleep 2
+
+# Remove the mixer volume ID from /var/lib/radiod 
+# This forces the radiod program run set_mixer_id.sh on the next run
+sudo rm -f ${LIBDIR}/mixer_volume_id 2>&1 >/dev/null
 
 # Reboot dialogue
 if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then

@@ -3,12 +3,17 @@
 import pygame
 from pygame.locals import *
 from gcontrols_class import *
+from translate_class import Translate
 size =(400,400)
+
+translate = Translate()
 
 # Display message popup
 def displayPopup(screen,text):
         displayPopup = TextRectangle(pygame)    # Text window
-        font = pygame.font.SysFont('freesans', 20, bold=True)
+        #font = pygame.font.SysFont('freesans', 20, bold=True)
+        font = pygame.font.SysFont('dejavusans', 20, bold=True)
+	#print pygame.font.get_fonts()
         fx,fy = font.size(text + "A")
         xPos = int((size[0]/2) - (fx/2))
         yPos = size[1]/2
@@ -36,8 +41,17 @@ while True:
     elif event.type==VIDEORESIZE:
         screen=pygame.display.set_mode(event.dict['size'],HWSURFACE|DOUBLEBUF|RESIZABLE)
         screen.blit(pygame.transform.scale(pic,event.dict['size']),(0,0))
-    text = "Loading Radio Stations"
     text = "Vær så snill"
+    text = "Iskelmä "
+    text = "Häirint�"
+    text = "Kesä Hengittää"
+    text = "Vær så snill"
+
+    print
+    print "Encoding:",sys.stdin.encoding
+    #text =  u'Kesä Hengittää'
+    text = unicode(text,"utf-8")
+    print "Text A",text
 
     displayPopup(screen,text)
     pygame.display.flip()
