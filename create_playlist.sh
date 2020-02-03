@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.21 2018/07/06 09:30:21 bob Exp $
+# $Id: create_playlist.sh,v 1.26 2019/08/19 10:46:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -23,6 +23,7 @@ if [[ "$EUID" -ne 0 ]];then
   	echo "Usage: sudo ${0}"
 	exit 1
 fi
+
 VERBOSE=$1
 PLAYLIST="USB_Stick"
 DIR="media"
@@ -35,6 +36,8 @@ USBDEV=""
 MAX_SIZE=5000
 SDCARD="sdcard"
 LOCATION="/home/pi/mymusic"
+CONFIG=/etc/radiod.conf
+CODECS="mp3 ogg flac wav"
 
 # Make a playlist name from the filter
 make_name(){
@@ -64,7 +67,7 @@ echo ${CMD};${CMD}
 sleep 2
 
 # If the above fails check pid
-rpid=$(cat /var/run/radiod.pid)
+rpid=$(cat /var/run/radiod.pid >/dev/null 2>&1)
 if [[ $? == 0 ]]; then  # Don't seperate from above
         sudo kill -TERM ${rpid}
 fi
@@ -91,17 +94,23 @@ do
 	 fi
 
 	 if [[ ${ans} == '1' ]]; then
-		  DESC="USB stick selected"
+		DESC="USB stick selected"
 		PLAYLIST="USB_Stick"
 		DIR="media"
 		# Mount the USB stick
 		if [[ ${USBDEV} != "" ]]; then
+			sudo umount /media
 			sudo mount ${USBDEV} /media >/dev/null 2>&1
 			if [[ $? != 0 ]]; then
 				echo "Failed to mount USB stick"
 				exit 1
 			fi
 			echo "Mounted  ${USBDEV} on /media"
+		else
+			echo
+			echo "USB stick not found!"
+			echo "Insert USB stick and re-run program"
+			exit 1
 		fi
 
 	 elif [[ ${ans} == '2' ]]; then
@@ -117,6 +126,10 @@ do
 				exit 1
 				echo "Mounted network drive on /share"
 			fi
+		else
+			echo "Invalid share specified ${SHARE}"
+			echo "or network storage offline. Correct and re-run program"
+			exit 1
 		fi
 
 	 elif [[ ${ans} == '3' ]]; then
@@ -211,9 +224,33 @@ PLAYLIST=$(make_name "${PLAYLIST}")
 CMD="cd ${MPD_MUSIC}/"
 ${CMD}
 
+# Create codec search list
+OR=""
+SEARCH=""
+SAVEIFS=${IFS}
+CODEC_LIST=$(grep -i "CODECS\=" ${CONFIG})
+if [[ $? == 0 ]]; then  # Do not seperate from above line
+        echo ${CODEC_LIST}
+        IFS='=';read -ra NAMES <<< "${CODEC_LIST}"
+	if [[ ${NAMES} != "" ]]; then
+		CODECS=${NAMES[1]#'"'}	# Remove first '"'
+		CODECS=${CODECS%'"'}	# Remove last '"'
+	fi
+	echo "X ${CODECS}"
+        IFS=${SAVEIFS}
+fi
+
+for codec in ${CODECS}
+do
+        SEARCH="${SEARCH} ${OR} -name *.${codec}"
+        OR="-or"
+done
+
 # Build the create command 
 echo "Processing directory ${DIR}. Please wait."
-CMD="sudo find -L ${DIR} -type f -name *.mp3 -or -name *.ogg -or -name *.flac "
+
+CMD="sudo find -L ${DIR} -type f ${SEARCH}"
+echo ${CMD}
 ${CMD} > ${TEMPFILE}
 
 CMD="sudo mv ${TEMPFILE} /tmp/${PLAYLIST}"
@@ -298,8 +335,7 @@ else
 	echo ${CMD};${CMD}
 fi
 
-
 exit 0
 
-
+# End of script
 

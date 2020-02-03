@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio
-# $Id: configure_audio.sh,v 1.24 2018/12/13 08:16:44 bob Exp $
+# $Id: configure_audio.sh,v 1.44 2019/12/13 12:37:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -19,6 +19,7 @@
 # Set -s flag to skip package addition or removal (dpkg error otherwise)
 # Also prevent running dtoverlay command (Causes hangups on stretch)
 SKIP_PKG_CHANGE=$1
+SCRIPT=$0
 
 BOOTCONFIG=/boot/config.txt
 MPDCONFIG=/etc/mpd.conf
@@ -26,38 +27,55 @@ ASOUNDCONF=/etc/asound.conf
 MODPROBE=/etc/modprobe.d/alsa-base.conf
 MODULES=/proc/asound/modules
 DIR=/usr/share/radio
+CONFIG=/etc/radiod.conf
+ASOUND_DIR=${DIR}/asound
 AUDIO_INTERFACE="alsa"
 LIBDIR=/var/lib/radiod
 PIDFILE=/var/run/radiod.pid
+I2SOVERLAY="dtoverlay=i2s-mmap"
+PULSEAUDIO=/usr/bin/pulseaudio
+LOG=${DIR}/audio.log
+BLUETOOTH_SERVICE=/lib/systemd/system/bluetooth.service
 
 # Audio types
 JACK=1	# Audio Jack or Sound Cards
 HDMI=2	# HDMI
+DAC=3	# DAC card
+BLUETOOTH=4	# Bluetooth speakers
 TYPE=${JACK}
 
 # dtoverlay parameter in /etc/config.txt
 DTOVERLAY=""
 
 # Device and Name
-DEVICE="0,0"
+DEVICE="hw:0,0"
 CARD=0
 NAME="Onboard jack"
 MIXER="software"
+# Format is Frequency 44100 Hz: 16 bits: 2 channels
+FORMAT="44100:16:2"
 NUMID=1
 
+# Pulse audio asound.conf
+USE_PULSE=0
+ASOUND_CONF_DIST=asound.conf.dist
+
+sudo rm -f ${LOG}
+echo "$0 configuration log, $(date) " | tee ${LOG}
+
 # Wheezy not supported
-cat /etc/os-release | grep -i wheezy 2>&1 >/dev/null
+cat /etc/os-release | grep -i wheezy >/dev/null 2>&1
 if [[ $? == 0 ]]; then 	# Don't seperate from above
-	echo "This prograqm is not supported on Debian Wheezy!"
-	echo "Exiting program."
+	echo "This prograqm is not supported on Debian Wheezy!"	| tee -a ${LOG}
+	echo "Exiting program." | tee -a ${LOG}
 	exit 1
 fi
 
 # Stop the radio and MPD
 CMD="sudo systemctl stop radiod.service"
-echo ${CMD};${CMD}
+echo ${CMD};${CMD} | tee -a ${LOG}
 CMD="sudo systemctl stop mpd.service"
-echo ${CMD};${CMD}
+echo ${CMD};${CMD} | tee -a ${LOG}
 
 sleep 2	# Allow time for service to stop
 
@@ -65,7 +83,7 @@ sleep 2	# Allow time for service to stop
 if [[ -f  ${PIDFILE} ]];then
 	rpid=$(cat ${PIDFILE})
 	if [[ $? == 0 ]]; then 	# Don't seperate from above
-		sudo kill -TERM ${rpid} 2>&1 >/dev/null
+		sudo kill -TERM ${rpid}  >/dev/null 2>&1
 	fi
 fi
 
@@ -78,7 +96,7 @@ do
 	"1" "On-board audio output jack" \
 	"2" "HDMI output" \
 	"3" "USB DAC" \
-	"4" "HiFiBerry DAC/Pimoroni pHat" \
+	"4" "HiFiBerry DAC/Miniamp/Pimoroni pHat" \
 	"5" "HiFiBerry DAC plus" \
 	"6" "HiFiBerry DAC Digi" \
 	"7" "HiFiBerry Amp" \
@@ -86,7 +104,9 @@ do
 	"9" "IQAudio DAC plus and Digi/AMP " \
 	"10" "JustBoom DAC/Zero/Amp" \
 	"11" "JustBoom Digi HAT/zero" \
-	"12" "Manually configure" 3>&1 1>&2 2>&3)
+	"12" "Bluetooth device" \
+	"13" "Adafruit speaker bonnet" \
+	"14" "Manually configure" 3>&1 1>&2 2>&3)
 
 	exitstatus=$?
 	if [[ $exitstatus != 0 ]]; then
@@ -104,60 +124,88 @@ do
 	elif [[ ${ans} == '3' ]]; then
 		DESC="USB DAC"
 		NAME=${DESC}
-		DEVICE="1,0"
+		DEVICE="plughw:1,0"
 		CARD=1
 		MIXER="software"
+		TYPE=${DAC}
 		NUMID=6
 
 	elif [[ ${ans} == '4' ]]; then
-		DESC="HiFiBerry DAC or Light"
+		DESC="HiFiBerry DAC/Miniamp/Pimoroni pHat"
 		NAME=${DESC}
 		DTOVERLAY="hifiberry-dac"
 		MIXER="software"
+		USE_PULSE=1
+		ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.pivumeter
+		TYPE=${DAC}
 
 	elif [[ ${ans} == '5' ]]; then
 		DESC="HiFiBerry DAC Plus"
 		NAME=${DESC}
 		DTOVERLAY="hifiberry-dacplus"
 		MIXER="software"
+		TYPE=${DAC}
 
 	elif [[ ${ans} == '6' ]]; then
 		DESC="HiFiBerry Digi"
 		NAME=${DESC}
 		DTOVERLAY="hifiberry-digi"
 		MIXER="software"
+		TYPE=${DAC}
 
 	elif [[ ${ans} == '7' ]]; then
 		DESC="HiFiBerry Amp"
 		NAME=${DESC}
 		DTOVERLAY="hifiberry-amp"
 		MIXER="software"
+		TYPE=${DAC}
 
 	elif [[ ${ans} == '8' ]]; then
 		DESC="IQAudio DAC/Zero DAC"
 		NAME=${DESC}
 		DTOVERLAY="iqaudio-dac"
 		MIXER="software"
+		TYPE=${DAC}
 
 	elif [[ ${ans} == '9' ]]; then
 		DESC="IQAudio DAC plus or DigiAMP"
 		NAME="IQAudio DAC+"
+		TYPE=${DAC}
 		DTOVERLAY="iqaudio-dacplus,unmute_amp"
 		MIXER="software"
+		TYPE=${DAC}
 
 	elif [[ ${ans} == '10' ]]; then
 		DESC="JustBoom DAC/Amp"
 		NAME="JustBoom DAC"
 		DTOVERLAY="justboom-dac"
 		MIXER="software"
+		TYPE=${DAC}
 
 	elif [[ ${ans} == '11' ]]; then
 		DESC="JustBoom DAC/Amp"
 		NAME="JustBoom Digi HAT"
 		DTOVERLAY="justboom-digi"
 		MIXER="software"
+		TYPE=${DAC}
 
 	elif [[ ${ans} == '12' ]]; then
+		DESC="Bluetooth device"
+		# NAME is set up later
+		MIXER="software"
+		USE_PULSE=0
+		TYPE=${BLUETOOTH}
+
+	elif [[ ${ans} == '13' ]]; then
+		DESC="Adafruit speaker bonnet"
+		NAME=${DESC}
+		DTOVERLAY="hifiberry-dac"
+		MIXER="software"
+		USE_PULSE=1
+		ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.bonnet
+		TYPE=${DAC}
+
+	elif [[ ${ans} == '14' ]]; then
 		DESC="Manual configuration"
 	fi
 
@@ -166,37 +214,120 @@ do
 done 
 
 # Summarise selection
-echo "${DESC} selected"
-echo "Card ${CARD}, Device ${DEVICE}, Mixer ${MIXER}"
+echo "${DESC} selected" | tee -a ${LOG}
+echo "Card ${CARD}, Device ${DEVICE}, Mixer ${MIXER}" | tee -a ${LOG}
 if [[ ${DTOVERLAY} != "" ]]; then
-	echo "dtoverlay=${DTOVERLAY}"
+	echo "dtoverlay=${DTOVERLAY}" | tee -a ${LOG}
 fi
 
 # Install alsa-utils if not already installed
 PKG="alsa-utils"
-if [[ -x /usr/bin/amixer && ${SKIP_PKG_CHANGE} != "-s" ]]; then
-	echo "Installing ${PKG} package"
+if [[ ! -f /usr/bin/amixer && ${SKIP_PKG_CHANGE} != "-s" ]]; then
+	echo "Installing ${PKG} package" | tee -a ${LOG}
+	sudo apt-get --yes install ${PKG}
+fi
+
+# Install pulsaudio if required
+PKG="pulseaudio"
+if [[ ! -f /usr/bin/pulseaudio && ${SKIP_PKG_CHANGE} != "-s" && ${USE_PULSE} == 1 ]]; then
+	echo "Installing ${PKG} package" | tee -a ${LOG}
 	sudo apt-get --yes install ${PKG}
 fi
 
 # Configure pulseaudio package
 PKG="pulseaudio"
-if [[ -x /usr/bin/${PKG} ]]; then
-	echo "Package ${PKG} found"
+if [[ -x /usr/bin/${PKG} && ${USE_PULSE} == 1 ]]; then
 	AUDIO_INTERFACE="pulse"
+	echo "Package ${PKG} found" | tee -a ${LOG}
+	echo "Configuring ${MPDCONFIG} for ${PKG} support" | tee -a ${LOG}
+else
+	echo "Configuring ${MPDCONFIG} for ${AUDIO_INTERFACE} support" | tee -a ${LOG}
 fi
 
 # Select HDMI or audio jack/DACs Alsa output
 if [[ ${TYPE} == ${HDMI} ]]; then
-	echo "Configuring HDMI as output"
+	echo "Configuring HDMI as output" | tee -a ${LOG}
 	sudo touch ${LIBDIR}/hdmi 
+	sudo amixer cset numid=3 2
+	sudo alsactl store
+
+elif [[ ${TYPE} == ${JACK} ]]; then
+	echo "Configuring on-board jack as output" | tee -a ${LOG}
+	sudo amixer cset numid=3 1
+	sudo alsactl store
+
+elif [[ ${TYPE} == ${DAC} ]]; then
+	echo "Configuring DAC as output" | tee -a ${LOG}
+
+# Configure bluetooth device
+elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
+ 
+	# Install Bluetooth packages 	
+	if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
+		echo "Checking Bluetooth packages have been installed" | tee -a ${LOG}
+		sudo apt-get --yes install bluez bluez-firmware pi-bluetooth bluealsa
+		sudo apt --yes autoremove
+	fi
+
+	echo "Configuring Blutooth device as output" | tee -a ${LOG}
+
+	# Configure bluealsa
+	echo |  tee -a ${LOG}
+	echo "Bluetooth device configuration"  |  tee -a ${LOG}
+	echo "------------------------------"  |  tee -a ${LOG}
+	PAIRED=$(bluetoothctl paired-devices)
+	echo ${PAIRED} |  tee -a ${LOG}
+	BT_NAME=$(echo ${PAIRED} | awk '{print $3}')
+	BT_DEVICE=$( echo ${PAIRED} | awk '{print $2}')
+
+	# Disable Sap initialisation in bluetooth.service 	
+	grep "noplugin=sap" ${BLUETOOTH_SERVICE}
+	if [[ $? != 0 ]]; then  # Do not seperate from above
+		echo "Disabling Sap driver in  ${BLUETOOTH_SERVICE}" | tee -a ${LOG}
+		sudo sed -i -e 's/^ExecStart.*/& --noplugin=sap/' ${BLUETOOTH_SERVICE} | tee -a ${LOG}
+	fi
+
+	if [[  ${BT_DEVICE} != '' ]];then
+		echo "Bluetooth device ${BT_NAME} ${BT_DEVICE} found"  |  tee -a ${LOG}
+		NAME=${BT_NAME}
+		DEVICE="bluealsa:DEV=${BT_DEVICE},PROFILE=a2dp"
+		cmd="bluetoothctl trust ${BT_DEVICE}" 
+		echo $cmd | tee -a ${LOG}
+		$cmd | tee -a ${LOG}
+		cmd="bluetoothctl connect ${BT_DEVICE}" 
+		echo $cmd | tee -a ${LOG}
+		$cmd | tee -a ${LOG}
+		cmd="bluetoothctl discoverable on" 
+		echo $cmd | tee -a ${LOG}
+		$cmd | tee -a ${LOG}
+		cmd="bluetoothctl info ${BLUEDEV}" 
+		echo $cmd | tee -a ${LOG}
+		$cmd | tee -a ${LOG}
+
+		# Configure bluetooth device in /etc/radiod.conf 
+		sudo sed -i -e "0,/^bluetooth_device/{s/bluetooth_device.*/bluetooth_device=${BT_DEVICE}/}" ${CONFIG}
+	else
+		echo "Error: No paired bluetooth devices found" | tee -a ${LOG}
+		echo "Use bluetoothctl to pair Bluetooth device" | tee -a ${LOG}
+		echo "and re-run this program with the following commands" | tee -a ${LOG}
+		echo "	cd ${DIR} " | tee -a ${LOG}
+		echo "	sudo ./configure_adio.sh  " | tee -a ${LOG}
+		echo -n "Press enter to continue: "
+		read ans
+		exit 1
+	fi
+	
 fi
 
 # Set up asound configuration for espeak and aplay
-echo "Configuring card ${CARD} for aplay (${ASOUNDCONF})"
-if [[ ! -f ${ASOUNDCONF} ]]; then
-	sudo cp -f ${DIR}/asound.conf.dist ${ASOUNDCONF}
+echo |  tee -a ${LOG}
+echo "Configuring card ${CARD} for aplay (${ASOUNDCONF})" | tee -a ${LOG}
+if [[ ! -f ${ASOUNDCONF}.org && -f ${ASOUNDCONF} ]]; then
+	echo "Saving ${ASOUNDCONF} to ${ASOUNDCONF}.org" | tee -a ${LOG}
+	sudo cp -f ${ASOUNDCONF} ${ASOUNDCONF}.org
 fi
+echo "Copying ${ASOUND_CONF_DIST} to ${ASOUNDCONF}" | tee -a ${LOG}
+sudo cp -f ${ASOUND_DIR}/${ASOUND_CONF_DIST} ${ASOUNDCONF}
 
 if [[ ${CARD} == 0 ]]; then
         sudo sed -i -e "0,/card/s/1/0/" ${ASOUNDCONF}
@@ -214,9 +345,12 @@ fi
 # Configure name device and mixer type in mpd.conf
 sudo cp -f -p ${MPDCONFIG}.orig ${MPDCONFIG}
 sudo sed -i -e "0,/^\sname/{s/\sname.*/\tname\t\t\"${NAME}\"/}" ${MPDCONFIG}
-sudo sed -i -e "0,/device/{s/.*device.*/\tdevice\t\t\"hw:${DEVICE}\"/}" ${MPDCONFIG}
+sudo sed -i -e "0,/device/{s/.*device.*/\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
 sudo sed -i -e "0,/mixer_type/{s/.*mixer_type.*/\tmixer_type\t\"${MIXER}\"/}" ${MPDCONFIG}
 sudo sed -i -e "/^#/ ! {s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
+if [[ ${TYPE} == ${BLUETOOTH} ]]; then
+	sudo sed -i -e '/bluealsa:/a \\tformat\t\t\"44100:16:2\"'  ${MPDCONFIG}
+fi
 
 # Save all new alsa settings
 sudo alsactl store
@@ -233,6 +367,7 @@ if [[ ! -f ${BOOTCONFIG}.orig ]]; then
 fi
 
 # Delete existing dtoverlays
+echo "Delete old audio overlays" | tee -a ${LOG}
 sudo sed -i '/dtoverlay=iqaudio/d' ${BOOTCONFIG}
 sudo sed -i '/dtoverlay=hifiberry/d' ${BOOTCONFIG}
 sudo sed -i '/dtoverlay=justboom/d' ${BOOTCONFIG}
@@ -248,11 +383,12 @@ if [[ ${DTOVERLAY} != "" ]]; then
 	if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
 		dtcommand=$(echo ${DTOVERLAY} | sudo sed 's/\,/ /' )
 		cmd="sudo dtoverlay ${dtcommand}"
-		echo ${cmd}; ${cmd}
+		echo ${cmd} | tee -a ${LOG}
+		${cmd}
 	else
-		echo "Skipping dtoverlay command"
+		echo "Skipping dtoverlay command" | tee -a ${LOG}
 	fi
-	echo "Disable on-board audio"
+	echo "Disable on-board audio" | tee -a ${LOG}
 	sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 	sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 
@@ -261,29 +397,52 @@ else
 	sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=on/g'  ${BOOTCONFIG}
 fi
 
-echo; echo ${BOOTCONFIG}
-echo ----------------
-grep ^dtparam=audio ${BOOTCONFIG}
-grep ^dtoverlay ${BOOTCONFIG}
+# Configure I2S overlay
+grep "^#${I2SOVERLAY}" ${BOOTCONFIG} >/dev/null 2>&1
+if [[ $?  == 0 ]]; then
+        sudo sed -i 's/^#dtoverlay=i2s-mmap/dtoverlay=i2s-mmap/g'  ${BOOTCONFIG}
+fi
 
-echo
-echo "${DESC} configured"
+grep "^${I2SOVERLAY}" ${BOOTCONFIG} >/dev/null 2>&1
+if [[ $?  == 1 ]]; then
+	sudo  bash -c "echo ${I2SOVERLAY} >> ${BOOTCONFIG}"
+fi
+
+echo; echo ${BOOTCONFIG} | tee -a ${LOG}
+echo "----------------" | tee -a ${LOG}
+grep ^dtparam=audio ${BOOTCONFIG} | tee -a ${LOG}
+grep ^dtoverlay ${BOOTCONFIG} | tee -a ${LOG}
+
+echo | tee -a ${LOG}
+echo "${DESC} configured" | tee -a ${LOG}
 
 # Remove the mixer volume ID from /var/lib/radiod 
 # This forces the radiod program run set_mixer_id.sh on the next run
-sudo rm -f ${LIBDIR}/mixer_volume_id 2>&1 >/dev/null
+sudo rm -f ${LIBDIR}/mixer_volume_id >/dev/null 2>&1
+
+# Check if required pulse audio installed
+if [[ ${USE_PULSE} == 1 ]]; then
+	if [[ ! -f ${PULSEAUDIO} ]]; then
+		echo "${DESC} requires pulseaudio to run correctly" | tee -a ${LOG}
+		echo "Run: sudo apt-get install pulseaudio" | tee -a ${LOG}
+		echo "and re-run ${SCRIPT}" | tee -a ${LOG}
+		exit 1
+	fi
+fi
 
 # Reboot dialogue
 if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
 	if (whiptail --title "Audio selection" --yesno "Reboot Raspberry Pi (Recommended)" 10 60) then
-		echo "Rebooting Raspberry Pi"
+		echo "Rebooting Raspberry Pi" | tee -a ${LOG}
 		sudo reboot 
 	else
-		echo
-		echo "You chose not to reboot!"
-		echo "Changes made will not become active until the next reboot"
+		echo | tee -a ${LOG}
+		echo "You chose not to reboot!" | tee -a ${LOG}
+		echo "Changes made will not become active until the next reboot" | tee -a ${LOG}
 	fi
 fi
 
+echo "A log of these changes has been written to ${LOG}"
+exit 0
 # End of script
 

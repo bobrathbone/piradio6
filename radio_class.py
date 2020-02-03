@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.177 2018/12/04 07:59:51 bob Exp $
+# $Id: radio_class.py,v 1.207 2020/01/23 10:48:31 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -10,7 +10,7 @@
 # This class uses  Music Player Daemon 'mpd' and the python-mpd library
 # Use "apt-get install python-mpd" to install the library
 # Modified to use python-mpd2 library mpd.wikia.com
-# See: http://pythonhosted.org/python-mpd2/
+# See: https://pypi.org/project/python-mpd2/
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
@@ -27,8 +27,8 @@ import SocketServer
 from time import strftime
 import pdb
 
-from __init__ import __version__
-from __init__ import *
+from constants import __version__
+from constants import *
 
 from udp_server_class import UDPServer
 from udp_server_class import RequestHandler
@@ -40,7 +40,8 @@ from spotify_class import SpotifyReceiver
 from language_class import Language
 from source_class import Source
 from volume_class import Volume
-from mpd import MPDClient
+#from mpd import MPDClient
+import mpd
 
 # MPD files
 MpdLibDir = "/var/lib/mpd"
@@ -75,7 +76,7 @@ volume = None
 Mpd = "/usr/bin/mpd"	# Music Player Daemon
 Mpc = "/usr/bin/mpc"	# Music Player Client
 
-client = MPDClient()	
+client = mpd.MPDClient()	
 
 ON = True
 OFF = False
@@ -135,6 +136,8 @@ class Radio:
 	channelChanged = True		# Used to display title
 	display_playlist_number = False # Display playlist number
 	speech = False			# Speech enabled yes/no
+	last_direction = UP		# Last search direction
+	skipped_bad = True		# Skipped bad channel/track
 	
 	# MPD Options
 	random = False	# Random tracks
@@ -165,6 +168,7 @@ class Radio:
 
 	playlists = None
 	keepAliveTime = 0	# Keep alive time for MPD pings
+	bluetooth_retry = 3	# Retry count for bluetooth connection
 
 	# Configuration files in /var/lib/radiod 
 	ConfigFiles = {
@@ -265,7 +269,10 @@ class Radio:
 		elif key == 'KEY_INFO':
 			self.event.set(self.event.KEY_INFO)
 
-		# These come from the Web CGI script
+		elif key == 'KEY_EXIT':
+			self.event.set(self.event.SHUTDOWN)
+
+		# These messages come from the Web CGI script
 		elif key == 'MEDIA':
 			self.event.set(self.event.LOAD_MEDIA)
 
@@ -316,14 +323,15 @@ class Radio:
 		myos = self.execCommand('uname -a')
 		log.message(myos, log.INFO)
 
+		# Connect bluetooth device if configured
+		self.connectBluetoothDevice()
+
 		# Start the player daemon
-		log.message("Starting MPD", log.DEBUG)
-		self.execCommand("service mpd start")
+		self.startMpdDaemon()
 
 		# Connect to MPD
-		client = MPDClient()	# Create the MPD client
+		client = mpd.MPDClient()	# Create the MPD client
 		self.connect(self.mpdport)
-		client.stop()	# Wait for stations to be loaded before playing
 
 		# Is Airplay installed (shairport-sync)
 		self.airplayInstalled = self.config.getAirplay()
@@ -419,33 +427,145 @@ class Radio:
 		while retry > 0:
 			#client = MPDClient()	# Create the MPD client
 			try:
-				client.timeout = 10
+				client.timeout = self.config.getClientTimeout()
 				client.idletimeout = None
 				client.connect("localhost", port)
+				# Wait for stations to be loaded before playing
+				client.stop()
 				log.message("Connected to MPD port " + str(port), log.INFO)
 				if volume != None:
 					volume.setClient(client)
 				connected = True
 				retry = 0
 
+			except mpd.ConnectionError as e:
+				log.message( 'radio.connection error port ' + str(port) \
+					+ ':'  + str(e), log.ERROR)
+				connected = True
+				try: 
+					client.play()
+				except:
+					pass
+
 			except Exception as e:
 				log.message( 'radio.connect failed port ' + str(port) \
-					+ ':'  + str(e), log.ERROR)
+					+ ': '  + str(e), log.ERROR)
 				time.sleep(2.5)	# Wait for interrupt in the case of a shutdown
-				retry -= 1
+				if "Already connected" in str(e):
+					connected = True
+					retry = 0
+			retry -= 1
 
 			# Try restarting MPD
 			if not connected:
-				log.message('radio.connect: Restarting MPD', log.DEBUG)
-				self.execCommand("sudo systemctl restart mpd")
-				time.sleep(3)
-				client = MPDClient()	# Create the MPD client
-				self.current_id += 1 # Skip bad station
-				self.setCurrentID(self.current_id)
+				self.restartMpdDaemon()
+			
 		return connected
+
+	# Connect Bluetooth device. Re-pair device if necessary
+	def connectBluetoothDevice(self):
+		connectBT = True
+		connected = False
+
+		bluetooth_device=self.config.getBluetoothDevice()
+		if bluetooth_device == "00:00:00:00:00:00" or len(bluetooth_device) != 17: 
+			connectBT = False
+
+		if os.path.isfile("/usr/bin/bluetoothctl") and connectBT:
+			log.message("Connecting Bluetooth device " + bluetooth_device, log.DEBUG)
+			cmd = "bluetoothctl info " + bluetooth_device
+
+			# Re-pair Bluetooth device if no info for device
+			if os.system(cmd) != 0:
+				log.message("Re-pairing Bluetooth device " 
+					+ bluetooth_device, log.DEBUG)
+				cmd = "bluetoothctl remove " + bluetooth_device
+				os.system(cmd)
+
+				# Scan for 10 seconds
+				cmd = "bluetoothctl --timeout 10 scan on &"
+				os.system(cmd)
+
+				# Allow scan to finish
+				time.sleep(11)
+
+				# Re-pair the device
+				cmd = "bluetoothctl pair " + bluetooth_device
+				os.system(cmd)
+				cmd = "bluetoothctl trust " + bluetooth_device
+				os.system(cmd)
+				cmd = "bluetoothctl connect " + bluetooth_device
+				os.system(cmd)
+				if os.system(cmd) == 0:
+					connected = True
+			else:
+				cmd = "bluetoothctl info " + bluetooth_device
+				if os.system(cmd) == 0:
+					log.message("Connectd Bluetooth device " + bluetooth_device,							 log.DEBUG)
+					connected = True
+				else:
+					log.message("Failed to connect Bluetooth device ",							 log.DEBUG)
+				 	connected = False
+		return  connected
+
+	# Restart MPD (Not currently used)
+	def restartMpdDaemon(self):	
+		log.message('radio.mpdStart: Restarting MPD', log.DEBUG)
+		self.stopMpdDaemon()
+		pid = self.startMpdDaemon()
+		return pid
+
+	# Restart MPD
+	def stopMpdDaemon(self):	
+		log.message('radio.stopMpdDaemon: Stopping MPD', log.DEBUG)
+		pid = self.getStoredInteger("/var/run/mpd/pid",0)	
+		self.execCommand("sudo systemctl stop mpd")
+
+		# Wait until MPD stopped
+		count = 10
+		while pid != 0:
+			log.message('radio.stopMpdDaemon: Waiting for MPD to stop', log.DEBUG)
+			pid = self.getStoredInteger("/var/run/mpd/pid",0)	
+			time.sleep(1)
+			count -= 1
+			if count < 1:
+				break	
+
+		# Has MPD stopped
+		if pid == 0:
+			log.message('radio.stopMpdDaemon: MPD stopped', log.DEBUG)
+		else:
+			# Kill it as a last resort
+			log.message('radio.stopMpdDaemon: Failed to stop MPD', log.ERROR)
+			if pid > 1:
+				self.execCommand("sudo kill -9 " + str(pid))
+		return pid
+
+	# Start MPD
+	def startMpdDaemon(self):	
+		pid = 0
+		log.message('radio.startMpdDaemon: Starting MPD', log.INFO)
+		self.execCommand("sudo systemctl start mpd")
+		self.execCommand("mpc volume 0")
+
+		# Wait until MPD started
+		count = 20
+		while pid == 0:
+			pid = self.getStoredInteger("/var/run/mpd/pid",0,loggit=False)	
+			time.sleep(1)
+			count -= 1
+			if count < 1:
+				break	
+			log.message('radio.startMpdDaemon: Waiting for MPD', log.DEBUG)
+		if pid > 0:
+			log.message('radio.startMpdDaemon: MPD started pid=' + str(pid), log.INFO)
+		else:
+			log.message('radio.startMpdDaemon: Failed to start MPD started', log.ERROR)
+		return pid
 
 	# Scroll up and down between stations/tracks
 	def getNext(self,direction):
+		self.last_direction = direction	# Store direction
 		playlist = self.getPlayList()
 		index = self.getSearchIndex()
 
@@ -633,6 +753,9 @@ class Radio:
 	# This is either the real MPD or Mixer volume
 	# depending upon source type
 	def getVolume(self):
+		if volume.getStatus() != volume.OK:
+			self.clearError()
+			self.connectBluetoothDevice()
 		return volume.get()
 
 	def getSpeechVolume(self):
@@ -649,10 +772,24 @@ class Radio:
 
 	# Increase volume 
 	def increaseVolume(self):
+		if self.error:	# If error re-connect Bluetooth
+			self.connectBluetoothDevice()
+			self.clearError()
+			try:
+				client.play()
+			except:
+				pass
 		return volume.increase()
 
 	# Decrease volume 
 	def decreaseVolume(self):
+		if self.error:	# If error re-connect Bluetooth
+			self.connectBluetoothDevice()
+			self.clearError()
+			try:
+				client.play()
+			except:
+				pass
 		return volume.decrease()
 
 	def mute(self):
@@ -660,6 +797,9 @@ class Radio:
 
 	# Unmute sound fuction, get stored volume
 	def unmute(self):
+		if self.error:	# If error re-connect Bluetooth
+			self.connectBluetoothDevice()
+			self.clearError()
 		volume.unmute()
 
 	# Return muted state muted = True
@@ -690,26 +830,26 @@ class Radio:
 	def muteMixer(self):
 		return self.airplay.muteMixer()
 
-	# Start MPD (Alarm mode)
-	def startMPD(self):
+	# Start MPD client (Alarm mode) - not used
+	def startMpdClient(self):
 		try:
 			client.play()
 		except Exception as e:
-			log.message("radio.startMPD: " + str(e),log.ERROR)
+			log.message("radio.startMpdClient: " + str(e),log.ERROR)
 		return
 
 	# Stop MPD (Alarm mode)
-	def stopMPD(self):
+	def stopMpdClient(self):
 		try:
 			client.stop()
 		except Exception as e:
-			log.message("radio.stopMPD: " + str(e),log.ERROR)
+			log.message("radio.stopMpdClient: " + str(e),log.ERROR)
 		return
 
 	# Stop the radio 
 	def stop(self):
 		log.message("Stopping MPD",log.INFO)
-		self.execCommand("sudo service mpd stop")
+		self.stopMpdDaemon()	
 
 		if self.getSourceType() == self.source.AIRPLAY:
 			self.stopAirplay()	
@@ -1200,10 +1340,11 @@ class Radio:
 			pos = currentsong.get("pos")
 			if pos == None:
 				currentid = self.current_id
+				log.message("radio.getCurrentID error id: " + str(pos),log.ERROR)
 			else:
 				currentid = int(pos) + 1
 
-			# Only update if the Current ID has changed
+			# Only update if the Current ID has changed by another client
 			if self.current_id != currentid:
 				log.message("radio.getCurrentID New ID " \
 						+ str(currentid), log.DEBUG)
@@ -1234,6 +1375,7 @@ class Radio:
 
 	# See if any error. Return True if error
 	def checkStatus(self):
+		self.error = False
 		try:
 			status = client.status()
 			errorStr = str(status.get("error"))
@@ -1244,7 +1386,6 @@ class Radio:
 				self.errorStr = errorStr
 			else:
 				errorStr = ''
-				self.error = False
 		except Exception as e:
 			log.message("checkStatus exception: " + str(e), log.ERROR)
 			self.error = True
@@ -1300,22 +1441,27 @@ class Radio:
 		return progress
 
 	# Set the new ID  of the currently playing track or station (Also set search index)
-	def setCurrentID(self,newid):
-		log.message("radio.setCurrentID " + str(newid), log.DEBUG)
-		self.current_id = newid
+	# Store the new id in /var/lib/radiod
+	def setCurrentID(self,new_id):
+		connectError = False
+		log.message("radio.setCurrentID newid=" + str(new_id) +
+				" current_id="+ str(self.current_id), log.DEBUG)
 
-		# If an error (-1) reset to 1
-		if self.current_id <= 0:
-			self.current_id = 1
-			log.message("radio.setCurrentID reset to " + str(self.current_id), log.DEBUG)
+		# Validity checks
+		if new_id  <= 0:
+			new_id = 1
+		elif new_id > len(self.searchlist):
+			new_id = len(self.searchlist)
 
-		# Don't allow an ID greater than the playlist length
-		if self.current_id >= len(self.searchlist):
-			self.current_id = len(self.searchlist)
-			log.message("radio.setCurrentID reset to " + str(self.current_id), log.DEBUG)
-		
+		self.current_id = new_id
+
+		# Set up the search index
 		self.search_index = self.current_id - 1
+
+		# Save the new ID in /var/lib/radiod
+		log.message("radio.setCurrentID set to " + str(self.current_id), log.DEBUG)
 		self.execCommand ("echo " + str(self.current_id) + " > " + self.current_file)
+
 		return self.current_id
 
 	# Get stats array
@@ -1344,6 +1490,7 @@ class Radio:
 				self.currentsong = currentsong
 			except Exception as e:
 				log.message("radio.getCurrentSong failed: " + str(e), log.ERROR)
+				self.restartMpdDaemon()
 		return self.currentsong
 
 	# Get station name by index from search list
@@ -1375,6 +1522,17 @@ class Radio:
 		# If error occured
 		if self.checkStatus(): 
 			time.sleep(0.5)
+			if "Failed to open" in self.errorStr:
+				log.message ("radio.getCurrentStationName audio output error",
+							 log.ERROR)	
+				try:
+					self.connectBluetoothDevice()
+					client.play()
+					log.message ("radio.getCurrentStationName play",log.DEBUG)
+				except:
+					log.message ("radio.getCurrentStationName play failed",
+							log.DEBUG)
+					pass
 		return name
 
 	# Get the title of the currently playing station or track from mpd 
@@ -1392,7 +1550,7 @@ class Radio:
 			title = ''
 		
 		if len(title) > 0:
-			title = translate.escape_translate(title)
+			title = translate.escape(title)
 
 		if self.channelChanged: 
 			self.channelChanged = False
@@ -1478,63 +1636,53 @@ class Radio:
 	# Get the integer value stored in /var/lib/radiod
 	# filename is the name any file in the lib directory
 	# default_value is the value to be returned if the file read fails
-	def getStoredInteger(self,filename,default_value):
+	def getStoredInteger(self,filename,default_value,loggit=True):
 		if os.path.isfile(filename):
 			try:
 				value = int(self.execCommand("cat " + filename) )
 			except ValueError:
 				value = int(default_value)
 		else:
-			log.message("Error reading " + filename, log.ERROR)
+			if loggit:
+				log.message("Error reading " + filename, log.ERROR)
 			value = int(default_value)
 		return value
 
-	# Change radio station up
+	# Change radio station/track Up
 	def channelUp(self):
+		self.last_direction = UP
+		self.current_id = self._changeChannel(UP)
+		return self.current_id
+
+	# Change radio station/track Up
+	def channelDown(self):
+		self.last_direction = DOWN
+		self.current_id = self._changeChannel(DOWN)
+		return self.current_id
+
+	# Change radio station up
+	def _changeChannel(self,direction):
+		new_id = self.getCurrentID()
+		skip_value = 1 	# Skip increment decrement
+
+		if direction == UP:
+			mesg = "radio.channelUp "
+			new_id += 1
+		else:
+			mesg = "radio.channelDown "
+			new_id -= 1
+			
 		if self.error:
+			log.message(mesg + "clearError " + str(self.error), log.DEBUG)
 			self.clearError()
 
 		if volume.muted():
 			volume.unmute()
-		new_id = self.getCurrentID() + 1
-		log.message("radio.channelUp " + str(new_id), log.DEBUG)
-		if new_id > len(self.searchlist):
-			new_id = 1
-			self.play(new_id)
-		else:
-			try:
-				client.next()
-			except:
-				log.message("radio.channelUp error", log.ERROR)
-				
-		new_id = self.getCurrentID()
-		self.setCurrentID(new_id)
 
+		log.message(mesg + str(new_id), log.DEBUG)
+		self.current_id = self.play(new_id)
 		self.channelChanged = True
-		return new_id
-
-	# Change radio station down
-	def channelDown(self):
-		if self.error:
-			self.clearError()
-		if self.muted():
-			self.unmute()
-		new_id = self.getCurrentID() - 1
-		log.message("radio.channelDown " + str(new_id), log.DEBUG)
-		if new_id <= 0:
-			new_id = len(self.searchlist)
-			self.play(new_id)
-		else:
-			try:
-				client.previous()
-			except:
-				log.message("radio.channelDown error", log.ERROR)
-
-		new_id = self.getCurrentID()
-		self.setCurrentID(new_id)
-
-		self.channelChanged = True
-		return new_id
+		return self.current_id
 
 	# Cycle the input source and/or playlist (Reload is done when Reload requested)
 	def cycleSource(self, direction):
@@ -1580,7 +1728,7 @@ class Radio:
 				self.stopSpotify()
 
 		else:
-			self.stopMPD()
+			self.stopMpdClient()
 
 		if source_type == self.source.RADIO:
 			self.current_file = CurrentStationFile
@@ -1615,7 +1763,6 @@ class Radio:
 			# Create a list for search
 			self.searchlist = self.createSearchList()
 			self.current_id = self.getStoredID(self.current_file)
-			self.search_index = self.current_id - 1
 			self.play(self.current_id)
 
 		# Set volume
@@ -1640,7 +1787,7 @@ class Radio:
 			client.load(playlist)
 			if len(client.playlist()) < 1:
 				log.message("Playlist " + playlist + " is empty", log.ERROR)
-				##self.currentID = 0
+				self.current_id = 0
 
 		except:
 			log.message("radio.loadPlaylist failed to load " + playlist, log.ERROR)
@@ -1653,23 +1800,24 @@ class Radio:
 
 	# Update music library 
 	def updateLibrary(self):
-
-		if len(client.playlist()) < 1:
-			status = client.status()
-			try:
-				update_id = int(status.get("updating_db"))
-				self.loading_DB = True
-			except:
-				update_id = 0
-			#log.message("radio.updateLibrary updating_db " + str(update_id) \
-			#		+ " loading_DB " + str(self.loading_DB), log.DEBUG)
-			if update_id < 1:
-				self.mountAll()
-				log.message("Updating MPD database ", log.DEBUG)
-				self.execMpcCommand("update")
-		else:
-			self.loading_DB = False
-		self.setUpdateLibOff() # Check TO DO
+		try:
+			if len(client.playlist()) < 1:
+				status = client.status()
+				try:
+					update_id = int(status.get("updating_db"))
+					self.loading_DB = True
+				except:
+					update_id = 0
+				if update_id < 1:
+					self.mountAll()
+					log.message("Updating MPD database ", log.DEBUG)
+					self.execMpcCommand("update")
+			else:
+				self.loading_DB = False
+			self.setUpdateLibOff() # Check TO DO
+		except Exception as e:
+				log.message("radio.updateLibrary error" +
+					str(self.current_id) + " :" + str(e), log.ERROR)
 		return
 
 	# Play a new track using search index
@@ -1678,28 +1826,70 @@ class Radio:
 		self.play(index + 1)
 		return
 
-	# Play a track number  (Starts at 1)
-	def play(self,number):
-		log.message("radio.play " + str(number), log.DEBUG)
-		log.message("radio.play Playlist len " + str(len(self.searchlist)), log.DEBUG)
-		if number > 0 and number <= len(self.searchlist):
-			self.current_id = number
-			self.setCurrentID(self.current_id)
-		else:	
-			log.message("play invalid station/track number "+ str(number), log.ERROR)
-			self.setCurrentID(1)
+	# Play a track or station id  (Starts at 1)
+	def play(self,id):
+
+                log.message("radio.play " + str(id), log.DEBUG)
+		new_id = id
 
 		# Client play function starts at 0 not 1
-		log.message("Play station/track number "+ str(self.current_id), log.DEBUG)
-		try:
-			client.play(self.current_id-1)
-			self.checkStatus()
-		except Exception as e:
-			log.message("radio.play FAILED id=" + str(self.current_id), log.ERROR)
-			log.message("radio.play " + str(e), log.ERROR)
-			self.current_id += 1
-			self.clearErrorString() # Clear any error message
-		#self.clearErrorString() # Clear any error message
+
+		if self.last_direction == UP:
+			skip_value = 1
+		else:
+			skip_value = -1
+
+		retry = 3
+		success = False
+		msg = ''
+		while not success and retry > 0:
+			if new_id > len(self.searchlist):
+				new_id = 1
+			elif new_id < 1:
+				new_id = len(self.searchlist)
+
+			log.message("Play station/track number "+ str(new_id), log.DEBUG)
+
+			try:
+				# Client play starts from 0
+				client.play(new_id-1)
+				success = True
+				self.current_id = new_id
+				self.error = False
+				# Update current file and search index
+				self.execCommand ("echo " + str(self.current_id) + " > " \
+							+ self.current_file)
+				self.search_index = self.current_id - 1
+
+			except Exception as e:
+				log.message("radio.play error id=" +
+						str(new_id) + " :" + str(e), log.ERROR)
+				new_id  += skip_value
+				retry  -= 1
+				self.error = True
+				log.message("radio.play: Skipping to station " + 
+						str(new_id),log.DEBUG)
+
+				# Timeouts due to a bad URL cause corruption of the client
+				# stats and status dictinaries. Disconnect and reconnect to
+				# reset the client
+				try:
+					client.disconnect() 
+				except:
+					pass
+
+				# Re-connect
+				try:
+					time.sleep(0.5)
+					client.connect("localhost", self.mpdport)
+					self.connected = True
+				except Exception as e:
+					log.message("radio.play connect: " +
+						 str(e), log.ERROR)
+					self.connected = False
+					
+		# End of while
+
 		return self.current_id
 
 	# Clear streaming and other errors
@@ -1926,12 +2116,18 @@ class Radio:
 
 	# Pause the client for speach facility (See message_class)
 	def clientPause(self):
-		client.pause()
+		try:
+			client.pause()
+		except Exception as e:
+			log.message("radio.clientPause: " + str(e), log.ERROR)
 		return
 
 	# Restart the client after speach finished
 	def clientPlay(self):
-		client.play()
+		try:
+			client.play()
+		except Exception as e:
+			log.message("radio.clientPlay: " + str(e), log.ERROR)
 		return
 
 	# Get language text
@@ -2049,65 +2245,4 @@ class Radio:
 
 # End of Radio Class
 
-### Test routine ###
-if __name__ == "__main__":
-	print "Test radio_class.py"
-	radio = Radio()
-	print "MPD version",radio.getMpdVersion() 
-	radio.mountUsb()
-	print  "Version",radio.getVersion()
-	print "Board revision", radio.getBoardRevision()
-	iColor = radio.config.getBackColor('bg_color')
-	colorName = config.getBackColorName(iColor)
-	print 'bg_color',colorName, iColor
-
-	# Start radio and load the radio stations
-	i2c_address = radio.config.getI2Caddress()
-	print "I2C address", hex(i2c_address)
-	radio.start()
-	radio.loadSource()
-	radio.play(1)
-	current_id = radio.getCurrentID()
-	index = current_id - 1
-	print "Current ID ", current_id 
-	print "Station",current_id,":", radio.getStationName(index)
-	print "Bitrate", radio.getBitRate()
-
-	# Test volume controls
-	print "Stored volume", radio.getStoredVolume()
-	radio.setVolume(15)
-	radio.increaseVolume()
-	radio.decreaseVolume()
-	radio.getVolume()
-	time.sleep(5)
-	print "Mute"
-	radio.mute()
-	time.sleep(3)
-	print "Unmute"
-	radio.unmute()
-	print "Volume", radio.getVolume()
-	time.sleep(5)
-	# Test channel functions
-	current_id = radio.channelUp()
-	print "Channel up"
-	index = current_id - 1
-	print "Station",current_id,":", radio.getStationName(index)
-	time.sleep(5)
-	current_id = radio.channelDown()
-	print "Channel down"
-	index = current_id - 1
-	print "Station",current_id,":", radio.getStationName(index)
-
-	# Check state
-	#print "State  " +  radio.getState()
-
-	# Check timer
-	print "Set Timer 1 minute"
-	radio.storeTimer(1)
-
-	# Exit 
-	print "Exit test"
-	sys.exit(0)
-	
-# End of __main__ routine
 

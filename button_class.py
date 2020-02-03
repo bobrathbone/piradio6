@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.18 2018/12/11 07:58:11 bob Exp $
+# $Id: button_class.py,v 1.19 2019/07/05 10:26:33 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,7 +16,7 @@
 import os,sys,pwd
 import time
 import RPi.GPIO as GPIO
-from __init__ import *
+from constants import *
 
 class Button:
 

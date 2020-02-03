@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.10 2018/04/26 10:28:11 bob Exp $
+# $Id: lcd_class.py,v 1.11 2019/06/16 11:24:32 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 LCD display
 #
@@ -92,7 +92,6 @@ class Lcd:
 
 	width = LCD_WIDTH
 	# If display can support umlauts set to True else False
-	RawMode = False	 # Test only
 	ScrollSpeed = 0.3       # Default scroll speed
 
 	def __init__(self):
@@ -224,8 +223,7 @@ class Lcd:
 	# Send string to display
 	def _string(self,text,interrupt):
 		s = text.ljust(self.width," ")
-		if not self.RawMode:
-			s = translate.toLCD(s)
+		s = translate.toLCD(s)
 		for i in range(self.width):
 			self._byte_out(ord(s[i]),LCD_CHR)
 
@@ -278,11 +276,6 @@ class Lcd:
 		elif speed > 1.0:
 			speed = 0.3
 		self.ScrollSpeed = speed
-		return
-
-	# Set raw mode on (No translation)
-	def setRawMode(self,value):
-		self.RawMode = value
 		return
 
 	# Clear display

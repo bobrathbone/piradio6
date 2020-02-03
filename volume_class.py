@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.23 2018/11/21 12:46:27 bob Exp $
+# $Id: volume_class.py,v 1.28 2020/01/22 14:35:49 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -24,6 +24,7 @@
 import os,sys
 import time
 import pdb
+from constants import *
 
 # Volume control files
 RadioLibDir = "/var/lib/radiod"
@@ -40,6 +41,10 @@ class Volume:
 	mixer_volume_id = 0	# Alsa mixer ID 
 	speech_volume = 0	# Speech volume level
 	range = 5		# Volume range (Sensitivity)
+	OK=0			# Volume status OK
+	ERROR=1			# Error status
+	status = OK		# Volume get status
+	mpd_client = None	# MPD client interface object
 
 	def __init__(self, mpd_client,source,spotify,airplay,config,logging):
 		global log
@@ -49,14 +54,12 @@ class Volume:
 		self.spotify = spotify
 		self.airplay = airplay
 		log = logging
-		#self.mixer_volume_id = config.getMixerVolumeID()
 		self.mixer_volume_id = self.getMixerVolumeID()
 		self.mixer_preset = config.getMixerPreset()
 	
 		# Set up initial volume
 		vol = self._getStoredVolume()
 		self.speech_volume = vol
-		self.set(vol)
 		self.range = self.config.getVolumeRange()
 		return
 
@@ -78,17 +81,24 @@ class Volume:
 		return self.speech_volume
 
 	# Get the MPD volume 
-	def _getMpdVolume(self,client):
+	def _getMpdVolume(self,mpd_client):
 		try:
-			client.ping()
-			stats = client.status()
-			self.volume = int(stats.get("volume"))
+			mpd_client.ping()	# Keep alive
+			status = mpd_client.status()
+			vol = int(status.get("volume"))
+			self.volume = vol	# Won't be reached if exception
+			self.status = self.OK
 
 		except Exception as e:
 			log.message("volume._getMpdVolume " + str(e),log.ERROR)
+			self.status = self.ERROR
 			time.sleep(2)
-
 		return self.volume
+
+	def getStatus(self):
+		status = self.status
+		self.status = self.OK
+		return status
 
 	# Get mixer volume (This is the variable level - not the preset)
 	def _getMixerVolume(self):
@@ -110,12 +120,12 @@ class Volume:
 			new_volume = self.mixer_volume	
 		else:
 			self._setMixerVolume(self.mixer_preset,False)
-			self.volume = self._setMpdVolume(volume,store)
+			self.volume = self._setMpdVolume(self.mpd_client,volume,store)
 			new_volume = self.volume	
 		return new_volume
 
 	# Set the MPD volume level
-	def _setMpdVolume(self,volume,store=True):
+	def _setMpdVolume(self,mpd_client,volume,store=True):
 	
 		if volume < 0:	
 			volume = 0
@@ -123,7 +133,7 @@ class Volume:
 		if self.volume != volume:
 			log.message("volume._setMpdVolume " + str(volume), log.DEBUG)
 		try:
-			self.mpd_client.setvol(volume)
+			mpd_client.setvol(volume)
 			self.volume = volume
 			if store:
 				self.storeVolume(self.volume)
@@ -214,17 +224,17 @@ class Volume:
 	# Increase volume using range value
 	def increase(self):
 		increment = 100/self.range
-		volume = self._changeVolume(increment)
+		volume = self._changeVolume(self.mpd_client,increment)
 		return volume
 
 	# Decrease volume using range value
 	def decrease(self):
 		decrement = 0 - 100/self.range
-		volume = self._changeVolume(decrement)
+		volume = self._changeVolume(self.mpd_client,decrement)
 		return volume
 
 	# Common routine for volume increase/decrease
-	def _changeVolume(self,change):
+	def _changeVolume(self,mpd_client,change):
 		new_volume = self.get() + change
 		volume = self.set(new_volume)
 		return volume
@@ -249,13 +259,31 @@ class Volume:
 
 	# Mute the volume (Do not store volume setting in /var/lib/radio)
 	def mute(self):
+		source_type = self.source.getType()
+
 		self.set(0,store=False)
+		mute_action = self.config.getMuteAction()
+
+		try:
+			if mute_action == PAUSE or source_type == self.source.MEDIA:
+				log.message("volume.mute MPD pause",log.DEBUG)
+				self.mpd_client.pause() # Streaming continues
+
+			elif mute_action == STOP:
+				log.message("volume.mute MPD stop",log.DEBUG)
+				self.mpd_client.stop()	# Streaming stops
+		except:
+			pass
 		return
 
 	# Unmute the volume
 	def unmute(self):
 		volume = self._getStoredVolume()
 		self.set(volume)
+		try:
+			self.mpd_client.play()
+		except:
+			pass
 		return
 
 	# Is sound muted
@@ -274,7 +302,8 @@ class Volume:
 
 	# Refresh client if re-connection occured
 	def setClient(self,mpd_client):
-		self.mpd_client = mpd_client
+		#self.mpd_client = mpd_client
+		return
 
 	# Execute system command
 	def execCommand(self,cmd):

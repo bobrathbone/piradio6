@@ -1,5 +1,5 @@
 # Raspberry Pi Internet Radio
-# $Id: lircrc.dist,v 1.1 2017/10/05 12:30:41 bob Exp $
+# $Id: lircrc.dist,v 1.2 2019/02/02 10:34:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -90,6 +90,12 @@ begin
   prog = piradio
   button = KEY_INFO
   config = KEY_INFO
+end
+
+begin
+  prog = piradio
+  button = KEY_EXIT
+  config = KEY_EXIT
 end
 
 # End

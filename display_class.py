@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.36 2018/11/14 13:15:39 bob Exp $
+# $Id: display_class.py,v 1.44 2019/06/16 11:24:32 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -207,6 +207,8 @@ class Display:
 		if line <= self.lines:
 			# Always display messages that need to be scrolled
 			if leng > self.width:
+				# DEBUG
+				message = translate.toLCD(message)
 				screen.out(line,message,interrupt)
 				self.update(screen,displayType)
 
@@ -229,7 +231,8 @@ class Display:
 
 	# Clear display and line buffer
 	def clear(self):
-		if config.getDisplayType() == config.OLED_128x64:
+		dType = config.getDisplayType()
+		if dType == config.OLED_128x64:
 			screen.clear()
 			self.lineBuffer = []		# Line buffer 
 			for i in range(0, self.lines):

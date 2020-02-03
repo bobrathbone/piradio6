@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Raspberry Pi pHAT Beat Class
-# $Id: phatbeat_class.py,v 1.3 2018/12/04 07:59:51 bob Exp $
+# $Id: phatbeat_class.py,v 1.4 2019/07/05 10:26:34 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -13,7 +13,7 @@
 #
 #
 
-from __init__ import *
+from constants import *
 import sys,os
 import time,pwd
 import pdb

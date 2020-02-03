@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Menu Class
-# $Id: menu_class.py,v 1.13 2018/12/04 07:59:51 bob Exp $
+# $Id: menu_class.py,v 1.14 2019/07/05 10:26:34 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -17,7 +17,7 @@ import sys
 
 from config_class import Configuration
 from language_class import Language
-from __init__ import *
+from constants import *
 
 config = Configuration()
 language = Language()

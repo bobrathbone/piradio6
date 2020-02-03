@@ -4,7 +4,7 @@
 # Raspberry Pi Radio Character translation class
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: translate_class.py,v 1.11 2018/11/14 13:15:39 bob Exp $
+# $Id: translate_class.py,v 1.14 2019/06/16 11:24:32 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -126,13 +126,20 @@ class Translate:
 		'\\xc3\\xb7' : "/",	# Division sign
 		'\\xc5\\x93' : 'oe',       # oe joined
 
-		# Hungarian lower case
-		'\\xc3\\xb3' : 'o',	# o circumflex 
-		'\\xc3\\xad' : 'i',   	   # i accent
-		'\\xc3\\xb5' : 'o',	# o tilde
-		'\\xc5\\x91' : 'o',   	   #  o 
-		'\\xc5\\xb1' : chr(252),   # 
-		'\\xc3\\xba' : 'u',	# u acute
+		# Hungarian lower case (not covered elsewhere)
+		'\\xc3\\xad' : 'i',
+		'\\xc3\\xba' : 'u', 
+		'\\xc3\\xb1' : 'u',	# ? Check Spanish n 
+		'\\xc5\\xb1' : 'u',
+		'\\xc5\\x91' : 'o',
+
+		# Hungarian upper case (not covered elsewhere)
+		'\\xc3\\x8d' : 'I',
+		'\\xc3\\x90' : 'O',	 
+		'\\xc3\\x9a' : 'U', 
+		'\\xc3\\xb0' : 'U',	# ? Check SCandanavian O umlaut
+		'\\xc5\\xb0' : 'U',
+		'\\xc5\\x90' : 'O',
 
 		# Polish unicode escape sequences
 		'\\xc4\\x84' : 'A',	# A,
@@ -319,7 +326,8 @@ class Translate:
 
 		# Spanish french
 		chr(241) : 'n',       # Small tilde n
-		chr(191) : '?',       # Small u acute to u
+		##chr(191) : '?',       # Small u acute to u
+		chr(191) : 'u',       # Small u acute to u
 		chr(224) : 'a',       # Small a grave to a
 		chr(225) : 'a',       # Small a acute to a
 		chr(226) : 'a',       # Small a circumflex to a
@@ -425,24 +433,20 @@ class Translate:
 			s = text
 		return s
 
-	def escape_translate(self,text):
-		s = text
-		if self._translate:
-			s = self._convert2escape(text)
-			s = self._escape(s)
-			s = s.lstrip('"')
-			s = s.rstrip('"')
-		return s
-
 	# Convert escaped characters (umlauts etc.) to normal characters
 	def _escape(self,text):
 		s = text
 		for code in self.codes:
-			s = s.replace(code, self.codes[code])
+			try:
+				s = s.replace(code, self.codes[code])
+			except:
+				continue
 
 		for code in self.short_codes:
-			s = s.replace(code, self.short_codes[code])
-
+			try:
+				s = s.replace(code, self.short_codes[code])
+			except:
+				continue
 		s = s.replace("'oC",'oC')   # Degrees C fudge
 		s = s.replace("'oF",'oF')   # Degrees C fudge
 		return s
@@ -505,8 +509,9 @@ class Translate:
 	# See standard character patterns for LCD display
 	def toLCD(self,sp):
 		s = sp
-		for HtmlCode in self.HtmlCodes:
-			s = s.replace(HtmlCode, self.HtmlCodes[HtmlCode])
+
+		#for HtmlCode in self.HtmlCodes:
+		#	s = s.replace(HtmlCode, self.HtmlCodes[HtmlCode])
 
 		if self.displayUmlauts:
 			s = s.replace(chr(223), chr(226))       # Sharp s
@@ -518,6 +523,7 @@ class Translate:
 			s = s.replace(chr(223), "ss")	   # Sharp s
 			s = s.replace(chr(246), "oe")	   # o umlaut
 			s = s.replace(chr(252), "ue")	   # u umlaut
+
 		return s
 
 	# Translation on off (Used by gradio)
@@ -541,6 +547,6 @@ if __name__ == '__main__':
 
 	# Complete text
 	print (translate.all(text))
-	print()
+	print('')
 	sys.exit(0)
 # End of file

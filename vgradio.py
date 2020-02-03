@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.94 2018/11/26 16:53:08 bob Exp $
+# $Id: vgradio.py,v 1.96 2020/01/24 09:55:51 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -742,6 +742,7 @@ if __name__ == "__main__":
 	MuteButton.draw(screen,display,(size[0]-(rmargin/2)-5,size[1]/2),
 					radio.muted(), size=(35,35))
 	draw_equalizer_icon = displayEqualizerIcon(display)
+	
 	if draw_equalizer_icon:
 		drawEqualizerIcon(display,screen,equalizerIcon)
 
@@ -819,6 +820,9 @@ if __name__ == "__main__":
 					os.popen("sudo " + dir + "/gradio.py&")
 					run = False
 
+				elif MuteButton.pressed():
+					radioEvent.set(radioEvent.MUTE_BUTTON_DOWN)
+
 			elif event.type == pygame.MOUSEMOTION:
 				if volumeScale.dragged(event):
 					volume = volumeScale.getVolume()
@@ -832,8 +836,6 @@ if __name__ == "__main__":
 					keyPress = handleKeyEvent(event.key,display,
 								radio,radioEvent)
 
-			elif MuteButton.pressed():
-				radioEvent.set(radioEvent.MUTE_BUTTON_DOWN)
 
 		# Handle radio events
 		if radioEvent.detected():
@@ -871,7 +873,7 @@ if __name__ == "__main__":
 		drawUpIcon(display,screen,upIcon)
 		drawDownIcon(display,screen,downIcon)
 		
-		if drawEqualizerIcon:
+		if draw_equalizer_icon:
 			drawEqualizerIcon(display,screen,equalizerIcon)
 
 		if display.config.switchPrograms():

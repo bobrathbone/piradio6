@@ -1,0 +1,4 @@
+Patch 1 for version 6.11 - 19 January 2020
+
+1) Correct mute function constantly switching between
+   mute and un-mute when cursor held above the mute icon  

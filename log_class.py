@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: log_class.py,v 1.8 2018/11/14 13:15:39 bob Exp $
+# $Id: log_class.py,v 1.9 2019/05/26 11:22:53 bob Exp $
 # Raspberry Pi Internet Radio Logging class
 #
 # Author : Bob Rathbone
@@ -24,6 +24,7 @@
 
 import os,sys
 import logging
+import logging.handlers as handlers
 import ConfigParser
 config = ConfigParser.ConfigParser()
 
@@ -76,6 +77,11 @@ class Log:
 				hdlr.close()
 			except Exception as e:
 				print (str(e))
+		return
+
+	# Truncate the log file
+	def truncate(self):
+		logging.FileHandler('/var/log/' + self.module + '.log','w')
 		return
 
 	# Temporary set log level

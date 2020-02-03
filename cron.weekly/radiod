@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+# Raspberry Pi Internet Radio - Update radio stations
+# $Id: radiod,v 1.4 2019/06/02 08:29:02 bob Exp $
+#
+# Author : Bob Rathbone
+# Site   : http://www.bobrathbone.com
+#
+# This program is called from crontab to update the radio stations playlist for MPD
+# By default it stored in cron.weekly
+#
+# License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
+#
+# Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
+#            The authors shall not be liable for any loss or damage however caused
+
+PATH=/sbin:/usr/sbin/:/usr/local/sbin:/bin:/usr/local/bin:/usr/bin
+
+DIR=/usr/share/radio
+LOGDIR=${DIR}/logs
+LOG=${LOGDIR}/stations.log
+
+mkdir -p ${LOGDIR}
+chown pi:pi ${LOGDIR}
+${DIR}/create_stations.py --delete_old 2>&1 >${LOG}
+chown pi:pi ${LOG}
+
+# End of script

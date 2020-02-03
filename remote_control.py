@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 #       
 # Raspberry Pi remote control daemon
-# $Id: remote_control.py,v 1.12 2018/03/24 11:42:53 bob Exp $
+# $Id: remote_control.py,v 1.18 2019/08/29 09:48:16 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
-# This program uses LIRC (Linux Infra Red Control) and python-lirc
+# This program uses LIRC (Linux Infra Red Control) and python-pylirc
+# For Raspbian Buster run:
+# 	apt-get install lirc python-pylirc
+#
 # For Raspbian Jessie run:
 # 	apt-get install lirc python-lirc
-#
-# For Raspbian Stretch run:
-# 	wget https://github.com/tompreston/python-lirc/releases/download/v1.2.1/python-lirc_1.2.1-1_armhf.deb
-# 	sudo dpkg -i python-lirc_1.2.1-1_armhf.deb
+# and amend all statements containing pylirc to lirc
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
@@ -26,7 +26,8 @@
 
 import RPi.GPIO as GPIO
 import ConfigParser
-import lirc
+# import lirc # For Raspbian Jessie only
+#import pylirc
 import sys
 import pwd
 import os
@@ -34,6 +35,7 @@ import time
 import signal
 import socket
 import errno
+import pdb
 
 # Radio project imports
 from config_class import Configuration
@@ -46,12 +48,15 @@ remote_led = IR_LED
 muted = False
 udphost = 'localhost'	# IR Listener UDP host default localhost
 udpport = 5100		# IR Listener UDP port number default 5100
+blocking = 1
+use_pylirc = False	# For Buster use pylirc module instead of lirc 
 
 config = Configuration()
 
 pidfile = '/var/run/irradiod.pid'
 lircrc = '/etc/lirc/lircrc'
 lircd_service = '/lib/systemd/system/lircd.service'
+pylirc_module='/usr/lib/python2.7/dist-packages/pylircmodule.so'
 
 # Signal SIGTERM handler
 def signalHandler(signal,frame):
@@ -67,20 +72,47 @@ class RemoteDaemon(Daemon):
 		global remote_led
 		global udpport
 		global udphost
+		global use_pylirc
+
 		log.init('radio')
 		progcall = str(sys.argv)
 		log.message(progcall, log.DEBUG)
 		log.message('Remote control running pid ' + str(os.getpid()), log.INFO)
 		signal.signal(signal.SIGHUP,signalHandler)
 
+		#pdb.set_trace()
+		# In Buster the lirc module has been renamed to pylirc
+		if os.path.exists(pylirc_module):
+			msg = "Using pylirc module"
+			print msg
+			log.message(msg, log.DEBUG)
+			import pylirc
+			global pylirc
+			use_pylirc = True
+		else:
+			msg = "Using lirc module"
+			print msg
+			log.message(msg, log.DEBUG)
+			import lirc
+			global lirc
+			
 		# Start lirc service
 		if os.path.exists(lircd_service):
-			execCommand('sudo service lircd start')	# For Stretch		
+			log.message("Starting lircd daemon", log.DEBUG)
+			execCommand('sudo systemctl start lircd')	# For Stretch		
+			time.sleep(1)
+			# Load all IR protocols if ir-keytable installed
+			if os.path.exists("/usr/bin/ir-keytable"):
+				execCommand('sudo ir-keytable -p all')
+			
 		else:
+			# Earlier Jessie and Stretch OS
+			log.message("Starting lirc daemon", log.DEBUG)
 			execCommand('sudo service lirc start')	# For Jessie
 
 		remote_led = config.getRemoteLed()
 		if remote_led > 0:
+			print "Flashing LED on GPIO", remote_led
 			GPIO.setwarnings(False)      # Disable warnings
 			GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
 			GPIO.setup(remote_led, GPIO.OUT)  # Output LED
@@ -133,21 +165,37 @@ class RemoteDaemon(Daemon):
 # The main Remote control listen routine
 def listener():
 	try:
-		sockid = lirc.init("piradio", lircrc)
+		if use_pylirc:
+			sockid = pylirc.init("piradio", lircrc, blocking)
+		else:
+			# The following line is for Jessie  and Stretch only
+			sockid = lirc.init("piradio", lircrc, blocking)
+
 		log.message("Listener on socket " + str(socket) + " established", log.DEBUG)
 
-		#Listen loop
+		# Main Listen loop
+		print "Listening for input on IR sensor"
 		while True:
-			nextcode =  lirc.nextcode()
-			if len(nextcode) > 0:
+			#pdb.set_trace()
+
+			if use_pylirc:
+				nextcode =  pylirc.nextcode()
+			else:
+				nextcode =  lirc.nextcode()
+
+			# For Jessie amend pylirc.nextcode to lirc.nextcode
+
+			if nextcode != None and len(nextcode) > 0:
 				if remote_led > 0:
 					GPIO.output(remote_led, True)
 				button = nextcode[0]
 				log.message(button, log.DEBUG)
 				print button
-				udpSend(button)
+				udpSend(button)	# Send to radiod program
 				if remote_led > 0:
 					GPIO.output(remote_led, False)
+			else:
+				time.sleep(0.2)
 
 	except Exception as e:
 		log.message(str(e), log.ERROR)

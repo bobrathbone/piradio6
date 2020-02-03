@@ -1,0 +1,34 @@
+# Set default mixer controls
+ctl.!default {
+    type hw
+    card 0
+}
+
+# Set default PCM device
+pcm.!default {
+      type plug
+      slave {
+          pcm "plughw:0,0"
+          format S32_LE
+      }
+}
+
+# Bluetooth speaker
+pcm.bluetooth {
+      type plug
+      slave {
+            pcm {
+                type bluetooth
+                device 00:75:58:41:B1:25
+                profile "auto"
+            }
+      }
+      hint {
+           show on
+           description "JVC Bluetooth speaker"
+      }
+}
+
+ctl.bluetooth {
+      type bluetooth
+}

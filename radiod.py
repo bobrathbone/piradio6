@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.183 2018/12/04 08:55:27 bob Exp $
+# $Id: radiod.py,v 1.192 2019/08/23 14:01:11 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -13,7 +13,7 @@
 #	    The authors shall not be liable for any loss or damage however caused.
 #
 
-from __init__ import *
+from constants import *
 import os,sys
 import time
 import signal
@@ -142,6 +142,10 @@ class MyDaemon(Daemon):
 
 		# Set up radio
 		radio = Radio(menu,event)
+		if radio.config.logTruncate():
+			log.truncate()
+			log.message("Truncated log file",log.DEBUG)
+		log.message("===== Starting radio =====",log.INFO)
 		message = Message(radio,display)
 
 		# Set up status Led (Retro Radio only)
@@ -349,8 +353,7 @@ def handleRadioEvent(event,display,radio,menu):
 				displayVolume(display, radio)
 				time.sleep(0.1)
 
-		if nlines <= 2:
-			display.setDelay(20)
+		display.setDelay(20)
 		volume_change = True	
 
 	elif event_type == event.VOLUME_DOWN:
@@ -372,8 +375,7 @@ def handleRadioEvent(event,display,radio,menu):
 				displayVolume(display, radio)
 				time.sleep(0.1)
 
-		if nlines <= 2:
-			display.setDelay(20)
+		display.setDelay(20)
 		volume_change = True	
 
 	elif event_type == event.MUTE_BUTTON_DOWN:
@@ -664,13 +666,13 @@ def changeOption(event, display, radio, menu):
 		if event_type == event.RIGHT_SWITCH:
 			radio.alarmCycle(UP)
 		elif event_type == event.LEFT_SWITCH:
-			radio.alarmCycle(g)
+			radio.alarmCycle(DOWN)
 
 	elif option_index == menu.OPTION_ALARMSETHOURS or option_index == menu.OPTION_ALARMSETMINS:
 		if event_type == event.RIGHT_SWITCH:
 			radio.cycleAlarmValue(UP, option_index)
 		else:
-			radio.cycleAlarmValue(g, option_index)
+			radio.cycleAlarmValue(DOWN, option_index)
 
 	elif option_index == menu.OPTION_TIMER:
 		if event_type == event.RIGHT_SWITCH:
@@ -1194,7 +1196,8 @@ def displayVolume(display,radio):
 	# routine is also called from the interrupt routine
 
 	# The OLED has a special volume display bar on the last line
-	if displayType == radio.config.OLED_128x64 and radio.config.displayVolumeBlocks():
+	if displayType == radio.config.OLED_128x64 \
+			and radio.config.displayVolumeBlocks():
 		if radio.muted():
 			display.volume(0)
 			display.out(5, msg, no_interrupt)

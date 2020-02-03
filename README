@@ -9,6 +9,51 @@ See http://www.musicpd.org/
 Use "apt-get install mpd mpc python-mpd" to install the library
 This software uses the python-mpd library. See https://pypi.python.org/pypi/python-mpd/
 
+Version 6.12 release notes
+-------------------------
+25th January 2020
+1) Add bluetooth speaker support to configure_audio.sh audio configuration program
+2) New configure_ir_remote.sh to configure LIRC and remote control
+3) Improve skipping of bad stations
+4) I2C Backpacks can be configured with Hex address 0x3F
+5) New mute_action parameter in radiod.conf for either mpc stop or pause when muting
+6) Changes to MPD needed a new configuration for USB DACs
+7) Install anacron if not already installed (configure_radio.sh)
+8) Correct mute function constantly switching between mute and un-mute when cursor 
+   held above the mute icon
+9) New configuration parameter client_timeout 3 to 15 seconds
+10) Correct erroneous display of Equalizer Icon vgradio when in Full Screen mode
+
+Version 6.11 release notes
+-------------------------
+30th August 2019
+1) New paramter log_creation_mode paramete either truncate or tail.
+2) Hungarian translation table updated  
+3) Hungarian language file updated
+4) Configure radio program ${LINES} parameter corrupted by whiptail (in BUSTER)
+5) Added model 4B to display_model.py 
+6) For output-jack or HDMI permanently store settings with "alsactl store" command
+7) Correct circumstances that pulseaudio is installed by configure_audio.sh
+8) Correct create_playlists.sh to correctly include WMA files
+9) Suppress MPD from playing on startup 
+10) Correct volume display on 4 line displays when playing media tracks
+11) IR Remote control program amended to use pylirc module instead of lirc to run with Buster 
+
+Version 6.10 release notes
+-------------------------
+26 April 2019
+1) Update shoutcast get radio stream URL 
+2) Correct crash when setting alarm
+3) Add missing autostart file (Removed by Rasbian) for graphic versions of the radio
+4) Configurable CODECS list in /etc/radiod.conf
+5) Report missing USB stick or share when running create_playlists.py
+6) Report MPD not running when executing display_current.py
+7) Configure dtoverlay=i2s-mmap in /boot/config.txt
+8) Configure /etc/asound.conf as required for chosen DAC 
+9) Install or warn if pulseaudio required by chosen DAC
+10) New display_config.sh program for analyzing problems
+11) Cron job added in /etc/cron.weekly to regularly update station playlist
+
 Version 6.9 release notes
 -------------------------
 1 December 2018

@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.12 2018/08/31 07:34:56 bob Exp $
+# $Id: station.urls,v 1.21 2020/01/25 10:03:15 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -15,7 +15,7 @@
 # In general it is always better to define a title
 #
 # Some sites that you can use are:
-#   http://www.listenlive.eu  (Mainly used below)
+#   http://www.radiomap.eu 
 #   http://www.internet-radio.com  
 #   http://www.radio-locator.com
 #   http://bbcstreams.com/ 
@@ -24,7 +24,6 @@
 
 # Name of playlist file
 (Radio)
- 
 # United Kingdom
 # The following links are iPhone streams (m3u files)
 [BBC Radio 1] http://www.radiofeeds.co.uk/bbcradio1.pls
@@ -32,12 +31,11 @@
 [BBC Radio 3] http://www.radiofeeds.co.uk/bbcradio3.pls
 [BBC Radio 5 Live] http://www.radiofeeds.co.uk/bbc5live.pls
 [BBC Radio 6] http://www.radiofeeds.co.uk/bbc6music.pls
-[BBC Radio 5 Live sports] http://www.radiofeeds.co.uk/bbc5livesportsextra.pls
-[BBC Radio 1 extra] http://www.radiofeeds.co.uk/bbc1xtra.pls
+[BBC Radio 1 Extra] http://www.radiofeeds.co.uk/bbc1xtra.pls
 [BBC Radio Bristol] http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/http-icy-mp3-a/vpid/bbc_radio_bristol/format/pls.pls
 [BBC Radio 4 extra] http://www.radiofeeds.co.uk/bbcradio4extra.pls
 [BBC World service] http://wsdownload.bbc.co.uk/worldservice/meta/live/shoutcast/mp3/eieuk.pls
-[BBC Radio 4 LW] http://www.listenlive.eu/bbcradio4lw.m3u
+[BBC Radio 4 LW] http://bbcmedia.ic.llnwd.net/stream/bbcmedia_radio4lw_mf_p
 
 # UK stations
 [Jack FM] http://playerservices.streamtheworld.com/pls/JACK_FM.pls 
@@ -47,29 +45,44 @@
 [Antenne Bayern Top 40] http://www.antenne.de/webradio/channels/top-40.m3u
 
 # Italian Stations
-[RAI Radio Uno] http://www.listenlive.eu/rai1.m3u
-[RAI Radio Duo] http://www.listenlive.eu/rai2.m3u
-[Prima Radio Napoli] http://kemoniastreaming2.net:8010/listen.pls
+[Rai Radio 1] http://icestreaming.rai.it/1.mp3.m3u
+[Rai Radio 2] http://shoutcast.rtl.it:3010/listen.pls
+[Radio Zeta] http://shoutcast.rtl.it:3030/listen.pls?sid=1
+[RTL Italy] http://shoutcast.rtl.it:3010/listen.pls
+[Radio Capital] http://radiocapital-lh.akamaihd.net/i/RadioCapital_Live_1@196312/master.m3u8
 
 # Country music
 [Dublin Sunshine 106.8] http://www.country108.com/listen.pls
 [Nashville FM] http://server-10.stream-server.nl:8300/listen.pls
 [UK Country Radio] http://s3.xrad.io:8064/listen.pls
 [Radio Lichtenstein] http://live.radiol.li:8000/country.m3u
+[Swiss country] http://www.countryradio.ch/assets/files/listen.pls
 
 # Jazz stations
-[Ghost Sky Jazz] http://151.80.38.142:7006/live
 [Radio Sky Music] http://live.radioskymusic.com
 [181.FM Classical Jazz] http://icyrelay.181.fm/181-classicaljazz_128k.mp3
 [Jazz Lounge] http://51.255.235.165:5068/stream
 [SmoothJazz.com Global] http://sj256.hnux.com
+[Audiophile Jazz] http://8.38.78.173:8210/stream
+[111radio athens] http://78.46.73.91:9060/stream
+[181.FM Classical Jazz] http://icyrelay.181.fm/181-classicaljazz_128k.mp3
+[181.FM Acid Jazz] http://icyrelay.181.fm/181-acidjazz_128k.mp3
+[181.fm - BeBop Jazz ] http://icyrelay.181.fm/181-bebop_128k.mp3
+[181.fm - Fusion Jazz] http://icyrelay.181.fm/181-fusionjazz_128k.mp3
 
 # France
-[RTL] http://streaming.radio.rtl.fr/rtl-1-44-128.m3u
-[RTL2] http://streaming.radio.rtl.fr/rtl2-1-44-128.m3u
+[Radio France] http://live02.rfi.fr/rfimonde-96k.mp3.m3u
+[Radio France] http://direct.franceinter.fr/live/franceinter-midfi.mp3
+[Chante France] http://stream1.chantefrance.com/Chante_France.m3u
+[Generations FM] http://radiomap.eu/fr/play/generations.htm
 
 # Belgium
 [Crooze FM] http://streams.crooze.fm:8000/listen.pls?sid=1
+[VRT MNM Vlaanderen]http://icecast.vrtcdn.be/mnm-high.mp3
+[VRT Radio 1] http://icecast.vrtcdn.be/radio1-high.mp3
+[VRT Radio 2] http://icecast.vrtcdn.be/ra2ant-high.mp3
+[QMusic Belgium] http://provisioning.streamtheworld.com/pls/QMUSIC.pls
+[Joe Vlaanderen] http://provisioning.streamtheworld.com/pls/JOE.pls
 
 # Dutch stations
 #(Dutch radio)
@@ -77,18 +90,12 @@
 [NPO Radio 2] http://icecast.omroep.nl/radio2-bb-mp3
 [NPO Radio 3fm] http://icecast.omroep.nl/3fm-bb-mp3
 [NPO Radio 4] http://icecast.omroep.nl/radio4-bb-mp3.m3u
-[Radio 10 NL] http://www.listenlive.eu/streams/netherlands/radio10.m3u
+[Radio 10 NL] http://stream.radio10.nl/radio10
 [Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICA.pls
-[Stream Power MP3] http://mp3.streampower.be/radio1-high.mp3
-[Q-Music] http://icecast-qmusic.cdp.triple-it.nl/Qmusic_nl_nonstop_96.mp3.m3u
 [Sky Radio] http://provisioning.streamtheworld.com/pls/skyradio.pls
 [Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICAAAC.pls
 [Candlelight] http://candlelight.live-streams.nl/candlelight.m3u
-[Pure Radio One] http://listento.pureradio.one:8000/pure_128aacp.m3u
 
-# USA
-[WFMU live stream] http://wfmu.org/wfmu.pls
-[UBUradio] http://wfmu.org/wfmu_ubu.pls
 
 # Blues
 [HD Radio - The Blues] http://167.114.64.181:8389/stream
@@ -96,17 +103,54 @@
 [Joint Radio Blues] http://64.71.79.181:9992/stream
 [Bar Rockin' Blues] http://wms-15.streamsrus.com:11710
 [Houston Blues Radio] http://216.235.80.18:8285/stream
+[wumb919st] http://wumb.streamguys1.com/wumb919st
+[Joint Radio Blues] http://64.71.79.181:9992/stream
+[Radio Nessebar] http://92.247.169.156:8000/
+[Bar Rockin' Blues] http://wms-15.streamsrus.com:11710
+[181.fm - True Blues] http://www.181.fm/stream/asx/181-blues
+[ISKC Blues Cafe] http://93.190.142.179:8286/stream
+[Inglewood Stream] http://178.32.62.172:9475/stream
 
 # Rock
 [Rock Radio Classics Stream] http://167.114.64.181:9411/stream
 [Star FM Rock Classics] http://91.250.82.237:8008
 [Star FM Rock  Maximum Rock] http://91.250.82.237:8004
 [Classic Rock Florida- SHE Radio] http://us1.internet-radio.com:8105
+[Worldwide Rock Classics] http://198.27.83.198:5138
+[181.FM - The Beatles Channel] http://uplink.duplexfx.com:8062
+[Rockland Radio] http://188.94.97.90/rockland.mp3.m3u
+[Digital Impulse - Rock 60s - 80s] http://orion.shoutca.st:8871
+[Classic Rock 109] http://www.classicrock109.com/tunein/cr109hi-mp3.m3u
+[ISKC Old Rock] http://oldrock.shoutcaststream.com:8150/stream
+[ISKC Rock Radio] http://iskcradio.shoutcaststream.com:8072/stream
+[181.FM Rock 181] http://relay.181.fm:8008
 
-# Classical
-[Classical 102] http://srv04.bigstreams.de/bigfm-mp3-64.m3u
+# Classical 
 [Classic FM] http://46.10.150.123:80/classic-fm.mp3
+[Radio Classic] http://stream.radioclassic.fi:8000
 [Radio Swiss Classic] http://stream.srg-ssr.ch/m/rsc_de/mp3_128
+[P2 Musik] http://http-live.sr.se/p2musik-mp3-192
+[SR Klassiskt] http://http-live.sr.se/srklassiskt-mp3-192
+[Classical 102] http://tuner.classical102.com:80/
+[Radio Svizzera Classica] http://stream.srg-ssr.ch/rsc_it/mp3_128.m3u
+[GotRadio - Piano Perfect] http://173.244.215.162:8050
+[181.FM Classical] http://www.181.fm/stream/asx/181-classical
+[Audiophile Classical] http://8.38.78.173:8093/stream
+[DI Radio Digital Impulse - Classical] http://5.39.71.159:8978/stream
+[Viva Classica!] http://rondo.iradio.fi:8000/viva-hi.mp3
+[Classical Music . network] http://151.80.42.191:8196
+[MusicaInfo Concert] http://notendatenbank.net:8000/hnWunschkonzert
+
+# Disco
+[101.ru: ABBA] http://ic3.101.ru:8000/c13_13
+[The Club - Back To The Roots] http://192.99.62.212:9534/stream
+[DM Music Box S1 - 80s Disco] http://212.83.150.15:8201/stream
+[Disco Music Station on Radio 257] http://212.83.138.48:8079/stream
+[online-disco.de] http://0nline-disco.de:8000/
+[1.FM - Disco Ball 70's-80's Radio] http://sc-disco.1.fm:8100
+[24-7 Disco] http://80.86.84.31:8190/stream
+[Discomania] http://176.9.39.43:7030
+[Radio105] http://37.59.195.28:8060/
 
 # Chill out
 [GotRadio - New Age Nuance] http://173.244.215.162:8040
@@ -118,7 +162,43 @@
 # Latino
 [CRBS Stereo] http://195.154.133.107:8432/
 [181.FM Salsa] http://relay.181.fm:8098
+[FastCast4u AutoDJ] http://149.56.157.81:5355/stream
 [Gusanero.com] http://192.240.102.131:9900/stream
+
+# New Zealand
+[ZM Todays Hit Music] http://ais-nzme.streamguys1.com/nz_008_aac
+[The Hits Chch] http://ais-nzme.streamguys1.com/nz_006_aac
+[Radio Hauraki] http://ais-nzme.streamguys1.com/nz_009_aac
+
+# USA
+[181.fm The Mix] http://listen.livestreamingservice.com:8032
+[181.fm Awesome 80's] http://listen.livestreamingservice.com:8000
+[181.fm Chilled Out] http://listen.181fm.com:8700
+[181.fm 90's Dance] http://listen.livestreamingservice.com:8140
+[WFMU live stream] http://wfmu.org/wfmu.pls
+[UBUradio] http://wfmu.org/wfmu_ubu.pls
+
+# Reggae 
+[Digital Impulse - Reggae] http://orion.shoutca.st:8942
+[1.FM - ReggaeTrade Radio] http://wm.1.fm/reggae/128.m3u
+[GotRadio - Reggae Rasta & Roots] http://173.244.215.163:8470
+[181.FM Reggae Roots] http://listen.181fm.com:8096
+[Jah Music Mansion] http://192.99.41.102:5304/stream
+[PARTY VIBE RADIO : REGGAE  +  ROOTS + DANCEHALL  +  DUB] http://www.partyvibe.com:8000
+
+# Chill out
+[GotRadio - New Age Nuance] http://173.244.215.162:8040
+[GotRadio - Urban Lounge] http://173.244.215.162:8160
+[Rest radio] http://87.98.216.129:6224
+[Lounge-radio.com-Swiss made] http://live.streamhosting.ch:80
+[181.FM Chilled Out] http://listen.181fm.com:8700
+[FFH Digital Lounge] http://mp3.ffh.de/ffhchannels/hqlounge.mp3
+[181.FM The Breeze] http://listen.181fm.com:8004
+[ELDORADIO - Chill Channel] http://sc-chill.eldoradio.lu:80
+[Traxx FM Lounge] http://broadcast.infomaniak.ch/traxx004-low.mp3.m3u
+[Ambiesphere] http://uk5.internet-radio.com:8347/stream
+[Chill] http://media-ice.musicradio.com/ChillMP3.m3u
+[Digital Impulse - Ambient & Chillout] http://5.39.71.159:8994
 
 #(Air traffic)
 # Live_ATC (Uncomment to try)

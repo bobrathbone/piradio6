@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.72 2018/12/04 07:59:51 bob Exp $
+# $Id: config_class.py,v 1.83 2020/01/22 19:48:53 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -18,7 +18,7 @@ import os
 import sys
 import ConfigParser
 from log_class import Log
-from __init__ import *
+from constants import *
 
 # System files
 ConfigFile = "/etc/radiod.conf"
@@ -53,7 +53,8 @@ class Configuration:
 	display_type = LCD
 	DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574', 
 			 'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 
-			 'GRAPHICAL_DISPLAY', 'OLED_128x64', 'PIFACE_CAD']
+			 'GRAPHICAL_DISPLAY', 'OLED_128x64', 
+			 'PIFACE_CAD' ]
 
 	# User interface ROTARY or BUTTONS
 	ROTARY_ENCODER = 0
@@ -73,7 +74,8 @@ class Configuration:
 	ALTERNATIVE = 1	# Select rotary_class_alternate.py
 
 	# Configuration parameters
-	mpdport = 6600  # MPD port number
+	mpdport = 6600  		# MPD port number
+	client_timeout = 5		# MPD client timeout in secons 3 to 15 seconds
 	dateFormat = "%H:%M %d/%m/%Y"   # Date format
 	volume_range = 100 		# Volume range 10 to 100
 	volume_increment = 1 		# Volume increment 1 to 10
@@ -91,6 +93,7 @@ class Configuration:
 	screen_saver = 0	# Screen saver time n minutes, 0 = No screen save
 	flip_display_vertically = False	# Flip OLED display vertically
 	stationNamesSource = LIST # Station names from playlist names or STREAM
+	mute_action = 0		# MPD action on mute, 1=pause, 2=stop, 0=volume off only
 
 	# Remote control parameters 
 	remote_led = 0  # Remote Control activity LED 0 = No LED	
@@ -104,6 +107,7 @@ class Configuration:
 	isVerbose = False     	# Extra speech verbosity
 	speak_info = False	# If speach enable also speak info (IP address and hostname)
 	speech_volume = 80  	# Percentage speech volume 
+	logfile_truncate = False	# Truncate logfile otherwise write to end
 
 	# Shoutcast ID
 	shoutcast_key = "anCLSEDQODrElkxl"
@@ -129,6 +133,7 @@ class Configuration:
 	display_title = True		# Display title play (at bottom of screen)
 	splash_screen = 'bitmaps/raspberry-pi-logo.bmp'	# Splash screen (OLED)
 	screen_size = (800,480)		# Screen size 800x480 (7 inch) or 720x480 (3.5 inch)
+	bluetooth_device='00:00:00:00:00:00'	# Bluetooth device ID
 
 	shutdown = True		# Shutdown when exiting radio
 	
@@ -215,6 +220,9 @@ class Configuration:
 				if option == 'loglevel':
 					next
 
+				elif option == 'codecs':
+					next
+
 				elif option == 'volume_range':
 					range = 100
 					try:
@@ -263,6 +271,12 @@ class Configuration:
 				elif option == 'mpdport':
 					try:
 						self.mpdport = int(parameter)
+					except:
+						self.invalidParameter(ConfigFile,option,parameter)
+
+				elif option == 'client_timeout':
+					try:
+						self.client_timeout = int(parameter)
 					except:
 						self.invalidParameter(ConfigFile,option,parameter)
 
@@ -439,8 +453,23 @@ class Configuration:
 					else:
 						self.shutdown = True
 
+				elif option == 'log_creation_mode':
+					if parameter == 'truncate':
+						self.logfile_truncate = True
+					else:
+						self.logfile_truncate = False
+
 				elif option == 'shoutcast_key':
 					self.shoutcast_key = parameter
+
+				elif option == 'bluetooth_device':
+					self.bluetooth_device = parameter
+
+				elif option == 'mute_action':
+					if parameter == 'pause':
+						self.mute_action = PAUSE
+					elif parameter == 'stop':
+						self.mute_action = STOP
 
 				else:
 					msg = "Invalid option " + option + ' in section ' \
@@ -668,6 +697,15 @@ class Configuration:
 	def getMpdPort(self):
 		return self.mpdport
 
+	# Get MPD Client Timeout 2 to 15 seconds (default 5)
+	def getClientTimeout(self):
+	 	timeout = self.client_timeout
+		if timeout < 2:
+			timeout	= 2
+		elif timeout > 15:
+			timout = 15
+		return timeout
+
 	# Get the date format
 	def getDateFormat(self):
 		return self.dateFormat
@@ -817,6 +855,10 @@ class Configuration:
 	def getPullUpDown(self):
 		return self.pull_up_down
 
+	# Truncate logfile
+	def logTruncate(self):
+		return self.logfile_truncate
+
 	# SCREEN section
 	# Fullscreen option for graphical screen
 	def getSize(self):
@@ -891,6 +933,14 @@ class Configuration:
 	def getShoutcastKey(self):
 		return self.shoutcast_key
 
+	# Bluetooth device
+	def getBluetoothDevice(self):
+		return self.bluetooth_device
+
+	# Bluetooth device
+	def getMuteAction(self):
+		return self.mute_action
+
 	# Oled flip display setting
 	def flipVertical(self):
 		return self.flip_display_vertically
@@ -914,6 +964,7 @@ if __name__ == '__main__':
 	print "Volume range:", config.getVolumeRange()
 	print "Volume increment:", config.getVolumeIncrement()
 	print "Mpd port:", config.getMpdPort()
+	print "Mpd client timeout:", config.getClientTimeout()
 	print "Remote LED:", config.getRemoteLed()
 	print "Remote LED port:", config.getRemoteUdpPort()
 	print "Date format:", config.getDateFormat()
@@ -948,6 +999,8 @@ if __name__ == '__main__':
 	print "Display width:", config.getWidth()
 	print "Airplay:", config.getAirplay()
 	print "Mixer Volume Preset:", config.getMixerPreset()
+
+	print "Bluetooth device:", config.getBluetoothDevice()
 
 	# I2C parameters
 	print "I2C bus", config.getI2Cbus()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Diagnostic to Raspberry Pi Display current stream using MPD library
-# $Id: display_current.py,v 1.1 2017/09/14 14:31:09 bob Exp $
+# $Id: display_current.py,v 1.2 2019/01/22 08:07:09 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,12 +16,19 @@
 #             The authors shall not be liable for any loss or damage however caused.
 #
 
+import sys
 from mpd import MPDClient
 client = MPDClient()    # Create the MPD client
 
 client.timeout = 10
 client.idletimeout = None
-client.connect("localhost", 6600)
+
+try:
+	client.connect("localhost", 6600)
+except:
+	print "Music player daemon not running!"
+	print "Start radio (or MPD) and re-run program"
+	sys.exit(1)
 
 currentsong = client.currentsong()
 

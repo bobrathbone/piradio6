@@ -1,7 +1,7 @@
 #!/bin/bash
 #set -x
 # Raspberry Pi Internet Radio
-# $Id: set_mixer_id.sh,v 1.7 2018/12/08 11:47:56 bob Exp $
+# $Id: set_mixer_id.sh,v 1.9 2019/09/06 14:17:25 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -45,9 +45,6 @@ done
 IFS=${SAVEIFS}
 echo "mixer_volume_id=${MIXERID}"
 
-# Update /etc/radiod.conf
-sudo sed -i -e "/^mixer_volume_id/{s/mixer_volume_id.*/#mixer_volume_id=0/}" ${CONFIG}
-
 # Update /var/lib/radiod/mixer_volume_id:
 sudo echo ${MIXERID} > ${LIB_MIXERID} 
 
@@ -62,7 +59,7 @@ if [[ $? == 0 ]]; then 	# Do not seperate from above
 		echo "Configuring on-board jack audio output"
 		MODE=1
 	fi
-	cmd="sudo amixer cset numid=${MIXERID} ${MODE}" 2>&1 >/dev/null
+	cmd="sudo amixer cset numid=${MIXERID} ${MODE}" >/dev/null 2>&1
 	echo ${cmd};${cmd}
 fi
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_piface_class.py,v 1.13 2018/12/04 07:59:51 bob Exp $
+# $Id: lcd_piface_class.py,v 1.14 2019/07/05 10:26:34 bob Exp $
 # Raspberry Pi Internet Radio
 # using a Piface backlit LCD plate
 #
@@ -31,7 +31,7 @@
 import os,sys
 import time
 from translate_class import Translate
-from __init__ import *
+from constants import *
 
 import subprocess
 import pifacecommon

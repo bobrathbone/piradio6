@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.8 2018/11/20 08:33:45 bob Exp $
+# $Id: create_stations.py,v 1.11 2020/01/02 15:45:25 bob Exp $
 #
 # Create playlist files from the following url formats
 #       iPhone stream files (.asx)
@@ -28,6 +28,7 @@ import glob
 import urllib2
 import socket
 import signal
+from time import strftime
 from xml.dom.minidom import parseString
 from translate_class import Translate
 
@@ -356,7 +357,8 @@ execCommand ("mkdir -p " + TempDir )
 execCommand ("rm -f " + TempDir + '*' )
 
 # Open the list of URLs 
-print "Creating M3U files from", StationList + '\n'
+timedate = strftime("%Y/%m/%d, %H:%M:%S")
+print "Creating M3U files from", StationList , timedate + '\n'
 
 lineCount = 0		# Line being processed (Including comments)
 errorCount = 0		# Errors

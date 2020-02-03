@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 #
 # Raspberry Pi Internet Radio Menu Class
-# $Id: get_shoutcast.py,v 1.21 2018/03/24 11:42:53 bob Exp $
+# $Id: get_shoutcast.py,v 1.23 2019/01/01 11:35:55 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -14,6 +14,7 @@
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 #	    The authors shall not be liable for any loss or damage however caused.
 #
+# See http://wiki.shoutcast.com/wiki/SHOUTcast_Radio_Directory_API
 
 import xml.etree.ElementTree as ET
 import requests
@@ -41,7 +42,7 @@ udpport = 5100	  # UDP Listener port number default 5100
 # Shoutcast URLs and files ( The %s strings are replaced by search parameters)
 # See http://wiki.shoutcast.com/wiki/SHOUTcast_Radio_Directory_API
 xml_url = "http://api.shoutcast.com/legacy/%s?k=%s&limit=%s"
-pls_url = "http://shoutcast.com%s?id=%s"
+pls_url = "http://yp.shoutcast.com%s?id=%s"
 playlist_dir = "/var/lib/mpd/playlists"
 playlist_store = "/usr/share/radio/playlists"
 
@@ -76,18 +77,27 @@ def parseXML(xml_file,pls_url,m3u_playlist):
 	id = ''
 	myxml = ET.parse(xml_file)
 	count=0
+
+	# there are three different base URLs - we only use the pls one
 	for atype in myxml.findall('tunein'):
 		base = (atype.get('base'))
+		base_m3u = (atype.get('base-m3u'))	# Not used at present
+		base_xspf = (atype.get('base-xspf'))	#  "    "  "     "
 	for atype in myxml.findall('station'):
-		name = (atype.get('name'))
+		try:
+			# Need to encode 
+			name = (atype.get('name')).encode('utf-8').strip()
+		except Exception as e:
+			print "Error:", e
 		id = (atype.get('id'))
 		pls_url_s = pls_url % (base,id)
-		station_url = getStationUrl(pls_url_s,m3u_playlist)
+		station_title = getStationUrl(pls_url_s,m3u_playlist)
 		count += 1
 	return count
 
 # Get the station url
 def getStationUrl(pls_url,m3u_playlist):
+	print "Station Url:", pls_url
 	url = ''
 	title = ''
 	m3u = []
@@ -112,11 +122,10 @@ def getStationUrl(pls_url,m3u_playlist):
 		except Exception as e:
 			print "Failed to process line: " + line
 			print str(e)
-	return
+	return title
 
 # Parse title of superfluous characters
 def parseTitle(title):
-	sTitle = title
 	if title.startswith('(#'):
 		x = title.split(')')
 		title = x[1]
@@ -143,7 +152,6 @@ def parseTitle(title):
 	title = capitalize(title) 
 	if len(title) < 1:
 		title = "Unknown"
-	print title
 	return title
 
 # Capitalize first letter

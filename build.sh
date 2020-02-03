@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.6 2018/05/21 10:13:51 bob Exp $
+# $Id: build.sh,v 1.9 2019/12/10 15:33:47 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -7,7 +7,7 @@
 # sudo apt-get -y install equivs apt-file lintian
 
 # Compatability rules
-# Edit the compat file and chjange 7 to 9
+# Edit the compat file and change 7 to 9
 # sudo vi /usr/share/equivs/template/debian/compat (Replace 7 with 9)
 
 PKGDEF=piradio
@@ -16,6 +16,26 @@ VERSION=$(grep ^Version: ${PKGDEF} | awk '{print $2}')
 ARCH=$(grep ^Architecture: ${PKGDEF} | awk '{print $2}')
 DEBPKG=${PKG}_${VERSION}_${ARCH}.deb
 BUILDLOG=build.log
+OS_RELEASE=/etc/os-release
+
+# Check we are not running as sudo
+if [[ "$EUID" -eq 0 ]];then
+        echo "Run this script as user pi and not sudo/root"
+        exit 1
+fi
+
+# We need Rasbian Buster (Release 10) or later
+VERSION_ID=$(grep VERSION_ID ${OS_RELEASE})
+SAVEIFS=${IFS}; IFS='='
+ID=$(echo ${VERSION_ID} | awk '{print $2}' | sed 's/"//g')
+if [[ ${ID} -lt 10 ]]; then
+	VERSION=$(grep VERSION= ${OS_RELEASE})
+        echo "Raspbian Buster (Release 10) or later is required to run this build"
+	RELEASE=$(echo ${VERSION} | awk '{print $2 $3}' | sed 's/"//g')
+	echo "This is Raspbian ${RELEASE}"
+        exit 1
+fi
+IFS=${SAVEIFS}
 
 # Tar build files
 BUILDFILES="piradio piradio.postinst piradio.postrm piradio.preinst"
@@ -27,9 +47,6 @@ echo "from input file ${PKGDEF}" | tee -a ${BUILDLOG}
 sudo chown pi:pi *.py *.cmd *.sh
 sudo chmod +x *.py *.cmd *.sh
 sudo chmod -x language/* voice.dist
-
-# Create tar (optional)
-#./create_tar.sh > /dev/null 2>&1 
 
 # Build the package
 equivs-build ${PKGDEF} | tee -a ${BUILDLOG}

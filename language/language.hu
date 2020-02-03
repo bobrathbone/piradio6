@@ -1,14 +1,64 @@
-# Hungarian text for speech
-main_display: F� men�
-search_menu: Keres�s men�
-select_source: Forr�s kiv�laszt�sa
-options_menu: Opci�k men�je
-rss_display: R S S megjelen�t�se
-information: Inform�ci�k ki�r�sa
-the_time: A pontos id�
-loading_radio: R�di� bet�lt�se
-loading_media: M�dia k�nyvt�r bet�lt�se
-search: Keres�s
-source_radio: Internet Radi�
-source_media: Zenei k�nyvt�r
-sleeping: Alv�s
+airplay: Airplay
+alarm: Alarm
+alarmhours: Alarm óra
+alarmminutes: Alarm perc
+colour: Szín
+connecting: Kapcsolódás
+connection_error: Kapcsolódás hiba
+consume: Consume
+current_station: Jelen állomás
+information:  Információ kijelzés
+loading: Betöltés
+loading_media:  Media könyvtár betöltés
+loading_playlists: Playlist betöltés
+loading_radio:  Rádió állomások betöltés
+main_display:  Fő képernyő
+media_library: Media könyvtár
+menu_find: Keresés
+menu_option: Menü opciók
+menu_search: Keresés
+menu_source: Forrás
+muted: Hang némítva
+no: nem
+off: ki
+on: be
+options_menu:  Opciók menü
+radio_stations: Rádio állomások
+radio_version: Rádio verzió
+random: Véletlen
+reload: Újratöltés
+repeat: Ismétlés
+rss_display:  RSS kijelző
+search:  Keresés
+search_menu:  Keresés menü
+select_source:  Forrás választás
+shutdown: Rendszer leáll...
+single: Egyetlen
+sleep: Alvás
+sleeping:  Alvás
+source_airplay: Airplay receiver
+source_media:  Music library
+source_radio:  Internet Radio
+source_soptify: Spotify receiver
+spotify: Spotify
+starting_airplay: Starting Airplay
+starting_spotify: Starting Spotify
+station: Station
+stop: Stopping radio
+stopped: Radio stopped
+stopping_radio: Stopping radio
+streaming: Streaming
+the_time:  The time is
+timer: Timer
+title_unknown: Title unknown
+track: Track
+track_unknown: Track unknown
+update_complete: Update complete
+updating_media: Updating media
+updatng_media: Updating media
+voice: voice
+vol: Vol
+volume:  Volume
+wait: Please wait
+waiting_for_spotify_client: Waiting for Spotify client
+yes: yes

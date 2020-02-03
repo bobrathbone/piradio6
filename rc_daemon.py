@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Remote Control Class
-# $Id: rc_daemon.py,v 1.4 2017/12/06 08:51:50 bob Exp $
+# $Id: rc_daemon.py,v 1.5 2019/08/29 09:42:19 bob Exp $
 # 
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
@@ -122,7 +122,7 @@ class Daemon:
 		if daemonize:
 			self.daemonize()
 		else:
-			print "remote control running pid", os.getpid()
+			print "IR Remote control listener running pid", os.getpid()
 
 		self.run()
 

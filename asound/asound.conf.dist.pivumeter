@@ -1,0 +1,38 @@
+pcm.!default {
+        type plug
+        slave.pcm "softvol_and_pivumeter"
+}
+
+ctl.!default {
+        type hw
+        card 0
+}
+
+pcm.pivumeter {
+        type meter
+        slave.pcm "hw:0,0"
+        scopes.0 pivumeter
+}
+
+pcm.softvol_and_pivumeter {
+        type softvol
+        slave.pcm "pivumeter"
+        control {
+                name "PCM"
+                card 0
+        }
+}
+
+pcm_scope.pivumeter {
+        type pivumeter
+        decay_ms 500
+        peak_ms 400
+        brightness 128
+        output_device phat-beat
+}
+
+pcm_scope_type.pivumeter {
+        lib /usr/local/lib/libpivumeter.so
+}
+
+pcm.dsp0 pivumeter

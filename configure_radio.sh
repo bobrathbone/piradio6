@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.85 2018/12/13 13:40:41 bob Exp $
+# $Id: configure_radio.sh,v 1.89 2019/12/10 12:32:26 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,6 +16,7 @@
 #
 # This program uses whiptail. Set putty terminal to use UTF-8 charachter set
 # for best results
+# Warning: whiptail overwrites the LINES variable previously used in this script. Use DLINES
 
 # If -s flag specified (See piradio.postinst script)
 FLAGS=$1
@@ -51,8 +52,8 @@ SPI_REQUIRED=0
 
 # Display characteristics
 I2C_ADDRESS=0x00	# I2C device address
-LINES=4			# Number of display lines
-WIDTH=20		# Display character width
+DLINES=4			# Number of display lines
+DWIDTH=20		# Display character width
 
 # Old wiring down switch
 DOWN_SWITCH=10
@@ -317,8 +318,8 @@ do
 	elif [[ ${ans} == '5' ]]; then
 		DISPLAY_TYPE="GRAPHICAL"
 		DESC="HDMI or touch screen display"
-		LINES=0
-		WIDTH=0
+		DLINES=0
+		DWIDTH=0
 
 	elif [[ ${ans} == '6' ]]; then
 		DISPLAY_TYPE="OLED_128x64"
@@ -327,21 +328,21 @@ do
 		DESC="Olimex 128x64 pixel OLED display"
 		VOLUME_RANGE=10
 		DATE_FORMAT="%H:%M %d%m"
-		LINES=5
-		WIDTH=20
+		DLINES=5
+		DWIDTH=20
 
 	elif [[ ${ans} == '7' ]]; then
 		DISPLAY_TYPE="PIFACE_CAD"
 		DESC="PiFace CAD display"
 		VOLUME_RANGE=10
-		LINES=2
-		WIDTH=16
+		DLINES=2
+		DWIDTH=16
 		SPI_REQUIRED=1
 
 	elif [[ ${ans} == '8' ]]; then
 		DISPLAY_TYPE="NO_DISPLAY"
-		LINES=0
-		WIDTH=0
+		DLINES=0
+		DWIDTH=0
 		DESC="No display used"
 
 	else
@@ -428,9 +429,10 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
 		"1" "Hex 0x20 (Adafruit devices)" \
 		"2" "Hex 0x27 (PCF8574 devices)" \
 		"3" "Hex 0x37 (PCF8574 devices alternative address)" \
-		"4" "Hex 0x3C (Olimex OLED with Cosmic controller)" \
-		"5" "Manually configure i2c_address in ${CONFIG}" \
-		"6" "Do not change configuration" 3>&1 1>&2 2>&3) 
+		"4" "Hex 0x3F (PCF8574 devices 2nd alternative address)" \
+		"5" "Hex 0x3C (Olimex OLED with Cosmic controller)" \
+		"6" "Manually configure i2c_address in ${CONFIG}" \
+		"7" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
 		exitstatus=$?
 		if [[ $exitstatus != 0 ]]; then
@@ -450,10 +452,14 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
 			I2C_ADDRESS="0x37"
 
 		elif [[ ${ans} == '4' ]]; then
+			DESC="Hex 0x3F selected"
+			I2C_ADDRESS="0x3F"
+
+		elif [[ ${ans} == '5' ]]; then
 			DESC="Hex 0x3C selected"
 			I2C_ADDRESS="0x3C"
 
-		elif [[ ${ans} == '5' ]]; then
+		elif [[ ${ans} == '6' ]]; then
 			DESC="Manually configure i2c_address in ${CONFIG} "
 			echo ${DESC} | tee -a ${LOG}
 
@@ -525,19 +531,19 @@ if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
 
 		if [[ ${ans} == '1' ]]; then
 			DESC="Four line 20 character LCD" 
-			LINES=4;WIDTH=20
+			DLINES=4;DWIDTH=20
 
 		elif [[ ${ans} == '2' ]]; then
 			DESC="Four line 16 character LCD" 
-			LINES=4;WIDTH=16
+			DLINES=4;DWIDTH=16
 
 		elif [[ ${ans} == '3' ]]; then
 			DESC="Two line 16 character LCD" 
-			LINES=2;WIDTH=16
+			DLINES=2;DWIDTH=16
 
 		elif [[ ${ans} == '4' ]]; then
 			DESC="Two line 8 character LCD" 
-			LINES=2;WIDTH=8
+			DLINES=2;DWIDTH=8
 
 		else
 			echo "Wiring configuration in ${CONFIG} unchanged"	 | tee -a ${LOG}
@@ -701,9 +707,17 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
 	echo "Desktop program ${GPROG}.py configured" | tee -a ${LOG}
 fi
 
+# Correct missing autostart file
+LXDE=/home/pi/.config/lxsession/LXDE-pi
+AUTOSTART="${LXDE}/autostart"
+if [[ ! -d ${LXDE} ]]; then
+	mkdir -p ${LXDE}
+	cp ${DIR}/lxsession/autostart ${AUTOSTART} 
+	chmod -R pi:pi /home/pi/.config/lxsession
+fi
+
 # Configure desktop autostart if X-Windows installed
 cmd="@sudo /usr/share/radio/${GPROG}.py"
-AUTOSTART="/home/pi/.config/lxsession/LXDE-pi/autostart"
 if [[ -f ${AUTOSTART} ]]; then
 	if [[ ${LXSESSION} == "yes" ]]; then
 		# Delete old entry if it exists
@@ -728,8 +742,8 @@ fi
 # Configure display width and lines
 if [[ ${DISPLAY_TYPE} != "" ]]; then
 	sudo sed -i -e "0,/^display_type/{s/display_type.*/display_type=${DISPLAY_TYPE}/}" ${CONFIG}
-	sudo sed -i -e "0,/^display_lines/{s/display_lines.*/display_lines=${LINES}/}" ${CONFIG}
-	sudo sed -i -e "0,/^display_width/{s/display_width.*/display_width=${WIDTH}/}" ${CONFIG}
+	sudo sed -i -e "0,/^display_lines/{s/display_lines.*/display_lines=${DLINES}/}" ${CONFIG}
+	sudo sed -i -e "0,/^display_width/{s/display_width.*/display_width=${DWIDTH}/}" ${CONFIG}
 	sudo sed -i -e "0,/^volume_range/{s/volume_range.*/volume_range=${VOLUME_RANGE}/}" ${CONFIG}
 fi
 
@@ -972,6 +986,13 @@ elif [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
 fi
 
 echo ${PROGRAM};echo | tee -a ${LOG}
+
+# Install anacron if not already installed
+PKG="anacron"
+if [[ ! -f /usr/sbin/anacron && ${FLAGS} != "-s" ]]; then
+        echo "Installing ${PKG} package" | tee -a ${LOG}
+        sudo apt-get --yes install ${PKG}
+fi
 
 
 # Configure audio device

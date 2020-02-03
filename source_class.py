@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.32 2018/12/04 09:57:04 bob Exp $
+# $Id: source_class.py,v 1.33 2019/07/05 10:26:34 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,7 +24,7 @@
 import os,sys,pwd
 from log_class import Log
 from mpd import MPDClient
-from __init__ import *
+from constants import *
 import pdb
 
 log = Log()

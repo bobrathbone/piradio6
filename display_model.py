@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-$Id: display_model.py,v 1.4 2018/03/17 10:48:01 bob Exp $
+$Id: display_model.py,v 1.8 2019/09/17 07:28:33 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -16,7 +16,7 @@ Disclaimer: Software is provided as is and absolutly no warranties are implied o
 
 This script detects a Raspberry Pi's model, manufacturer and mb ram, based
 on the cpu revision number. Data source:
-http://elinux.org/RPi_HardwareHistory
+https://www.raspberrypi.org/documentation/hardware/raspberrypi/revision-codes/README.md
 
 You can instantiate the ModelInfo class either with a parameter `rev_hex`
 (eg. `m = ModelInfo("000f")`), or without a parameter
@@ -40,41 +40,49 @@ import re
 model_data = {
     '2': ('B', '1.0', 256, 'Cambridge', ''),
     '3': ('B', '1.0', 256, 'Cambridge', 'Fuses mod and D14 removed'),
-    '4': ('B', '2.0', 256, 'Sony', ''),
+    '4': ('B', '2.0', 256, 'Sony UK', ''),
     '5': ('B', '2.0', 256, 'Qisda', ''),
     '6': ('B', '2.0', 256, 'Egoman', ''),
     '7': ('A', '2.0', 256, 'Egoman', ''),
-    '8': ('A', '2.0', 256, 'Sony', ''),
+    '8': ('A', '2.0', 256, 'Sony UK', ''),
     '9': ('A', '2.0', 256, 'Qisda', ''),
     'd': ('B', '2.0', 512, 'Egoman', ''),
-    'e': ('B', '2.0', 512, 'Sony', ''),
+    'e': ('B', '2.0', 512, 'Sony UK', ''),
     'f': ('B', '2.0', 512, 'Qisda', ''),
-    '10': ('B+', '1.0', 512, 'Sony', ''),
-    '11': ('Compute Module 1', '1.0', 512, 'Sony', ''),
-    '12': ('A+', '1.1', 256, 'Sony', ''),
+    '10': ('B+', '1.0', 512, 'Sony UK', ''),
+    '11': ('Compute Module 1', '1.0', 512, 'Sony UK', ''),
+    '12': ('A+', '1.1', 256, 'Sony UK', ''),
     '13': ('B+', '1.2', 512, 'Unknown', ''),
     '14': ('Compute Module 1', '1.0', 512, 'Embest', ''),
     '15': ('A+', '1.0', 512, 'Embest', '256MB or 512MB'),
-    'a01040': ('2B', '1.0', 1024, 'Sony', ''),
+    'a01040': ('2B', '1.0', 1024, 'Sony UK', ''),
     'a01041': ('2B', '1.1', 1024, 'Embest', ''),
     'a21041': ('2B', '1.1', 1024, 'Embest', ''),
     'a22042': ('2B', '1.2', 1024, 'Embest', 'with BCM2837'),
-    'a02082': ('3B', '2.0', 1024, 'Sony', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
+    'a02082': ('3B', '2.0', 1024, 'Sony UK', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
     'a22082': ('3B', '2.0', 1024, 'Embest', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
-    'a02082': ('3B', '1.2', 1024, 'Sony', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
-    'a020a0': ('Compute Module 3', '1.0', 1024, 'Sony', 'and CM3 Lite'),
+    'a22083': ('3B', '1.3', 1024, 'Embest', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
+    'a02082': ('3B', '1.2', 1024, 'Sony UK', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
+    'a020a0': ('Compute Module 3', '1.0', 1024, 'Sony UK', 'and CM3 Lite'),
     'a22082': ('3B', '1.2', 1024, 'Embest', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
-    'a32082': ('3B', '1.2', 1024, 'Sony (Japan)', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
-    '900091': ('A+', '1.1', 512, 'Sony', ''),
-    '900092': ('Pi Zero', '1.2', 512, 'Sony', ''),
-    '900093': ('Pi Zero', '1.3', 512, 'Sony', ''),
-    '920093': ('Pi Zero', '1.3', 512, 'Embest', ''),
-    '9000c1': ('Pi Zero W', '1.1', 512, 'Sony', 'Onboard WiFi and Bluetooth 4.1'),
-    'a02082': ('3 Model B', '1.2', 1024, 'Sony', 'Onboard WiFi and Bluetooth 4.1'),
-    'a020a0': ('Compute Module 3 (and CM3 Lite)', '1.0', 1024, 'Sony', 'Onboard WiFi and Bluetooth 4.1'),
-    'a22082': ('3 Model B', '1.2', 1024, 'Embest', 'Onboard WiFi and Bluetooth 4.1'),
-    'a32082': ('3 Model B', '1.2', 1024, 'Sony', 'Onboard WiFi and Bluetooth 4.1'),
-    'a020d3': ('3 Model B+', '?', 1024, 'Sony', '1.4GHz quad core, Blutooth 4.2, POE support'),
+    'a32082': ('3B', '1.2', 1024, 'Sony UK (Japan)', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
+    '900091': ('A+', '1.1', 512, 'Sony UK', ''),
+    '900032': ('B+', '1.2', 512, 'Sony UK', ''),
+    '900092': ('Zero', '1.2', 512, 'Embest', ''),
+    '920093': ('Zero', '1.3', 512, 'Embest', ''),
+    'a02082': ('CM3', '1.0', 512, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
+    '9000c1': ('Zero W', '1.1', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
+    '9000d3': ('3B+', '1.1', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
+    '9000e0': ('3A+', '1.0', 512, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
+    'a02082': ('3 Model B', '1.2', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
+    'a020a0': ('Compute Module 3 (and CM3 Lite)', '1.0', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
+    'a22082': ('3B', '1.2', 1024, 'Embest', 'Onboard WiFi and Bluetooth 4.1'),
+    'a32082': ('3B', '1.2', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
+    'a52082': ('3B', '1.2', 1024, 'Stadium', 'Onboard WiFi and Bluetooth 4.1'),
+    'a020d3': ('3B+', '1.3', 1024, 'Sony UK', '1.4GHz quad core, Blutooth 4.2, POE support'),
+    'a03111': ('4B', '1.4', 1024, 'Sony UK', '1.4GHz quad core, Blutooth 4.2, POE support'),
+    'b03111': ('4B', '1.4', 2048, 'Sony UK', '1.4GHz quad core, Blutooth 4.2, POE support'),
+    'c03111': ('4B', '1.4', 4096, 'Sony UK', '1.4GHz quad core, Blutooth 4.2, POE support'),
 }
 
 

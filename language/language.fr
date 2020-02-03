@@ -1,0 +1,66 @@
+airplay:  Airplay
+alarm:  Reveil
+alarmhours:  Heures Reveil
+alarmminutes:  Minutes Reveil
+colour:  Couleur
+connected: Connecte
+connecting:  Connexion en cours
+connection_error:  Erreur Connexion
+consume:  Consomme
+current_station:  Station en cours
+dot: dot
+information:   Ecran Informations
+loading:  Chargement
+loading_media:   Chargement bibliotheque media
+loading_playlists:  Chargement playlists
+loading_radio:   Chargement stations radio
+main_display:   Affichage principal
+media_library:  Bibliotheque Media
+menu_find:  Trouve
+menu_option:  Menu option
+menu_search:  Cherche
+menu_source:  Choix Source
+muted:  Muet
+no:  non
+off:  off
+on:  on
+options_menu:   Menu Options
+radio_stations:  Stations Radio
+radio_version:  Version Radio
+random:  Aleatoire
+reload:  Recharger
+repeat:  Repeter
+rss_display:   Affichage RSS
+search:   Recherche
+search_menu:   Menu Recherche
+select_source:   Selection source
+shutdown:  Systeme en cours arret
+single:  Simple
+sleep:  Veille
+sleeping:   En Veille
+source_airplay:  Récepteur Airplay
+source_media:   Bibliothèque Musique
+source_radio:   Radio Internet
+source_soptify:  Récepteur Spotify
+spotify:  Spotify
+starting_airplay:  Démarrage Airplay
+starting_spotify:  Démarrage Spotify
+station:  Station
+stop:  Arret radio
+stopped:  Radio arretee
+stopping_radio:  Radio en cours arret
+streaming:  Streaming
+the_time:   L´Heure est
+timer:  Timer
+title_unknown:  Titre inconnu
+track:  Piste
+track_unknown:  Piste inconnue
+update_complete:  Mise a jour terminee
+updating_media:  Mise a jour media
+updatng_media:  Mise a jour media
+voice:  voix
+vol:  Vol
+volume:   Volume
+wait:  Attendez svp
+waiting_for_spotify_client:  En attende du client Spotify
+yes:  Oui
