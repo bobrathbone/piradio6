@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.5 2020/01/25 10:26:59 bob Exp $
+# $Id: display_config.sh,v 1.8 2020/03/29 11:56:38 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -26,26 +26,44 @@ echo "Configuration log for $(hostname) $(date)" | tee ${LOG}
 
 # Display OS
 echo | tee -a ${LOG}
-echo "OS Configuration" | tee ${LOG}
+echo "OS Configuration" | tee -a ${LOG}
 echo "----------------" | tee -a ${LOG}
 cat ${OS_RELEASE} | tee -a ${LOG}
 
 echo | tee -a ${LOG}
-echo "Kernel version " | tee ${LOG}
+echo "Kernel version " | tee -a ${LOG}
 echo "--------------" | tee -a ${LOG}
 uname -a  | tee -a ${LOG}
 
+echo | tee -a ${LOG}
+echo "Desktop installation" | tee -a ${LOG}
+echo "--------------------" | tee -a ${LOG}
+ps -e | grep -E -i "xfce|kde|gnome" >/dev/null 2>&1
+if [[ $? == 0 ]]; then
+	echo "X-Windows appears to be installed" | tee -a ${LOG}
+else
+	echo "X-Windows is not installed" | tee -a ${LOG}
+fi 
+
 # Display radio software version
 echo | tee -a ${LOG}
-echo "Radio version" | tee ${LOG}
+echo "Radio version" | tee -a ${LOG}
 echo "-------------" | tee -a ${LOG}
 sudo ${DIR}/radiod.py version | tee -a ${LOG}
 
 # Display MPD configuration
 echo | tee -a ${LOG}
-echo "MPD Configuration" | tee ${LOG}
+echo "MPD Configuration" | tee -a ${LOG}
 echo "----------------" | tee -a ${LOG}
-grep -A 8 ^audio_output  ${MPD_CONFIG} | tee -a ${LOG}
+if [[ -f  ${MPD_CONFIG} ]]; then
+	grep -A 8 ^audio_output  ${MPD_CONFIG} | tee -a ${LOG}
+else
+	echo "FATAL ERROR!"
+	echo "MPD (Music Player Daemon) has not been installed" | tee -a ${LOG}
+	echo "Install packages mpd,mpc and python-mpd" | tee -a ${LOG}
+	echo "and rerun configure_radio.sh to set-up the radio software" | tee -a ${LOG}
+	exit 1
+fi
 
 # Display boot configuration
 echo | tee -a ${LOG}
@@ -56,7 +74,9 @@ grep -A 8  ^dtoverlay ${BOOTCONFIG} | tee -a ${LOG}
 
 # Display configuration
 echo | tee -a ${LOG}
-echo "----------------" | tee -a ${LOG}
+echo "Radio configuration" | tee -a ${LOG}
+echo "-------------------" | tee -a ${LOG}
+echo "Configuration file /etc/radiod.conf" | tee -a ${LOG}
 ${DIR}/config_class.py | tee -a  ${LOG}
 
 # Display sound devices
@@ -79,17 +99,23 @@ fi
 
 # Display mixer ID configuration
 echo | tee -a ${LOG}
-echo "Mixer ID Configuration (${RADIOLIB}/mixer_volume_id)" | tee ${LOG}
+echo "Mixer ID Configuration (${RADIOLIB}/mixer_volume_id)" | tee -a ${LOG}
 echo "-------------------------------------------------------" | tee -a ${LOG}
 echo "mixer_volume_id=$(cat ${RADIOLIB}/mixer_volume_id)" | tee -a ${LOG}
+
+
+echo | tee -a ${LOG}
+echo "Hardware information" | tee -a ${LOG}
+echo "--------------------" | tee -a ${LOG}
+sudo ${DIR}/display_model.py version | tee -a ${LOG}
 
 # Create tar file
 tar -zcf ${LOG}.tar.gz ${LOG} >/dev/null 2>&1
 
 echo | tee -a ${LOG}
 echo "=================== End of run =====================" | tee -a ${LOG}
-echo "This configuration has been recorded in ${LOG}"
-echo "A compressed tar file has been saved in ${LOG}.tar.gz"
-echo "Send ${LOG}.tar.gz to bobrathbone.com if required"
+echo "This configuration has been recorded in ${LOG}" 
+echo "A compressed tar file has been saved in ${LOG}.tar.gz" | tee -a ${LOG}
+echo "Send ${LOG}.tar.gz to bobrathbone.com if required" | tee -a ${LOG}
 echo | tee -a ${LOG}
 

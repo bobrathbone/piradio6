@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.192 2019/08/23 14:01:11 bob Exp $
+# $Id: radiod.py,v 1.213 2020/04/26 09:10:40 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -32,18 +32,21 @@ from event_class import Event
 from message_class import Message
 from menu_class import Menu
 from rss_class import Rss
+from translate_class import Translate
 
 # For retro radio only
 from status_led_class import StatusLed
 
+translate = Translate()
 radio = None
 event = None
 message = None
 statusLed = None
 log = Log()
-display = Display()
+display = Display(translate)
 menu = Menu()
-rss = Rss()
+rss = Rss(translate)
+_connecting = False
 
 # Signal SIGTERM handler
 def signalHandler(signal,frame):
@@ -141,12 +144,12 @@ class MyDaemon(Daemon):
 		event = Event()	# Must be initialised here
 
 		# Set up radio
-		radio = Radio(menu,event)
+		radio = Radio(menu,event,translate)
 		if radio.config.logTruncate():
 			log.truncate()
 			log.message("Truncated log file",log.DEBUG)
 		log.message("===== Starting radio =====",log.INFO)
-		message = Message(radio,display)
+		message = Message(radio,display,translate)
 
 		# Set up status Led (Retro Radio only)
 		statusLed = statusLedInitialise(statusLed)
@@ -156,6 +159,15 @@ class MyDaemon(Daemon):
 		display.init(callback = event)
 		nlines = display.getLines()
 		displayStartup(display,radio)
+
+		# LCDs option to switch off translation
+		translate_lcd = radio.config.getTranslate()
+		radio.translate.setTranslate(translate_lcd)
+
+		# For non-English  Romanize (Convert to Latin characters)
+		romanize = radio.config.getRomanize()
+		radio.setRomanize(romanize)  # Switch Romanisation on/off
+		##rss.setRomanize(romanize)  # Switch Romanisation on/off
 
 		ipaddr = waitForNetwork(radio,display)
 		# Start radio and load source (radio, media or airplay)
@@ -177,20 +189,22 @@ class MyDaemon(Daemon):
 			log.message(msg, log.INFO)
 			display.out(line,msg)
 
-		time.sleep(2.5)
+		time.sleep(1.25)	# Allow time to display IP address
+
 		loadSource(display,radio)
 		current_id = radio.getCurrentID()
 		radio.play(current_id)
 
 		progcall = str(sys.argv)
-		log.message('Radio running pid ' + str(os.getpid()), log.INFO)
 		log.message("Radio " +  progcall + " Version " + radio.getVersion(), log.INFO)
+		log.message('Radio running pid ' + str(os.getpid()), log.INFO)
 
 		statusLed.set(StatusLed.NORMAL)
 		display.clear()	# Clear 
 
 		# Main processing loop
 		while True:
+	 	    try:
 
 			menu_mode = menu.mode()
 
@@ -245,6 +259,12 @@ class MyDaemon(Daemon):
 
 				# This delay must be >= to any GPIO bounce times
 				time.sleep(0.2)
+
+		    except KeyboardInterrupt:
+                    	print " Stopped"
+			radio.stop()
+			time.sleep(1)
+		    	sys.exit(0)
 
 	# Status routines
 	def status(self):
@@ -302,7 +322,8 @@ def handleEvent(event,display,radio,menu):
 
 	elif event_type == event.LOAD_RADIO or event_type == event.LOAD_MEDIA \
 			   or event_type == event.LOAD_AIRPLAY \
-			   or event_type == event.LOAD_SPOTIFY:
+			   or event_type == event.LOAD_SPOTIFY \
+			   or event_type == event.LOAD_PLAYLIST:
 		handleUdpEvent(event,display,radio,message)
 
 	elif menu_mode == menu.MENU_SOURCE:
@@ -324,6 +345,7 @@ def handleEvent(event,display,radio,menu):
 
 # Handle normal volume and channel change events
 def handleRadioEvent(event,display,radio,menu):
+	global _connecting
 	event_type = event.getType()
 	event_name = event.getName()
 	menu_mode = menu.mode()
@@ -353,7 +375,7 @@ def handleRadioEvent(event,display,radio,menu):
 				displayVolume(display, radio)
 				time.sleep(0.1)
 
-		display.setDelay(20)
+		display.setDelay(15)
 		volume_change = True	
 
 	elif event_type == event.VOLUME_DOWN:
@@ -403,9 +425,9 @@ def handleRadioEvent(event,display,radio,menu):
 					speakCurrent(message,radio)
 			else:
 				radio.mute()
+				time.sleep(0.5) # Prevent unmute
 
 		displayVolume(display,radio)
-		time.sleep(0.5) # Prevent unmute
 
 	if event_type == event.CHANNEL_UP:
 		log.message('Channel UP', log.DEBUG)
@@ -415,6 +437,7 @@ def handleRadioEvent(event,display,radio,menu):
 			menu.set(menu.MENU_TIME)
 		if radio.config.verbose():
 			speakCurrent(message,radio,speak_title=False)
+		_connecting = False
 
 	elif event_type == event.CHANNEL_DOWN:
 		log.message('Channel DOWN', log.DEBUG)
@@ -424,6 +447,7 @@ def handleRadioEvent(event,display,radio,menu):
 			menu.set(menu.MENU_TIME)
 		if radio.config.verbose():
 			speakCurrent(message,radio,speak_title=False)
+		_connecting = False
 
 	elif event_type == event.MENU_BUTTON_DOWN:
 		if radio.muted():
@@ -534,11 +558,13 @@ def handleMenuChange(display,radio,menu,message):
 	elif source_type == radio.source.AIRPLAY or source_type == radio.source.SPOTIFY:
 		if menu_mode == menu.MENU_SEARCH:
 			menu.set(menu.MENU_SOURCE)
+
 		elif menu_mode == menu.MENU_OPTIONS:
 			menu.set(menu.MENU_TIME)
 		
 		if source_type == radio.source.AIRPLAY:
 			radio.stopAirplay()
+
 		if source_type == radio.source.SPOTIFY:
 			radio.stopSpotify()
 
@@ -606,18 +632,34 @@ def handleOptionEvent(event,display,radio,menu):
 def handleUdpEvent(event,display,radio,message):
 	msg = ''
 	event_type = event.getType()
+	valid_event = True 
 
+	# Version 1.7 of web interface
 	if event_type == event.LOAD_RADIO:
 		msg = message.get('loading_radio')
 		display.out(2,msg)
 		message.speak(msg)
 		radio.cycleWebSource(radio.source.RADIO)
 
-	elif event_type == event.LOAD_MEDIA:
+	# Version 1.7 of web interface
+	elif event_type == event.LOAD_MEDIA:		
 		msg = message.get('loading_media')
 		display.out(2,msg)
 		message.speak(msg)
 		radio.cycleWebSource(radio.source.MEDIA)
+
+	# Version 1.8 onwards of the web interface
+	elif event_type == event.LOAD_PLAYLIST:		
+		playlist = radio.getPlaylistName()
+                name = playlist.replace('_', ' ')
+                name = name.lstrip()
+                name = name.rstrip()
+                name = "%s%s" % (name[0].upper(), name[1:])
+		msg = message.get('loading_playlist') + ' ' + name
+		display.out(2,msg)
+		message.speak(msg)
+		time.sleep(1)
+		radio.source.setPlaylist(playlist)
 
 	elif event_type == event.LOAD_AIRPLAY:
 		msg = message.get('starting_airplay')
@@ -630,8 +672,13 @@ def handleUdpEvent(event,display,radio,message):
 		display.out(2,msg)
 		message.speak(msg)
 		radio.cycleWebSource(radio.source.SPOTIFY)
+	else:
+		valid_event = False
+		log.message("radio.handleUdpEvent invalid event:", 
+				str(event_type), log.ERROR)
 
-	loadSource(display,radio)
+	if valid_event:
+		loadSource(display,radio)
 	return
 
 # Handle menu step through
@@ -780,10 +827,13 @@ def displaySearch(display,menu,message):
 	display.out(1, message.get(sSearch) + ':' + str(index+1), interrupt)
 
 	if source_type == radio.source.MEDIA:
+		# pdb.set_trace() #DEBUG
 		current_artist = radio.getArtistName(index)
+		current_track = radio.getTrackNameByIndex(index)
+
 		if lines > 2:
 			display.out(2,current_artist[0:50],interrupt)
-			display.out(3,radio.getTrackNameByIndex(index),interrupt)
+			display.out(3,current_track,interrupt)
 
 			if display.getDelay() > 0:
 				displayVolume(display, radio)
@@ -796,11 +846,14 @@ def displaySearch(display,menu,message):
 				displayVolume(display, radio)
 				time.sleep(0.1)
 			else:
-				display.out(2,current_artist[0:50],interrupt)
+				info = current_artist[0:50] + ': ' + current_track
+				display.out(2,info,interrupt)
 				message.speak(str(index+1) + ' ' +  current_artist[0:50])
 
 	elif source_type == radio.source.RADIO:
 		search_station = radio.getStationName(index)
+		search_station = search_station.lstrip('"')
+		search_station = search_station.rstrip('"')
 
 		if lines > 2:
 			display.out(2,search_station[0:30],interrupt)
@@ -1021,6 +1074,7 @@ def loadSource(display,radio):
 	
 # Display current playing selection or station
 def displayCurrent(display,radio,message):
+	global _connecting
 	# get details of currently playing source
 	current_id = radio.getCurrentID()
 	sourceType = radio.getSourceType()
@@ -1046,13 +1100,20 @@ def displayCurrent(display,radio,message):
 			name = message.get('station') + ' ' + str(current_id)
 			if bitrate > 0:
 				name = name + ' ' + str(bitrate) +'k'
+				_connecting = False
 			else:
-				eMsg = message.get('connecting')
-				name = " %s/%s: %s" % (current_id,plsize,eMsg)
+				if not _connecting:
+					eMsg = message.get('connecting')
+					name = " %s/%s: %s" % (current_id,plsize,eMsg)
+					_connecting = True
+				else:
+					name = message.get('no_information')
 
 		nLines = display.getLines()
 		if nLines > 2:
 			displayVolume(display, radio)
+			station = station.lstrip ('"')
+			station = station.rstrip ('"')
 			display.out(2,station,interrupt)
 			if len(errorString) > 0:
 				display.out(3,errorString,interrupt)
@@ -1173,8 +1234,15 @@ def displaySpotify(display,radio):
 	return
 
 
-# Display volume 
+# Display volume only if not in Info mode
 def displayVolume(display,radio):
+	menu_mode = menu.mode()
+	if menu_mode != menu.MENU_INFO or display.getDelay() > 0:
+		_displayVolume(display,radio)
+	return
+	
+def _displayVolume(display,radio):
+	menu_mode = menu.mode()
 	msg = ''
 	displayType = display.getDisplayType()
 	if radio.muted():
@@ -1221,9 +1289,10 @@ def updateLibrary(display,radio,message):
 
 	display.out(firstLine,message.get('updating_media'))
 	display.out(secondLine,message.get('wait'))
-	radio.updateLibrary()
+	radio.updateLibrary(force=True)
 	display.out(secondLine,message.get('update_complete'))
 	time.sleep(1)
+	menu.set(menu.MENU_TIME) # Return to main display
 	return
 
 # Configure RGB status LED

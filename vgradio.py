@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.96 2020/01/24 09:55:51 bob Exp $
+# $Id: vgradio.py,v 1.101 2020/04/24 16:13:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -38,7 +38,9 @@ from event_class import Event
 from menu_class import Menu
 from message_class import Message
 from graphic_display import GraphicDisplay
+from translate_class import Translate
 
+translate = Translate()
 log = Log()
 rmenu = Menu()
 radio = None
@@ -52,6 +54,7 @@ pygame.font.init()
 myfont = pygame.font.SysFont('freesans', 20, bold=True)
 screen = None
 run = True
+_connecting = False
 
 # Tuner scale range
 margin = 50 	# Top bottom
@@ -84,7 +87,6 @@ def setupRadio(radio):
 	radio.start()	      # Start it
 	radio.loadSource()	    # Load sources and playlists
 
-	#display.setSize(size)
 	return
 
 # Return the page that this station is to be displayed on
@@ -160,13 +162,14 @@ def handleEvent(radio,radioEvent):
 			radio.shutdown() # Shutdown the system
 		else:
 			print "Exiting"
-			#pdb.set_trace()
 			sys.exit(0)
 
 	elif event_type == radioEvent.CHANNEL_UP:
+		_connecting = False
 		radio.channelUp()
 
 	elif event_type == radioEvent.CHANNEL_DOWN:
+		_connecting = False
 		radio.channelDown()
 
 	elif event_type == radioEvent.VOLUME_UP:
@@ -188,7 +191,9 @@ def handleEvent(radio,radioEvent):
 		log.message("radioEvent Client Change",log.DEBUG)
 
 	elif event_type == radioEvent.LOAD_RADIO or event_type == radioEvent.LOAD_MEDIA \
-			   or event_type == radioEvent.LOAD_AIRPLAY:
+			   or event_type == radioEvent.LOAD_AIRPLAY\
+			   or event_type == radioEvent.LOAD_PLAYLIST:
+			
 		handleSourceChange(radioEvent,radio,message)
 
 	radioEvent.clear()
@@ -196,6 +201,7 @@ def handleEvent(radio,radioEvent):
 
 # Handler for source change events (also from the web interface)
 def handleSourceChange(event,radio,message):
+	global playlist,sliderIndex,sliderIndex,plName
         msg = ''
         event_type = event.getType()
 
@@ -215,11 +221,29 @@ def handleSourceChange(event,radio,message):
                 if display.config.getAirplay():
                         radio.cycleWebSource(radio.source.AIRPLAY)
 
-        new_source = radio.getNewSourceType()
-        log.message("loadSource new type = " + str(new_source), log.DEBUG)
-        if new_source >= 0:
-                radio.loadSource()
-        return
+	# Version 1.8 onwards of the web interface
+	elif event_type == event.LOAD_PLAYLIST:
+		playlistName = radio.getPlaylistName()
+		name = playlistName.replace('_', ' ')
+		name = name.lstrip()
+		name = name.rstrip()
+		name = "%s%s" % (name[0].upper(), name[1:])
+		plName = name
+		radio.source.setPlaylist(playlistName)
+		radio.loadSource()
+
+		playlist = radio.getPlayList()
+		listIndex = 0	# Playlist index
+		sliderIndex = 0
+		radio.setCurrentID(1)
+
+	if event_type != event.LOAD_PLAYLIST:
+		new_source = radio.getNewSourceType()
+		log.message("loadSource new type = " + str(new_source), log.DEBUG)
+		if new_source >= 0:
+			radio.loadSource()
+	return
+
 # Handle keyboard key event See https://www.pygame.org/docs/ref/key.html
 def handleKeyEvent(key,display,radio,radioEvent):
 	global run
@@ -310,6 +334,7 @@ def uEncode(text):
 
 # Display currently playing radio station 
 def displayTitle(screen,radio,message,plsize):
+	global _connecting
 	title = radio.getCurrentTitle()
 	title = uEncode(title)
 
@@ -318,9 +343,14 @@ def displayTitle(screen,radio,message,plsize):
 		bitrate = radio.getBitRate()
 		if int(bitrate) > 0:
 			title = "Station %s/%s: Bitrate %sk" % (current_id,plsize,bitrate)
+			_connecting = False
 		else:
-			eMsg = message.get('connecting')
-			title = "Station %s/%s: %s" % (current_id,plsize,eMsg)
+			if not _connecting:
+				eMsg = message.get('connecting')
+				title = "Station %s/%s: %s" % (current_id,plsize,eMsg)
+				_connecting = True
+			else:
+				title = message.get('no_information')
 	else:
 		title = title[0:80]
 		
@@ -560,7 +590,6 @@ def pageDown(display,radio):
 		newID = ((page - 1) * maxLabels) + maxLabels 
 		
 	radio.play(newID)
-	time.sleep(0.5)
 	if radio.getCurrentID() != newID:
 		radio.channelDown()
 	return newID
@@ -594,13 +623,14 @@ def checkPid(pidfile):
 
 # Open equalizer window
 def openEqualizer(radio,equalizer_cmd):
-	 dir = os.path.dirname(__file__)
-	 cmd_file = open(dir + '/' + equalizer_cmd,"r")
-	 for line in cmd_file:
-		  if line.startswith('lxterminal'):
-			   radio.execCommand(line)
-			   break
-	 return
+	#dir = os.path.dirname(__file__)
+	dir = "/usr/share/radio"
+	cmd_file = open(dir + '/' + equalizer_cmd,"r")
+	for line in cmd_file:
+	  if line.startswith('lxterminal'):
+		   radio.execCommand(line)
+		   break
+	return
 
 # Set draw equalizer true/false
 def displayEqualizerIcon(display):
@@ -663,7 +693,7 @@ if __name__ == "__main__":
 	# Setup radio
 	log.init('radio')
 	radioEvent = Event()	# Add radio event handler
-	radio = Radio(rmenu,radioEvent)  # Define radio
+	radio = Radio(rmenu,radioEvent,translate)  # Define radio
 
 	# Set up the screen
 	size = radio.config.getSize()
@@ -693,7 +723,7 @@ if __name__ == "__main__":
 		os.popen("sudo " + dir + "/gradio.py&")
 		sys.exit(1)
 
-	message = Message(radio,display)
+	message = Message(radio,display,translate)
         text = message.get('loading_radio')
 
 	displayPopup(screen,radio,text)
@@ -706,7 +736,7 @@ if __name__ == "__main__":
 	radio.execCommand("systemctl stop radiod")
 
 	# Switch off character translation
-	radio.setTranslate(False)	# Switch on text translation
+	radio.translate.setTranslate(False)	# Switch on text translation
 
 	# Initialise radio
 	setupRadio(radio)
@@ -752,6 +782,7 @@ if __name__ == "__main__":
 	listIndex = 0	# Playlist index
 	keyPress = -1
 	sliderIndex = 0
+	plName = radio.source.getName()
 
 	# Screen saver times
 	screenBlank = False

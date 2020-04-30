@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 #
 # Raspberry Pi Internet Radio Menu Class
-# $Id: get_shoutcast.py,v 1.23 2019/01/01 11:35:55 bob Exp $
+# $Id: get_shoutcast.py,v 1.24 2020/02/13 15:49:26 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -22,6 +22,7 @@ import urllib2
 import os,sys,pwd
 import socket
 import errno
+import pdb
 from shutil import copy
 from translate_class import Translate
 from config_class import Configuration
@@ -41,7 +42,10 @@ udpport = 5100	  # UDP Listener port number default 5100
 
 # Shoutcast URLs and files ( The %s strings are replaced by search parameters)
 # See http://wiki.shoutcast.com/wiki/SHOUTcast_Radio_Directory_API
-xml_url = "http://api.shoutcast.com/legacy/%s?k=%s&limit=%s"
+
+# XML Request
+xml_url = "http://api.shoutcast.com/legacy/%s?k=%s&limit=%s&f=xml"
+
 pls_url = "http://yp.shoutcast.com%s?id=%s"
 playlist_dir = "/var/lib/mpd/playlists"
 playlist_store = "/usr/share/radio/playlists"
@@ -171,6 +175,9 @@ def appendPlaylist(m3u_playlist,m3u):
 def copyPlaylist(m3u_playlist,count,install):
 	print "Created",count,"records in",m3u_playlist
 	choice = ''
+
+	# Convert to radio naming convention
+
 	if not install:
 		prompt = "Do you wish to copy this playlist to " + playlist_dir + " [y/n]: "
 		while choice == '':
@@ -277,7 +284,7 @@ if __name__ == "__main__":
 		usage(sys.argv[0])
 		sys.exit(1)
 
-	# Replace special characters
+	# Replace special characters.
 	search_value = search_value.replace(' ','+')
 	search_value = search_value.replace('&','%26')
 
@@ -297,6 +304,7 @@ if __name__ == "__main__":
 		xml_file_s = xml_file % search_type
 		m3u_playlist_s = m3u_playlist % search_type
 
+	m3u_playlist_s = m3u_playlist_s.replace('+','_') 
 	print "Processing URL:",xml_url
 	
 	try:

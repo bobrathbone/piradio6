@@ -1,0 +1,39 @@
+
+Overview
+========
+This directory contains the translation tables for converting
+character codes to font codes in the LCD/OLED character displays.
+The LCD controller is the HD44780U which has three code pages
+See https://en.wikipedia.org/wiki/Hitachi_HD44780_LCD_controller
+
+All translation tables have three variables
+name  - The language name of the table to check against language parameter in /etc/radiod.conf
+controller - Controller type HD44780U (Default) or HD44780 (Older LCDs). 
+codepage - The codepage in hex which matches the codes in the table to the font location in the LCD
+codes -	The translation codes for the native alphabet such as Russian Cyrillic
+romanized - Translation codes to convert native alphabet to romanized(latin) characters
+
+All translation tables are processed by the translate class (translate_class.py)
+The first one that is processed is the one the matches the language parameter in /etc/radiod.conf
+All other tables are processed in turn using their romanized codes
+The English translation table is always processed last agin using irs romanized codes..
+
+The following parameters /etc/radiod.conf are of importance (shown with defaults)
+romanize=true	# Use romanize table else use the native codes table
+codepage=0	# Select LCD font page. Ussually 0 but depending upon the device can 1, 2.
+language=English	# The default language
+translate_lcd=on	# Setting this to off disables all radiod translation routines
+
+The behaviour of the table matching the language statement is influenced by a number of factors.
+If the romanize parameter in /etc/radiod.conf is set to false, its codes table will be used to
+map onto the font table of the LCD.
+ 
+Adding new font tables
+======================
+Copy an existing table to a table with a name matching the language, for example Greek
+cp Russian.py to Greek.py
+Change the character codes and font codes to match the language and LCD font
+For example:
+	'\\xd0\\xa4' : chr(0xaa),       # Ф
+You will need a copy of the LCD controller specification which contains the code charts to do this 
+

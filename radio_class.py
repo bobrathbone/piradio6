@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.207 2020/01/23 10:48:31 bob Exp $
+# $Id: radio_class.py,v 1.223 2020/04/26 09:10:40 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -33,7 +33,6 @@ from constants import *
 from udp_server_class import UDPServer
 from udp_server_class import RequestHandler
 from log_class import Log
-from translate_class import Translate
 from config_class import Configuration
 from airplay_class import AirplayReceiver
 from spotify_class import SpotifyReceiver
@@ -54,6 +53,7 @@ RadioLibDir = "/var/lib/radiod"
 CurrentStationFile = RadioLibDir + "/current_station"
 CurrentTrackFile = RadioLibDir + "/current_track"
 CurrentSourceFile = RadioLibDir + "/source"
+SourceNameFile = RadioLibDir + "/source_name"
 VolumeFile = RadioLibDir + "/volume"
 MixerVolumeFile = RadioLibDir + "/mixer_volume"
 MixerIdFile = RadioLibDir + "/mixer_volume_id"
@@ -68,7 +68,6 @@ AlarmFile = RadioLibDir + "/alarm"
 StreamFile = RadioLibDir + "/streaming"
 
 log = Log()
-translate = Translate()
 language = None
 server = None
 volume = None
@@ -82,6 +81,9 @@ ON = True
 OFF = False
 
 class Radio:
+	translate = None	# Translate object
+	spotify = None		# Spotify object
+
 	# Player options
 	RANDOM = 0
 	CONSUME = 0
@@ -101,8 +103,6 @@ class Radio:
 	ONEDAYMINS = 1440	# Day in minutes
 
 	config = Configuration()
-	airplay = AirplayReceiver()
-	spotify = SpotifyReceiver()
 
 	source = None	# Source (radio,media,spotify and airplay)
 	audio_error = False 	# No sound device
@@ -161,6 +161,7 @@ class Radio:
 
 	stationTitle = ''		# Radio station title
 	stationName = ''		# Radio station name
+	playlistName = '_Radio'		# Initial playlist name
 
 	search_index = 0	# The current search index
 	loadnew = False	  	# Load new track from search
@@ -175,6 +176,7 @@ class Radio:
  		CurrentStationFile: 1,
  		CurrentTrackFile: 1,
  		CurrentSourceFile: 0,
+ 		SourceNameFile: "_Radio",
  		VolumeFile: 75,
  		MixerVolumeFile: 45,
  		TimerFile: 30,
@@ -184,7 +186,10 @@ class Radio:
 		}
 
 	# Initialisation routine
-	def __init__(self, menu, event):
+	def __init__(self, menu, event, translate):
+		self.translate = translate
+		self.airplay = AirplayReceiver(translate)
+		self.spotify = SpotifyReceiver()
 
 		if pwd.getpwuid(os.geteuid()).pw_uid > 0:
 			print "This program must be run with sudo or root permissions!"
@@ -238,7 +243,7 @@ class Radio:
 
 		return
 
-	# Call back routine for the IR remote
+	# Call back routine for the IR remote and Web Interface
 	def remoteCallback(self):
 		global server
 		key = server.getData()
@@ -279,6 +284,14 @@ class Radio:
 		elif key == 'RADIO':
 			self.event.set(self.event.LOAD_RADIO)
 
+		elif key == 'RELOAD_PLAYLISTS':
+			self.getSources()
+
+		elif 'PLAYLIST:' in key:	# Version 1.8 Web interface onwards
+			key_array = key.split(':')
+			self.playlistName = key_array[1]
+			self.event.set(self.event.LOAD_PLAYLIST)
+
 		elif key == 'AIRPLAY':
 			self.event.set(self.event.LOAD_AIRPLAY)
 
@@ -288,14 +301,14 @@ class Radio:
 		elif key == 'INTERRUPT':
 			self.event.set(self.event.NO_EVENT)	# To be done
 
-		elif key == 'RELOAD_PLAYLISTS':
-			self.getSources()
-
 		else:
 			log.message("radio.remoteCallBack invalid IR key " + key, log.DEBUG)
 
 		return 
 
+	#  Get LOAD_PLAYLIST event playlist name
+	def getPlaylistName(self):
+		return self.playlistName
 
 	# Set up radio configuration and start the MPD daemon
 	def start(self):
@@ -365,7 +378,7 @@ class Radio:
 			# Load either MEDIA, RADIO, AIRPLAY or SPOTIFY depending on config
 			self.source.setType(sourceType)
 			log.message("Load  MEDIA/RADIO", log.DEBUG)
-
+		
 		# Get stored values from Radio lib directory
 		self.getStoredValue(self.menu.OPTION_RANDOM)
 		self.current_id = self.getStoredID(self.current_file)
@@ -877,9 +890,11 @@ class Radio:
 	def getStoredVolume(self):
 		return self.getStoredInteger(VolumeFile,75)	
 
-	# Store source index value
-	def storeSourceIndex(self,index):
+	# Store source index value and name
+	def storeSource(self,index):
+		sname = self.source.current()	# Used by new web interface
 		self.execCommand ("echo " + str(index) + " > " + CurrentSourceFile)
+		self.execCommand ("echo " + sname + " > " + SourceNameFile)
 		return
 
 	# Store volume in volume file
@@ -1517,7 +1532,7 @@ class Radio:
 			name = ''
 
 		if len(name) > 0:
-			name = translate.escape(name)
+			name = self.translate.all(name)
 
 		# If error occured
 		if self.checkStatus(): 
@@ -1550,7 +1565,7 @@ class Radio:
 			title = ''
 		
 		if len(title) > 0:
-			title = translate.escape(title)
+			title = self.translate.all(title)
 
 		if self.channelChanged: 
 			self.channelChanged = False
@@ -1576,9 +1591,10 @@ class Radio:
 	def getCurrentArtist(self):
 		try:
 			currentsong = self.getCurrentSong()
-			title = str(currentsong.get("title"))
-			title = translate.escape(title)
 			artist = str(currentsong.get("artist"))
+			artist = self.translate.all(artist) 
+			title = str(currentsong.get("title"))
+			title = self.translate.all(title)
 			if str(artist) == 'None':
 				artist = "Unknown artist"
 			self.artist = artist
@@ -1606,7 +1622,7 @@ class Radio:
 			if str(album) == 'None':
 				album = ""
 			else:
-				album = translate.escape(album)
+				album = self.translate.all(album)
 			self.album = album
 		except:
 			log.message ("radio.getCurrentAlbum error", log.ERROR)	
@@ -1771,7 +1787,7 @@ class Radio:
 		# Save the new source type and index
 		self.source_index = self.source.setNewType()
 		self.source.setIndex(self.source_index)
-		self.storeSourceIndex(self.source_index)
+		self.storeSource(self.source_index)
 		return
 
 	# Load playlist (Media or Radio)
@@ -1799,9 +1815,10 @@ class Radio:
 		return self.source.getPlaylists()		
 
 	# Update music library 
-	def updateLibrary(self):
+	def updateLibrary(self,force=False):
+		#pdb.set_trace()
 		try:
-			if len(client.playlist()) < 1:
+			if len(client.playlist()) < 1 or force :
 				status = client.status()
 				try:
 					update_id = int(status.get("updating_db"))
@@ -1810,8 +1827,11 @@ class Radio:
 					update_id = 0
 				if update_id < 1:
 					self.mountAll()
-					log.message("Updating MPD database ", log.DEBUG)
+					log.message("Updating MPD database ", log.INFO)
 					self.execMpcCommand("update")
+					playlist = self.source.getName()
+					log.message("Loading playlist " + playlist, log.INFO)
+					self.execMpcCommand("load " + playlist)
 			else:
 				self.loading_DB = False
 			self.setUpdateLibOff() # Check TO DO
@@ -1869,28 +1889,33 @@ class Radio:
 				self.error = True
 				log.message("radio.play: Skipping to station " + 
 						str(new_id),log.DEBUG)
+				self.reconnect(client)
 
-				# Timeouts due to a bad URL cause corruption of the client
-				# stats and status dictinaries. Disconnect and reconnect to
-				# reset the client
-				try:
-					client.disconnect() 
-				except:
-					pass
-
-				# Re-connect
-				try:
-					time.sleep(0.5)
-					client.connect("localhost", self.mpdport)
-					self.connected = True
-				except Exception as e:
-					log.message("radio.play connect: " +
-						 str(e), log.ERROR)
-					self.connected = False
-					
 		# End of while
 
 		return self.current_id
+
+	# Timeouts due to a bad URL cause corruption of the client
+	# stats and status dictionaries. Disconnect and reconnect to
+	# reset the client
+	def reconnect(self,client):
+		log.message("radio.reconnect",log.DEBUG)
+		try:
+			client.disconnect() 
+		except:
+			pass
+
+		# Re-connect
+		try:
+			time.sleep(0.5)
+			client.connect("localhost", self.mpdport)
+			self.connected = True
+		except Exception as e:
+			log.message("radio.disconnect connect error: " +
+				 str(e), log.ERROR)
+			self.connected = False
+		return self.connected
+			
 
 	# Clear streaming and other errors
 	def clearError(self):
@@ -1925,9 +1950,9 @@ class Radio:
 			line =  p.readline().strip('\n')
 			if line.__len__() < 1:
 				break
-			line = translate.escape(line)
 			if line.startswith("http:") and '#' in line: 
 				url,line = line.split('#')
+			line = self.translate.all(line) 
 			list.append(line)
 		
 		if list == None:
@@ -1989,7 +2014,6 @@ class Radio:
 				track = sections[1]
 			else:
 				track = "No track"
-			track = translate.escape(track)
 		if str(track) == 'None':
 			track = "Unknown track"
 		return track
@@ -2005,7 +2029,6 @@ class Radio:
 				artist = sections[0]
 			else:
 				artist = "Unknown artist"
-			artist = translate.escape(artist)
 		return artist
 
 	# Version number
@@ -2122,12 +2145,13 @@ class Radio:
 			log.message("radio.clientPause: " + str(e), log.ERROR)
 		return
 
-	# Restart the client after speach finished
+	# Restart the client after speech finished
 	def clientPlay(self):
 		try:
 			client.play()
 		except Exception as e:
 			log.message("radio.clientPlay: " + str(e), log.ERROR)
+			self.reconnect(client)
 		return
 
 	# Get language text
@@ -2199,10 +2223,15 @@ class Radio:
 			option_value = True
 		return option_value
 
-	# Translate on/off (Used by gradio)
+	# Translate on/off 
 	def setTranslate(self,true_false):
 		log.message("setTranslate " + str(true_false), log.DEBUG)
-		translate.setTranslate(true_false)
+		self.translate.setTranslate(true_false)
+
+	# Romanize Russian  on/off 
+	def setRomanize(self,true_false):
+		log.message("Romanize " + str(true_false), log.INFO)
+		self.translate.setRomanize(true_false)
 
 	# Return option value indexed by menu class options
 	def getOptionValue(self,option_index):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_piface_class.py,v 1.14 2019/07/05 10:26:34 bob Exp $
+# $Id: lcd_piface_class.py,v 1.16 2020/04/11 13:30:48 bob Exp $
 # Raspberry Pi Internet Radio
 # using a Piface backlit LCD plate
 #
@@ -30,7 +30,6 @@
 
 import os,sys
 import time
-from translate_class import Translate
 from constants import *
 
 import subprocess
@@ -82,9 +81,7 @@ E_PULSE = 0.00005
 E_DELAY = 0.00005
 
 
-translate = Translate()
-
-# Lcd Class 
+# Piface CAD Class 
 class Lcd_Piface_Cad:
 	width = LCD_WIDTH
 	RawMode = False
@@ -100,8 +97,9 @@ class Lcd_Piface_Cad:
 		return
 
 	# Initialise for either revision 1 or 2 boards
-	def init(self,callback=None):
-	# LED outputs
+	def init(self,callback=None,code_page=0):
+		self.code_page = code_page # TO BE IMPLEMENTED
+		# LED outputs
 		self.cad = pifacecad.PiFaceCAD()
 		# set up cad
 		self.event = callback	
@@ -132,8 +130,6 @@ class Lcd_Piface_Cad:
 	def _string(self,line,message):
 		self.cad.lcd.set_cursor(0, int(line)-1)
 		s = message.ljust(self.width," ")
-		if not self.RawMode:
-			s = translate.toLCD(s)
 		self.cad.lcd.write(s)
 		return
 
@@ -178,7 +174,7 @@ class Lcd_Piface_Cad:
 			self.event.set(self.event.MENU_BUTTON_DOWN)
 			# 2 seconds button down shuts down the radio
 			count = 10
-			while self.buttonPressed(self.MENU):
+			while self.buttonPressed(self.MENU_BUTTON):
 				time.sleep(0.2)
 				count -= 1
 				if count < 0:

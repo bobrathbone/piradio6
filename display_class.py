@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.44 2019/06/16 11:24:32 bob Exp $
+# $Id: display_class.py,v 1.55 2020/04/22 14:03:05 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -16,11 +16,9 @@
 import pdb
 import os,sys
 import time,pwd
-from translate_class import Translate
 from config_class import Configuration
 from log_class import Log
 
-translate = Translate()
 config = Configuration()
 log = Log()
 
@@ -35,6 +33,7 @@ def no_interrupt():
 
 # Display Class 
 class Display:
+	translate = None	# Translate class
 
 	lines = SCREEN_LINES	# Default lines
 	width = SCREEN_WIDTH	# Default width
@@ -51,11 +50,12 @@ class Display:
 
 	lineBuffer = []		# Line buffer 
 
-	def __init__(self):
+	def __init__(self,translate):
+		self.translate = translate
 		return
 
 	# Initialise 
-	def init(self, callback=None):
+	def init(self,callback=None):
 		self.callback = callback
 		log.init('radio')
 		self.setupDisplay()
@@ -67,8 +67,18 @@ class Display:
 		dtype = config.getDisplayType()
 		i2c_address = 0x0
 		configured_i2c = config.getI2Caddress()
-		log.message("I2C address " + hex(configured_i2c), log.DEBUG)
 		self.i2c_bus = config.getI2Cbus()
+		i2c_interface = False
+
+		# Set up font code page. If 0 use codepage in font file
+                # If > 1 override with the codepage parameter in configuration file
+		code_page = config.getLcdFontPage() # 0, 1 or 2
+		log.message("Translation code page in radiod.conf = " + str(code_page)
+				, log.INFO)
+                if code_page > 0:
+                        self.code_page = code_page - 1
+                else:
+                        self.code_page = self.translate.getPrimaryCodePage()
 
 		if dtype == config.NO_DISPLAY:
 			from no_display import No_Display
@@ -84,11 +94,13 @@ class Display:
 			else:
 				i2c_address = 0x27
 
-			screen.init(address = i2c_address, busnum=self.i2c_bus)
+			screen.init(address = i2c_address,busnum=self.i2c_bus,
+					code_page=self.code_page)
+			i2c_interface = True
 
 		elif dtype == config.LCD_I2C_ADAFRUIT:
 			from lcd_i2c_adafruit import Lcd_i2c_Adafruit
-			screen = Lcd_i2c_Adafruit()
+			screen = Lcd_i2c_Adafruit(code_page = self.code_page)
 
 			if configured_i2c != 0:
 				i2c_address = configured_i2c
@@ -96,6 +108,7 @@ class Display:
 				i2c_address = 0x20
 
 			screen.init(address = i2c_address, busnum=self.i2c_bus)
+			i2c_interface = True
 
 		elif dtype == config.LCD_ADAFRUIT_RGB:
 			from lcd_adafruit_class import Adafruit_lcd
@@ -106,11 +119,12 @@ class Display:
 			else:
 				i2c_address = 0x20
 
-			screen.init(address = i2c_address, busnum = self.i2c_bus, \
-				    callback = self.callback)
+			screen.init(address = i2c_address, busnum = self.i2c_bus,
+				    callback = self.callback, code_page=self.code_page)
 
 			# This device has its own buttons on the I2C intertface
 			self.has_buttons = True
+			i2c_interface = True
 
 		elif dtype == config.OLED_128x64:
 			from oled_class import Oled
@@ -123,16 +137,22 @@ class Display:
 		elif dtype == config.PIFACE_CAD:
 			from lcd_piface_class import Lcd_Piface_Cad
 			screen = Lcd_Piface_Cad()
-
-			screen.init(callback = self.callback)
-
+			screen.init(callback=self.callback,code_page = code_page)
 			# This device has its own buttons on the SPI intertface
 			self.has_buttons = True
 
 		else:
+			# Default LCD
 			from lcd_class import Lcd
 			screen = Lcd()
-			screen.init()
+			screen.init(code_page = self.code_page)
+
+		# Log code files used and codepage
+		log.message("Display code page " + str(hex(self.code_page)), log.INFO)
+
+		font_files = self.translate.getFontFiles()
+		for i in range (0,len(font_files)):
+			log.message("Loaded " + str(font_files[i]), log.INFO)
 
 		# Set up screen width (if 0 use default)
 		self.width = config.getWidth()	
@@ -147,10 +167,10 @@ class Display:
 		msg = 'Screen ' + sName + ' Lines=' + str(self.lines) \
 			 + ' Width=' + str(self.width) 
 		
-		if i2c_address > 0:
+		if i2c_address > 0 and i2c_interface:
 			msg = msg + ' Address=' + hex(i2c_address)
 
-		log.message(msg, log.DEBUG)
+		log.message(msg, log.INFO)
 
 		self.splash()
 
@@ -207,14 +227,11 @@ class Display:
 		if line <= self.lines:
 			# Always display messages that need to be scrolled
 			if leng > self.width:
-				# DEBUG
-				message = translate.toLCD(message)
 				screen.out(line,message,interrupt)
 				self.update(screen,displayType)
 
 			# Only display if this is a different message on this line
 			elif message !=  self.lineBuffer[index]:
-				message = translate.toLCD(message)
 				screen.out(line,message,interrupt)
 				self.update(screen,displayType)
 

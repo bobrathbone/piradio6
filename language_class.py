@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: language_class.py,v 1.38 2018/10/30 13:35:44 bob Exp $
+# $Id: language_class.py,v 1.41 2020/04/24 14:49:15 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -19,11 +19,9 @@ import os
 import sys
 import threading
 from log_class import Log
-from translate_class import Translate
 import ConfigParser
 
 log = Log()
-translate = Translate()
 
 # System files
 RadioLibDir = "/var/lib/radiod"
@@ -51,6 +49,7 @@ class Language:
 		'update_complete': 'Update complete',
 		'loading_media': 'Loading media library',
 		'loading_playlists': 'Loading playlists',
+		'loading_playlist': 'Loading playlist',
 		'starting_airplay': 'Starting Airplay',
 		'starting_spotify': 'Starting Spotify',
 		'waiting_for_spotify_client': 'Waiting for Spotify client',
@@ -79,6 +78,7 @@ class Language:
 		'wait': 'Please wait',
 		'title_unknown': 'Title unknown',
 		'track_unknown': 'Track unknown',
+		'no_information': 'No information',
 
 		# Options
 		'random': 'Random',

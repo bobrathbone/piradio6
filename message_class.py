@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet language Class
-# $Id: message_class.py,v 1.29 2018/08/12 08:42:45 bob Exp $
+# $Id: message_class.py,v 1.31 2020/04/11 09:18:48 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -37,12 +37,14 @@ class Message:
 	ipaddress = '' 	# Stored IP address
 	speech = False  # Speech for visually impaired or blind persons
 	speech_text = ''  # Prevent text from being repeatedly spoken
+	translate = None  # Language translation class   
 
 	# Initialisation routine - Load language
-	def __init__(self,radio,display):
+	def __init__(self,radio,display,translate):
 		global language
 		self.radio = radio
 		self.display = display
+		self.translate = translate
 		self.lines = display.getLines()
 		self.width = display.getWidth()
 
@@ -75,7 +77,7 @@ class Message:
 		# If message get fails display label
 		if len(message) < 1:
 			message = label.replace('_',' ')
-
+		message = self.translate.all(message)
 		return message
 
 	# Return date and time

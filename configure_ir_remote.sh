@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.20 2019/12/11 17:24:30 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.21 2020/03/14 16:23:13 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -29,10 +29,10 @@ KEYMAPS_TOML=/lib/udev/rc_keymaps
 KEYMAPS=/etc/rc_keymaps
 ERRORS=(0)
 
-JESSIE=1
+STRETCH=1
 BUSTER=2
 
-OS=${JESSIE}
+OS=${STRETCH}
 IR_GPIO=9	
 IR_REMOTE_LED=0
 DT_OVERLAY=""
@@ -62,7 +62,7 @@ while [ $selection != 0 ]
 do
         ans=$(whiptail --title "Select operating system" --menu "Choose your option" 15 75 9 \
         "1" "Rasbian Buster or later" \
-        "2" "Rasbian Jessie" \
+        "2" "Rasbian Stretch" \
 	3>&1 1>&2 2>&3)
 
         exitstatus=$?
@@ -75,8 +75,8 @@ do
 		OS=${BUSTER}
 
         elif [[ ${ans} == '2' ]]; then
-                DESC="Rasbian Jessie selected"
-		OS=${JESSIE}
+                DESC="Rasbian Stretch selected"
+		OS=${STRETCH}
 	fi
 
         whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
@@ -95,6 +95,7 @@ do
         "4" "Adafruit RGB plate (GPIO 16)" \
         "5" "All versions using a DAC (GPIO 25)" \
         "6" "IQaudIO Cosmic Controller (GPIO 25)" \
+        "7" "PiFace CAD (GPIO 23)" \
 	3>&1 1>&2 2>&3)
 
         exitstatus=$?
@@ -125,15 +126,19 @@ do
         elif [[ ${ans} == '6' ]]; then
                 DESC="IQaudIO Cosmic Controller (GPIO 25)"
 		IR_GPIO=25	
+
+        elif [[ ${ans} == '7' ]]; then
+                DESC="Piface CAD (GPIO 23)"
+		IR_GPIO=23	
 	fi
 
         whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
         selection=$?
 done
 
-if [[ ${OS} == ${JESSIE} ]]; then
+if [[ ${OS} == ${STRETCH} ]]; then
 	echo "" | tee -a ${LOG}
-	echo "You have selected Jessie as the OS version you are using."  | tee -a ${LOG}
+	echo "You have selected Stretch as the OS version you are using."  | tee -a ${LOG}
 	echo "Please note the release date of the kernel you are using from the line below:"  | tee -a ${LOG}
 	echo -n "    " | tee -a ${LOG}
 	uname -s -r -v | tee -a ${LOG}
@@ -249,7 +254,7 @@ echo "Configured remote_led=${REMOTE_LED} in ${CONFIG}" | tee -a ${LOG}
 
 # Install LIRC packages
 echo "" | tee -a ${LOG}
-if [[ ${OS} == ${JESSIE} ]]; then
+if [[ ${OS} == ${STRETCH} ]]; then
 	packages="lirc ir-keytable python-lirc"
 	lirc_service="lirc"
 else
@@ -355,7 +360,7 @@ echo "Reboot the system and then run the following " |  tee -a ${LOG}
 echo "to configure your IR remote control" |  tee -a ${LOG}
 echo "	  sudo irrecord -f -d /dev/lirc0 ~/lircd.conf " |  tee -a ${LOG}
 echo "" |  tee -a ${LOG}
-if [[ ${OS} == ${JESSIE} ]]; then
+if [[ ${OS} == ${STRETCH} ]]; then
 	echo "Then copy your configuration file (myremote.conf) to  ${LIRCD_CONFIG}" |  tee -a ${LOG}
 	echo "	  sudo cp myremote.conf ${LIRCD_CONFIG}" |  tee -a ${LOG}
 else

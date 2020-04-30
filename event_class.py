@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.51 2018/11/19 14:06:46 bob Exp $
+# $Id: event_class.py,v 1.52 2020/02/10 20:15:52 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -76,13 +76,14 @@ class Event():
 	MPD_CLIENT_CHANGE = 14
 
 	# Events from the Web interface
-	LOAD_RADIO = 15
-	LOAD_MEDIA = 16
-	LOAD_AIRPLAY = 17
-	LOAD_SPOTIFY = 18
+	LOAD_RADIO = 15		# Used by web interface v1.7
+	LOAD_MEDIA = 16		# 	ditto
+	LOAD_PLAYLIST = 17	# Used by web interface v1.8 onwards
+	LOAD_AIRPLAY = 18
+	LOAD_SPOTIFY = 19
 
 	# Shutdown radio
-	SHUTDOWN = 19
+	SHUTDOWN = 20
 
 	# Alternate event names (easier to understand code )
 	VOLUME_UP = RIGHT_SWITCH
@@ -97,8 +98,8 @@ class Event():
 		      'MUTE_BUTTON_UP', 'UP_SWITCH', 'DOWN_SWITCH', 'MENU_BUTTON_DOWN',
 		      'MENU_BUTTON_UP', 'ALARM_FIRED', 'TIMER_FIRED', 'KEY_LANGUAGE',
 		      'KEY_INFO', 'ROTARY_SWITCH_CHANGE', 'MPD_CLIENT_CHANGE', 
-		      'LOAD_RADIO', 'LOAD_MEDIA', 'LOAD_AIRPLAY', 'LOAD_SPOTIFY',
-		      'SHUTDOWN',
+		      'LOAD_RADIO', 'LOAD_MEDIA', 'LOAD_PLAYLIST', 'LOAD_AIRPLAY', 
+		      'LOAD_SPOTIFY', 'SHUTDOWN',
 		     ]
 
 	encoderEventNames = [ 'NONE', 'CLOCKWISE', 'ANTICLOCKWISE',

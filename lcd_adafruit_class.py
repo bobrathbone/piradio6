@@ -4,7 +4,7 @@
 # LCD class for  Adafruit RGB-backlit LCD plate for Raspberry Pi.
 # Adapted by Bob Rathbone from code by Adafruit Industries.  MIT license.
 # Amended for version 6.0 and later of the Rathbone Internet Radio
-# $Id: lcd_adafruit_class.py,v 1.11 2018/12/07 14:21:36 bob Exp $
+# $Id: lcd_adafruit_class.py,v 1.16 2020/04/18 13:50:34 bob Exp $
 
 # Original code based on code from lrvick and LiquidCrystal.
 # lrvic - https://github.com/lrvick/raspi-hd44780/blob/master/hd44780.py
@@ -16,10 +16,10 @@ import time
 from i2c_class import i2c
 from time import sleep
 from log_class import Log
-from translate_class import Translate
+from config_class import Configuration
 
 log = Log()
-translate = Translate()
+config = Configuration()
 
 # No interrupt routine
 def no_interrupt():
@@ -95,9 +95,7 @@ class Adafruit_lcd(i2c):
 	width = 16	# Line width
 
 	# Variable values
-	displayUmlauts = True	# If false translate to ae oe etc.
-	RawMode = False		# Test only
-	ScrollSpeed = 0.3 	# Scroll speed
+	scroll_speed = 0.2 	# Scroll speed
 
 	# ----------------------------------------------------------------------
 	# Constructor
@@ -107,8 +105,9 @@ class Adafruit_lcd(i2c):
         def __init__(self):
                 return
 
-	def init(self, busnum=1, address=0x20, callback=None, debug=False):
-
+	def init(self, busnum=1, address=0x20, callback=None, 
+	        code_page = 0x0, debug=False):
+		self.code_page = code_page 	# Future use
 		log.init("radio") 
 
 		# The callback is actually the event class to handle the buttons
@@ -183,7 +182,14 @@ class Adafruit_lcd(i2c):
 		self.write(self.LCD_CURSORSHIFT	| self.displayshift)
 		self.write(self.LCD_ENTRYMODESET   | self.displaymode)
 		self.write(self.LCD_DISPLAYCONTROL | self.displaycontrol)
+
+		# Set code page
+		self.write(self.LCD_DISPLAYCONTROL | self.LCD_FUNCTIONSET | self.code_page)
+
 		self.write(self.LCD_RETURNHOME)
+
+		self.scroll_speed = config.getScrollSpeed()
+                self.setScrollSpeed(self.scroll_speed)
 
 
 	# ----------------------------------------------------------------------
@@ -382,15 +388,10 @@ class Adafruit_lcd(i2c):
 
 	# Display Line on LCD
 	def _write(self,line,text):
-		if self.RawMode:
-			mytext = text
-		else:
-			mytext = translate.toLCD(text)
-
 		self.write(line)		# Set DDRAM address to 3rd line
 		self.write("                    ", True)
 		self.write(line)		# Set DDRAM address to 4th line
-		self.write(mytext, True)		# Issue substring
+		self.write(text, True)		# Issue substring
 		return
 
 	# Scroll line - interrupt() breaks out routine if True
@@ -405,7 +406,7 @@ class Adafruit_lcd(i2c):
 
 		if not skip:
 			for i in range(0, 5):
-				sleep(self.ScrollSpeed)
+				sleep(self.scroll_speed)
 				if interrupt():
 					skip = True
 					break
@@ -426,14 +427,14 @@ class Adafruit_lcd(i2c):
 		return
 
 	# Set Scroll line speed - Best values are 0.2 and 0.3
-	# Limit to between 0.05 and 1.0
-	def setScrollSpeed(self,speed):
-		if speed < 0.05:
-			speed = 0.2
-		elif speed > 1.0:
-			speed = 0.3
-		self.ScrollSpeed = speed
-		return
+        # Limit to between 0.08 and 0.6
+        def setScrollSpeed(self,speed):
+                if speed < 0.08:
+                        speed = 0.08
+                elif speed > 0.6:
+                        speed = 0.6
+                self.scroll_speed = speed
+                return self.scroll_speed
 
 	# Get the LCD width in characters
 	def getWidth(self):
@@ -507,11 +508,6 @@ class Adafruit_lcd(i2c):
 	# Set display umlauts or not
 	def displayUmlauts(self,value):
 		self.displayUmlauts = value
-		return
-
-	# Set raw mode on (No translation)
-	def setRawMode(self,value):
-		self.RawMode = value
 		return
 
 	# Does this screen support color

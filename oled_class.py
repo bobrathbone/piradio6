@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This class drives the Solomon Systech SSD1306 128 by 64 pixel OLED
 #
-# $Id: oled_class.py,v 1.25 2018/11/28 12:34:38 bob Exp $
+# $Id: oled_class.py,v 1.26 2020/03/09 14:42:08 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -19,6 +19,9 @@ from oled import Font
 from oled import Graphics
 from PIL import Image
 import pdb,sys,time
+from config_class import Configuration
+
+config = Configuration()
 
 # Line addresses
 # 	 1 2  3  4  5  
@@ -35,7 +38,7 @@ class 	Oled:
 	width = 20
 	lines = 4
 	scroll_line = 0
-	scroll_speed = 0.03
+	scroll_speed = 0.3
 
 	def __init__(self,revision=1):
 		# Connect to the display on /dev/i2c-1
@@ -57,8 +60,9 @@ class 	Oled:
 		self.dis.set_scan_direction(0)
 		self.dis.set_inverse_display(False)	# Black on white
 		self.clear()
-		#self.scroll(3)
-		self.stop_scroll()
+		self.scroll_speed = config.getScrollSpeed()
+		self.setScrollSpeed(self.scroll_speed)
+		self.stop_scroll()	# Stop native scrolling
 
 		# Set font scale to 1
 		self.f = Font(1)
@@ -243,15 +247,15 @@ class 	Oled:
 			D += 2*dy
 		return
 
-	# Set Scroll line speed - Best values are 0.05 and 1.0
-	# Limit to between 0.05 and 1.0
-	def setScrollSpeed(self,speed):
-		if speed < 0.01:
-			speed = 0.01
-		elif speed > 0.4:
-			speed = 0.3
-		self.scroll_speed = speed
-		return
+        # Set Scroll line speed - Best values are 0.2 and 0.3
+        # Limit to between 0.08 and 0.6
+        def setScrollSpeed(self,speed):
+                if speed < 0.08:
+                        speed = 0.08
+                elif speed > 0.6:
+                        speed = 0.6
+                self.scroll_speed = speed
+                return self.scroll_speed
 
 	# Flip OLED display vertically
 	def flip_display_vertically(self,flip):

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.11 2020/01/02 15:45:25 bob Exp $
+# $Id: create_stations.py,v 1.18 2020/04/07 19:19:55 bob Exp $
 #
 # Create playlist files from the following url formats
 #       iPhone stream files (.asx)
@@ -30,7 +30,6 @@ import socket
 import signal
 from time import strftime
 from xml.dom.minidom import parseString
-from translate_class import Translate
 
 # Output errors to STDERR
 stderr = sys.stderr.write;
@@ -46,7 +45,7 @@ PlaylistsDir = RadioDir + 'playlists/'
 ErrorUrls = []
 
 duplicateCount = 0
-TimeOut=15	# Socket time out
+TimeOut=20	# Socket time out
 
 # Execute system command
 def execCommand(cmd):
@@ -56,7 +55,7 @@ def execCommand(cmd):
 # Create the initial list of files
 def createList():
 	if not os.path.isfile(StationList):
-		print 'Creating ' + StationList + '\n'
+		print ('Creating ' + StationList + '\n')
 		execCommand ("mkdir -p " + RadioLibDir )
 		print ("cp " + DistFile + ' ' + StationList )
 		execCommand ("cp " + DistFile + ' ' + StationList)
@@ -88,7 +87,7 @@ def createM3uFile(filename,output,nlines):
 	exists = True
 	while exists:
 		if os.path.exists(outfile):
-			print "Warning: " + outfile + ' already exists'
+			print ("Warning: " + outfile + ' already exists')
 			outfile = TempDir + filename + '[' + str(uniqueCount) + '].m3u'
 			uniqueCount += 1
 			duplicateCount += 1
@@ -96,17 +95,15 @@ def createM3uFile(filename,output,nlines):
 			exists = False
 
 	try:
-		print 'Creating ' + outfile + '\n'
+		print ('Creating ' + outfile + '\n')
 		outfile = open(outfile,'w')
 		for item in output:
-		#	outstr = item.encode('utf8', 'replace')
-		#	outfile.write(outstr + "\n")
 			outfile.write(item + "\n")
 
 		outfile.close()
 	except Exception as e:
 		print str(e)
-		print "Failed to create",outfile
+		print ("Failed to create " + outfile)
 	return
 
 # Beautify HTML convert tags to lower case
@@ -149,13 +146,15 @@ def parseAsx(title,url,data,filenumber):
 	global errorCount
 	global warningCount
 	global ErrorUrls
+
+	output = ""
 	lcdata = parseHTML(data)
 
 	try:
 		dom = parseString(lcdata)
 	except Exception,e:
-		print "Error:",e
-		print "ERROR: Could not parse XML data from,", url + '\n'
+		print ("Error:" + e)
+		print ("ERROR: Could not parse XML data from,", url + '\n')
 		errorCount += 1
 		ErrorUrls.append(url)
 		return
@@ -167,7 +166,7 @@ def parseAsx(title,url,data,filenumber):
 			title = getParameter(titleTag)
 
 	except:
-		print "Warning: Title not found in", url 
+		print ("Warning: Title not found in " + url)
 		pass
 
 	finally:
@@ -178,12 +177,17 @@ def parseAsx(title,url,data,filenumber):
 			url = urls[0]
 			title = title.rstrip()
 			url = url.rstrip()
-			print 'Title:',title
+			print ("Title:" + title)
 			m3ufile = title.replace(' ','_')
-			output = createM3uOutput(title,url,filenumber)
+
+			if checkStream(plsurl,lineCount):
+				m3ufile = title.replace(' ','_')
+				output = createM3uOutput(title,url,filenumber)
+			else:
+				output = ""
 		except IndexError,e:
-			print "Error:",e
-			print "ERROR parsing", url
+			print ("Error: " + e)
+			print ("ERROR parsing" + url)
 			errorCount += 1
 			ErrorUrls.append(url)
 			return "# DOM Error" 
@@ -228,7 +232,7 @@ def parseDirect(title,url,filenumber):
 	url = url.replace('(stream)', '')
 	if len(title) < 1:
 		title = createTitle(url)
-	print "Title:",title
+	print ("Title:" + title)
 	output = createM3uOutput(title,url,filenumber)
 	return output
 
@@ -254,16 +258,20 @@ def parsePls(title,url,lines,filenumber):
 			title = createTitle(url)
 			m3ufile = createFileName(title,url)
 
-	print 'Title:',title
-	m3ufile = title.replace(' ','_')
-	output = createM3uOutput(title,plsurl,filenumber)
+	print ("Title:" + title)
+	if checkStream(plsurl,lineCount):
+		m3ufile = title.replace(' ','_')
+		output = createM3uOutput(title,plsurl,filenumber)
+	else:
+		output = ""
 	return output
 
 # Parse M3U file to PLS output
 def parseM3u(title,url,lines,filenumber):
+	global lineCount
 	info = 'Unknown' 
 	output = []
-
+	
 	for line in lines:
 		line = line.replace('\r','')
 		line = line.replace('\n','')
@@ -287,10 +295,13 @@ def parseM3u(title,url,lines,filenumber):
 	else:
 		filename = title.replace(' ','_')
 
-	print 'Title:',title
-	output.append('#EXTM3U')
-	output.append('#EXTINF:-1,%s'% title)
-	output.append('%s#%s'% (url,title))
+	print ("Title:" + title)
+	if checkStream(url,lineCount):
+		output.append('#EXTM3U')
+		output.append('#EXTINF:-1,%s'% title)
+		output.append('%s#%s'% (url,title))
+	else:
+		output = ''	
 	return output
 
 # Usage message 
@@ -305,7 +316,7 @@ def usage():
 def format():
 	stderr ("Start a playlist with the name between brackets. For example:\n")
 	stderr ("(BBC Radio Stations)\n")
-	stderr ("This will create a playlist called BBC_Radio_Stations.m3u\n")
+	stderr ("This will create a radio playlist called _BBC_Radio_Stations.m3u\n")
 	stderr ("\nThe above is followed by station definitions which take the following format:\n")
 	stderr ("\t[title] http://<url>\n")
 	stderr ("\tExample:\n")
@@ -316,11 +327,30 @@ def format():
 def handler(signum, frame):
     raise IOError("The page is taking too long to read")
 
+# Check Embedded stream is OK
+def checkStream(url,lineCount):
+	global errorCount
+	success = False
+	# Get the stream file
+	try:
+		signal.alarm(TimeOut)
+		socket.setdefaulttimeout(TimeOut)
+		file = urllib2.urlopen(url,timeout=10)
+		data = file.read(50)	# Just a few bytes of stream
+		file.close()
+		print ("Stream:" + url)
+		success = True
+	except:
+		print ("ERROR: Failed to retrieve stream " + url)
+		errorCount += 1
+		ErrorUrls.append( "Failed to retrieve stream " + url + " on line " + str(lineCount))
+	return success
+
 # Start of MAIN script
 signal.signal(signal.SIGALRM, handler)
 
 if os.getuid() != 0:
-	print "This program can only be run as root user or using sudo"
+	print ("This program can only be run as root user or using sudo")
 	sys.exit(1)
 
 deleteOld =  False
@@ -358,7 +388,7 @@ execCommand ("rm -f " + TempDir + '*' )
 
 # Open the list of URLs 
 timedate = strftime("%Y/%m/%d, %H:%M:%S")
-print "Creating M3U files from", StationList , timedate + '\n'
+print ("Creating M3U files from " + StationList + ' ' + timedate + '\n')
 
 lineCount = 0		# Line being processed (Including comments)
 errorCount = 0		# Errors
@@ -369,7 +399,7 @@ processedCount = 0	# Processed station count
 # Copy user stream files to temporary directory 
 
 if os.path.exists(PlaylistsDir + '*.m3u'):
-	print "Copying user M3U files from " + PlaylistsDir + " to " + TempDir + '\n'
+	print ("Copying user M3U files from " + PlaylistsDir + " to " + TempDir + '\n')
 	execCommand ("cp -f " +  PlaylistsDir + '*.m3u ' + TempDir )
 
 # Playlist file name
@@ -408,7 +438,7 @@ for line in open(StationList,'r'):
 		if len(filename) > 0:
 			writeFile = True
 		else:
-			print "Playlist:", playlistname
+			print ("Playlist: " + playlistname)
 			filename = newplaylist
 			filenumber = 1
 			continue
@@ -461,7 +491,8 @@ for line in open(StationList,'r'):
 	url = lineparts[1].lstrip()
 
 	# Get the published URL and determine its type
-	print 'Processing line ' + str(lineCount) + ': ' + url
+	print ('')
+	print ('Processing line ' + str(lineCount) + ': ' + url)
 
 	# Extended M3U (MPEG 3 URL) format
 	if url.endswith('.m3u') or '.m3u?' in url:
@@ -490,29 +521,35 @@ for line in open(StationList,'r'):
 	try:
 		signal.alarm(TimeOut)
 		socket.setdefaulttimeout(TimeOut)
-		file = urllib2.urlopen(url,timeout=15)
+		file = urllib2.urlopen(url,timeout=10)
 		data = file.read()
 		file.close()
 		# Creat list from data
 		lines = data.split('\n')
 		firstline = lines[0].rstrip()
 	except:
-		print "ERROR: Failed to retrieve ",title, url
+		print ("ERROR: Failed to retrieve %s %s" % (title, url))
 		errorCount += 1
 		ErrorUrls.append( "Failed to retrieve " + url + " on line " + str(lineCount))
 		continue
 
-
-	# process lines accoording to URL type
+	# process lines according to URL type
 	if isPLS:
 		m3u_output += parsePls(title,url,lines,filenumber)
+		if len(m3u_output) < 1:
+			continue
 	elif isM3U:
 		m3u_output += parseM3u(title,url,lines,filenumber)
+		if len(m3u_output) < 1:
+			continue
+
 	elif isASX:
 		if firstline.startswith('<ASX'):
 			m3u_output += parseAsx(title,url,lines,filenumber)
+			if len(m3u_output) < 1:
+				continue
 		else:
-			print url,"didn't return XML data"
+			print (url,"didn't return XML data")
 			continue
 
 	if len(filename) < 1:
@@ -550,25 +587,25 @@ if nOld > 0:
 			 % (nOld,PlsDirectory))
 		execCommand ("rm -f " + PlsDirectory + "_*.m3u" )
 	else:
-		print "Old playlist files not removed"
+		print ("Old playlist files not removed")
 
 copiedCount = len(os.listdir(TempDir))
-print "Copying %s new playlist files to directory %s" % (copiedCount,PlsDirectory)
+print ("Copying %s new playlist files to directory %s" % (copiedCount,PlsDirectory))
 execCommand ("cp -f " + TempDir + '* ' + PlsDirectory )
 
 # Create summary report
-print "\nNew radio playlist files will be found in " + PlsDirectory
+print ("\nNew radio playlist files will be found in " + PlsDirectory)
 
 if errorCount > 0:
-	print str(errorCount) + " error(s)"
+	print (str(errorCount) + " error(s)")
 	for line in ErrorUrls:
-		print '\t' + line
+		print ('\t' + line)
 
 if duplicateCount > 0:
-	print str(duplicateCount) + " duplicate file name(s) found and renamed."
+	print (str(duplicateCount) + " duplicate file name(s) found and renamed.")
 
 warningCount += duplicateCount
 if warningCount > 0:
-	print str(warningCount) + " warning(s)"
+	print (str(warningCount) + " warning(s)")
 
 # End of script

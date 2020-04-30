@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_pcf8574.py,v 1.6 2017/10/19 13:10:09 bob Exp $
+# $Id: lcd_i2c_pcf8574.py,v 1.16 2020/04/24 08:59:35 bob Exp $
 #
 # PCF8574 I2C LCD Backpack LCD class
 # Use this program to test I2C Backpack LCD wiring
@@ -16,14 +16,16 @@
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 # The authors shall not be liable for any loss or damage however caused.
 #
+# This version use3s smbus2 from Karl-Petter Lindegaard (MIT)
 
 import pdb
 import os,sys,pwd
-import smbus, time
+import time
 from subprocess import * 
 from time import sleep, strftime
 from datetime import datetime
 from config_class import Configuration
+from smbus2 import SMBus
 
 config = Configuration()
 
@@ -101,40 +103,20 @@ class Lcd_i2c_pcf8574:
 	lcd_line4 = LCD_LINE_4
 
 	width = LCD_WIDTH
-	ScrollSpeed = 0.3	   # Default scroll speed
-
-	def write_cmd(self, cmd):
-		self.__bus.write_byte(self.i2c_address, cmd)
-		sleep(0.0001)
-
-
-	# clocks EN to latch command
-	def lcd_strobe(self, data):
-		self.write_cmd(data | self.En | self._backlight)
-		sleep(.0005)
-		self.write_cmd(((data & ~self.En) | self._backlight))
-		sleep(.0001)
-
-	def lcd_write_four_bits(self, data):
-		self.write_cmd(data | self._backlight)
-		self.lcd_strobe(data)
-
-	# write a command to lcd
-	def writeCommand(self, cmd, mode=0):
-		self.lcd_write_four_bits(mode | (cmd & 0xF0))
-		#self.lcd_write_four_bits(data)
-		#self.lcd_write_four_bits(mode | (cmd & 0xF0))
-		self.lcd_write_four_bits(mode | ((cmd << 4) & 0xF0))
+	scroll_speed = 0.2	   # Default scroll speed
 
 	# __init__
 	def __init__(self):
 		self._backlight = self.LCD_BACKLIGHT
+		self.scroll_speed = config.getScrollSpeed()
+                self.setScrollSpeed(self.scroll_speed)
 
 	# Initialisation routine
-	def init(self, busnum=1, address=0x27):
+	def init(self,busnum=1,address=0x27,code_page=0):
+		self.code_page = code_page	# TO BE IMPLEMENTED
 
 		self.i2c_address = address
-		self.__bus=smbus.SMBus(busnum)
+		self.__bus=SMBus(busnum)
 
 		self.writeCommand(0x03)
 		self.writeCommand(0x03)
@@ -145,9 +127,38 @@ class Lcd_i2c_pcf8574:
 		self.__displaycontrol = self.__DISPLAYCONTROL | self.__DISPLAYON | self.__CURSORON | self.__BLINKON
 		self.writeCommand(self.__displayfunction)
 		self.writeCommand(self.__DISPLAYCONTROL | self.__DISPLAYON)
+
+		# Set code page
+		self.writeCommand(self.__FUNCTIONSET | self.__DISPLAYCONTROL | self.code_page)
+
 		self.writeCommand(self.__CLEARDISPLAY)
 		self.writeCommand(self.__ENTRYMODESET | self.__ENTRYLEFT)
 		sleep(0.2)		
+
+	# Write commands to LCD
+	def write_cmd(self, cmd):
+		self.__bus.write_byte(self.i2c_address, cmd)
+		sleep(0.0001)
+
+
+	# clocks EN to latch command
+	def lcd_strobe(self, data):
+		self.write_cmd(data | self.En | self._backlight )
+		sleep(.0005)
+		self.write_cmd(((data & ~self.En) | self._backlight ))
+		sleep(.0005)
+
+	def lcd_write_four_bits(self, data):
+		self.write_cmd(data | self._backlight )
+		self.lcd_strobe(data)
+
+	# write a command to lcd
+	def writeCommand(self, cmd, mode=0):
+		self.lcd_write_four_bits(mode | (cmd & 0xF0))
+		#self.lcd_write_four_bits(data)
+		#self.lcd_write_four_bits(mode | (cmd & 0xF0))
+		self.lcd_write_four_bits(mode | ((cmd << 4) & 0xF0))
+
 	   
 	# Display Line on LCD
 	def out(self,line_number=1,text="",interrupt=no_interrupt):
@@ -157,9 +168,9 @@ class Lcd_i2c_pcf8574:
 		elif line_number == 2:
 			line_address = self.LCD_LINE_2
 		elif line_number == 3:
-			line_address = self.LCD_LINE_3
+			line_address = self.lcd_line3
 		elif line_number == 4:
-			line_address = self.LCD_LINE_4
+			line_address = self.lcd_line4
 		#self._byte_out(line_address, LCD_CMD)
 
 		if len(text) > self.width:
@@ -199,7 +210,7 @@ class Lcd_i2c_pcf8574:
 				if interrupt():
 					skip = True
 					break
-				time.sleep(self.ScrollSpeed)
+				time.sleep(self.scroll_speed)
 
 		if not skip:
 			for i in range(0, 5):
@@ -250,11 +261,6 @@ class Lcd_i2c_pcf8574:
 			else:
 				self.writeCommand(ord(char), self.Rs)
 
-	# Set the display width
-	def setWidth(self,width):
-		self.width = width
-		return
-
 	# Get LCD width 0 = use default for program
 	def getWidth(self):
 		return config.getWidth()
@@ -264,19 +270,19 @@ class Lcd_i2c_pcf8574:
 		self.width = width
 		# Adjust line offsets if 16 char display
 		if width is 16:
-			self.lcd_line3 = self.LCD_LINE_3a
+			self.lcd_line3 = self.LCD_LINE_3a 
 			self.lcd_line4 = self.LCD_LINE_4a
 		return
 
-	# Set Scroll line speed - Best values are 0.2 and 0.3
-	# Limit to between 0.05 and 1.0
-	def setScrollSpeed(self,speed):
-		if speed < 0.05:
-			speed = 0.2
-		elif speed > 1.0:
-			speed = 0.3
-		self.ScrollSpeed = speed
-		return
+        # Set Scroll line speed - Best values are 0.2 and 0.3
+        # Limit to between 0.08 and 0.6
+        def setScrollSpeed(self,speed):
+                if speed < 0.08:
+                        speed = 0.08
+                elif speed > 0.6:
+                        speed = 0.6
+                self.scroll_speed = speed
+                return self.scroll_speed
 
         # Does this screen support color
         def hasColor(self):
@@ -301,12 +307,13 @@ if __name__ == "__main__":
 		print "Test I2C PCF8574 class"
 		lcd = Lcd_i2c_pcf8574()
 		lcd.init(address=0x27)
+		lcd.setWidth(20)
 		lcd.out(1,"bobrathbone.com")
 		lcd.out(2,"Line 2 123456789")
 		lcd.out(3,"Line 3 123456789")
 		lcd.out(4,"Line 4 123456789")
-		time.sleep(4)
-		lcd.out(4,"Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", no_interrupt)
+		#time.sleep(4)
+		##lcd.out(4,"Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", no_interrupt)
 		sys.exit(0)
 
 	except KeyboardInterrupt:

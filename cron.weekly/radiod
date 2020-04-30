@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # Raspberry Pi Internet Radio - Update radio stations
-# $Id: radiod,v 1.4 2019/06/02 08:29:02 bob Exp $
+# $Id: radiod,v 1.5 2020/04/26 13:29:34 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -22,7 +22,7 @@ LOG=${LOGDIR}/stations.log
 
 mkdir -p ${LOGDIR}
 chown pi:pi ${LOGDIR}
-${DIR}/create_stations.py --delete_old 2>&1 >${LOG}
+${DIR}/create_stations.py --no_delete 2>&1 >${LOG}
 chown pi:pi ${LOG}
 
 # End of script

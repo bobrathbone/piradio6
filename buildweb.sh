@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: buildweb.sh,v 1.5 2019/12/10 15:49:10 bob Exp $
+# $Id: buildweb.sh,v 1.6 2020/02/16 15:45:09 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -15,7 +15,7 @@ if [[ "$EUID" -eq 0 ]];then
         exit 1
 fi
 
-# Tar build filasbian Buster (Release 10) or later
+# Tar build for Rasbian Buster (Release 10) or later
 VERSION_ID=$(grep VERSION_ID ${OS_RELEASE})
 SAVEIFS=${IFS}; IFS='='
 ID=$(echo ${VERSION_ID} | awk '{print $2}' | sed 's/"//g')

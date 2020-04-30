@@ -136,6 +136,10 @@ class Font(OLED):
         :param ch:  ASCII code for char
         """
 
+	# Protect against out-of-range characters
+	if ord(ch)-0x20 > len(self.font_table):
+		ch = '?'
+
         # Get char from font table
         char = self.font_table[ord(ch) - 0x20]
 

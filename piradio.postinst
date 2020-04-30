@@ -1,13 +1,12 @@
 #!/bin/bash 
 set -e
 # Radio daemon post install script
-# $Id: piradio.postinst,v 1.9 2018/03/17 13:57:15 bob Exp $
+# $Id: piradio.postinst,v 1.11 2020/03/07 11:58:11 bob Exp $
 # Support for Pulseaudio added
 
 # File locations
 DIR=/usr/share/radio
 RADIOLIB=/var/lib/radiod
-INITTAB=/etc/inittab
 BOOTCMD=/boot/cmdline.txt 
 MODULES=/etc/modules
 MPDCONF=/etc/mpd.conf
@@ -33,9 +32,6 @@ sudo mkdir -p ${RADIOLIB}
 
 # Set daemon startup defaults
 systemctl enable radiod.service
-#update-rc.d radiod defaults
-#update-rc.d -f pifacercd defaults
-#update-rc.d -f shairport-sync defaults
 
 # Ensure owner is pi
 sudo chown -R pi:pi ${DIR}
@@ -52,16 +48,6 @@ ${DIR}/${CONFIGURATOR}
 if [[ $? != 0 ]]; then
 	echo "${DIR}/${CONFIGURATOR} script failed"
 	exit 1
-fi
-
-# If initab exists disable serial (Needs reviewing for Stretch/jessie
-if [[ ! -f   ${INITTAB}.orig  && -f ${INITTAB} ]]; then
-	echo "Disabling serial interface in ${INITTAB}" 
-	sudo cp -f ${INITTAB} ${INITTAB}.orig
-	OLDENTRY="T0\:23\:respawn\:\/sbin\/getty -L ttyAMA0"
-	NEWENTRY="\#T0\:23:respawn\:\/sbin\/getty -L ttyAMA0 115200 vt100"
-	sudo sed -i "s/^${OLDENTRY}.*/${NEWENTRY}/g" ${INITTAB}
-	echo "# Original file stored as ${INITTAB}.orig" >> ${INITTAB} 
 fi
 
 echo "Disabling serial interface in ${BOOTCMD}" 

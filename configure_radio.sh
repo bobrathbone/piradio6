@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.89 2019/12/10 12:32:26 bob Exp $
+# $Id: configure_radio.sh,v 1.94 2020/04/24 08:34:55 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -21,7 +21,6 @@
 # If -s flag specified (See piradio.postinst script)
 FLAGS=$1
 
-INIT=/etc/init.d/radiod
 SERVICE=/lib/systemd/system/radiod.service
 BINDIR="\/usr\/share\/radio\/"	# Used for sed so \ needed
 DIR=/usr/share/radio
@@ -30,7 +29,7 @@ BOOTCONFIG=/boot/config.txt
 LOG=${DIR}/install.log
 
 LXSESSION=""	# Start desktop radio at boot time
-FULL_SCREEN=""	# Start graphic radio fullscreen
+FULLSCREEN=""	# Start graphic radio fullscreen
 SCREEN_SIZE="800x480"	# Screen size 800x480, 720x480 or 480x320
 PROGRAM="Daemon radiod configured"
 GPROG=""	# Which graphical radio (gradio or vgradio)
@@ -284,7 +283,7 @@ do
 	"5" "HDMI or touch screen display" \
 	"6" "Olimex 128x64 pixel OLED display" \
 	"7" "PiFace CAD display" \
-	"8" "No display used" \
+	"8" "No display used/Pimoroni Pirate radio" \
 	"9" "Do not change display type" 3>&1 1>&2 2>&3) 
 
 	exitstatus=$?
@@ -494,14 +493,6 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
 
 	if [[ ${ans} == '1' ]]; then
 		sudo raspi-config
-
-		echo "The selected interface requires the Python I2C libraries" | tee -a ${LOG}
-		echo "It is necessary to install the python-smbus library" | tee -a ${LOG}
-		echo "After this program finishes carry out the following command:" | tee -a ${LOG}
-		echo "   sudo apt-get install python-smbus" | tee -a ${LOG}
-		echo "and reboot the system." | tee -a ${LOG}
-		echo; echo -n "Press enter to continue: "
-		read ans
 
 		# Update boot config
 		echo "Enabling I2C interface in ${BOOTCONFIG}" | tee -a ${LOG}
@@ -933,21 +924,7 @@ echo $(grep "^volume_range=" ${CONFIG} ) | tee -a ${LOG}
 if [[ $DATE_FORMAT != "" ]]; then
 	echo $(grep -m 1 "^dateformat=" ${CONFIG} ) | tee -a ${LOG}
 fi
-
 echo "-----------------------------------" | tee -a ${LOG}
-
-# Update the System V init script
-DAEMON="radiod.py"
-sudo sed -i "s/^NAME=.*/NAME=${DAEMON}/g" ${INIT}
-
-# Update systemd script
-echo | tee -a ${LOG}
-echo "Updating systemd script" | tee -a ${LOG}
-sudo sed -i "s/^ExecStart=.*/ExecStart=${BINDIR}${DAEMON} nodaemon/g" ${SERVICE}
-sudo sed -i "s/^ExecStop=.*/ExecStop=${BINDIR}${DAEMON} stop/g" ${SERVICE}
-
-echo "Reloading systemd units" | tee -a ${LOG}
-sudo systemctl daemon-reload
 
 echo | tee -a ${LOG}
 # Update system startup 

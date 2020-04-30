@@ -2,7 +2,7 @@
 # 
 # I2C class based upon Adafruit_I2C Class
 # Used for Adafruit RGB plate
-# $Id: i2c_class.py,v 1.2 2017/10/17 06:38:36 bob Exp $
+# $Id: i2c_class.py,v 1.3 2020/04/24 08:01:31 bob Exp $
 # 
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -12,9 +12,10 @@
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 #	     The authors shall not be liable for any loss or damage however caused.
 #
+# This version use3s smbus2 from Karl-Petter Lindegaard (MIT)
 
-import smbus
 import re
+from smbus2 import SMBus
 
 class i2c :
 
@@ -41,7 +42,7 @@ class i2c :
 	def __init__(self, address, busnum=1, debug=False):
 		self.address = address
 		self.busnum = busnum
-		self.bus = smbus.SMBus(self.busnum); # Force I2C1 (512MB Pi's)
+		self.bus = SMBus(self.busnum); # Force I2C1 (512MB Pi's)
 		self.debug = debug
 
 	def reverseByteOrder(self, data):

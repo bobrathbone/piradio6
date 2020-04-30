@@ -4,7 +4,7 @@
 # Raspberry Pi Radio Character translation class
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: translate_class.py,v 1.14 2019/06/16 11:24:32 bob Exp $
+# $Id: translate_class.py,v 1.64 2020/04/24 17:05:16 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -21,396 +21,147 @@
 #	http://www.ascii-code.com/
 	
 import os,sys
-import time
 import unicodedata
-from log_class import Log
+import pdb
+import glob
+import importlib
 
+from config_class import Configuration
+config = Configuration()
 
-log = Log()
+HD4780U = 1	# Traditional legacy HD44780 LCD/OLED controller
+HD4780 = 2	# Midas MC0100 LCD/OLED controller
 
 class Translate:
-	displayUmlauts = True
 	_translate = True
+	_romanized = True
+	_language = "English"
+	_skip_further_translation = False	# Prevent furthur translation
+						# For example after converting Cyrillic
+	_codes = None		# Native code table from codes/<language>.py
+	_romanized_codes = None	# Romanized code table from codes/<language>.py
+	_controller = "HDD44780"	# Controller type
 
-	# Escaped codes (from unicode)
-	codes = {
-		'//' : '/', 	   # Double /
-		'  ' : ' ',	# Double spaces
-		'\\n' : ' ',       # Line feed  to space
-
-		# German UTF8 codes
-		'\\xef\\xbf\\xbd' : chr(246),
-	
-		# Currencies
-		'\\xe2\\x82\\xac' : ' Euro ',
-
-		# Special characters
-		'\\x80\\x99' : "'",	# Single quote 
-		'\\xc2\\xa1' : '!',	# Inverted exclamation
-		'\\xc2\\xa2' : 'c',	# Cent sign
-		'\\xc2\\xa3' : '#',	# Pound sign
-		'\\xc2\\xa4' : '$',	# Currency sign
-		'\\xc2\\xa5' : 'Y',	# Yen sign
-		'\\xc2\\xa6' : '|',	# Broken bar
-		'\\xc2\\xa7' : '?',	# Section sign
-		'\\xc2\\xa8' : ':',	# Diaerisis
-		'\\xc2\\xa9' : '(C)',      # Copyright
-		'\\xc2\\xaa' : '?',	# Feminal ordinal
-		'\\xc2\\xab' : '<<',       # Double left
-		'\\xc2\\xac' : '-',	# Not sign
-		'\\xc2\\xad' : '',	 # Soft hyphen
-		'\\xc2\\xae' : '(R)',      # Registered sign
-		'\\xc2\\xaf' : '-',	# Macron
-		'\\xc2\\xb0' : 'o',	# Degrees sign
-		'\\xc2\\xb1' : '+-',       # Plus minus
-		'\\xc2\\xb2' : '2',	# Superscript 2
-		'\\xc2\\xb3' : '3',	# Superscript 3
-		'\\xc2\\xb4' : '',	 # Acute accent
-		'\\xc2\\xb5' : 'u',	# Micro sign
-		'\\xc2\\xb6' : '',	 # Pilcrow
-		'\\xc2\\xb7' : '.',	# Middle dot
-		'\\xc2\\xb8' : '',	 # Cedilla
-		'\\xc2\\xb9' : '1',	# Superscript 1
-		'\\xc2\\xba' : '',	 # Masculine indicator
-		'\\xc2\\xbb' : '>>',       # Double right
-		'\\xc2\\xbc' : '1/4',      # 1/4 fraction
-		'\\xc2\\xbd' : '1/2',      # 1/2 Fraction
-		'\\xc2\\xbe' : '3/4',      # 3/4 Fraction
-		'\\xc2\\xbf' : '?',	# Inverted ?
-
-		# German unicode escape sequences
-		'\\xc3\\x83' : chr(223),   # Sharp s es-zett
-		'\\xc3\\x9f' : chr(223),   # Sharp s ?
-		'\\xc3\\xa4' : chr(228),   # a umlaut
-		'\\xc3\\xb6' : chr(246),   # o umlaut
-		'\\xc3\\xbc' : chr(252),   # u umlaut
-		'\\xc3\\x84' : chr(196),   # A umlaut
-		'\\xc3\\x96' : chr(214),   # O umlaut
-		'\\xc3\\x9c' : chr(220),   # U umlaut
-
-		# Scandanavian unicode escape sequences
-		'\\xc2\\x88' : 'A',   # aelig
-		'\\xc2\\xb4' : 'A',   # aelig
-		'\\xc3\\x85' : 'Aa',  # Aring
-		'\\xc3\\x93' : 'O',   # O grave
-		'\\xc3\\xa4' : 'a',   # a with double dot
-		'\\xc3\\xa5' : 'a',   # aring
-		'\\xc3\\x86' : 'AE',  # AElig
-		'\\xc3\\x98' : '0',   # O crossed
-		'\\xc3\\x99' : 'U',   # U grave
-		'\\xc3\\xa6' : 'ae',  # aelig
-		'\\xc3\\xb0' : 'o',   # o umlaut
-		'\\xc3\\xb2' : 'o',   # o tilde
-		'\\xc3\\xb3' : 'o',   # o reverse tilde
-		'\\xc3\\xb4' : 'o',   # Capital O circumflex
-		'\\xc3\\xb8' : 'o',   # oslash
-
-		# French (Latin) unicode escape sequences
-		'\\xc3\\x80' : 'A',	# A grave
-		'\\xc3\\x81' : 'A',	# A acute
-		'\\xc3\\x82' : 'A',	# A circumflex
-		'\\xc3\\x83' : 'A',	# A tilde
-		'\\xc3\\x88' : 'E',	# E grave
-		'\\xc3\\x89' : 'E',	# E acute
-		'\\xc3\\x8a' : 'E',	# E circumflex
-		'\\xc3\\xa0' : 'a',   	   # a grave
-		'\\xc3\\xa1' : 'a',   	   # a acute
-		'\\xc3\\xa2' : 'a',   	   # a circumflex
-		'\\xc3\\xa7' : 'c',	# c cedilla
-		'\\xc3\\xa8' : 'e',	# e grave
-		'\\xc3\\xa9' : 'e',   	   # e acute
-		'\\xc3\\xaa' : 'e',	# e circumflex
-		'\\xc3\\xab' : 'e',	# e diaeresis
-		'\\xc3\\xae' : 'i',	# i circumflex
-		'\\xc3\\xaf' : 'i',	# i diaeresis
-		'\\xc3\\xb7' : "/",	# Division sign
-		'\\xc5\\x93' : 'oe',       # oe joined
-
-		# Hungarian lower case (not covered elsewhere)
-		'\\xc3\\xad' : 'i',
-		'\\xc3\\xba' : 'u', 
-		'\\xc3\\xb1' : 'u',	# ? Check Spanish n 
-		'\\xc5\\xb1' : 'u',
-		'\\xc5\\x91' : 'o',
-
-		# Hungarian upper case (not covered elsewhere)
-		'\\xc3\\x8d' : 'I',
-		'\\xc3\\x90' : 'O',	 
-		'\\xc3\\x9a' : 'U', 
-		'\\xc3\\xb0' : 'U',	# ? Check SCandanavian O umlaut
-		'\\xc5\\xb0' : 'U',
-		'\\xc5\\x90' : 'O',
-
-		# Polish unicode escape sequences
-		'\\xc4\\x84' : 'A',	# A,
-		'\\xc4\\x85' : 'a',	# a,
-		'\\xc4\\x86' : 'C',	# C'
-		'\\xc4\\x87' : 'c',	# c'
-		'\\xc4\\x98' : 'E',	# E,
-		'\\xc4\\x99' : 'e',	# e,
-		'\\xc5\\x81' : 'L',	# L/
-		'\\xc5\\x82' : 'l',	# l/
-		'\\xc5\\x83' : 'N',	# N'
-		'\\xc5\\x84' : 'n',	# n'
-		'\\xc5\\x9a' : 'S',	# S'
-		'\\xc5\\x9b' : 's',	# s'
-		'\\xc5\\xb9' : 'Z',	# Z'
-		'\\xc5\\xba' : 'z',	# z'
-		'\\xc5\\xbb' : 'Z',	# Z.
-		'\\xc5\\xbc' : 'z',	# z.
-
-		# Greek upper case
-		'\\xce\\x91' : 'A',	# Alpha
-		'\\xce\\x92' : 'B',	# Beta
-		'\\xce\\x93' : 'G',	# Gamma
-		'\\xce\\x94' : 'D',	# Delta
-		'\\xce\\x95' : 'E',	# Epsilon
-		'\\xce\\x96' : 'Z',	# Zeta
-		'\\xce\\x97' : 'H',	# Eta
-		'\\xce\\x98' : 'TH',       # Theta
-		'\\xce\\x99' : 'I',	# Iota
-		'\\xce\\x9a' : 'K',	# Kappa
-		'\\xce\\x9b' : 'L',	# Lamda
-		'\\xce\\x9c' : 'M',	# Mu
-		'\\xce\\x9e' : 'N',	# Nu
-		'\\xce\\x9f' : 'O',	# Omicron
-		'\\xce\\xa0' : 'Pi',       # Pi
-		'\\xce '     : 'Pi',       # Pi ?
-		'\\xce\\xa1' : 'R',	# Rho
-		'\\xce\\xa3' : 'S',	# Sigma
-		'\\xce\\xa4' : 'T',	# Tau
-		'\\xce\\xa5' : 'Y',	# Upsilon
-		'\\xce\\xa6' : 'F',	# Fi
-		'\\xce\\xa7' : 'X',	# Chi
-		'\\xce\\xa8' : 'PS',       # Psi
-		'\\xce\\xa9' : 'O',	# Omega
-
-		# Greek lower case
-		'\\xce\\xb1' : 'a',	# Alpha
-		'\\xce\\xb2' : 'b',	# Beta
-		'\\xce\\xb3' : 'c',	# Gamma
-		'\\xce\\xb4' : 'd',	# Delta
-		'\\xce\\xb5' : 'e',	# Epsilon
-		'\\xce\\xb6' : 'z',	# Zeta
-		'\\xce\\xb7' : 'h',	# Eta
-		'\\xce\\xb8' : 'th',       # Theta
-		'\\xce\\xb9' : 'i',	# Iota
-		'\\xce\\xba' : 'k',	# Kappa
-		'\\xce\\xbb' : 'l',	# Lamda
-		'\\xce\\xbc' : 'm',	# Mu
-		'\\xce\\xbd' : 'v',	# Nu
-		'\\xce\\xbe' : 'ks',       # Xi
-		'\\xce\\xbf' : 'o',	# Omicron
-		'\\xce\\xc0' : 'p',	# Pi
-		'\\xce\\xc1' : 'r',	# Rho
-		'\\xce\\xc3' : 's',	# Sigma
-		'\\xce\\xc4' : 't',	# Tau
-		'\\xce\\xc5' : 'y',	# Upsilon
-		'\\xce\\xc6' : 'f',	# Fi
-		'\\xce\\xc7' : 'x',	# Chi
-		'\\xce\\xc8' : 'ps',       # Psi
-		'\\xce\\xc9' : 'o',	# Omega
-
-		# Icelandic 
-		'\\xc3\\xbe' : 'p',	# Like a p with up stroke
-		'\\xc3\\xbd' : 'y',	# y diaeresis
-
-		# Italian characters
-		'\\xc3\\xac' : 'i',	# i reverse circumflex
-		'\\xc3\\xb9' : 'u',	# u reverse circumflex
-
-		# Polish (not previously covered)
-		'\\xc3\\xa3' : 'a',	# a tilde
-
-		# Romanian
-		'\\xc4\\x83' : 'a',	# a circumflex variant
-		'\\xc3\\xa2' : 'a',	# a circumflex 
-		'\\xc3\\xae' : 'i',	# i circumflex 
-		'\\xc5\\x9f' : 's',	# s cedilla ?
-		'\\xc5\\xa3' : 's',	# t cedilla ?
-		'\\xc8\\x99' : 's',	# s with down stroke
-		'\\xc8\\x9b' : 't',	# t with down stroke
-
-		# Spanish not covered above
-		'\\xc3\\xb1' : 'n',	# n tilde
-
-		# Turkish not covered above
-		'\\xc3\\xbb' : 'u',	# u circumflex
-		'\\xc4\\x9f' : 'g',	# g tilde
-		'\\xc4\\xb1' : 'i',	# Looks like an i
-		'\\xc4\\xb0' : 'I',	# Looks like an I
-	}
-
-	# UTF8 codes (Must be checked after above codes checked)
-	short_codes = {
-		'\\xa0' : ' ',     # Line feed to space
-		'\\xa3' : '#',     # Pound character
-
-		'\\xb4' : "'",    # Apostrophe 
-		'\\xc0' : 'A',    # A 
-		'\\xc1' : 'A',    # A 
-		'\\xc2' : 'A',    # A 
-		'\\xc3' : 'A',    # A 
-		'\\xc4' : 'A',    # A 
-		'\\xc5' : 'A',    # A 
-		'\\xc6' : 'Ae',   # AE
-		'\\xc7' : 'C',    # C 
-		'\\xc8' : 'E',    # E 
-		'\\xc9' : 'E',    # E 
-		'\\xca' : 'E',    # E 
-		'\\xcb' : 'E',    # E 
-		'\\xcc' : 'I',    # I 
-		'\\xcd' : 'I',    # I 
-		'\\xce' : 'I',    # I 
-		'\\xcf' : 'I',    # I 
-		'\\xd0' : 'D',    # D
-		'\\xd1' : 'N',    # N 
-		'\\xd2' : 'O',    # O 
-		'\\xd3' : 'O',    # O 
-		'\\xd4' : 'O',    # O 
-		'\\xd5' : 'O',    # O 
-		'\\xd6' : 'O',    # O 
-		'\\xd7' : 'x',    # Multiply
-		'\\xd8' : '0',    # O crossed 
-		'\\xd9' : 'U',    # U 
-		'\\xda' : 'U',    # U 
-		'\\xdb' : 'U',    # U 
-		'\\xdc' : 'U',    # U umlaut
-		'\\xdd' : 'Y',    # Y
-		'\\xdf' : 'S',    # Sharp s es-zett
-		'\\xe0' : 'e',    # Small a reverse acute
-		'\\xe1' : 'a',    # Small a acute
-		'\\xe2' : 'a',    # Small a circumflex
-		'\\xe3' : 'a',    # Small a tilde
-		'\\xe4' : 'a',    # Small a diaeresis
-		'\\xe5' : 'aa',   # Small a ring above
-		'\\xe6' : 'ae',   # Joined ae
-		'\\xe7' : 'c',    # Small c Cedilla
-		'\\xe8' : 'e',    # Small e grave
-		'\\xe9' : 'e',    # Small e acute
-		'\\xea' : 'e',    # Small e circumflex
-		'\\xeb' : 'e',    # Small e diarisis
-		'\\xed' : 'i',    # Small i acute
-		'\\xee' : 'i',    # Small i circumflex
-		'\\xf1' : 'n',    # Small n tilde
-		'\\xf3' : 'o',    # Small o acute
-		'\\xf4' : 'o',    # Small o circumflex
-		'\\xf6' : 'o',    # o umlaut
-		'\\xf7' : '/',    # Division sign
-		'\\xf8' : 'oe',   # Small o strike through 
-		'\\xf9' : 'u',    # Small u circumflex
-		'\\xfa' : 'u',    # Small u acute
-		'\\xfb' : 'u',    # u circumflex
-		'\\xfd' : 'y',    # y circumflex
-		'\\xc0' : 'A',    # Small A grave
-		'\\xc1' : 'A',    # Capital A acute
-		'\\xc7' : 'C',    # Capital C Cedilla
-		'\\xc9' : 'E',    # Capital E acute
-		'\\xcd' : 'I',    # Capital I acute
-		'\\xd3' : 'O',    # Capital O acute
-		'\\xda' : 'U',    # Capital U acute
-		'\\xfc' : 'u',    # u umlaut
-		'\\xbf' : '?',    # Spanish Punctuation
-
-		'\\xb0'  : 'o',	       # Degrees symbol
-	}
-
-	# HTML codes (RSS feeds)
-	HtmlCodes = {
-		# Currency
-		chr(156) : '#',       # Pound by hash
-		chr(169) : '(c)',     # Copyright
-
-		# Norwegian
-		chr(216) : '0',       # Oslash
-
-		# Spanish french
-		chr(241) : 'n',       # Small tilde n
-		##chr(191) : '?',       # Small u acute to u
-		chr(191) : 'u',       # Small u acute to u
-		chr(224) : 'a',       # Small a grave to a
-		chr(225) : 'a',       # Small a acute to a
-		chr(226) : 'a',       # Small a circumflex to a
-		chr(232) : 'e',       # Small e grave to e
-		chr(233) : 'e',       # Small e acute to e
-		chr(234) : 'e',       # Small e circumflex to e
-		chr(235) : 'e',       # Small e diarisis to e
-		chr(237) : 'i',       # Small i acute to i
-		chr(238) : 'i',       # Small i circumflex to i
-		chr(243) : 'o',       # Small o acute to o
-		chr(244) : 'o',       # Small o circumflex to o
-		chr(250) : 'u',       # Small u acute to u
-		chr(251) : 'u',       # Small u circumflex to u
-		chr(192) : 'A',       # Capital A grave to A
-		chr(193) : 'A',       # Capital A acute to A
-		chr(201) : 'E',       # Capital E acute to E
-		chr(205) : 'I',       # Capital I acute to I
-		chr(209) : 'N',       # Capital N acute to N
-		chr(211) : 'O',       # Capital O acute to O
-		chr(218) : 'U',       # Capital U acute to U
-		chr(220) : 'U',       # Capital U umlaut to U
-		chr(231) : 'c',       # Small c Cedilla
-		chr(199) : 'C',       # Capital C Cedilla
-
-		# German
-		chr(196) : "Ae",      # A umlaut
-		chr(214) : "Oe",      # O umlaut
-		chr(220) : "Ue",      # U umlaut
-	}
-
-
-	unicodes = {
-		'\\u201e' : '"',       # ORF feed
-		'\\u3000' : " ", 
-		'\\u201c' : '"', 
-		'\\u201d' : '"', 
-		'\\u0153' : "oe",      # French oe
-		'\\u2009' : ' ',       # Short space to space
-		'\\u2013' : '-',       # Long dash to minus sign
-		'\\u2018' : "'",       # Left single quote
-		'\\u2019' : "'",       # Right single quote
-
-		# Czech
-		'\\u010c' : "C",       # C cyrillic
-		'\\u010d' : "c",       # c cyrillic
-		'\\u010e' : "D",       # D cyrillic
-		'\\u010f' : "d",       # d cyrillic
-		'\\u011a' : "E",       # E cyrillic
-		'\\u011b' : "e",       # e cyrillic
-		'\\u013a' : "I",       # I cyrillic
-		'\\u013d' : "D",       # D cyrillic
-		'\\u013e' : "I",       # I cyrillic
-		'\\u0139' : "L",       # L cyrillic
-		'\\u0147' : "N",       # N cyrillic
-		'\\u0148' : "n",       # n cyrillic
-		'\\u0154' : "R",       # R cyrillic
-		'\\u0155' : "r",       # r cyrillic
-		'\\u0158' : "R",       # R cyrillic
-		'\\u0159' : "r",       # r cyrillic
-		'\\u0160' : "S",       # S cyrillic
-		'\\u0161' : "s",       # s cyrillic
-		'\\u0164' : "T",       # T cyrillic
-		'\\u0165' : "t",       # t cyrillic
-		'\\u016e' : "U",       # U cyrillic
-		'\\u016f' : "u",       # u cyrillic
-		'\\u017d' : "Z",       # Z cyrillic
-		'\\u017e' : "z",       # z cyrillic
-		}
+	code_pages = []
+	English = None	# English font table set up in _import routine
 
 	def __init__(self):
-		log.init('radio')
-		return    
+		# Import font table according to language
+		self._language = config.getLanguage()
+		self._controller = config.getController()
+		self.code_pages = self._import_codes(self._language)
+		if len(self.code_pages) < 1:
+			print "No code tables found for controller",self._controller
+			print "and language",self._language, "Check /etc/radiod.conf"
+			sys.exit(1)
 
-	# Translate all  (Called by rss class)
+	# Import all language font modules in the codes directory
+	# Process the <font>.codes for the selected language first
+	# Then import romanized codes in the rest and 
+	# finally import English romanized codes
+	# Returns a list of font tables
+	def _import_codes(self,language):
+		translated  = False
+		primary = False
+
+		# Get all font tables inn the codes sub-directory
+		dir = os.path.dirname(__file__)
+		os.chdir(dir)
+		font_files = glob.glob('codes/*.py')
+		code_pages = [] 	# List of font translation tables
+		count = 20
+
+		# Process codes
+		while not translated and len(font_files) > 0: 
+			if count < 0:
+				break
+			for i in range(0,len(font_files)):
+
+				# Prevent endless loop
+				count -= 1
+
+				filepath = os.path.basename(font_files[i])
+				font_name,ext = filepath.split('.') 
+
+				# Skip init file 
+				if font_name == "__init__":
+					continue
+
+				# Skip HTMLcodes file 
+				if font_name == "HTMLcodes":
+					continue
+
+				# Skip if English and set it as primary
+				if font_name == "English":
+					if language == "English":
+						primary = True
+					continue
+
+				code_page = importlib.import_module('codes.' + font_name)
+				if self._controller != code_page.controller:
+					continue
+
+				#print i,code_page.name,code_page.controller,font_name 
+
+				# process primary language
+				if code_page.name == language:
+					if not primary:
+						code_pages.append(code_page)
+						primary = True
+					continue
+
+				# If primary language processed
+				if primary and font_name != language:
+					code_pages.append(code_page)
+					translated = True
+
+		# Import English table as last one but don't add to array
+		code_page = importlib.import_module('codes.' + "English")
+		self.English = code_page
+		return code_pages
+
+	# Main conversion routine
 	def all(self,text):
 		if self._translate:
-			s = self._convert2escape(text)
-			s = self._escape(s)
-			s = self._unicode(s)
-			s = self._html(s)
+			# Convert escape codes to font ordinals using imported codes
+			s = self._convert(text,self.code_pages)
+
+			# Strip quotes
+			if len(s) > 0:
+				s = s.lstrip('"')
+				s = s.rstrip('"')
 		else:
 			s = text
-		return s   
+		return s
+
+	# Translate unicode for RSS feeds
+	def rss(self,text):
+		s = text
+		# Translate HTML codes etc.
+		#s = self._translate_unicode(self.HTML_codes.rss_amp_codes,text,delete=False)
+		#s = self._translate_unicode(self.HTML_codes.rss_codes,text,delete=False)
+
+		# Encode as UTF-8 unicode translate using tables in codes sub-directory
+		s = s.encode('utf-8')
+		s = self.all(s)
+		s = s.lstrip('<')
+		return s
+
+	# This routine converts the escape codes for each code table
+	# to the font table ordinal of the LCD
+	def _convert(self,text,code_pages):
+		s = text
+		s = self._convert2escape(text)
+		for i in range(0,len(code_pages)):
+			code_page = code_pages[i]
+			if not self._romanized and i==0:
+				s = self._translate_unicode(code_page.codes,s)
+			else:
+				s = self._translate_unicode(code_page.romanized,s)
+
+			# Finally process English font table
+			s = self._translate_unicode(self.English.romanized,s,delete=False)
+		return s
 
 	# Convert unicode to escape codes
 	def _convert2escape(self,text):
@@ -420,130 +171,65 @@ class Translate:
 			s = s.rstrip('\'')
 		return s
 
-	# Convert escaped characters (umlauts) to normal characters
-	def escape(self,text):
-		s = ''
-		if self._translate:
-			if len(text) > 0:
-				s = self._convert2escape(text)
-				s = self._escape(s)
-				s = s.lstrip('"')
-				s = s.rstrip('"')
-		else:
-			s = text
-		return s
-
-	# Convert escaped characters (umlauts etc.) to normal characters
-	def _escape(self,text):
+	# Do translation using supplied translation table
+	# and delete the already translated code from code/font table
+	def _translate_unicode(self, codes, text, delete=True):
 		s = text
-		for code in self.codes:
-			try:
-				s = s.replace(code, self.codes[code])
-			except:
-				continue
+		for code in codes:
+			l1 =  len(s)
+			s = s.replace(code, codes[code])
 
-		for code in self.short_codes:
-			try:
-				s = s.replace(code, self.short_codes[code])
-			except:
-				continue
-		s = s.replace("'oC",'oC')   # Degrees C fudge
-		s = s.replace("'oF",'oF')   # Degrees C fudge
+			if delete:
+				# Prevent double conversion
+				l2 = len(s)
+				if l1 != l2:
+					try:
+						del self.English.codes[code] 
+					except:
+						pass
 		return s
 
-	# HTML translations (callable)
-	def html(self,text):
-		s = self._html(s)
-		_convert_html(s)
-		return s
-
-	# HTML translations
-	def _html(self,text):
-		s = text
-		s = s.replace('&lt;', '<') 
-		s = s.replace('&gt;', '>') 
-		s = s.replace('&quot;', '"') 
-		s = s.replace('&nbsp;', ' ') 
-		s = s.replace('&amp;', '&') 
-		s = s.replace('&copy;', '(c)') 
-		return s
-
-	# Convert &#nn sequences
-	def _convert_html(s):
-		c = re.findall('&#[0-9][0-9][0-9]', s)
-		c += re.findall('&#[0-9][0-9]', s)
-		for html in c:
-			ch = int(html.replace('&#', ''))
-			if ch > 31 and ch < 127:
-				s = s.replace(html,chr(ch))
-			else:
-				s = s.replace(html,'')
-		return s
-
-	# Unicodes etc (callable)
-	def unicode(self,text):
-		s = text
-		if self._translate:
-			s = self._convert2escape(text)
-			s = self._unicode(s)
-		return s
-
-	# Unicodes etc
-	def _unicode(self,text):
-		s = text
-		for unicode in self.unicodes:
-			s = s.replace(unicode, self.unicodes[unicode])
-		return s
-
-	# Decode greek
-	def decode_greek(self,text):
-		s = text.decode('macgreek')
-		return s
-
-	# Display umlats as oe ae etc
-	def displayUmlauts(self,value):
-		self.displayUmlauts = value
-		return
-
-	# Translate special characters (umlautes etc) to LCD values
-	# See standard character patterns for LCD display
-	def toLCD(self,sp):
-		s = sp
-
-		#for HtmlCode in self.HtmlCodes:
-		#	s = s.replace(HtmlCode, self.HtmlCodes[HtmlCode])
-
-		if self.displayUmlauts:
-			s = s.replace(chr(223), chr(226))       # Sharp s
-			s = s.replace(chr(246), chr(239))       # o umlaut (Problem in Hungarian?)
-			s = s.replace(chr(228), chr(225))       # a umlaut
-			s = s.replace(chr(252), chr(245))       # u umlaut (Problem in Hungarian?)
-		else:
-			s = s.replace(chr(228), "ae")	   # a umlaut
-			s = s.replace(chr(223), "ss")	   # Sharp s
-			s = s.replace(chr(246), "oe")	   # o umlaut
-			s = s.replace(chr(252), "ue")	   # u umlaut
-
-		return s
-
-	# Translation on off (Used by gradio)
+	# Translation on off (See translate_lcd in /etc/radiod.conf)
 	def setTranslate(self,true_false):
 		self._translate = true_false
 
+	# Translation on off (See romanize in /etc/radiod.conf)
+	def setRomanize(self,true_false):
+		self._romanized = true_false
+
+	# Get the code page from the primary font table 
+	def getPrimaryCodePage(self):
+		return self.code_pages[0].codepage
+
+	# Get font files
+	def getFontFiles(self):
+		font_files = []
+		for cp in self.code_pages:
+			x = str(cp)
+			files = x.split(' ')
+			font_files.append(files[1])
+		x = str(self.English)	
+		files = x.split(' ')
+		font_files.append(files[1])
+		return font_files
+
+		
 # End of class
 
 # Test translate class
 if __name__ == '__main__':
 
-	translate = Translate()
+	translate = Translate()	# Test routine object
 
 	if len(sys.argv) > 1:
 		text = sys.argv[1]
 	else:
-		text = 'æ Æ ø Ø å Å'
+		text = 'ABCDEF 012345'
 	print (text)
+
 	s = translate._convert2escape(text)
-	print (s)
+	print
+	#print (s)
 
 	# Complete text
 	print (translate.all(text))

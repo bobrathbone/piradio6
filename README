@@ -9,6 +9,31 @@ See http://www.musicpd.org/
 Use "apt-get install mpd mpc python-mpd" to install the library
 This software uses the python-mpd library. See https://pypi.python.org/pypi/python-mpd/
 
+Version 6.13 release notes
+-------------------------
+26th April 2020
+1) Always force update of the MPD database from the options menu, not just when it is empty
+2) Force program back to main display (time) after updating the MPD database 
+3) Add new parameter translate_lcd=on/off to better support European/Russian/Cyrillic LCDs
+4) Remove redundant /etc/inittab manipulation from installation scripts
+5) Create stations program now checks embedded stream URL in PLS and ASX files
+6) Handle new web interface v1.8 playlist selection (Now all playlists displayed)
+7) Update show_model.py program to display latest 4B models (1GB,2GB and 4GB)
+8) Variable LCD scroll scroll_speed in /etc/radiod.conf parameter implemented for LCD classes
+10) Removed /etc/init.d/radiod System V startup script from package (Deprecated)
+11) Added Romanization of Russian Cyrillic characters to Translate class
+12) New parameters translate_lcd and romanize_russian to /etc/radiod.conf
+13) New parameter lcd_font_table to select different LCD fonts
+14) Depending on LCD, Cyrillic characters displayed on LCD (see codepage parameter)
+15) All font translation tables removed from transl;ate_class.py and moved to sub-directory fonts 
+16) LCD lcd_class.py timings and initialisation changed to reduce bus noise and random characters
+17) Improved media search facility for 2x16 displays (Track displayed not just artist)  
+18) Correct i2c pcf8574 backpack support for 4x16 LCDs/OLEDs
+19) More informative INFO logging at start-up time
+20) Backpack software amended to use smbus2 in place of smbus to correct i2c display problems
+21) Display "No information"if no name or bit rate found in a radio stream 
+22) Don't delete other playlists when running create_playlists from cron job
+
 Version 6.12 release notes
 -------------------------
 25th January 2020
@@ -79,7 +104,7 @@ Version 6.8 release notes
 4) New pull_up_down parameter for configuring button interface pull up/down resistors
 5) Improved Cyrillic character handling for LCD versions
 6) Support for pulseaudio (if installed) added
-7) Allow disabling of rotary encoders to be disabled by setting switch settings to 0
+7) Allow disabling of rotary encoders GPIOs by setting switch settings to 0
 8) Set short date format if using Olimex OLED display
 9) Set volume range to 10 if using Olimex OLED display
 10) Correct mute function if espeak  enabled and using IQaudIO Cosmic Controller
@@ -107,9 +132,6 @@ Version 6.6 release notes
 3) Olimex 128x64 pixel OLED screen support added (connects to Cosmic controller)
 4) Check if user wishes to re-configure radio if upgrading
 
-Version 6.5 release notes
--------------------------
-5th April 2018
 Version 6.5 release notes
 -------------------------
 5th April 2018

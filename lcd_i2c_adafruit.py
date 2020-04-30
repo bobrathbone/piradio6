@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_adafruit.py,v 1.5 2017/10/19 13:10:09 bob Exp $
+# $Id: lcd_i2c_adafruit.py,v 1.12 2020/04/24 08:59:35 bob Exp $
 #
 # I2C Adafruit I2C backback driver
 # Adapted from RpiLcdBackpack from Paul Knox-Kennedy
@@ -15,9 +15,11 @@
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 # The authors shall not be liable for any loss or damage however caused.
 #
+# This version use3s smbus2 from Karl-Petter Lindegaard (MIT)
 
-import smbus,time
+import time
 import pwd,os,sys
+from smbus2 import SMBus
 
 from subprocess import * 
 from time import sleep, strftime
@@ -80,6 +82,8 @@ class Lcd_i2c_Adafruit:
 	# I2C Address
 	i2c_address = 0x20
 
+	code_page = 0x0	# Font code page 0x0, 0x1 or 0x2
+
 	# Define LCD device constants
 	LCD_WIDTH = 16    # Default characters per line
 	LCD_CHR = True
@@ -98,7 +102,7 @@ class Lcd_i2c_Adafruit:
 	lcd_line4 = LCD_LINE_4
 
 	width = LCD_WIDTH
-	ScrollSpeed = 0.3       # Default scroll speed
+	scroll_speed = 0.2       # Default scroll speed
 
 	# Write nibble to LCD position 
 	def writeFourBits(self,value):
@@ -124,15 +128,18 @@ class Lcd_i2c_Adafruit:
 		self.writeFourBits(value>>4)
 		self.writeFourBits(value&0xf)
 
-	# Do nothing on init
-	def __init__(self):
+	# Initialise
+	def __init__(self,code_page=0x0):
+		self.code_page = code_page
+		self.scroll_speed = config.getScrollSpeed()
+                self.setScrollSpeed(self.scroll_speed)
 		return
 
 	# Initialisation routine
 	def init(self, busnum=1, address=0x20):
 		self.i2c_address = address	
 		
-		self.__bus=smbus.SMBus(busnum)
+		self.__bus=SMBus(busnum)
 		self.__bus.write_byte_data(0x20,0x00,0x00)
 		self.__displayfunction = self.__4BITMODE | self.__2LINE | self.__5x8DOTS
 		#self.__displaycontrol = self.__DISPLAYCONTROL | self.__DISPLAYON | self.__CURSORON | self.__BLINKON
@@ -145,9 +152,13 @@ class Lcd_i2c_Adafruit:
 		self.writeFourBits(0x03)
 		self.writeFourBits(0x02)
 		self.writeCommand(self.__FUNCTIONSET | self.__displayfunction)
+
 		self.writeCommand(self.__displaycontrol)
 		self.writeCommand(0x6)
 
+		# Set code page (Do last of all)
+		self.writeCommand(self.__FUNCTIONSET | self.__DISPLAYCONTROL | self.code_page)
+		
 		# Clear the display, switch blink off and backlight on
 		self.clear()
 		self.blink(False)
@@ -161,9 +172,9 @@ class Lcd_i2c_Adafruit:
 		elif line_number == 2:
 			line_address = self.LCD_LINE_2
 		elif line_number == 3:
-			line_address = self.LCD_LINE_3
+			line_address = self.lcd_line3
 		elif line_number == 4:
-			line_address = self.LCD_LINE_4
+			line_address = self.lcd_line4
 		#self._byte_out(line_address, LCD_CMD)
 
 		if len(text) > self.width:
@@ -204,7 +215,7 @@ class Lcd_i2c_Adafruit:
 				if interrupt():
 					skip = True
 					break
-				time.sleep(self.ScrollSpeed)
+				time.sleep(self.scroll_speed)
 
 		if not skip:
 			for i in range(0, 5):
@@ -269,14 +280,14 @@ class Lcd_i2c_Adafruit:
 		return
 
 	# Set Scroll line speed - Best values are 0.2 and 0.3
-	# Limit to between 0.05 and 1.0
-	def setScrollSpeed(self,speed):
-		if speed < 0.05:
-			speed = 0.2
-		elif speed > 1.0:
-			speed = 0.3
-		self.ScrollSpeed = speed
-		return
+        # Limit to between 0.08 and 0.6
+        def setScrollSpeed(self,speed):
+                if speed < 0.08:
+                        speed = 0.08
+                elif speed > 0.6:
+                        speed = 0.6
+                self.scroll_speed = speed
+                return self.scroll_speed
 
 	# Does this screen support color
         def hasColor(self):
@@ -293,9 +304,9 @@ if __name__ == "__main__":
 
 	i2c_addres = 0x27
 
-	if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-		print "This program must be run with sudo or root permissions!"
-		sys.exit(1)
+	#if pwd.getpwuid(os.geteuid()).pw_uid > 0:
+	#	print "This program must be run with sudo or root permissions!"
+	#	sys.exit(1)
 
 	try:
 		print "Test I2C Adafruit backpack class"

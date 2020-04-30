@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.83 2020/01/22 19:48:53 bob Exp $
+# $Id: config_class.py,v 1.95 2020/04/24 15:58:26 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -19,6 +19,7 @@ import sys
 import ConfigParser
 from log_class import Log
 from constants import *
+import pdb
 
 # System files
 ConfigFile = "/etc/radiod.conf"
@@ -85,6 +86,7 @@ class Configuration:
 	rotary_class = STANDARD		# Rotary class STANDARD or ALTERNATIVE 
 	display_width = 0		# Line width of display width 0 = use program default
 	display_lines = 2		# Number of display lines
+	scroll_speed = float(0.3)	# Display scroll speed (0.01 to 0.3)
 	airplay = False		# Use airplay
 	mixerPreset = 0		# Mixer preset volume (0 disable setting as MPD controls it)
 	display_blocks = False	# Display volume in blocks
@@ -113,7 +115,7 @@ class Configuration:
 	shoutcast_key = "anCLSEDQODrElkxl"
 
 	# Graphics screen default parameters [SCREEN] section
-	full_screen = True	# Display graphics fulll screen
+	fullscreen = True	# Display graphics fulll screen
 	window_title = "Bob Rathbone Internet Radio %V - %H"	# Window title
 	window_color = 'blue'	# Graphics screen background colour
 	labels_color = 'white'	# Graphics screen labels colour
@@ -134,6 +136,13 @@ class Configuration:
 	splash_screen = 'bitmaps/raspberry-pi-logo.bmp'	# Splash screen (OLED)
 	screen_size = (800,480)		# Screen size 800x480 (7 inch) or 720x480 (3.5 inch)
 	bluetooth_device='00:00:00:00:00:00'	# Bluetooth device ID
+	translate_lcd = True		# Translate characters for LCD display
+					# True for latin character LCDs.
+					# False for Russian/Cyrillic character LCDs
+	romanize = True		# Romanize language(convert to Latin). e.g. Russian
+	codepage = 0		# LCD font page 0,1,2 depending upon make of LCD
+	language='English'	# Translation table in /usr/share/radio/fonts eg Russian
+	controller='HD44780U'	# LCD/OLED controller type
 
 	shutdown = True		# Shutdown when exiting radio
 	
@@ -284,8 +293,7 @@ class Configuration:
 					self.dateFormat = parameter
 
 				elif option == 'display_playlist_number':
-					if parameter == 'yes':
-						self.display_playlist_number = True
+					self.display_playlist_number = self.convertYesNo(parameter)
 
 				elif option == 'station_names':
 					if parameter == 'stream':
@@ -294,8 +302,7 @@ class Configuration:
 						self.stationNamesSource =  self.LIST
 
 				elif option == 'flip_display_vertically':
-					if parameter == 'yes':
-						self.flip_display_vertically = True
+					self.flip_display_vertically = self.convertYesNo(parameter)
 
 				elif option == 'splash':
 					self.splash_screen = parameter
@@ -338,22 +345,13 @@ class Configuration:
 						self.invalidParameter(ConfigFile,option,parameter)
 
 				elif option == 'speech':
-					if parameter == 'yes':
-						self.speech = True
-					else:
-						self.speech = False
+					self.speech = self.convertYesNo(parameter)
 
 				elif option == 'verbose':
-					if parameter == 'yes':
-						self.isVerbose = True
-					else:
-						self.isVerbose = False
+					self.isVerbose = self.convertYesNo(parameter)
 
 				elif option == 'speak_info':
-					if parameter == 'yes':
-						self.speak_info = True
-					else:
-						self.speak_info = False
+					self.speak_info = self.convertYesNo(parameter)
 
 				elif option == 'volume_display':
 					if parameter == 'blocks':
@@ -389,6 +387,17 @@ class Configuration:
 					except:
 						self.invalidParameter(ConfigFile,option,parameter)
 
+				elif 'scroll_speed' in option:
+					try:
+						self.scroll_speed = float(parameter)
+					except:
+						self.invalidParameter(ConfigFile,option,parameter)
+
+				elif 'codepage' in option:
+					codepage = int(parameter)
+					if codepage >= 0 and codepage <= 4:
+						self.codepage = codepage
+					
 				elif 'lcd_' in option:
 					try:
 						lcdconnect = int(parameter)
@@ -471,6 +480,18 @@ class Configuration:
 					elif parameter == 'stop':
 						self.mute_action = STOP
 
+				elif option == 'translate_lcd':
+					self.translate_lcd = self.convertOnOff(parameter)
+
+				elif option == 'language':
+					self.language = parameter
+
+				elif option == 'controller':
+					self.controller = parameter
+				
+				elif option == 'romanize':
+					self.romanize = self.convertOnOff(parameter)
+
 				else:
 					msg = "Invalid option " + option + ' in section ' \
 						+ section + ' in ' + ConfigFile
@@ -541,10 +562,7 @@ class Configuration:
 					self.screen_size = (w,h)
 			
 				if option == 'fullscreen':
-					if parameter == 'yes':
-						self.full_screen = True
-					elif parameter == 'no':
-						self.full_screen = False
+					self.fullscreen = self.convertYesNo(parameter)
 				
 				elif option == 'window_color':
 					self.window_color = parameter
@@ -584,28 +602,16 @@ class Configuration:
 					self.graphicDateFormat = parameter
 
 				elif option == 'display_mouse':
-					if parameter == 'yes':
-						self.display_mouse = True
-					else:
-						self.display_mouse = False
+					self.display_mouse = self.convertYesNo(parameter)
 					
 				elif option == 'switch_programs':
-					if parameter == 'yes':
-						self.switch_programs = True
-					else:
-						self.switch_programs = False
+					self.switch_programs = self.convertYesNo(parameter)
 					
 				elif option == 'display_date':
-					if parameter == 'yes':
-						self.display_date = True
-					else:
-						self.display_date = False
+					self.display_date = self.convertYesNo(parameter)
 					
 				elif option == 'display_title':
-					if parameter == 'yes':
-						self.display_title = True
-					else:
-						self.display_title = False
+					self.display_title = self.convertYesNo(parameter)
 
 		except ConfigParser.NoSectionError:
 			msg = ConfigParser.NoSectionError(section),'in',ConfigFile
@@ -613,7 +619,21 @@ class Configuration:
 		return
 
 
-	# Invalid parametrs message
+	# Convert yes/no to True/False
+	def convertYesNo(self,parameter):
+		true_false = False
+		if parameter == 'yes':
+			true_false = True
+		return true_false
+
+	# Convert On/Off to True/False
+	def convertOnOff(self,parameter):
+		true_false = False
+		if parameter == 'on':
+			true_false = True
+		return true_false
+
+	# Invalid parameters message
 	def invalidParameter(self, ConfigFile, option, parameter):
 		msg = "Invalid parameter " + parameter + ' in option ' \
 			+ option + ' in ' + ConfigFile
@@ -835,6 +855,10 @@ class Configuration:
 	def getLines(self):
 		return self.display_lines
 
+	# Get scroll speed
+	def getScrollSpeed(self):
+		return self.scroll_speed
+
 	# Get airplay option
 	def getAirplay(self):
 		return self.airplay
@@ -860,12 +884,12 @@ class Configuration:
 		return self.logfile_truncate
 
 	# SCREEN section
-	# Fullscreen option for graphical screen
 	def getSize(self):
 		return self.screen_size
 
+	# Fullscreen option for graphical screen
 	def fullScreen(self):
-		return self.full_screen
+		return self.fullscreen
 
 	# Get graphics window title
 	def getWindowTitle(self):
@@ -953,6 +977,26 @@ class Configuration:
 	def getStationNamesSource(self):
 		return self.stationNamesSource
 
+	# Get translate LCD characters
+	def getTranslate(self):
+		return self.translate_lcd
+
+	# Get translate LCD characters
+	def getLcdFontPage(self):
+		return self.codepage
+
+	# Get Romanize language e.g. Russian/Cyrillic characters
+	def getRomanize(self):
+		return self.romanize
+
+	# Get language e.g. Russian or English etc
+	def getLanguage(self):
+		return self.language
+
+	# Get controller type HD44780U or HD44780
+	def getController(self):
+                return self.controller
+
 # End Configuration of class
 
 # Test Configuration class
@@ -997,8 +1041,16 @@ if __name__ == '__main__':
 	print "Display type:", config.getDisplayType(), config.getDisplayName()
 	print "Display lines:", config.getLines()
 	print "Display width:", config.getWidth()
+	print "LCD font page:", config.getLcdFontPage()
+	print "Full screen:", config.fullScreen()
+	print "Scroll speed:", config.getScrollSpeed()
 	print "Airplay:", config.getAirplay()
 	print "Mixer Volume Preset:", config.getMixerPreset()
+
+	print "Translate LCD characters:", config.getTranslate()
+	print "LCD Controller:", config.getController()
+	print "Language:", config.getLanguage()
+	print "Romanize:", config.getRomanize()
 
 	print "Bluetooth device:", config.getBluetoothDevice()
 

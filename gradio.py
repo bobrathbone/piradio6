@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.232 2018/11/26 16:53:07 bob Exp $
+# $Id: gradio.py,v 1.236 2020/04/24 16:13:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -41,19 +41,22 @@ from menu_class import Menu
 from rss_class import Rss
 from message_class import Message
 from graphic_display import GraphicDisplay
+from translate_class import Translate
 
 # Pygame controls
 from gcontrols_class import *
 from pygame.locals import *
 
+translate = Translate()
 radio = None
 log = Log()
 rmenu = Menu()
-rss = Rss()
+rss = Rss(translate)
 display = None
 radioEvent = None
 message = None
 run = True
+_connecting = False
 
 import pygame
 from pygame.locals import *
@@ -217,6 +220,7 @@ def uEncode(text):
 
 # Display currently playing radio station or track
 def displayCurrent(screen,font,radio,message):
+	global _connecting
 	global rss_delay,rss_line
 	column = 5
 	columns = display.getColumns()
@@ -327,11 +331,16 @@ def displayCurrent(screen,font,radio,message):
 			text = "Station " + str(current_id)
 			if bitrate > 0:
 				text = text + ": " + str(bitrate) + 'Kb'
+				_connecting = False
 			else:
 				if len(errorStr) > 0:
 					text = text + ': ' + message.get('connection_error')
-				else:
+					
+				elif not _connecting:
 					text = text + ': ' + message.get('connecting')
+					_connecting = True
+                                else:
+                                       text = message.get('no_information')
 
 		DisplayWindow.drawText(screen,font,color,row,text)
 
@@ -495,6 +504,7 @@ def getArtWork(radio):
 
 # Handle radio event
 def handleEvent(radio,radioEvent):
+	global _connecting
 	global artwork_file
 	artwork_file = ''
 	event_type = radioEvent.getType()
@@ -515,11 +525,13 @@ def handleEvent(radio,radioEvent):
 		radio.channelUp()
 		if source_type == radio.source.MEDIA:
 			artwork_file = getArtWork(radio)
+		_connecting = False
 
 	elif event_type == radioEvent.CHANNEL_DOWN:
 		radio.channelDown()
 		if source_type == radio.source.MEDIA:
 			artwork_file = getArtWork(radio)
+		_connecting = False
 
 	elif event_type == radioEvent.VOLUME_UP:
 		radio.increaseVolume()
@@ -540,10 +552,11 @@ def handleEvent(radio,radioEvent):
 		log.message("radioEvent Client Change",log.DEBUG)
 		if source_type == radio.source.MEDIA:
 			artwork_file = getArtWork(radio)
-		
+
 	elif event_type == radioEvent.LOAD_RADIO or event_type == radioEvent.LOAD_MEDIA \
 			   or event_type == radioEvent.LOAD_AIRPLAY\
-			   or event_type == radioEvent.LOAD_SPOTIFY:
+			   or event_type == radioEvent.LOAD_SPOTIFY\
+			   or event_type == radioEvent.LOAD_PLAYLIST:
 		handleSourceChange(radioEvent,radio,message)
 
 	radioEvent.clear()
@@ -591,10 +604,22 @@ def handleSourceChange(event,radio,message):
 		message.speak(msg)
 		radio.cycleWebSource(radio.source.SPOTIFY)
 
-	new_source = radio.getNewSourceType()
-	log.message("loadSource new type = " + str(new_source), log.DEBUG)
-	if new_source >= 0:
+        # Version 1.8 onwards of the web interface
+        elif event_type == radioEvent.LOAD_PLAYLIST:
+                playlist = radio.getPlaylistName()
+                name = playlist.replace('_', ' ')
+                name = name.lstrip()
+                name = name.rstrip()
+                name = "%s%s" % (name[0].upper(), name[1:])
+		print name
+                radio.source.setPlaylist(playlist)
 		radio.loadSource()
+		
+	if event_type != radioEvent.LOAD_PLAYLIST:
+		new_source = radio.getNewSourceType()
+		log.message("loadSource new type = " + str(new_source), log.DEBUG)
+		if new_source >= 0:
+			radio.loadSource()
 	return
 
 # Handle source type radio buttons
@@ -1040,7 +1065,8 @@ def displayLabels(radio,ChannelUpButton,ChannelDownButton):
 
 # Open equalizer window
 def openEqualizer(radio,equalizer_cmd):
-	dir = os.path.dirname(__file__)
+	#dir = os.path.dirname(__file__)
+	dir = "/usr/share/radio"
 	cmd_file = open(dir + '/' + equalizer_cmd,"r")
 	for line in cmd_file: 
 		if line.startswith('lxterminal'):
@@ -1116,7 +1142,7 @@ if __name__ == "__main__":
 		flags = DOUBLEBUF
 
 	radioEvent = Event()	    # Add radio event handler
-	radio = Radio(rmenu,radioEvent)  # Define radio
+	radio = Radio(rmenu,radioEvent,translate)  # Define radio
 	size = radio.config.getSize()
 
 	screen = sgc.surface.Screen((size),flags)  
@@ -1154,15 +1180,14 @@ if __name__ == "__main__":
 			wcolor = "blue"
 			screen.fill(Color(wcolor))
 
-	message = Message(radio,display)
+	message = Message(radio,display,translate)
 	text = message.get('loading_playlists')
 	displayPopup(screen,radio,text)
 
 	# Set up Xauthority for root user
 	radio.execCommand("sudo cp /home/pi/.Xauthority /root/")
 
-	radio.setTranslate(False)	# Switch off text translation
-	rss.setTranslate(False)		# Switch off RSS text translation
+	radio.translate.setTranslate(False)	# Switch off text translation
 
 	setupRadio(radio)
 	maxRows = display.getRows()

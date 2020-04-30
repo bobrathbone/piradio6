@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.21 2020/01/25 10:03:15 bob Exp $
+# $Id: station.urls,v 1.32 2020/04/25 11:09:51 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -33,22 +33,22 @@
 [BBC Radio 6] http://www.radiofeeds.co.uk/bbc6music.pls
 [BBC Radio 1 Extra] http://www.radiofeeds.co.uk/bbc1xtra.pls
 [BBC Radio Bristol] http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/http-icy-mp3-a/vpid/bbc_radio_bristol/format/pls.pls
-[BBC Radio 4 extra] http://www.radiofeeds.co.uk/bbcradio4extra.pls
-[BBC World service] http://wsdownload.bbc.co.uk/worldservice/meta/live/shoutcast/mp3/eieuk.pls
+[BBC Radio E extra] http://www.radiofeeds.co.uk/bbcradio4extra.pls
+[BBC World Service] http://wsdownload.bbc.co.uk/worldservice/meta/live/shoutcast/mp3/eieuk.pls
 [BBC Radio 4 LW] http://bbcmedia.ic.llnwd.net/stream/bbcmedia_radio4lw_mf_p
 
 # UK stations
 [Jack FM] http://playerservices.streamtheworld.com/pls/JACK_FM.pls 
 [Classic FM] http://media-ice.musicradio.com/ClassicFMMP3
 
+[Caroline Pirate] http://sc3.radiocaroline.net:8030/listen.m3u8
+
+# German radio stations
 [Radio 7 Germany] http://srv01.radio7.fmstreams.de/stream1/livestream.mp3.m3u
 [Antenne Bayern Top 40] http://www.antenne.de/webradio/channels/top-40.m3u
+[80's Radio] http://streams.80s80s.de/web/mp3-192/streams.80s80s.de
 
 # Italian Stations
-[Rai Radio 1] http://icestreaming.rai.it/1.mp3.m3u
-[Rai Radio 2] http://shoutcast.rtl.it:3010/listen.pls
-[Radio Zeta] http://shoutcast.rtl.it:3030/listen.pls?sid=1
-[RTL Italy] http://shoutcast.rtl.it:3010/listen.pls
 [Radio Capital] http://radiocapital-lh.akamaihd.net/i/RadioCapital_Live_1@196312/master.m3u8
 
 # Country music
@@ -73,7 +73,6 @@
 # France
 [Radio France] http://live02.rfi.fr/rfimonde-96k.mp3.m3u
 [Radio France] http://direct.franceinter.fr/live/franceinter-midfi.mp3
-[Chante France] http://stream1.chantefrance.com/Chante_France.m3u
 [Generations FM] http://radiomap.eu/fr/play/generations.htm
 
 # Belgium
@@ -94,8 +93,18 @@
 [Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICA.pls
 [Sky Radio] http://provisioning.streamtheworld.com/pls/skyradio.pls
 [Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICAAAC.pls
-[Candlelight] http://candlelight.live-streams.nl/candlelight.m3u
+#[Candlelight] http://candlelight.live-streams.nl/candlelight.m3u
+[Candlelight] http://19983.live.streamtheworld.com/CANDLELIGHT_SC?allradio.nl&1586280813
 
+
+# Slovenian stations
+[80's Radio] http://streams.80s80s.de/web/mp3-192/streams.80s80s.de
+
+# Russian radio stations
+[Радио Рекорд] http://air.radiorecord.ru:805/naft_320
+[Радио Пятница] http://185.128.234.101:8000/radiopyatnica
+[MyRadio24] http://listen6.myradio24.com/50904
+[Echo Moskvy] http://radio-echo.melodix.ru:8080/echo.mp3
 
 # Blues
 [HD Radio - The Blues] http://167.114.64.181:8389/stream
@@ -124,6 +133,17 @@
 [ISKC Old Rock] http://oldrock.shoutcaststream.com:8150/stream
 [ISKC Rock Radio] http://iskcradio.shoutcaststream.com:8072/stream
 [181.FM Rock 181] http://relay.181.fm:8008
+
+# Norwegian stations
+[NRK1 Oslo] http://lyd.nrk.no/nrk_radio_p1_ostlandssendingen_mp3_h.m3u
+[Radio Nova Oslo] http://stream.radionova.no/fm993.mp3.m3u
+[Ariel Radio] https://streams.radio.co/sf069f3c03/listen
+
+# Finnish sttions
+[YLE Etelä-Karjalan Radio] mms://mediau.yle.fi/a_etelakarjala
+[Iskelmä] https://stream.bauermedia.fi/iskelma/iskelma_128.mp3
+[Steel FM] http://ice6.securenetsystems.net/STEELFM.m3u
+[Radio Suomi] mms://mediau.yle.fi/liveradiosuomi
 
 # Classical 
 [Classic FM] http://46.10.150.123:80/classic-fm.mp3
@@ -199,6 +219,12 @@
 [Ambiesphere] http://uk5.internet-radio.com:8347/stream
 [Chill] http://media-ice.musicradio.com/ChillMP3.m3u
 [Digital Impulse - Ambient & Chillout] http://5.39.71.159:8994
+
+# Russian radio stations
+[Радио Рекорд] http://air.radiorecord.ru:805/naft_320
+[Радио Пятница] http://185.128.234.101:8000/radiopyatnica
+[MyRadio24] http://listen6.myradio24.com/50904
+[Echo Moskvy] http://radio-echo.melodix.ru:8080/echo.mp3
 
 #(Air traffic)
 # Live_ATC (Uncomment to try)

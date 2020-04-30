@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: latin-1 -*-
 #
-# $Id: rss_class.py,v 1.9 2018/07/11 16:43:23 bob Exp $
+# $Id: rss_class.py,v 1.19 2020/04/13 15:49:43 bob Exp $
 # Raspberry Pi RSS feed class
 #
 # Author : Bob Rathbone
@@ -17,32 +17,20 @@
 import os
 import time
 import urllib2
+import importlib
+import pdb 
+
 from xml.dom.minidom import parseString
 from log_class import Log
-from translate_class import Translate
 
 log = Log()
-translate = Translate()
-
 url = "/var/lib/radiod/rss"
-
-# Tags to strip out
-tags = ['<h1>', '</h1>',
-	'<h2>', '</h2>',
-	'<h3>', '</h3>',
-	'<h4>', '</h4>',
-	'<p>', '</p>', '<p/>',
-	'<br>', '</br>','<br/>',
-	'<strong>', '</strong>',
-	'<title>', '</title>',
-	'<description>', '</description>',
-	]
-
-DELAY1 = 10
-DELAY2 = 10
+DELAY = 10
 
 class Rss:
 	rss = []	# Array for the RSS feed
+
+	HTMLcodes = None	# HTML entities
 
 	# Fields for scrolling routine
 	rss_delay1 = 0
@@ -50,55 +38,57 @@ class Rss:
 	rss_line1 = ''
 	rss_line2 = ''
 
-	translate = True
+	translate = None	# Translate class setup in __init__
+	_translate = True
+
 
 	length = 0	# Number of RSS news items
 	feed_available = False
 	rss_error = False # RSS Error (prevents repetitive error logging)
 
-	def __init__(self):
+	def __init__(self,translate):
+		self.translate = translate
 		log.init('radio')
 		if os.path.isfile(url):
 			self.feed_available = True
+
+		# Import HTML codes from codes sub-directory
+                self.HTMLcodes = importlib.import_module('codes.' + "HTMLcodes")
 		return    
 
 	# Gets the next RSS entry from the rss array
 	def getFeed(self):
 		self.feed_available = False
 		line = "No RSS feed"
+		#pdb.set_trace()
 		if self.length < 1:
 			self.rss = self.get_new_feed(url)    
 			self.length = self.rss.__len__()
 
-		feed = "No RSS feed"
 		if self.length > 0:
 			self.feed_available = True
-			line = self.rss.pop()
+			feed = self.rss.pop()
 			self.length -= 1
 			
-			line = line.lstrip('<')
-			if self.translate:
-				feed = translate.all(line)
-				feed = feed.lstrip('u"')
-				feed = feed.lstrip("u'")
-			else: 
-				feed = line
+			feed = self._remove_content(feed)	# Do before strip entities
+			feed = self._strip_entities(feed)
 
-			feed = feed.lstrip('"')
-			feed = feed.rstrip('"')
-			feed = feed.rstrip()
-
-			if not self.rss_error:
-				log.message(feed,log.DEBUG)
+			# Translate into language LCD codes
+			feed = self.translate.rss(feed)
 		return feed
+
+	# Strip out quotes etc
+	def _strip_entities(self,text):
+		s = text
+		for entity in self.HTMLcodes.rss_amp_codes:
+			s = s.replace(entity,'')
+		for entity in self.HTMLcodes.html_entities:
+			s = s.replace(entity,'')
+		return s
 
 	# Is an RSS news feed available
 	def isAvailable(self):
 		return self.feed_available
-
-	# Switch translation on off
-	def setTranslate(self,true_false):
-		self.translate = true_false
 
 	# Get a new feed and put it into the rss array
 	def get_new_feed(self,url):
@@ -121,6 +111,7 @@ class Rss:
 				rss.append("No RSS feed found")
 		return rss
 		
+	# Parse XML line
 	def parse_feed(self,dom):	
 		rss = []
 		for news in dom.getElementsByTagName('*'):
@@ -155,26 +146,42 @@ class Rss:
 
 				if (line.find("<description>") == 0):
 					description = line.split("</description>", 2)[0]
-					description = self._strip_string(description, "<img", "</img>")
-					description = self._strip_string(description, "<a href", "</a>")
-					description = self._strip_string(description, "<br ", "</br>")
+					description = self._strip_string(description,"<img","</img>")
+					description = self._strip_string(description,"<a href","</a>")
+					description = self._strip_string(description,"<br ","</br>")
 
 				if (line.find("<title>") >= 0):
 					title = line.split("</title>", 2)[0]
 
 				if len(title) > 0:
-					for tag in tags:	# Strip out HTML tags
+					for tag in self.HTMLcodes.tags:	# Strip out HTML tags
 						title = title.replace(tag, "")
 					rss.append(title)
 
 				if len(description) > 0:
-					for tag in tags:	# Strip out HTML tags
+					for tag in self.HTMLcodes.tags:	# Strip out HTML tags
 						description = description.replace(tag, "")
 					rss.append(description)
 
 				self.feed_available = True
 		rss.reverse()
 		return rss
+
+	# Sometimes descriptions contain embedded content.
+	def _remove_content(self,text):
+		s = text
+		#pdb.set_trace()
+		for i in range(0,len(self.HTMLcodes.deletion_tags)):
+			if i % 2 != 0:
+				continue
+			start_tag = self.HTMLcodes.deletion_tags[i]
+			end_tag = self.HTMLcodes.deletion_tags[i+1]
+
+			# Were tags found?
+			if start_tag in s and  end_tag in s:
+				s = self._strip_string(s, start_tag, end_tag)	
+			i += 1
+		return s	
 
 	# Execute system command
 	def execCommand(self,cmd):
@@ -216,7 +223,7 @@ class Rss:
 			if leng > max_columns:
 				self.rss_delay1 = 1
 			else: 
-				self.rss_delay1 = DELAY1
+				self.rss_delay1 = DELAY
 
 		if self.rss_delay1 > 0:
 			self.rss_line2 = self.rss_line1[:max_columns]
@@ -224,7 +231,7 @@ class Rss:
 
 		if leng > max_columns:
 			self.rss_line2 = display.scroll(self.rss_line1,4,max_columns)
-			self.rss_delay1 = DELAY1
+			self.rss_delay1 = DELAY
 
 			# This is the end of scrolling
 			if self.rss_line2 == self.rss_line1[leng-max_columns:]:

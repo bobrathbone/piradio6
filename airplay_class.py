@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Airplay receiver Class
-# $Id: airplay_class.py,v 1.12 2018/06/06 13:17:57 bob Exp $
+# $Id: airplay_class.py,v 1.13 2020/04/11 13:30:48 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -26,7 +26,6 @@ import socket
 
 from log_class import Log
 from config_class import Configuration
-from translate_class import Translate
 
 # Airplay (shairport-sync) pipe and files
 AirplayDir = "/tmp/shairport"
@@ -36,11 +35,11 @@ AirplayPipe = "/tmp/shairport-sync-metadata"
 ShairportReader = "/usr/local/bin/shairport-sync-metadata-reader"
 
 log = Log()
-translate = Translate()
 config = Configuration()
 
 class AirplayReceiver:
 
+	translate = None
 	AirplayRunning = False
 	hostname = None
 	title = 'Uknown title'
@@ -48,7 +47,8 @@ class AirplayReceiver:
 	pipeExists = False 
 
 	# Initialisation routine
-	def __init__(self):
+	def __init__(self, translate):
+		self.translate = translate
 		if pwd.getpwuid(os.geteuid()).pw_uid > 0:
 			print "This program must be run with sudo or root permissions!"
 			sys.exit(1)
@@ -166,9 +166,9 @@ class AirplayReceiver:
 					elif line.startswith("Artist:"):
 						artist = self.extractData(line)
 
-		info.append(translate.all(artist))
-		info.append(translate.all(title))
-		info.append(translate.all(album))
+		info.append(self.translate.all(artist))
+		info.append(self.translate.all(title))
+		info.append(self.translate.all(album))
 
 		if title != self.title:
 			self.interrupt = True

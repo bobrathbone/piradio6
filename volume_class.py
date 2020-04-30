@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.28 2020/01/22 14:35:49 bob Exp $
+# $Id: volume_class.py,v 1.29 2020/04/06 14:31:32 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -241,7 +241,8 @@ class Volume:
 
 	# Get volume display value
 	def displayValue(self):
-		return self.get()/self.range
+		value = float(self.get()/float(100)) * float(self.range)
+		return int(value)
 
         # Get the integer value stored in /var/lib/radiod
         # filename is the name any file in the lib directory

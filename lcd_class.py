@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.11 2019/06/16 11:24:32 bob Exp $
+# $Id: lcd_class.py,v 1.37 2020/04/24 08:54:01 bob Exp $
 # Raspberry Pi display routines
-# using an HD44780 LCD display
+# using an HD44780 or MC0100 LCD or OLED character display
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -22,10 +22,9 @@
 #	     The authors shall not be liable for any loss or damage however caused.
 #
 
-import os,sys
+import os,sys,pdb
 import time,pwd
 import RPi.GPIO as GPIO
-from translate_class import Translate
 from config_class import Configuration
 
 # The wiring for the LCD is as follows:
@@ -47,7 +46,7 @@ from config_class import Configuration
 # 16: LCD Backlight GND
 
 # Define LCD device constants
-LCD_WIDTH = 16    # Default characters per line
+LCD_WIDTH = 20    # Default characters per line
 LCD_CHR = True
 LCD_CMD = False
 
@@ -60,11 +59,10 @@ LCD_LINE_3a = 0x90 # LCD RAM address for the 3rd line (16x4 char display)
 LCD_LINE_4a = 0xD0 # LCD RAM address for the 4th line (16x4 char display)
 
 # Timing constants
-E_PULSE = 0.00001	# Pulse width of enable
-E_DELAY = 0.00001	# Delay between writes
-E_POSTCLEAR = 0.01	# Delay after clearing display
+E_PULSE = 0.0005	# Pulse width of enable (Was 0.0005)
+E_DELAY = 0.0005	# Delay between writes
+E_POSTCLEAR = 0.3	# Delay after clearing display
 
-translate = Translate()
 config = Configuration()
 
 # No interrupt routine if none supplied
@@ -73,6 +71,7 @@ def no_interrupt():
 
 # Lcd Class 
 class Lcd:
+
 	# Define GPIO to LCD mapping
 	lcd_select = 7
 	lcd_enable  = 8
@@ -92,18 +91,18 @@ class Lcd:
 
 	width = LCD_WIDTH
 	# If display can support umlauts set to True else False
-	ScrollSpeed = 0.3       # Default scroll speed
+	scroll_speed = 0.3       # Default scroll speed
 
 	def __init__(self):
 		return
 
 	# Initialise for either revision 1 or 2 boards
-	def init(self,revision=2):
-	# LCD outputs
+	def init(self,revision=2,code_page=1):
+		self.code_page = code_page
 
 		if revision == 1:
 			self.lcd_data4 = LCD_D4_21
-
+		
 		# Get LCD configuration connects including self.lcd_data4
 		self.lcd_select = config.getLcdGpio("lcd_select")
 		self.lcd_enable  = config.getLcdGpio("lcd_enable")
@@ -115,6 +114,7 @@ class Lcd:
 		self.lcd_data6 = config.getLcdGpio("lcd_data6")
 		self.lcd_data7 = config.getLcdGpio("lcd_data7")
 
+		# LCD outputs
 		GPIO.setwarnings(False)	     # Disable warnings
 		GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
 		GPIO.setup(self.lcd_enable, GPIO.OUT)  # E
@@ -124,18 +124,33 @@ class Lcd:
 		GPIO.setup(self.lcd_data6, GPIO.OUT) # DB6
 		GPIO.setup(self.lcd_data7, GPIO.OUT) # DB7
 		self.lcd_init()
+
+		self.scroll_speed = config.getScrollSpeed()
+		self.setScrollSpeed(self.scroll_speed)
+
 		return
 
 	# Initialise the display
+
 	def lcd_init(self):
-		self._byte_out(0x33,LCD_CMD) # 110011 Initialise
+
+		# Set up font table selection 0x0, 0x1 or 0x2
+		data_len = 0x28         # 101000 Data length, number of lines, font table
+		select_font = self.code_page | data_len        # Add font table selection
+
+		self._byte_out(0x33,LCD_CMD) # 110011 Initialise 
 		self._byte_out(0x32,LCD_CMD) # 110010 Initialise
 		self._byte_out(0x06,LCD_CMD) # 000110 Cursor move direction
+		self._byte_out(0x14,LCD_CMD) # shift cursor position to right
+
+		# Write registers
+		self._byte_out(0x08, LCD_CMD) # 001000 reset display
 		self._byte_out(0x17,LCD_CMD) # character mode, power on
 		self._byte_out(0x0C,LCD_CMD) # 001100 Display On,Cursor Off, Blink Off
-		self._byte_out(0x28,LCD_CMD) # 101000 Data length, number of lines, font size
-		self._byte_out(0x01,LCD_CMD) # 000001 Clear display
-		time.sleep(0.3)		     # Allow to settle before using
+	
+		# Set up code page selection
+		self._byte_out(select_font,LCD_CMD) # 101000 Data length,number of lines,font table
+		self.clear()
 		return
 	 
 	# Output byte to Led  mode = Command or Data
@@ -223,7 +238,6 @@ class Lcd:
 	# Send string to display
 	def _string(self,text,interrupt):
 		s = text.ljust(self.width," ")
-		s = translate.toLCD(s)
 		for i in range(self.width):
 			self._byte_out(ord(s[i]),LCD_CHR)
 
@@ -258,7 +272,7 @@ class Lcd:
 					skip = True
 					break
 				else:
-					time.sleep(self.ScrollSpeed)
+					time.sleep(self.scroll_speed)
 
 		# Small delay before exiting
 		if not skip:
@@ -269,14 +283,14 @@ class Lcd:
 		return
 
 	# Set Scroll line speed - Best values are 0.2 and 0.3
-	# Limit to between 0.05 and 1.0
+	# Limit to between 0.08 and 0.6
 	def setScrollSpeed(self,speed):
-		if speed < 0.05:
-			speed = 0.2
-		elif speed > 1.0:
-			speed = 0.3
-		self.ScrollSpeed = speed
-		return
+		if speed < 0.08:
+			speed = 0.08
+		elif speed > 0.6:
+			speed = 0.6
+		self.scroll_speed = speed
+		return self.scroll_speed
 
 	# Clear display
 	def clear(self):
@@ -296,26 +310,59 @@ def no_interrupt():
 
 # Class test routine
 if __name__ == "__main__":
-
-	if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-		print "This program must be run with sudo or root permissions!"
-		sys.exit(1)
+	test_Russian = True
+	from translate_class import Translate
+	translate = Translate()	# Test routine in __main__
 
 	try:
 		print "Test lcd_class.py"
+
+		# Code page. 0=Use primary font code page
+		# 1 to 3 override primary font codepage. gives 0x0 to 0x2 
+		page = 3 	# MC0100 Russian
+
 		lcd = Lcd()
-		lcd.init()
+		if test_Russian:
+			lcd.init(code_page=page)
+		else:
+			lcd.init()
+
+		lcd.clear()
+
 		lcd.out(1,"bobrathbone.com")
-		lcd.out(2,"Line 2 123456789")
-		lcd.out(3,"Line 3 123456789")
-		lcd.out(4,"Line 4 123456789")
-		time.sleep(4)
-		lcd.out(4,"Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", no_interrupt)
-		lcd.out(4,"End of test")
+
+		if test_Russian:
+			text2 = "Радио Пятница"	# Radio Pyatnica
+			text2 = "Белоруссией и Украиной"
+			text3 = "Россия - самая"
+			text3 = "На юге Россия"
+			text4 = "большая страна в мире"
+			text4 = "Она охватывает часть" 
+			text4 = "охватывает часть" 
+			text4 = "Перекрёстки"
+			print text2
+			print text3
+			print text4
+			translate.setRomanize(False)
+			text2 = translate.all(text2)
+			text3 = translate.all(text3)
+			text4 = translate.all(text4)
+		else:
+			text2 = "Line 2 123456789"
+			text3 = "Line 2 123456789"
+			text4 = "Line 2 123456789"
+
+		lcd.out(2,text2)
+		lcd.out(3,text3)
+		lcd.out(4,text4)
+		#time.sleep(4)
+		#lcd.out(4,"Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", no_interrupT)
+		#lcd.out(4,"End of test")
 		sys.exit(0)
 
 	except KeyboardInterrupt:
 		print "\nExit"
+		GPIO.cleanup()
 		sys.exit(0)
 # End of test routine
 

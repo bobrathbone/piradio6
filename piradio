@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.66 2020/01/28 09:37:10 bob Exp $
+# $Id: piradio,v 1.78 2020/04/26 09:40:06 bob Exp $
 # This package must be built under Raspbian Buster (Not Jessie or earlier)
 # Source: <source package name; defaults to package name>
 Section: misc
@@ -9,7 +9,7 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 3.9.2
 
 Package: radiod
-Version: 6.12
+Version: 6.13
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
@@ -72,6 +72,7 @@ Files:  radiod.py /usr/share/radio/
 	configure_audio.sh /usr/share/radio/
 	configure_ir_remote.sh /usr/share/radio/
 	display_config.sh /usr/share/radio/
+	display_title.sh /usr/share/radio/
 	set_mixer_id.sh /usr/share/radio/
 	install_streaming.sh /usr/share/radio/
 	install_airplay.sh /usr/share/radio/
@@ -88,10 +89,10 @@ Files:  radiod.py /usr/share/radio/
 	oled/Font.py /usr/share/radio/oled/
 	oled/Graphics.py /usr/share/radio/oled/
 	oled/OLED.py /usr/share/radio/oled/
+	smbus2/__init__.py /usr/share/radio/smbus2
+	smbus2/smbus2.py /usr/share/radio/smbus2
 	README /usr/share/radio/
 	logrotate.d/radiod /etc/logrotate.d/
-	init.d/radiod /etc/init.d/
-	init.d/irradiod /etc/init.d/
 	cron.weekly/radiod /etc/cron.weekly/
 	init.d/shairport-sync /etc/init.d/
 	asound/asound.conf.dist /usr/share/radio/asound
@@ -99,6 +100,14 @@ Files:  radiod.py /usr/share/radio/
 	asound/asound.conf.dist.blue /usr/share/radio/asound
 	asound/asound.conf.dist.bonnet /usr/share/radio/asound
 	asound/asound.conf.dist.pivumeter /usr/share/radio/asound
+	codes/__init__.py /usr/share/radio/codes/
+	codes/English.py /usr/share/radio/codes/
+	codes/Russian.py /usr/share/radio/codes/
+	codes/European.py /usr/share/radio/codes/
+	codes/Russian_HD44780.py /usr/share/radio/codes/
+	codes/European_HD44780.py /usr/share/radio/codes/
+	codes/HTMLcodes.py /usr/share/radio/codes/
+	codes/README /usr/share/radio/codes/
 	configs/mpdstream /usr/share/radio/configs/
 	shairport-sync.service /lib/systemd/system/
 	radiod.conf /usr/share/radio/

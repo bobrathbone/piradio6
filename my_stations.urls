@@ -1,0 +1,99 @@
+# Station list - Source list for radio stations streams
+# File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
+# $Id: my_stations.urls,v 1.13 2019/04/03 18:18:30 bob Exp $
+# To use this file add the URL that points to either an asx or pls file
+# The format is:
+#   (<playlist>)
+#   [<title>] http://<url>(stream)
+#
+# The (<playlist>) parameter groups the following station definitions into one playlist
+# For example (BBC Stations) creates a playlist called BBC_Stations.pls
+# Note: Play lists are terminated with a blank line
+# 
+# The (stream) parameter is optional and indicates this is a direct stream link
+#
+# In general it is always better to define a title
+#
+# Some sites that you can use are:
+#   http://www.listenlive.eu  (Mainly used below)
+#   http://www.internet-radio.com  
+#   http://www.radio-locator.com
+#   http://bbcstreams.com/ 
+#
+# Then run create_playlists.py in the /home/pi/radio directory to create PLS files
+
+# Name of playlist file
+(Radio)
+ 
+# United Kingdom
+# The following links are iPhone streams (m3u files)
+[BBC Radio 1] http://www.radiofeeds.co.uk/bbcradio1.pls
+[BBC Radio 2] http://www.radiofeeds.co.uk/bbcradio2.pls
+[BBC Radio 3] http://www.radiofeeds.co.uk/bbcradio3.pls
+[BBC Radio 5 Live] http://www.radiofeeds.co.uk/bbc5live.pls
+[BBC Radio 6] http://www.radiofeeds.co.uk/bbc6music.pls
+[BBC Radio 5 Live sports] http://www.radiofeeds.co.uk/bbc5livesportsextra.pls
+[BBC Radio 1 extra] http://www.radiofeeds.co.uk/bbc1xtra.pls
+[BBC Radio Bristol] http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/http-icy-mp3-a/vpid/bbc_radio_bristol/format/pls.pls
+[BBC Radio 4 extra] http://www.radiofeeds.co.uk/bbcradio4extra.pls
+[BBC World service] http://wsdownload.bbc.co.uk/worldservice/meta/live/shoutcast/mp3/eieuk.pls
+
+
+# UK stations
+[Jack FM] http://playerservices.streamtheworld.com/pls/JACK_FM.pls 
+[Classic FM] http://media-ice.musicradio.com/ClassicFMMP3
+[Magic Radio] http://icy-e-05.sharp-stream.com/magic1054.mp3
+[The Arrow] http://network.absoluteradio.co.uk/core/audio/mp3/live.pls?service=arbb
+
+# Dutch stations
+[NPO Radio 1] http://icecast.omroep.nl/radio1-bb-mp3
+[NPO Radio 2] http://icecast.omroep.nl/radio2-bb-mp3
+[NPO Radio 3fm] http://icecast.omroep.nl/3fm-bb-mp3
+[NPO Radio 4] http://icecast.omroep.nl/radio4-bb-mp3.m3u
+[Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICA.pls
+[Stream Power MP3] http://mp3.streampower.be/radio1-high.mp3
+[Omroep Brabant] http://www.listenlive.eu/omroepbrabant.m3u
+[Q-Music] http://icecast-qmusic.cdp.triple-it.nl/Qmusic_nl_nonstop_96.mp3.m3u
+[Sky Radio] http://provisioning.streamtheworld.com/pls/skyradio.pls
+[Candlelight] http://candlelight.live-streams.nl/candlelight.m3u
+[Pure Radio One] http://listento.pureradio.one:8000/pure_128aacp.m3u
+
+# German Stations
+[Radio 7 Germany] http://srv01.radio7.fmstreams.de/stream1/livestream.mp3.m3u
+[Bayern Top 40] http://www.antenne.de/webradio/channels/top-40.m3u
+[Antenne Bayern] http://www.antenne.de/webradio/antenne.m3u
+
+# Italian Stations
+[RAI Radio Uno] http://www.listenlive.eu/rai1.m3u
+[RAI Radio Duo] http://www.listenlive.eu/rai2.m3u
+[Prima Radio Napoli] http://kemoniastreaming2.net:8010/listen.pls
+
+# Country music
+[Dublin Sunshine 106.8] http://www.country108.com/listen.pls
+[Nashville FM] http://server-10.stream-server.nl:8300/listen.pls
+[UK Country Radio] http://s3.xrad.io:8064/listen.pls
+[Radio Lichtenstein] http://live.radiol.li:8000/country.m3u
+[Swiss country] http://www.countryradio.ch/assets/files/listen.pls
+
+# Jazz stations
+[Ghost Sky Jazz] http://151.80.38.142:7006/live
+[Radio Sky Music] http://live.radioskymusic.com
+
+# France
+[RTL] http://streaming.radio.rtl.fr/rtl-1-44-128.m3u
+[RTL2] http://streaming.radio.rtl.fr/rtl2-1-44-128.m3u
+
+# Belgium
+[Crooze FM] http://77.92.64.44:8045/stream
+
+# Live_ATC
+#(Air traffic control)
+#[EHAA Approach Departures] http://d.liveatc.net/eham4
+#[EHAA Radar Sector 2 East Inbound] http://d.liveatc.net/eham03_rdr_e_inb  
+#[EHAA Radar SW]  http://d.liveatc.net/eham02_rdr_sw
+#[EHAA Radar 3 South] http://d.liveatc.net/eham02_rdr_s
+#[EHEH Approach] http://d.liveatc.net/eheh2_app
+#[CYYT] http://d.liveatc.net/cyyt
+#[KJFK Gnd Tower] http://d.liveatc.net/kjfk_gnd_twr 
+#[CYYZ Tower] http://d.liveatc.net/cyyz7
+
