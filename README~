@@ -17,10 +17,11 @@ Version 6.15 release notes
 3) Raspberry Pi 400 added to display_model.py program
 4) The display_config.sh script displays X-Windows autostart configuration
 5) Graphic versions of radio now log screen size error
-6) Correct error in configure_audio_device adding dtoverlay to incorrect location in config.txt
-7) Correct invalid mixer id file contents (Must be an numeric character)
-8) Correct vgradio and gradio not launching from desktop icons
-9) Set client_timeout in /etc/radiod.conf to 10 seconds
+6) Raspberry Pi 400 added to display_model.py program
+7) Correct error in configure_audio_device adding dtoverlay to incorrect location in config.txt
+8) Correct invalid mixer id file contents (Must be an numeric character)
+9) Correct vgradio and gradio not launching from desktop icons
+10) Set client_timeout in /etc/radiod.conf to 10 seconds
 
 Version 6.14 release notes
 -------------------------
