@@ -4,7 +4,7 @@
 # Raspberry Pi Radio Character translation class
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: translate_class.py,v 1.64 2020/04/24 17:05:16 bob Exp $
+# $Id: translate_class.py,v 1.67 2020/06/07 11:01:50 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -59,7 +59,7 @@ class Translate:
 	# Process the <font>.codes for the selected language first
 	# Then import romanized codes in the rest and 
 	# finally import English romanized codes
-	# Returns a list of font tables
+	# Returns a list of font tables 
 	def _import_codes(self,language):
 		translated  = False
 		primary = False
@@ -67,10 +67,10 @@ class Translate:
 		# Get all font tables inn the codes sub-directory
 		dir = os.path.dirname(__file__)
 		os.chdir(dir)
-		font_files = glob.glob('codes/*.py')
+		font_files = sorted(glob.glob('codes/*.py'))
 		code_pages = [] 	# List of font translation tables
 		count = 20
-
+	
 		# Process codes
 		while not translated and len(font_files) > 0: 
 			if count < 0:
@@ -102,6 +102,10 @@ class Translate:
 					continue
 
 				#print i,code_page.name,code_page.controller,font_name 
+
+				if language == 'English' and not translated and not primary:
+					code_pages.append(code_page)
+					continue
 
 				# process primary language
 				if code_page.name == language:

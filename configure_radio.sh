@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.94 2020/04/24 08:34:55 bob Exp $
+# $Id: configure_radio.sh,v 1.102 2020/12/12 10:45:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,9 +24,11 @@ FLAGS=$1
 SERVICE=/lib/systemd/system/radiod.service
 BINDIR="\/usr\/share\/radio\/"	# Used for sed so \ needed
 DIR=/usr/share/radio
+LOGDIR=${DIR}/logs
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/config.txt
-LOG=${DIR}/install.log
+LOG=${LOGDIR}/install.log
+SPLASH="bitmaps\/raspberry-pi-logo.bmp" # Used for sed so \ needed
 
 LXSESSION=""	# Start desktop radio at boot time
 FULLSCREEN=""	# Start graphic radio fullscreen
@@ -42,12 +44,13 @@ GPIO_PINS=0	# 0 Not configured, 1=40 pin wiring, 2=26 pin
 PULL_UP_DOWN=0  # Pull up/down resistors 1=Up, 0=Down
 USER_INTERFACE=0	# 0 Not configured, 1=Buttons, 2=Rotary encoders, 3=HDMI/Touch-screen
 			# 4=IQaudIO(I2C), 5=Pimoroni pHAT(SPI), 6=Adafruit RGB(I2C),
-			# 7=PiFace CAD
+			# 7=PiFace CAD, 8=Pirate Audio
 # Display type
 DISPLAY_TYPE=""
 I2C_REQUIRED=0
 I2C_ADDRESS="0x0"
 SPI_REQUIRED=0
+PIFACE_REQUIRED=0
 
 # Display characteristics
 I2C_ADDRESS=0x00	# I2C device address
@@ -62,6 +65,10 @@ VOLUME_RANGE=20
 
 # Date format (Use default in radiod.conf)
 DATE_FORMAT=""	
+
+# Create log directory
+sudo mkdir -p ${LOGDIR}
+sudo chown pi:pi ${LOGDIR}
 
 sudo rm -f ${LOG}
 echo "$0 configuration log, $(date) " | tee ${LOG}
@@ -110,7 +117,8 @@ do
 	"5" "Pimoroni pHat BEAT with own push buttons" \
 	"6" "Adafruit RGB plate with own push buttons" \
 	"7" "PiFace CAD with own push buttons" \
-	"8" "Do not change configuration" 3>&1 1>&2 2>&3) 
+	"8" "Pimoroni Audio with four push buttons" \
+	"9" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
 	exitstatus=$?
 	if [[ $exitstatus != 0 ]]; then
@@ -154,7 +162,15 @@ do
 		DESC="PiFace CAD with buttons"
 		USER_INTERFACE=7
 		SPI_REQUIRED=1
+		PIFACE_REQUIRED=1
 		GPIO_PINS=1
+
+	elif [[ ${ans} == '8' ]]; then
+		DESC="Pimoroni Audio with four push buttons"
+		USER_INTERFACE=8
+		GPIO_PINS=1
+		BUTTON_WIRING=5
+		PULL_UP_DOWN=1
 	else
 		DESC="User interface in ${CONFIG} unchanged"	
 		echo ${DESC} | tee -a ${LOG}
@@ -283,8 +299,9 @@ do
 	"5" "HDMI or touch screen display" \
 	"6" "Olimex 128x64 pixel OLED display" \
 	"7" "PiFace CAD display" \
-	"8" "No display used/Pimoroni Pirate radio" \
-	"9" "Do not change display type" 3>&1 1>&2 2>&3) 
+	"8" "Pimoroni Audio ST7789 TFT" \
+	"9" "No display used/Pimoroni Pirate radio" \
+	"10" "Do not change display type" 3>&1 1>&2 2>&3) 
 
 	exitstatus=$?
 	if [[ $exitstatus != 0 ]]; then
@@ -337,8 +354,18 @@ do
 		DLINES=2
 		DWIDTH=16
 		SPI_REQUIRED=1
+		PIFACE_REQUIRED=1
 
 	elif [[ ${ans} == '8' ]]; then
+		DISPLAY_TYPE="ST7789TFT"
+		DESC="Pimoroni Audio ST7789 TFT"
+		VOLUME_RANGE=10
+		DLINES=7
+		DWIDTH=16
+		SPLASH="images\/raspberrypi.png"
+		SPI_REQUIRED=1
+
+	elif [[ ${ans} == '9' ]]; then
 		DISPLAY_TYPE="NO_DISPLAY"
 		DLINES=0
 		DWIDTH=0
@@ -384,7 +411,7 @@ fi
 
 if [[ ${SPI_REQUIRED} != 0 ]]; then
         echo | tee -a ${LOG}
-        echo "The PiFace CAD display requires the" | tee -a ${LOG}
+        echo "The chosen display (${DESC}) requires the" | tee -a ${LOG}
         echo "SPI kernel module to be loaded at boot time." | tee -a ${LOG}
         echo "The program will call the raspi-config program" | tee -a ${LOG}
         echo "Select the following options on the next screens:" | tee -a ${LOG}
@@ -393,19 +420,25 @@ if [[ ${SPI_REQUIRED} != 0 ]]; then
         echo; echo -n "Press enter to continue: "
         read ans
 
+	exitstatus=$?
+	if [[ $exitstatus != 0 ]]; then
+		exit 0
+	fi
+
 	# Enable the SPI kernel interface 
 	ans=0
 	ans=$(whiptail --title "Enable SPI interface" --menu "Choose your option" 15 75 9 \
 	"1" "Enable SPI Kernel Interface " \
 	"2" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
-	exitstatus=$?
-	if [[ $exitstatus != 0 ]]; then
-		exit 0
-	fi
-
+	# Configure SPI interface for PiFace CAD or ST7889 TFT
 	if [[ ${ans} == '1' ]]; then
 		sudo raspi-config
+	else
+		echo "SPI configuration unchanged"	 | tee -a ${LOG}
+	fi
+
+	if [[ ${PIFACE_REQUIRED} == '1' ]]; then
 		echo "The selected interface requires the PiFace CAD Python library" | tee -a ${LOG}
 		echo "It is necessary to install the python-pifacecad library" | tee -a ${LOG}
 		echo "After this program finishes carry out the following command:" | tee -a ${LOG}
@@ -413,8 +446,6 @@ if [[ ${SPI_REQUIRED} != 0 ]]; then
 		echo "and reboot the system." | tee -a ${LOG}
 		echo; echo -n "Press enter to continue: "
 		read ans
-	else
-		echo "SPI configuration unchanged"	 | tee -a ${LOG}
 	fi
 fi
 
@@ -749,7 +780,7 @@ if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
 fi
 
 # Configure user interface (Buttons or Rotary encoders)
-if [[ ${USER_INTERFACE} == "1" ]]; then
+if [[ ${USER_INTERFACE} == "1" || ${USER_INTERFACE} == "8" ]]; then
 	sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=buttons/}" ${CONFIG}
 
 elif [[ ${USER_INTERFACE} == "2" ]]; then
@@ -841,7 +872,7 @@ elif [[ ${BUTTON_WIRING} == "3" ]]; then
 	sudo sed -i -e "0,/^rgb_green/{s/rgb_green.*/rgb_green=15/}" ${CONFIG}
 	sudo sed -i -e "0,/^rgb_blue/{s/rgb_blue.*/rgb_blue=16/}" ${CONFIG}
 
-# Configure the cosmic controller (40 pin only)
+# Configure Pimoroni pHat BEAT
 elif [[ ${BUTTON_WIRING} == "4" ]]; then
 	echo "Configuring Pimoroni pHat BEAT"  | tee -a ${LOG}
 	# Switches
@@ -852,6 +883,20 @@ elif [[ ${BUTTON_WIRING} == "4" ]]; then
 	sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=26/}" ${CONFIG}
 	sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=16/}" ${CONFIG}
 
+# Configure Pimoroni Audio with ST7789 controller (40 pin only)
+elif [[ ${BUTTON_WIRING} == "5" ]]; then
+	echo "Configuring Pimoroni Audio with ST7789 controller"  | tee -a ${LOG}
+	# Switches
+	sudo sed -i -e "0,/^menu_switch=/{s/menu_switch=.*/menu_switch=0/}" ${CONFIG}
+	sudo sed -i -e "0,/^mute_switch/{s/mute_switch.*/mute_switch=0/}" ${CONFIG}
+	sudo sed -i -e "0,/^up_switch/{s/up_switch.*/up_switch=16/}" ${CONFIG}
+	sudo sed -i -e "0,/^down_switch/{s/down_switch.*/down_switch=5/}" ${CONFIG}
+	sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=6/}" ${CONFIG}
+
+	# Some versions of the Pimoroni Audio use GPIO 24 for the right switch
+	#sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=24/}" ${CONFIG}
+	sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=20/}" ${CONFIG}
+
 # Disable switch GPIOs if using SPI or I2C interface
 else 
 	sudo sed -i -e "0,/^menu_switch=/{s/menu_switch=.*/menu_switch=0/}" ${CONFIG}
@@ -861,6 +906,10 @@ else
 	sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=0/}" ${CONFIG}
 	sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=0/}" ${CONFIG}
 fi
+
+# Configure splash screen
+echo "Configuring splash screen as ${SPLASH[index]//\\/}"
+sudo sed -i -e "0,/^splash/{s/splash.*/splash=${SPLASH}/}" ${CONFIG}
 
 # Configure the pull up/down resistors
 if [[ ${PULL_UP_DOWN} == "1" ]]; then
@@ -919,6 +968,7 @@ echo | tee -a ${LOG}
 
 echo $(grep "^pull_up_down=" ${CONFIG} ) | tee -a ${LOG}
 echo $(grep "^flip_display_vertically=" ${CONFIG} ) | tee -a ${LOG}
+echo $(grep "^splash=" ${CONFIG} ) | tee -a ${LOG}
 
 echo $(grep "^volume_range=" ${CONFIG} ) | tee -a ${LOG}
 if [[ $DATE_FORMAT != "" ]]; then
@@ -933,7 +983,8 @@ if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
 	# Set up desktop radio execution icon
 	sudo cp ${DIR}/Desktop/gradio.desktop /home/pi/Desktop/.
 	sudo cp ${DIR}/Desktop/vgradio.desktop /home/pi/Desktop/.
-
+	sudo chmod +x /home/pi/Desktop/gradio.desktop
+	sudo chmod +x /home/pi/Desktop/vgradio.desktop
 
 	# Add [SCREEN] section to the configuration file
 	grep "\[SCREEN\]" ${CONFIG} >/dev/null 2>&1
@@ -958,7 +1009,7 @@ elif [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
 		cmd="sudo systemctl enable radiod.service"
 		echo ${cmd}; ${cmd} >/dev/null 2>&1
 	else
-		sudo update-rc.d radiod enable
+		sudo systemctl enable radiod 
 	fi
 fi
 

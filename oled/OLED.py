@@ -9,7 +9,7 @@ __maintainer__ = __author__
 __email__ = "support@olimex.com"
 
 
-import smbus
+import smbus2
 import sys
 
 
@@ -74,7 +74,7 @@ class OLED:
         Create communication object
 
         """
-        self.bus = smbus.SMBus(self.i2c)
+        self.bus = smbus2.SMBus(self.i2c)
 
     def close(self):
         """

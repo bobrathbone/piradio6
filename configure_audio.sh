@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio
-# $Id: configure_audio.sh,v 1.44 2019/12/13 12:37:33 bob Exp $
+# $Id: configure_audio.sh,v 1.54 2020/12/02 14:57:52 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -34,7 +34,10 @@ LIBDIR=/var/lib/radiod
 PIDFILE=/var/run/radiod.pid
 I2SOVERLAY="dtoverlay=i2s-mmap"
 PULSEAUDIO=/usr/bin/pulseaudio
-LOG=${DIR}/audio.log
+
+LOGDIR=${DIR}/logs
+LOG=${LOGDIR}/audio.log
+
 BLUETOOTH_SERVICE=/lib/systemd/system/bluetooth.service
 
 # Audio types
@@ -42,7 +45,10 @@ JACK=1	# Audio Jack or Sound Cards
 HDMI=2	# HDMI
 DAC=3	# DAC card
 BLUETOOTH=4	# Bluetooth speakers
+USB=5	# USB PnP DAC
 TYPE=${JACK}
+SCARD="headphones"	# aplay -l string. Set to headphones, HDMI, DAC or bluetooth
+			# to configure the audio_out parameter in the configuration file
 
 # dtoverlay parameter in /etc/config.txt
 DTOVERLAY=""
@@ -59,6 +65,10 @@ NUMID=1
 # Pulse audio asound.conf
 USE_PULSE=0
 ASOUND_CONF_DIST=asound.conf.dist
+
+# Create log directory
+sudo mkdir -p ${LOGDIR}
+sudo chown pi:pi ${LOGDIR}
 
 sudo rm -f ${LOG}
 echo "$0 configuration log, $(date) " | tee ${LOG}
@@ -106,7 +116,8 @@ do
 	"11" "JustBoom Digi HAT/zero" \
 	"12" "Bluetooth device" \
 	"13" "Adafruit speaker bonnet" \
-	"14" "Manually configure" 3>&1 1>&2 2>&3)
+	"14" "Pimoroni Pirate Audio (HiFiBerry DAC)" \
+	"15" "Manually configure" 3>&1 1>&2 2>&3)
 
 	exitstatus=$?
 	if [[ $exitstatus != 0 ]]; then
@@ -122,16 +133,16 @@ do
 		NUMID=3
 
 	elif [[ ${ans} == '3' ]]; then
-		DESC="USB DAC"
-		NAME=${DESC}
+		DESC="USB PnP DAC"
+		NAME="USB PnP"
 		DEVICE="plughw:1,0"
 		CARD=1
 		MIXER="software"
-		TYPE=${DAC}
+		TYPE=${USB}
 		NUMID=6
 
 	elif [[ ${ans} == '4' ]]; then
-		DESC="HiFiBerry DAC/Miniamp/Pimoroni pHat"
+		DESC="HiFiBerry DAC\/Miniamp\/Pimoroni pHat"
 		NAME=${DESC}
 		DTOVERLAY="hifiberry-dac"
 		MIXER="software"
@@ -161,7 +172,7 @@ do
 		TYPE=${DAC}
 
 	elif [[ ${ans} == '8' ]]; then
-		DESC="IQAudio DAC/Zero DAC"
+		DESC="IQAudio DAC\/Zero DAC"
 		NAME=${DESC}
 		DTOVERLAY="iqaudio-dac"
 		MIXER="software"
@@ -176,14 +187,14 @@ do
 		TYPE=${DAC}
 
 	elif [[ ${ans} == '10' ]]; then
-		DESC="JustBoom DAC/Amp"
+		DESC="JustBoom DAC\/Amp"
 		NAME="JustBoom DAC"
 		DTOVERLAY="justboom-dac"
 		MIXER="software"
 		TYPE=${DAC}
 
 	elif [[ ${ans} == '11' ]]; then
-		DESC="JustBoom DAC/Amp"
+		DESC="JustBoom DAC\/Amp"
 		NAME="JustBoom Digi HAT"
 		DTOVERLAY="justboom-digi"
 		MIXER="software"
@@ -206,6 +217,13 @@ do
 		TYPE=${DAC}
 
 	elif [[ ${ans} == '14' ]]; then
+		DESC="Pimoroni Pirate Audio (HiFiBerry DAC)"
+		NAME=${DESC}
+		DTOVERLAY="hifiberry-dac"
+		MIXER="software"
+		TYPE=${DAC}
+
+	elif [[ ${ans} == '15' ]]; then
 		DESC="Manual configuration"
 	fi
 
@@ -245,19 +263,27 @@ else
 fi
 
 # Select HDMI or audio jack/DACs Alsa output
+# Also setup audio_out parameter in the config file
 if [[ ${TYPE} == ${HDMI} ]]; then
 	echo "Configuring HDMI as output" | tee -a ${LOG}
 	sudo touch ${LIBDIR}/hdmi 
 	sudo amixer cset numid=3 2
 	sudo alsactl store
+	SCARD="HDMI"
 
 elif [[ ${TYPE} == ${JACK} ]]; then
 	echo "Configuring on-board jack as output" | tee -a ${LOG}
 	sudo amixer cset numid=3 1
 	sudo alsactl store
+	SCARD="headphones"
 
 elif [[ ${TYPE} == ${DAC} ]]; then
 	echo "Configuring DAC as output" | tee -a ${LOG}
+	SCARD="DAC"
+
+elif [[ ${TYPE} == ${USB} ]]; then
+	echo "Configuring USB PnP as output" | tee -a ${LOG}
+	SCARD="USB"
 
 # Configure bluetooth device
 elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
@@ -316,8 +342,15 @@ elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
 		read ans
 		exit 1
 	fi
-	
+	SCARD="bluetooth"
 fi
+
+# Configure the audio_out parameter
+echo |  tee -a ${LOG}
+echo "Configuring audio_out parameter in ${CONFIG} with ${SCARD} " | tee -a ${LOG}
+sudo sed -i -e "0,/audio_out=/{s/^#aud/aud/}" ${CONFIG}
+sudo sed -i -e "0,/audio_out=/{s/^audio_out=.*/audio_out=\"${SCARD}\"/}" ${CONFIG}
+grep -i "audio_out="  ${CONFIG} | tee -a ${LOG}
 
 # Set up asound configuration for espeak and aplay
 echo |  tee -a ${LOG}
@@ -374,10 +407,7 @@ sudo sed -i '/dtoverlay=justboom/d' ${BOOTCONFIG}
 
 # Add dtoverlay for sound cards
 if [[ ${DTOVERLAY} != "" ]]; then
-	TEMP="/tmp/awk$$"
-	sudo awk -v s="dtoverlay=${DTOVERLAY}" '/^dtoverlay/{f=1;$0=s}7;END{if(!f)print s}' ${BOOTCONFIG} > ${TEMP}
-	sudo cp -f ${TEMP} ${BOOTCONFIG}
-	sudo rm -f ${TEMP}
+	sudo sed -i "/\[all\]/a dtoverlay=${DTOVERLAY}" ${BOOTCONFIG} 
 
 	# Set up the dtoverlay command
 	if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
@@ -414,6 +444,7 @@ grep ^dtparam=audio ${BOOTCONFIG} | tee -a ${LOG}
 grep ^dtoverlay ${BOOTCONFIG} | tee -a ${LOG}
 
 echo | tee -a ${LOG}
+DESC=$(echo ${DESC} | sed 's/\\\//\//g')
 echo "${DESC} configured" | tee -a ${LOG}
 
 # Remove the mixer volume ID from /var/lib/radiod 
@@ -428,6 +459,20 @@ if [[ ${USE_PULSE} == 1 ]]; then
 		echo "and re-run ${SCRIPT}" | tee -a ${LOG}
 		exit 1
 	fi
+fi
+
+# Check if audio_out parameter in configuration file
+grep ^audio_out= ${CONFIG}
+if [[ $? != 0 ]]; then  # Don't seperate from above
+        echo "ERROR: audio_out parameter missing from ${CONFIG}" | tee -a ${LOG}
+        echo "At the end of this program run \"amixer controls | grep card\" " | tee -a ${LOG}
+        echo "to display available audio output devices" | tee -a ${LOG}
+	echo '' | tee -a ${LOG}
+        echo "Add the audio_out parameter to ${CONFIG} as shown below" | tee -a ${LOG}
+        echo "     audio_out=\"<unique string>\"" | tee -a ${LOG}
+        echo "     Where: <unique string> is a unique string from the amixer command output" | tee -a ${LOG}
+        echo "Enter to continue: "
+        read ans
 fi
 
 # Reboot dialogue

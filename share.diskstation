@@ -1,1 +1,1 @@
-mount -t cifs -o username=bob,password=Flaps30,uid=pi,gid=pi,vers=1.0 //192.168.2.5/media/music_mixed/Music65 /share
+mount -t cifs -o username=bob,password=Flaps30,uid=pi,gid=pi,vers=1.0 //192.168.1.170/media/music_mixed/Music65 /share

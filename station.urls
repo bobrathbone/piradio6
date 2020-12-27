@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.32 2020/04/25 11:09:51 bob Exp $
+# $Id: station.urls,v 1.39 2020/11/24 09:15:35 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -39,14 +39,39 @@
 
 # UK stations
 [Jack FM] http://playerservices.streamtheworld.com/pls/JACK_FM.pls 
-[Classic FM] http://media-ice.musicradio.com/ClassicFMMP3
+[Fun Kids UK] http://www.radiofeeds.co.uk/sharptemp.pls?station=funkids.mp3
+[Planet Rock UK] http://tx.planetradio.co.uk/icecast.php?i=planetrock.mp3
+[Classic FM] http://icecast.thisisdax.com/ClassicFMMP3.m3u
 
 [Caroline Pirate] http://sc3.radiocaroline.net:8030/listen.m3u8
 
 # German radio stations
-[Radio 7 Germany] http://srv01.radio7.fmstreams.de/stream1/livestream.mp3.m3u
-[Antenne Bayern Top 40] http://www.antenne.de/webradio/channels/top-40.m3u
 [80's Radio] http://streams.80s80s.de/web/mp3-192/streams.80s80s.de
+[Antenne Bayern Top 40] http://www.antenne.de/webradio/channels/top-40.m3u
+[Antenne Bayern Schlagersahne] http://www.antenne.de/webradio/channels/das-schlager-karussell.m3u
+[Antenne Bayern Oldies but Goldies] http://www.antenne.de/webradio/channels/oldies-but-goldies.m3u
+[Antenne Bayern Lovesongs] http://www.antenne.de/webradio/channels/lovesongs.m3u
+[Antenne Bayern 80er -Kulthits] http://mp3channels.webradio.antenne.de/80er-kulthits
+[Antenne Bayern 90er -Hits] http://mp3channels.webradio.antenne.de/90er-hits
+[Ballerman Radio] http://stream.bmr-radio.de:80/
+[WDR Live1] http://www.wdr.de/wdrlive/media/einslive.m3u
+[89.0 RTL] http://stream.89.0rtl.de/live/mp3-128/stream.89.0rtl.de/play.m3u
+[104,6 RTL] http://stream.104.6rtl.com/rtl-live/mp3-192/listenlive/play.m3u
+[Country 108] http://www.country108.com/listen.pls
+
+# Austrian radio stations
+[Ö1] http://mp3stream3.apasf.apa.at:8000
+[Hitradio OE3] http://mp3stream7.apasf.apa.at:8000
+[Radio Wien] http://mp3stream2.apasf.apa.at
+[Radio NOE] http://mp3stream8.apasf.apa.at
+[Radio Burgenland] http://194.232.200.146:8000/listen.pls
+[Radio Arabella Wien] http://arabella.stream.kapper.net:8000/arabellavie.m3u
+[Radio Arabella Holiday] http://arabella.stream.kapper.net:8013/arabellaholiday.m3u
+[Radio Arabella Austropop] http://arabella.stream.kapper.net:8005/arabellaaustropop.m3u
+[Radio Arabella] http://streamplus23.leonex.de:25708/listen.pls
+[Vorarlber Oldis] http://webradio.antennevorarlberg.at/oldies.m3u
+[Liferadio Tirol] http://194.232.200.164:8000
+[Radio Energy Wien] http://stream1.energy.at:8000/aacplus.m3u
 
 # Italian Stations
 [Radio Capital] http://radiocapital-lh.akamaihd.net/i/RadioCapital_Live_1@196312/master.m3u8
@@ -90,21 +115,18 @@
 [NPO Radio 3fm] http://icecast.omroep.nl/3fm-bb-mp3
 [NPO Radio 4] http://icecast.omroep.nl/radio4-bb-mp3.m3u
 [Radio 10 NL] http://stream.radio10.nl/radio10
-[Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICA.pls
 [Sky Radio] http://provisioning.streamtheworld.com/pls/skyradio.pls
-[Radio Veronica] http://provisioning.streamtheworld.com/pls/VERONICAAAC.pls
-#[Candlelight] http://candlelight.live-streams.nl/candlelight.m3u
+[Candlelight] http://player.candlelight.nl/candlelight.pls
 [Candlelight] http://19983.live.streamtheworld.com/CANDLELIGHT_SC?allradio.nl&1586280813
 
 
 # Slovenian stations
 [80's Radio] http://streams.80s80s.de/web/mp3-192/streams.80s80s.de
+[Radio Ena] http://live.radio.si/Radio1
 
 # Russian radio stations
 [Радио Рекорд] http://air.radiorecord.ru:805/naft_320
 [Радио Пятница] http://185.128.234.101:8000/radiopyatnica
-[MyRadio24] http://listen6.myradio24.com/50904
-[Echo Moskvy] http://radio-echo.melodix.ru:8080/echo.mp3
 
 # Blues
 [HD Radio - The Blues] http://167.114.64.181:8389/stream
@@ -163,7 +185,6 @@
 
 # Disco
 [101.ru: ABBA] http://ic3.101.ru:8000/c13_13
-[The Club - Back To The Roots] http://192.99.62.212:9534/stream
 [DM Music Box S1 - 80s Disco] http://212.83.150.15:8201/stream
 [Disco Music Station on Radio 257] http://212.83.138.48:8079/stream
 [online-disco.de] http://0nline-disco.de:8000/

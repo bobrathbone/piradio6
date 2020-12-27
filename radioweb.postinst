@@ -1,6 +1,6 @@
 #!/bin/bash 
 # Radio daemon post install script
-# $Id: radioweb.postinst,v 1.1 2018/03/15 15:28:12 bob Exp $
+# $Id: radioweb.postinst,v 1.2 2020/05/15 06:28:05 bob Exp $
 
 # File locations
 DIR=/usr/share/radio
@@ -22,6 +22,10 @@ sudo tar -xvf ${TARFILE} > /dev/null
 
 # Enable cgi scripts
 ln -s ${APACHE_CONFIG}/mods-available/${CGILOAD}  ${APACHE_CONFIG}/mods-enabled/${CGILOAD}
+
+# Enable gd and mbstring modules
+sudo phpenmod gd
+sudo phpenmod mbstring
 
 # Restart web server
 apachectl restart

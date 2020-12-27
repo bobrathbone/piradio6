@@ -30,7 +30,7 @@ class Scale(Simple):
     """
 
     _can_focus = True
-    _default_size = (200, 40)
+    _default_size = (200, 50)
     _surf_flags = SRCALPHA
     _extra_images = {"handle": ((), (0.5, 0)), "handle_drag": "handle"}
     _settings_default = {"col": (127, 127, 169), "inverted": False,

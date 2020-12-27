@@ -9,6 +9,36 @@ See http://www.musicpd.org/
 Use "apt-get install mpd mpc python-mpd" to install the library
 This software uses the python-mpd library. See https://pypi.python.org/pypi/python-mpd/
 
+Version 6.15 release notes
+-------------------------
+22nd December 2020
+1) Oled class now uses the smbus2 library instead of the python-smbus package
+2) Amended configure_audio_device.sh to not overwrite equalizer plugin setting in /etc/mpd.conf
+3) Raspberry Pi 400 added to display_model.py program
+4) The display_config.sh script displays X-Windows autostart configuration
+5) Graphic versions of radio now log screen size error
+6) Raspberry Pi 400 added to display_model.py program
+7) Correct error in configure_audio_device adding dtoverlay to incorrect location in config.txt
+8) Correct invalid mixer id file contents (Must be an numeric character)
+9) Correct vgradio and gradio not launching from desktop icons
+10) Set client_timeout in /etc/radiod.conf to 10 seconds
+
+Version 6.14 release notes
+-------------------------
+16th September 2020
+1) Support for Pimoroni 4-button Pirate Audio (ST7789 TFT 240x240 screen)
+2) Speed up initial display when changing menu by not scrolling lines first time in
+3) Changes to support O!MPD web interface (Version 2.x of the Web interface)
+4) Correct European codes not being loaded if language=English
+5) Support for comitup WiFi configurator added
+6) New configure_audio_device.sh created to handle new alsa device configuration
+7) New parameters comitup_ip and audio_out parameters
+8) Correct vgradio from skipping to next page when using menu button shutdown
+9) Configure audio script correct sed error with '/'characters in the description
+10) Improved setting of mixer_volume_id (for Spotify amixer cset command)
+11) Prevent gradio and radiod cycling through menus when holing down menu button(shutdown).
+12) Configuration and installation progs now store logs in /usr/share/radio/logs directory 
+
 Version 6.13 release notes
 -------------------------
 26th April 2020

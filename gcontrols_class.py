@@ -3,7 +3,7 @@
 # Raspberry Pi Internet Radio
 # Graphic screen controls
 #
-# $Id: gcontrols_class.py,v 1.48 2018/11/26 08:20:59 bob Exp $
+# $Id: gcontrols_class.py,v 1.49 2020/08/19 13:14:16 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -505,7 +505,7 @@ class Widgets:
 			xPos = display.getColumnPos(startColumn)
 		else:
 			xPos = display.getColumnPos(1)
-		yPos = display.getRowPos(rows - 2.5)
+		yPos = display.getRowPos(rows - 2.8)
 		if self.radio.muted():
 			sVolume = "Muted"
 		else:

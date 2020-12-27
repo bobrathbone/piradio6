@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.29 2020/04/06 14:31:32 bob Exp $
+# $Id: volume_class.py,v 1.31 2020/06/14 10:04:42 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -70,6 +70,7 @@ class Volume:
 			volume = self.mixer_volume
 		else:
 			self.volume = self._getMpdVolume(self.mpd_client)
+
 			volume = self.volume
 			# Don't change speech volume if muted
 			if self.volume > 0:
@@ -83,7 +84,6 @@ class Volume:
 	# Get the MPD volume 
 	def _getMpdVolume(self,mpd_client):
 		try:
-			mpd_client.ping()	# Keep alive
 			status = mpd_client.status()
 			vol = int(status.get("volume"))
 			self.volume = vol	# Won't be reached if exception
@@ -92,9 +92,10 @@ class Volume:
 		except Exception as e:
 			log.message("volume._getMpdVolume " + str(e),log.ERROR)
 			self.status = self.ERROR
-			time.sleep(2)
+			time.sleep(1)
 		return self.volume
 
+	# Get MPD volume status (and reset to OK)
 	def getStatus(self):
 		status = self.status
 		self.status = self.OK
@@ -303,7 +304,7 @@ class Volume:
 
 	# Refresh client if re-connection occured
 	def setClient(self,mpd_client):
-		#self.mpd_client = mpd_client
+		self.mpd_client = mpd_client
 		return
 
 	# Execute system command

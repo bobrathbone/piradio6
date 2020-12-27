@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: latin-1 -*-
 #
-# $Id: rss_class.py,v 1.19 2020/04/13 15:49:43 bob Exp $
+# $Id: rss_class.py,v 1.20 2020/05/09 12:48:01 bob Exp $
 # Raspberry Pi RSS feed class
 #
 # Author : Bob Rathbone
@@ -25,7 +25,7 @@ from log_class import Log
 
 log = Log()
 url = "/var/lib/radiod/rss"
-DELAY = 10
+DELAY = 5
 
 class Rss:
 	rss = []	# Array for the RSS feed
@@ -237,7 +237,7 @@ class Rss:
 			if self.rss_line2 == self.rss_line1[leng-max_columns:]:
 				self.rss_delay1 = 0
 				if self.rss_delay2 == 0:
-					self.rss_delay2 = DELAY2
+					self.rss_delay2 = DELAY
 		else:
 			self.rss_line2 = self.rss_line1[:max_columns]
 

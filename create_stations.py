@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.18 2020/04/07 19:19:55 bob Exp $
+# $Id: create_stations.py,v 1.19 2020/08/28 15:33:01 bob Exp $
 #
 # Create playlist files from the following url formats
 #       iPhone stream files (.asx)
@@ -335,7 +335,7 @@ def checkStream(url,lineCount):
 	try:
 		signal.alarm(TimeOut)
 		socket.setdefaulttimeout(TimeOut)
-		file = urllib2.urlopen(url,timeout=10)
+		file = urllib2.urlopen(url,timeout=20)
 		data = file.read(50)	# Just a few bytes of stream
 		file.close()
 		print ("Stream:" + url)
@@ -521,7 +521,7 @@ for line in open(StationList,'r'):
 	try:
 		signal.alarm(TimeOut)
 		socket.setdefaulttimeout(TimeOut)
-		file = urllib2.urlopen(url,timeout=10)
+		file = urllib2.urlopen(url,timeout=20)
 		data = file.read()
 		file.close()
 		# Creat list from data

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.12 2018/08/06 07:39:18 bob Exp $
+# $Id: rotary_class.py,v 1.14 2020/05/15 06:24:57 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -193,11 +193,10 @@ class RotaryEncoder:
 
     # Push button up event
     def button_event(self,button):
-	if GPIO.input(button): 
-	    event = self.BUTTONUP 
-	else:
-	    event = self.BUTTONDOWN 
-	self.callback(event)
+	# Ignore Button Up events	
+	if not GPIO.input(button): 
+		event = self.BUTTONDOWN 
+		self.callback(event)
 	return
 
     # Get a button state - returns 1 or 0

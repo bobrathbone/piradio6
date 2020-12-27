@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-$Id: display_model.py,v 1.9 2020/02/17 09:57:20 bob Exp $
+$Id: display_model.py,v 1.10 2020/11/12 11:08:21 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -84,6 +84,7 @@ model_data = {
     'b03111': ('4B', '1.1', 2048, 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03111': ('4B', '1.1', 4096, 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03112': ('4B', '1.2', 4096, 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'c03130': ('400', '1.0', 4096, 'Sony UK', '64 bit 1.8GHz quad core, Bluetooth 5, USB 2/3'),
 }
 
 

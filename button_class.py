@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.19 2019/07/05 10:26:33 bob Exp $
+# $Id: button_class.py,v 1.21 2020/05/24 07:00:46 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com

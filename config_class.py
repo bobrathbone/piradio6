@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.95 2020/04/24 15:58:26 bob Exp $
+# $Id: config_class.py,v 1.101 2020/12/22 09:16:34 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -50,12 +50,13 @@ class Configuration:
 	GRAPHICAL_DISPLAY = 5	# Graphical or touchscreen  display
 	OLED_128x64 = 6		# OLED 128 by 64 pixels
 	PIFACE_CAD = 7		# Piface CAD 
+	ST7789TFT = 8		# Pirate audio TFT with ST7789 controller
 
 	display_type = LCD
 	DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574', 
 			 'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 
 			 'GRAPHICAL_DISPLAY', 'OLED_128x64', 
-			 'PIFACE_CAD' ]
+			 'PIFACE_CAD','ST7789TFT' ]
 
 	# User interface ROTARY or BUTTONS
 	ROTARY_ENCODER = 0
@@ -76,7 +77,7 @@ class Configuration:
 
 	# Configuration parameters
 	mpdport = 6600  		# MPD port number
-	client_timeout = 5		# MPD client timeout in secons 3 to 15 seconds
+	client_timeout = 10		# MPD client timeout in secons 3 to 15 seconds
 	dateFormat = "%H:%M %d/%m/%Y"   # Date format
 	volume_range = 100 		# Volume range 10 to 100
 	volume_increment = 1 		# Volume increment 1 to 10
@@ -89,6 +90,7 @@ class Configuration:
 	scroll_speed = float(0.3)	# Display scroll speed (0.01 to 0.3)
 	airplay = False		# Use airplay
 	mixerPreset = 0		# Mixer preset volume (0 disable setting as MPD controls it)
+	audio_out="" 		# Audio device string such as headphones, HDMI or DAC
 	display_blocks = False	# Display volume in blocks
 	fullscreen = True	# Graphics screen fullscreen yes no 
 	startup_playlist = ""	# Startup playlist if defined
@@ -110,6 +112,7 @@ class Configuration:
 	speak_info = False	# If speach enable also speak info (IP address and hostname)
 	speech_volume = 80  	# Percentage speech volume 
 	logfile_truncate = False	# Truncate logfile otherwise write to end
+	comitup_ip = "10.41.0.1" 	# Comitup initial IP address.
 
 	# Shoutcast ID
 	shoutcast_key = "anCLSEDQODrElkxl"
@@ -330,7 +333,7 @@ class Configuration:
 				elif option == 'i2c_bus':
 					try:
 						value = int(parameter)
-						if parameter  > 0 or parameter <= 1:
+						if value  > 0 or value <= 1:
 							self.i2c_bus =  value
 						else:
 							self.invalidParameter(ConfigFile,option,parameter)
@@ -447,6 +450,9 @@ class Configuration:
 					elif parameter == 'PIFACE_CAD':
 						self.display_type = self.PIFACE_CAD
 
+					elif parameter == 'ST7789TFT':
+						self.display_type = self.ST7789TFT
+
 					else:
 						self.invalidParameter(ConfigFile,option,parameter)
 
@@ -491,6 +497,12 @@ class Configuration:
 				
 				elif option == 'romanize':
 					self.romanize = self.convertOnOff(parameter)
+
+				elif option == 'audio_out':
+					self.audio_out = parameter
+
+				elif option == 'comitup_ip':
+					self.comitup_ip = parameter
 
 				else:
 					msg = "Invalid option " + option + ' in section ' \
@@ -989,6 +1001,9 @@ class Configuration:
 	def getRomanize(self):
 		return self.romanize
 
+	def getAudioOut(self):
+		return self.audio_out
+
 	# Get language e.g. Russian or English etc
 	def getLanguage(self):
 		return self.language
@@ -996,6 +1011,9 @@ class Configuration:
 	# Get controller type HD44780U or HD44780
 	def getController(self):
                 return self.controller
+
+	def getComitupIp(self):
+                return self.comitup_ip
 
 # End Configuration of class
 
@@ -1021,6 +1039,8 @@ if __name__ == '__main__':
 	print "Speech volume adjustment:", str(config.getSpeechVolumeAdjust()) + '%'
 	print "Verbose:", config.verbose()
 	print "Speak info:", config.speakInfo()
+	print "Audio out:",config.getAudioOut()
+	print "Comitup IP:",config.getComitupIp()
 
 	print "pull_up_down:", config.getPullUpDown()
 	for switch in config.switches:
@@ -1043,6 +1063,7 @@ if __name__ == '__main__':
 	print "Display width:", config.getWidth()
 	print "LCD font page:", config.getLcdFontPage()
 	print "Full screen:", config.fullScreen()
+	print "Grapic screen size:", config.getSize()
 	print "Scroll speed:", config.getScrollSpeed()
 	print "Airplay:", config.getAirplay()
 	print "Mixer Volume Preset:", config.getMixerPreset()

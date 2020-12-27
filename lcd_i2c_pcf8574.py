@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_pcf8574.py,v 1.16 2020/04/24 08:59:35 bob Exp $
+# $Id: lcd_i2c_pcf8574.py,v 1.17 2020/06/03 08:06:27 bob Exp $
 #
 # PCF8574 I2C LCD Backpack LCD class
 # Use this program to test I2C Backpack LCD wiring
@@ -16,7 +16,7 @@
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 # The authors shall not be liable for any loss or damage however caused.
 #
-# This version use3s smbus2 from Karl-Petter Lindegaard (MIT)
+# This version uses smbus2 from Karl-Petter Lindegaard (MIT)
 
 import pdb
 import os,sys,pwd

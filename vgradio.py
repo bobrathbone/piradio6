@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.101 2020/04/24 16:13:08 bob Exp $
+# $Id: vgradio.py,v 1.108 2020/11/16 12:26:04 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -179,7 +179,10 @@ def handleEvent(radio,radioEvent):
 		radio.decreaseVolume()
 
 	elif event_type == radioEvent.MENU_BUTTON_DOWN:
-		pageUp(display,radio)
+                time.sleep(0.5)
+		# Is the button still held down (Shutdown)
+		if not radioEvent.menuPressed():
+			pageUp(display,radio)
 
 	elif event_type == radioEvent.MUTE_BUTTON_DOWN:
 		if radio.muted():
@@ -653,6 +656,8 @@ if __name__ == "__main__":
 	signal.signal(signal.SIGTERM,signalHandler)
 	signal.signal(signal.SIGHUP,signalHandler)
 
+	picWallpaper = None
+
 	locale.setlocale(locale.LC_ALL, '')
 
 	try:
@@ -692,12 +697,23 @@ if __name__ == "__main__":
 
 	# Setup radio
 	log.init('radio')
+
 	radioEvent = Event()	# Add radio event handler
 	radio = Radio(rmenu,radioEvent,translate)  # Define radio
 
 	# Set up the screen
 	size = radio.config.getSize()
-	screen = pygame.display.set_mode(size,flags)
+        try:
+		screen = pygame.display.set_mode(size,flags)
+        except Exception as e:
+                msg = "vgradio screen size error:  " + str(e)
+                print msg
+                log.message(msg, log.ERROR)
+                msg = "Fatal error - exiting"
+                print msg
+                log.message(msg, log.ERROR)
+                sys.exit(1)
+	ipaddr = radio.waitForNetwork()
 
 	# Hide mouse if configured
 	if display.config.fullScreen() and not display.config.displayMouse():
@@ -708,8 +724,8 @@ if __name__ == "__main__":
 	wallpaper = dir + '/images/scale.jpg'	  # Background wallpaper
 	wcolor =(0,0,0)
 	if len(wallpaper) > 1:
-		pic=pygame.image.load(wallpaper)
-		screen.blit(pygame.transform.scale(pic,size),(0,0))
+		picWallpaper=pygame.image.load(wallpaper)
+		screen.blit(pygame.transform.scale(picWallpaper,size),(0,0))
 	else:
 		screen.fill(Color(wcolor))
 
@@ -740,6 +756,12 @@ if __name__ == "__main__":
 
 	# Initialise radio
 	setupRadio(radio)
+
+	# Configure the audio device from audio_out parameter in the configuration
+	audio_out = radio.config.getAudioOut()
+	if len(audio_out) > 1:
+		dir = os.path.dirname(__file__)
+		radio.execCommand(dir + '/configure_audio_device.sh 2>&1 >/dev/null')
 
 	# Set up window title
 	window_title = display.getWindowTitle(radio)
@@ -879,8 +901,9 @@ if __name__ == "__main__":
 		drawVolumeScale(volumeScale,screen,volume)
 		
 		# Paint screen background (Keep at start of draw routine)
-		pic = pygame.image.load(wallpaper)
-		screen.blit(pygame.transform.scale(pic,size),(0,0))
+                if picWallpaper == None:
+			picWallpaper = pygame.image.load(wallpaper)
+		screen.blit(pygame.transform.scale(picWallpaper,size),(0,0))
 
 		# Display the radio details
 		if display.config.displayDate():

@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.78 2020/04/26 09:40:06 bob Exp $
+# $Id: piradio,v 1.86 2020/10/19 13:12:46 bob Exp $
 # This package must be built under Raspbian Buster (Not Jessie or earlier)
 # Source: <source package name; defaults to package name>
 Section: misc
@@ -9,7 +9,7 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 3.9.2
 
 Package: radiod
-Version: 6.13
+Version: 6.15
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
@@ -44,6 +44,7 @@ Files:  radiod.py /usr/share/radio/
 	display_class.py /usr/share/radio/
 	oled_class.py /usr/share/radio/
 	cosmic_class.py /usr/share/radio/
+	st7789tft_class.py /usr/share/radio/
 	message_class.py /usr/share/radio/
 	menu_class.py /usr/share/radio/
 	event_class.py /usr/share/radio/
@@ -58,6 +59,7 @@ Files:  radiod.py /usr/share/radio/
 	rotary_class_alternative.py /usr/share/radio/
 	create_stations.py /usr/share/radio/
 	create_playlist.sh /usr/share/radio/
+	configure_audio_device.sh /usr/share/radio/
 	radio_class.py /usr/share/radio/
 	lcd_class.py /usr/share/radio/
 	i2c_class.py /usr/share/radio/
@@ -94,7 +96,6 @@ Files:  radiod.py /usr/share/radio/
 	README /usr/share/radio/
 	logrotate.d/radiod /etc/logrotate.d/
 	cron.weekly/radiod /etc/cron.weekly/
-	init.d/shairport-sync /etc/init.d/
 	asound/asound.conf.dist /usr/share/radio/asound
 	asound/asound.conf.dist.equalizer /usr/share/radio/asound
 	asound/asound.conf.dist.blue /usr/share/radio/asound
@@ -131,6 +132,7 @@ Files:  radiod.py /usr/share/radio/
 	images/mute.png /usr/share/radio/images/
 	images/speaker.png /usr/share/radio/images/
 	images/radio.png /usr/share/radio/images/
+	images/spotify.png /usr/share/radio/images/
 	images/Vintage.png /usr/share/radio/images/
 	images/up_icon.png /usr/share/radio/images/
 	images/down_icon.png /usr/share/radio/images/

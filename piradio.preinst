@@ -1,13 +1,12 @@
 #!/bin/bash 
 set -e
 # Radio daemon pre-install script
-# $Id: piradio.preinst,v 1.3 2020/02/08 18:59:44 bob Exp $
+# $Id: piradio.preinst,v 1.4 2020/08/14 13:51:47 bob Exp $
 
 RADIOLIB=/var/lib/radiod
 MPDCONF=/etc/mpd.conf
 BOOTCMD=/boot/cmdline.txt
 MODULES=/etc/modules
-INIT=/etc/init.d/radiod
 
 # Check if the script is being run as root
 if [[ $EUID -ne 0 ]]
@@ -32,10 +31,8 @@ if [[ -d ${RADIOLIB} ]]; then
 		echo "Your existing configuration will not be changed"
 	fi
 	sleep 2
-	if [[ -f ${INIT} ]]; then
-		echo "Stopping radiod service"
-		sudo service radiod stop
-	fi
+	echo "Stopping radiod service"
+	sudo systemctl stop radiod 
 fi
 
 exit 0

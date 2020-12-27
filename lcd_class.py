@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.37 2020/04/24 08:54:01 bob Exp $
+# $Id: lcd_class.py,v 1.39 2020/06/06 15:04:29 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -310,7 +310,7 @@ def no_interrupt():
 
 # Class test routine
 if __name__ == "__main__":
-	test_Russian = True
+	test_Russian = False
 	from translate_class import Translate
 	translate = Translate()	# Test routine in __main__
 
@@ -343,7 +343,8 @@ if __name__ == "__main__":
 			print text2
 			print text3
 			print text4
-			translate.setRomanize(False)
+			translate.setTranslate(True)
+			translate.setRomanize(True)
 			text2 = translate.all(text2)
 			text3 = translate.all(text3)
 			text4 = translate.all(text4)

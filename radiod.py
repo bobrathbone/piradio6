@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.213 2020/04/26 09:10:40 bob Exp $
+# $Id: radiod.py,v 1.241 2020/08/28 15:32:18 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -14,7 +14,7 @@
 #
 
 from constants import *
-import os,sys
+import os,sys,pwd
 import time
 import signal
 import socket
@@ -47,6 +47,8 @@ display = Display(translate)
 menu = Menu()
 rss = Rss(translate)
 _connecting = False
+newMenu = True  # Speed up initial display if new menu entered
+ignoreEvent = False	# Ignore up/down button after double button menu press
 
 # Signal SIGTERM handler
 def signalHandler(signal,frame):
@@ -147,9 +149,14 @@ class MyDaemon(Daemon):
 		radio = Radio(menu,event,translate)
 		if radio.config.logTruncate():
 			log.truncate()
-			log.message("Truncated log file",log.DEBUG)
 		log.message("===== Starting radio =====",log.INFO)
 		message = Message(radio,display,translate)
+
+		# Configure the audio device from audio_out parameter in the configuration 
+		audio_out = radio.config.getAudioOut()
+		if len(audio_out) > 1:
+			dir = os.path.dirname(__file__)
+			radio.execCommand(dir + '/configure_audio_device.sh 2>&1 >/dev/null')
 
 		# Set up status Led (Retro Radio only)
 		statusLed = statusLedInitialise(statusLed)
@@ -167,12 +174,8 @@ class MyDaemon(Daemon):
 		# For non-English  Romanize (Convert to Latin characters)
 		romanize = radio.config.getRomanize()
 		radio.setRomanize(romanize)  # Switch Romanisation on/off
-		##rss.setRomanize(romanize)  # Switch Romanisation on/off
 
-		ipaddr = waitForNetwork(radio,display)
-		# Start radio and load source (radio, media or airplay)
-		display.out(2,"Starting MPD")
-		radio.start()
+		ipaddr = radio.waitForNetwork()
 
 		# Wait for network
 		if nlines > 2:
@@ -190,6 +193,10 @@ class MyDaemon(Daemon):
 			display.out(line,msg)
 
 		time.sleep(1.25)	# Allow time to display IP address
+
+		# Start radio and load source (radio, media or airplay)
+		display.out(2,"Starting MPD")
+		radio.start()
 
 		loadSource(display,radio)
 		current_id = radio.getCurrentID()
@@ -288,29 +295,52 @@ class MyDaemon(Daemon):
 
 	# Version
 	def getVersion(self):
-		myradio = Radio(menu,event)	
+		myradio = Radio(menu,event,None)	
 		return myradio.getVersion()
 
+displayType = display.getDisplayType()
 # End of class overrides
 
 # Pass events to the appropriate event handler 
 def handleEvent(event,display,radio,menu):
+	global ignoreEvent
 	event_type = event.getType()
 	event_name = event.getName()
 	menu_mode = menu.mode()
+	displayType = display.getDisplayType()
+
+	# Retro radio RGB status LED
+	statusLed.set(StatusLed.BUSY)
 
 	if event_type != event.NO_EVENT:
 		log.message("Event type " + str(event_type) + ' ' + event_name, log.DEBUG)
 
-	# Retro radio RGB status LED
-	statusLed.set(StatusLed.BUSY)
+	# Used when double button menu pressed to prevent extraneous events
+	if ignoreEvent:
+		event_type = event.set(event.NO_EVENT)
+		ignoreEvent = False
 
 	# Exit from sleep if alarm fired
 	if event_type == event.ALARM_FIRED:
 		wakeup(radio,menu)
 
+	# If both up and down pessed together convert
+	# to menu pressed (if no seperate menu switch eg. Pirate Audio ST7789TFT)
+	elif (event_type == event.UP_SWITCH or event_type == event.DOWN_SWITCH) \
+			and displayType == radio.config.ST7789TFT:
+		time.sleep(0.3)
+		count = 5
+		while event.downButtonPressed() and event.upButtonPressed:
+			time.sleep(0.1)
+			count -= 1
+			if count < 0:
+				event_type = event.set(event.MENU_BUTTON_DOWN)
+				ignoreEvent = True
+				time.sleep(0.3)
+				break
+
 	# Exit from sleep if  menu button pressed
-	elif menu_mode == menu.MENU_SLEEP:
+	if menu_mode == menu.MENU_SLEEP:
 		if event_type == event.MENU_BUTTON_DOWN:
 			wakeup(radio,menu)
 
@@ -453,7 +483,6 @@ def handleRadioEvent(event,display,radio,menu):
 		if radio.muted():
 			radio.unmute()
 		handleMenuChange(display,radio,menu,message)
-		display.setDelay(0)	# Cancel delayed display of volume
 
 	elif event_type == event.SHUTDOWN:
 		log.message('SHUTDOWN', log.DEBUG)
@@ -474,6 +503,7 @@ def handleRadioEvent(event,display,radio,menu):
 
 # Handle source menu selection event
 def handleSourceEvent(event,display,radio,menu):
+	display.setDelay(0)	# Cancel delayed display of volume
 	event_type = event.getType()
 	radio.getSources()
 	
@@ -534,8 +564,11 @@ def handleSearchEvent(event,display,radio,menu):
 
 # Handle menu stepthrough
 def handleMenuChange(display,radio,menu,message):
+	global newMenu
+	newMenu = True
 	menu_mode = menu.cycle()
 	menu_name = menu.getName()
+
 	log.message('Menu mode ' + str(menu_mode) + ' ' + str(menu_name), log.DEBUG)
 	hostname = socket.gethostname()
 	ip_addr = radio.execCommand('hostname -I')
@@ -767,31 +800,16 @@ def displayStartup(display,radio):
 	ipaddr = radio.execCommand('hostname -I')
 	version = radio.getVersion()
 
+	display.out(1,"Radio version " + version)
 	if nlines > 2:
-		display.out(1,"Radio version " + version)
 		display.out(2,"Radio PID " + str(pid))
 		display.out(3,"Waiting for network")
 		display.out(4,"MPD Version " + radio.getMpdVersion())
 	else:
-		display.out(1,"Radio version " + version)
 		display.out(2,"Waiting for network")
 
 	time.sleep(1)
 	return
-
-# Wait for the network
-def waitForNetwork(radio,display):
-	ipaddr = ""
-	waiting4network = True
-	count = 10
-
-	while waiting4network:
-		ipaddr = execCommand('hostname -I')
-		time.sleep(1)
-		count -= 1
-		if (count < 0) or (len(ipaddr) > 1):
-			waiting4network = False
-	return ipaddr
 
 # Display time
 def displayTimeDate(display,radio,message):
@@ -942,46 +960,74 @@ def displayOptions(display,radio,menu,message):
 
 # Display the RSS feed
 def displayRss(display,radio,message,rss):
+	global newMenu
+	lwidth = None
+	if newMenu:
+		lwidth = display.getWidth()
+
 	source_type = radio.getSourceType()
 	displayTimeDate(display,radio,message)
+
+
+	nLines = display.getLines()
+
+	if nLines > 4:
+		plName = radio.getSourceName()
+		plName = plName.replace('_','')
+		current_id = radio.getCurrentID()
+		plsize = radio.getPlayListLength()
+		msg = "Station %d/%d" % (current_id,plsize)
+	        dWidth = display.getWidth() 
+		display.out(4,msg[0:dWidth],interrupt)
+
 	rss_line = rss.getFeed()
 	line = 2
 
-	if display.getLines() > 2:
+	if nLines > 2:
 		line = 3
 		if source_type == radio.source.MEDIA:
 			name = radio.getCurrentArtist()
 		else:
 			name = radio.getSearchName()
-		display.out(2,name,interrupt)
+		display.out(2,name[0:lwidth],interrupt)
 
-	display.out(line,rss_line,interrupt)
+	display.out(line,rss_line[0:lwidth],interrupt)
+
+	newMenu = False
 	return
 
 # Display the information menu
 def displayInfo(display,radio,message):
+	global newMenu
+
+	lwidth = None
+	if newMenu:
+		lwidth = display.getWidth()
 	ipaddr = message.getIpAddress()
 	if len(ipaddr) < 1:
 		ipaddr = message.storeIpAddress(radio.execCommand('hostname -I'))
 	version = radio.getVersion()
 	nlines = display.getLines()
 	display.backlight('info_color')
-	msg = message.get('radio_version') + ' '
-	display.out(1, msg + version, interrupt )
+	msg = message.get('radio_version') + ' ' + version
+	
+	display.out(1, msg[0:lwidth] , interrupt )
+
 	if nlines > 2:
 		display.out(2, 'IP: ' + ipaddr, interrupt )
-		MpdVersion = radio.getMpdVersion()
-		display.out(3, 'MPD version ' + MpdVersion, interrupt )
+		msg = 'MPD version ' + radio.getMpdVersion()
+		display.out(3, msg[0:lwidth], interrupt )
 
 		if display.getDelay() > 0:
 			displayVolume(display, radio)
 			time.sleep(0.1)
 		else:
 			msg = 'Hostname: ' + socket.gethostname()
-			display.out(4,msg,interrupt)
+			display.out(4,msg[0:lwidth],interrupt)
 	else:
-		sHost = ' ' + socket.gethostname()
-		display.out(2, 'IP: ' + ipaddr + sHost, interrupt )
+		msg = 'IP:  ' + ipaddr + socket.gethostname()
+		display.out(2, msg[0:lwidth], interrupt )
+	newMenu = False
 	return 
 
 
@@ -1074,7 +1120,12 @@ def loadSource(display,radio):
 	
 # Display current playing selection or station
 def displayCurrent(display,radio,message):
-	global _connecting
+	global _connecting, newMenu
+
+	lwidth = None
+	if newMenu:
+		lwidth = display.getWidth()
+
 	# get details of currently playing source
 	current_id = radio.getCurrentID()
 	sourceType = radio.getSourceType()
@@ -1114,27 +1165,27 @@ def displayCurrent(display,radio,message):
 			displayVolume(display, radio)
 			station = station.lstrip ('"')
 			station = station.rstrip ('"')
-			display.out(2,station,interrupt)
+			display.out(2,station[0:lwidth],interrupt)
 			if len(errorString) > 0:
-				display.out(3,errorString,interrupt)
+				display.out(3,errorString[0:lwidth],interrupt)
 			else:
-				display.out(3,name,interrupt)
+				display.out(3,name[0:lwidth],interrupt)
 			if nLines > 4:
 				plName = radio.getSourceName()
 				plName = plName.replace('_','')
 				current_id = radio.getCurrentID()
 				plsize = radio.getPlayListLength()
 				msg = "Station %d/%d %s" % (current_id,plsize,plName)
-				display.out(4,msg,interrupt)
+				display.out(4,msg[0:lwidth],interrupt)
 		else:
 			if display.getDelay() > 0:
 				displayVolume(display, radio)
 				time.sleep(0.1)
 			elif len(errorString) > 0:
-				display.out(2,errorString,interrupt)
+				display.out(2,errorString[0:lwidth],interrupt)
 			else:
 				details = station + ': ' + name
-				display.out(2,details,interrupt)
+				display.out(2,details[0:lwidth],interrupt)
 
 	elif sourceType == radio.source.MEDIA:
 		# If no playlist then try reloading library
@@ -1146,14 +1197,14 @@ def displayCurrent(display,radio,message):
 		title = radio.getCurrentTitle()
 
 		if display.getLines() > 2:
-			display.out(2,artist,interrupt)
-			display.out(3,title,interrupt)
+			display.out(2,artist[0:lwidth],interrupt)
+			display.out(3,title[0:lwidth],interrupt)
 
 			if display.getDelay() > 0:
 				displayVolume(display, radio)
 				time.sleep(0.1)
 			else:
-				display.out(4,radio.getProgress(),interrupt)
+				display.out(4,radio.getProgress()[0:lwidth],interrupt)
 
 		else:
 			if display.getDelay() > 0:
@@ -1161,7 +1212,7 @@ def displayCurrent(display,radio,message):
 				time.sleep(0.1)
 			else:
 				details = artist + ': ' + title
-				display.out(2,details,interrupt)
+				display.out(2,details[0:lwidth],interrupt)
 
 	elif sourceType == radio.source.AIRPLAY:
 		displayVolume(display, radio)
@@ -1170,6 +1221,7 @@ def displayCurrent(display,radio,message):
 	elif sourceType == radio.source.SPOTIFY:
 		displaySpotify(display,radio)
 
+	newMenu = False
 	return
 
 # Display current playing selection or station
@@ -1211,30 +1263,38 @@ def displayAirplay(display,radio):
 
 # Display Spotify information
 def displaySpotify(display,radio):
+#	pdb.set_trace()
 	info = radio.getSpotifyInfo()
+	displayType = display.getDisplayType()
 
-	if len(info) < 1:
-		info = message.get('waiting_for_spotify_client')
+	if displayType == radio.config.ST7789TFT and len(info) < 1:
+		display.drawSplash("images/spotify.png",1.5)
 	else:
-		info = info.replace("player:","Spotify:")
-	elements = info.split('"')
-	if len(elements) >= 3:
-		info = elements[1]
-
-	if display.getLines() > 2:
-		hostname = socket.gethostname()
-		display.out(2,"Spotify: " + hostname,interrupt)
-		display.out(3,info,interrupt)
-	else:
-		if display.getDelay() > 0:
-			displayVolume(display, radio)
-			time.sleep(0.1)
+		if len(info) < 1:
+			info = message.get('waiting_for_spotify_client')
 		else:
-			display.out(2,info,interrupt)
+			info = info.replace("player:","Spotify:")
+
+		elements = info.split('"')
+
+		if len(elements) >= 3:
+			info = elements[1]
+
+		if display.getLines() > 2:
+			hostname = socket.gethostname()
+			display.out(2,"Spotify: " + hostname,interrupt)
+			display.out(3,info,interrupt)
+			#display.out(4,"Volume:Use spotify")
+		else:
+			if display.getDelay() > 0:
+				displayVolume(display, radio)
+				time.sleep(0.1)
+			else:
+				display.out(2,info,interrupt)
 	return
 
 
-# Display volume only if not in Info mode
+	# Display volume only if not in Info mode
 def displayVolume(display,radio):
 	menu_mode = menu.mode()
 	if menu_mode != menu.MENU_INFO or display.getDelay() > 0:
@@ -1263,8 +1323,8 @@ def _displayVolume(display,radio):
 	# otherwise a recursive error will occur as the this 
 	# routine is also called from the interrupt routine
 
-	# The OLED has a special volume display bar on the last line
-	if displayType == radio.config.OLED_128x64 \
+	# The OLED and ST7789TFT have a special volume display bar on the last line
+	if (displayType == radio.config.OLED_128x64 or displayType == radio.config.ST7789TFT) \
 			and radio.config.displayVolumeBlocks():
 		if radio.muted():
 			display.volume(0)
@@ -1318,6 +1378,11 @@ def usage():
 
 ### Main routine ###
 if __name__ == "__main__":
+
+	if pwd.getpwuid(os.geteuid()).pw_uid > 0:
+		print "This program must be run with sudo or root permissions!"
+		sys.exit(1)
+
 	daemon = MyDaemon('/var/run/radiod.pid')
 	if len(sys.argv) == 2:
 		if 'start' == sys.argv[1]:

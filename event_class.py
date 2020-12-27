@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.52 2020/02/10 20:15:52 bob Exp $
+# $Id: event_class.py,v 1.62 2020/08/19 13:54:51 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -25,6 +25,7 @@ from rotary_class_alternative import RotaryEncoderAlternative
 from config_class import Configuration
 from log_class import Log
 from rotary_switch_class import RotarySwitch
+import pdb
 
 config = Configuration()
 log = Log()
@@ -148,6 +149,7 @@ class Event():
 
 		elif event ==  RotaryEncoder.BUTTONUP:
 			self.event_type = self.MUTE_BUTTON_UP
+
 		else:
 			self.event_triggered = False
 		return
@@ -190,6 +192,7 @@ class Event():
 
 	# Call back routine button events (Not rotary encoder buttons)
 	def button_event(self,event):
+		global up_switch,down_switch
 
 		log.message("Button event:" + str(event), log.DEBUG)
 		self.event_triggered = True
@@ -216,7 +219,7 @@ class Event():
 			# Holding the menu button for 3 seconds down shuts down the radio
 			count = 15 
 			while menu_button.pressed():
-				time.sleep(0.2)
+				time.sleep(0.1)
 				count -= 1
 				if count < 0:
 					self.event_type = self.SHUTDOWN
@@ -290,6 +293,20 @@ class Event():
 				self.set(self.VOLUME_UP)
 		return pressed
 
+	def upButtonPressed(self):
+		global up_button
+		pressed = False
+		if up_button != None:
+			pressed =  up_button.pressed()
+		return pressed
+
+	def downButtonPressed(self):
+		global down_button
+		pressed = False
+		if down_button != None:
+			pressed =  down_button.pressed()
+		return pressed
+
 	# See if mute button held
 	def muteButtonPressed(self):
 		global mute_button
@@ -313,7 +330,7 @@ class Event():
 		self.rotary_class = config.getRotaryClass()
 		return
 
-	# Get switches configuration
+	# Get switches GPIO configuration
 	def getGPIOs(self):
 		log.message("event.getGPIOs", log.DEBUG)
                 self.left_switch = config.getSwitchGpio("left_switch")
@@ -427,9 +444,15 @@ class Event():
 	def getVolumeKnob(self):
 		return volumeknob
 
-	# Get the volume knob interface
-	def getTunerKnob(self):
-		return tunerknob
+	# Check if menu button held down
+	def menuPressed(self):
+		pressed = False
+          	global menu_button
+		if self.user_interface == config.BUTTONS:
+			pressed = menu_button.pressed()
+		elif self.user_interface == config.ROTARY_ENCODER:
+			pressed = tunerknob.buttonPressed(self.menu_switch)
+ 		return pressed
 
 # End of Event class
 
@@ -445,7 +468,6 @@ if __name__ == "__main__":
 	try: 
 		while True:
 			if event.detected():
-				print "Event detected " + str(event.getType()) + " " + event.getName()
 				event.clear()
 			else:
 				# This delay must be >= any GPIO bounce times

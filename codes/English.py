@@ -3,7 +3,7 @@
 # Raspberry Pi Radio Character translation class
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: English.py,v 1.5 2020/04/19 11:14:20 bob Exp $
+# $Id: English.py,v 1.8 2020/06/07 11:01:07 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -222,6 +222,83 @@ codes = {
 	'\\xc4\\xb1' : 'i',     # Looks like an i
 	'\\xc4\\xb0' : 'I',     # Looks like an I
 	}
+
+# UTF8 codes (Must be checked after above codes checked)
+# Not currently used. 
+short_codes = {
+	'\\xa0' : ' ',     # Line feed to space
+	'\\xa3' : '#',     # Pound character
+
+	'\\xab' : 'e',    # e omlaut
+	'\\xb4' : "'",    # Apostrophe 
+	'\\xc0' : 'A',    # A 
+	'\\xc1' : 'A',    # A 
+	'\\xc2' : 'A',    # A 
+	'\\xc3' : 'A',    # A 
+	'\\xc4' : 'A',    # A 
+	'\\xc5' : 'A',    # A 
+	'\\xc6' : 'Ae',   # AE
+	'\\xc7' : 'C',    # C 
+	'\\xc8' : 'E',    # E 
+	'\\xc9' : 'E',    # E 
+	'\\xca' : 'E',    # E 
+	'\\xcb' : 'E',    # E 
+	'\\xcc' : 'I',    # I 
+	'\\xcd' : 'I',    # I 
+	'\\xce' : 'I',    # I 
+	'\\xcf' : 'I',    # I 
+	'\\xd0' : 'D',    # D
+	'\\xd1' : 'N',    # N 
+	'\\xd2' : 'O',    # O 
+	'\\xd3' : 'O',    # O 
+	'\\xd4' : 'O',    # O 
+	'\\xd5' : 'O',    # O 
+	'\\xd6' : 'O',    # O 
+	'\\xd7' : 'x',    # Multiply
+	'\\xd8' : '0',    # O crossed 
+	'\\xd9' : 'U',    # U 
+	'\\xda' : 'U',    # U 
+	'\\xdb' : 'U',    # U 
+	'\\xdc' : 'U',    # U umlaut
+	'\\xdd' : 'Y',    # Y
+	'\\xdf' : 'S',    # Sharp s es-zett
+	'\\xe0' : 'e',    # Small a reverse acute
+	'\\xe1' : 'a',    # Small a acute
+	'\\xe2' : 'a',    # Small a circumflex
+	'\\xe3' : 'a',    # Small a tilde
+	'\\xe4' : 'a',    # Small a diaeresis
+	'\\xe5' : 'aa',   # Small a ring above
+	'\\xe6' : 'ae',   # Joined ae
+	'\\xe7' : 'c',    # Small c Cedilla
+	'\\xe8' : 'e',    # Small e grave
+	'\\xe9' : 'e',    # Small e acute
+	'\\xea' : 'e',    # Small e circumflex
+	'\\xeb' : 'e',    # Small e diarisis
+	'\\xed' : 'i',    # Small i acute
+	'\\xee' : 'i',    # Small i circumflex
+	'\\xf1' : 'n',    # Small n tilde
+	'\\xf3' : 'o',    # Small o acute
+	'\\xf4' : 'o',    # Small o circumflex
+	'\\xf6' : 'o',    # o umlaut
+	'\\xf7' : '/',    # Division sign
+	'\\xf8' : 'oe',   # Small o strike through 
+	'\\xf9' : 'u',    # Small u circumflex
+	'\\xfa' : 'u',    # Small u acute
+	'\\xfb' : 'u',    # u circumflex
+	'\\xfd' : 'y',    # y circumflex
+	'\\xc0' : 'A',    # Small A grave
+	'\\xc1' : 'A',    # Capital A acute
+	'\\xc7' : 'C',    # Capital C Cedilla
+	'\\xc9' : 'E',    # Capital E acute
+	'\\xcd' : 'I',    # Capital I acute
+	'\\xd3' : 'O',    # Capital O acute
+	'\\xda' : 'U',    # Capital U acute
+	'\\xfc' : 'u',    # u umlaut
+	'\\xbf' : '?',    # Spanish Punctuation
+
+	'\\xb0'  : 'o',	       # Degrees symbol
+}
+
 
 # Dummy codes as English is already Romanized
 romanized = codes 

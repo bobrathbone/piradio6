@@ -1,0 +1,35 @@
+Notes on running waveshare 2.13inch e-Paper_HAT
+
+See following websites
+https://www.waveshare.com/wiki/2.13inch_e-Paper_HAT
+https://www.waveshare.com/wiki/Pioneer600#Libraries_Installation_for_RPi
+
+Installing necessary libraries
+==============================
+sudo apt-get install python-dev python-smbus python-serial python-imaging
+
+Installing spidev
+=================
+Note this must be none using sudo
+---------------------------------
+sudo apt-get install python-pip
+sudo pip install spidev
+
+Configuration
+=============
+Enable the SPI and I2C modules using raspi-config
+
+Check that the following two lines in the /etc/modules configuration file 
+i2c-bcm2708 
+i2c-dev 
+
+Demo software
+=============
+https://www.waveshare.com/wiki/File:2.13inch_e-Paper_HAT-code.7z
+
+Pin outs
+==========
+DC Pin22/GPIO25 
+RST Pin11/GPIO17 
+BUSY Pin18/GPIO24  
+

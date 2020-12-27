@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Raspberry Pi Cosmic Controller (IQAudio) Class
-# $Id: cosmic_class.py,v 1.6 2018/04/18 12:28:55 bob Exp $
+# $Id: cosmic_class.py,v 1.7 2020/05/04 11:18:49 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -130,7 +130,7 @@ if __name__ == "__main__":
                 print "This program must be run with sudo or root permissions!"
                 sys.exit(1)
 
-	print "Test Button Class"
+	print "Test Cosmic Controller Class"
 	getConfig = False
 	
 	# Get configuration

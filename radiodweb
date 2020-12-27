@@ -1,18 +1,23 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: radiodweb,v 1.4 2020/02/10 17:05:37 bob Exp $
+# $Id: radiodweb,v 1.6 2020/05/15 06:28:05 bob Exp $
 # Source: <source package name; defaults to package name>
 Section: misc
 Priority: optional
 Homepage: http://www.bobrathbone.com
 Standards-Version: 3.9.2
 
+# Install following packages
+#sudo apt-get install php7.3-gd
+#sudo apt install mariadb-server php-mysql -y
+#sudo apt-get install php7.3-mbstring
+
 Package: radiodweb
-Version: 1.8
+Version: 2.0
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 # Pre-Depends: <comma-separated list of packages>
 # Depends: <comma-separated list of packages>
-Depends: apache2,php,libapache2-mod-php
+Depends: apache2,php,libapache2-mod-php,mpc,mpd,php7.3-gd,php7.3-mbstring,mariadb-server,php-mysql
 # Recommends: <comma-separated list of packages>
 # Suggests: <comma-separated list of packages>
 # Provides: <comma-separated list of packages>

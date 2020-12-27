@@ -1,3 +1,15 @@
-Patch 1 for version 6.12 - 7 March 2020
+Patch 2 for version 6.14 - 2 December 2020
 
-Correct create playlists print problem
+Changes
+=======
+1) Client timeout (client_timeout) in radiod.conf increased to 10 seconds 
+2) Translation routines added to spotify class 
+
+To install the patch
+====================
+cd /usr/share/radio
+wget wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-6.15-1.tar.gz
+tar -xvf radiod-patch-6.15-1.tar.gz
+sudo systemctl restart radiod.service
+
+End of README.patch

@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.26 2019/08/19 10:46:30 bob Exp $
+# $Id: create_playlist.sh,v 1.28 2020/06/05 13:53:10 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -119,6 +119,8 @@ do
 		DIR="share"
 		# Mount the network share specified in /var/lib/radiod/share
 		if [[ -f ${SHARE} ]]; then
+			CMD="sudo umount ${SHARE}"
+			${CMD}; sudo ${CMD} >/dev/null 2>&1
 			CMD=$(cat ${SHARE}) 
 			echo ${CMD}; sudo ${CMD} >/dev/null 2>&1
 			if [[ $? != 0 ]]; then
@@ -324,7 +326,7 @@ else
 fi
 
 # Update the mpd database
-CMD="sudo service mpd start"
+CMD="sudo systemctl start mpd.service"
 echo ${CMD};${CMD}
 if [[ $? -ne 0 ]];then
 	echo "Error Failed to start Music Mlayer Daemon"
@@ -335,6 +337,12 @@ else
 	echo ${CMD};${CMD}
 fi
 
+CMD="sudo systemctl start radiod.service"
+echo ${CMD};${CMD}
+if [[ $? -ne 0 ]];then
+	echo "Error Failed to start radio"
+	exit 1
+fi
 exit 0
 
 # End of script

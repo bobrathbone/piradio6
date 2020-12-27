@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.33 2019/07/05 10:26:34 bob Exp $
+# $Id: source_class.py,v 1.34 2020/05/16 12:12:28 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -218,6 +218,26 @@ class Source:
 				break
 		if type == newtype:	
 			return playlist
+
+	# Routine to load O!MPD web interface library
+	def loadOmpdLibrary(self):
+		self.setType(self.MEDIA)
+		playlists = self.load()
+		currentsong = self.client.currentsong()
+		path = str(currentsong.get("file"))
+		path = path.lstrip('/')
+		mount_point = path.split('/')[0]
+		if mount_point == "media":
+			playlist = "USB_Stick"
+		elif mount_point == "share":
+			playlist = "Network"
+		else: 
+			playlist = "Unknown"
+
+		if playlist == "Unknown":
+			playlist = self.cycleType(self.MEDIA)
+		self.type = self.MEDIA
+		return  playlist
 
 	# Return the new type (radio, media or airplay)
 	def getNewType(self):

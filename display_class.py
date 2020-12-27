@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.55 2020/04/22 14:03:05 bob Exp $
+# $Id: display_class.py,v 1.59 2020/05/28 19:59:29 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -141,6 +141,12 @@ class Display:
 			# This device has its own buttons on the SPI intertface
 			self.has_buttons = True
 
+		elif dtype == config.ST7789TFT:
+			from st7789tft_class import ST7789
+			screen = ST7789()
+			screen.init(callback=self.callback,code_page = code_page)
+			self.has_buttons = False # Use standard button ineterface
+
 		else:
 			# Default LCD
 			from lcd_class import Lcd
@@ -211,6 +217,10 @@ class Display:
 			screen.setFont(size)
 			self.saved_font_size = size
 
+	# Display a flash image for delay seconds
+	def drawSplash(self,image,delay):
+		screen.drawSplash(image,delay)
+
 	# Send string to display if it has not already been displayed
 	def out(self,line,message,interrupt=no_interrupt):
 		global screen
@@ -240,16 +250,16 @@ class Display:
 			self.lineBuffer[index] = message	
 		return
 
-	# Update screen (Only OLED)
-	def update(self,screen,displayType):
-		if displayType == config.OLED_128x64:
+	# Update screen (Only OLED and ST7789 TFT)
+	def update(self,screen,type):
+		if type == config.OLED_128x64 or type == config.ST7789TFT:
 			screen.update()
 		return
 
 	# Clear display and line buffer
 	def clear(self):
 		dType = config.getDisplayType()
-		if dType == config.OLED_128x64:
+		if dType == config.OLED_128x64 or dType == config.ST7789TFT:
 			screen.clear()
 			self.lineBuffer = []		# Line buffer 
 			for i in range(0, self.lines):
@@ -305,12 +315,14 @@ class Display:
 		if self.saved_volume != volume:
 			screen.volume(volume)
 			self.saved_volume = volume
+			if config.getDisplayType() == config.ST7789TFT:
+				self.out(5," ") # Clear mute message
 
 	# Display splash logo
 	def splash(self):
 		delay = 3
 		dtype = config.getDisplayType()
-		if dtype == config.OLED_128x64:
+		if dtype == config.OLED_128x64 or dtype == config.ST7789TFT:
 			dir = os.path.dirname(__file__)
 			bitmap = dir + '/' + config.getSplash()
 			try:
