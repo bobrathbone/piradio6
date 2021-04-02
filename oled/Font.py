@@ -8,9 +8,7 @@ __email__ = "support@olimex.com"
 
 from .OLED import OLED
 
-
 class Font(OLED):
-
     font_table = [
         [0x00, 0x00, 0x00, 0x00, 0x00],     # (space)
         [0x00, 0x00, 0x5F, 0x00, 0x00],     # !
@@ -116,15 +114,15 @@ class Font(OLED):
 
         :param scale: multiplier for 5x7 font
         """
-        self.scale = scale
+        self._scale = scale
 
     @property
     def scale(self):
-        return self.scale
+        return self._scale
 
     @scale.setter
     def scale(self, new_scale):
-        self.scale = new_scale
+        self._scale = new_scale
 
     def print_char(self, x, y, ch):
 
@@ -136,9 +134,9 @@ class Font(OLED):
         :param ch:  ASCII code for char
         """
 
-	# Protect against out-of-range characters
-	if ord(ch)-0x20 > len(self.font_table):
-		ch = '?'
+        # Protect against out-of-range characters
+        if ord(ch)-0x20 > len(self.font_table):
+            ch = '?'
 
         # Get char from font table
         char = self.font_table[ord(ch) - 0x20]
@@ -146,8 +144,8 @@ class Font(OLED):
         # Append empty column
         temp = []
         for i in char:
-            temp += [i]*self.scale
-        temp += [0x00]*self.scale
+            temp += [i]*self._scale
+        temp += [0x00]*self._scale
 
         # Print char column by column
         for j in range(len(temp)):
@@ -155,9 +153,9 @@ class Font(OLED):
 
             for i in range(8):
                 if temp[j] & mask:
-                    for k in range(self.scale):
+                    for k in range(self._scale):
                         x0 = x+j
-                        y0 = y + i * self.scale + k
+                        y0 = y + i * self._scale + k
                         OLED.video_buffer[(y0//8)*128 + x0] |= (1 << (y0 % 8))
                 mask <<= 1
 
@@ -173,13 +171,13 @@ class Font(OLED):
         x = x0
         y = y0
         for i in string:
-            if x >= OLED.oled_width - (6 * self.scale):
+            if x >= OLED.oled_width - (6 * self._scale):
                 x = 0
-                y += (8 * self.scale)
+                y += (8 * self._scale)
 
             if y >= OLED.oled_height:
                 return
             self.print_char(x, y, i)
-            x += (6 * self.scale)
+            x += (6 * self._scale)
 
 

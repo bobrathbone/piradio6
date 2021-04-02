@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_piface_class.py,v 1.16 2020/04/11 13:30:48 bob Exp $
+# $Id: lcd_piface_class.py,v 1.2 2020/10/12 17:40:44 bob Exp $
 # Raspberry Pi Internet Radio
 # using a Piface backlit LCD plate
 #
@@ -12,7 +12,7 @@
 # Site   : http://piface.github.io/pifacecad
 #
 # Based on Bob Rathbone's LCD class
-# Bob Rathbone's site	: http://bobrathbone.com
+# Bob Rathbone's site   : http://bobrathbone.com
 #
 # To use this program you need pifacecommon and pifacecad installed
 # for their respective Python versions
@@ -25,7 +25,7 @@
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
-#	     The authors shall not be liable for any loss or damage however caused.
+#        The authors shall not be liable for any loss or damage however caused.
 #
 
 import os,sys
@@ -59,10 +59,10 @@ MUSIC_SYMBOL_INDEX = 3
 # 4 : RS (Register Select)
 # 5 : R/W (Read Write)       - GROUND THIS PIN
 # 6 : Enable or Strobe
-# 7 : Data Bit 0	     - NOT USED
-# 8 : Data Bit 1	     - NOT USED
-# 9 : Data Bit 2	     - NOT USED
-# 10: Data Bit 3	     - NOT USED
+# 7 : Data Bit 0         - NOT USED
+# 8 : Data Bit 1         - NOT USED
+# 9 : Data Bit 2         - NOT USED
+# 10: Data Bit 3         - NOT USED
 # 11: Data Bit 4
 # 12: Data Bit 5
 # 13: Data Bit 6
@@ -83,205 +83,208 @@ E_DELAY = 0.00005
 
 # Piface CAD Class 
 class Lcd_Piface_Cad:
-	width = LCD_WIDTH
-	RawMode = False
+    width = LCD_WIDTH
+    RawMode = False
 
-	# Port expander input pin definitions
-	LEFT_BUTTON = 0
-	DOWN_BUTTON = 1
-	UP_BUTTON   = 2
-	RIGHT_BUTTON= 3
-	MENU_BUTTON = 4
+    # Port expander input pin definitions
+    LEFT_BUTTON = 0
+    DOWN_BUTTON = 1
+    UP_BUTTON   = 2
+    RIGHT_BUTTON= 3
+    MENU_BUTTON = 4
 
-	def __init__(self):
-		return
+    def __init__(self):
+        return
 
-	# Initialise for either revision 1 or 2 boards
-	def init(self,callback=None,code_page=0):
-		self.code_page = code_page # TO BE IMPLEMENTED
-		# LED outputs
-		self.cad = pifacecad.PiFaceCAD()
-		# set up cad
-		self.event = callback	
-		self.cad.lcd.blink_off()
-		self.cad.lcd.cursor_off()
-		self.cad.lcd.backlight_on()
+    # Initialise for either revision 1 or 2 boards
+    def init(self,callback=None,code_page=0):
+        self.code_page = code_page # TO BE IMPLEMENTED
+        # LED outputs
+        self.cad = pifacecad.PiFaceCAD()
+        # set up cad
+        self.event = callback   
+        self.cad.lcd.blink_off()
+        self.cad.lcd.cursor_off()
+        self.cad.lcd.backlight_on()
 
-		self.cad.lcd.store_custom_bitmap(PLAY_SYMBOL_INDEX, PLAY_SYMBOL)
-		self.cad.lcd.store_custom_bitmap(PAUSE_SYMBOL_INDEX, PAUSE_SYMBOL)
-		self.cad.lcd.store_custom_bitmap(INFO_SYMBOL_INDEX, INFO_SYMBOL)
-		return
-
-
-	# Set the display width
-	def setWidth(self,width):
-		self.width = width
-		return
-
-	# Display Line 
-	def out(self,line,text,interrupt=None):
-		if len(text) > self.width:
-			self._scroll(line,text,interrupt)
-		else:
-			self._string(line,text)
-		return
-
-	# Send string to display
-	def _string(self,line,message):
-		self.cad.lcd.set_cursor(0, int(line)-1)
-		s = message.ljust(self.width," ")
-		self.cad.lcd.write(s)
-		return
+        self.cad.lcd.store_custom_bitmap(PLAY_SYMBOL_INDEX, PLAY_SYMBOL)
+        self.cad.lcd.store_custom_bitmap(PAUSE_SYMBOL_INDEX, PAUSE_SYMBOL)
+        self.cad.lcd.store_custom_bitmap(INFO_SYMBOL_INDEX, INFO_SYMBOL)
+        return
 
 
-	# Scroll line - interrupt() breaks out routine if True
-	def _scroll(self,line,mytext,interrupt):
-		ilen = len(mytext)
-		skip = False
+    # Set the display width
+    def setWidth(self,width):
+        self.width = width
+        return
 
-		self._string(line,mytext[0:self.width + 1])
-	
-		if (ilen <= self.width):
-			skip = True
+    # Display Line 
+    def out(self,line,text,interrupt=None):
+        if len(text) > self.width:
+            self._scroll(line,text,interrupt)
+        else:
+            self._string(line,text)
+        return
 
-		if not skip:
-			# Delay before scrolling
-			for i in range(0, 5):
-				time.sleep(0.2)
-				if interrupt():
-					skip = True
-					break
+    # Send string to display
+    def _string(self,line,message):
+        self.cad.lcd.set_cursor(0, int(line)-1)
+        s = message.ljust(self.width," ")
+        self.cad.lcd.write(s)
+        return
 
-		if not skip:
-			# Scroll the line
-			for i in range(0, ilen - self.width + 1 ):
-				self._string(line,mytext[i:i+self.width])
-				if interrupt():
-					skip = True
-					break
 
-		if not skip:
-			# Delay after scrolling
-			for i in range(0, 5):
-				time.sleep(0.2)
-				if interrupt():
-					break
-		return
+    # Scroll line - interrupt() breaks out routine if True
+    def _scroll(self,line,mytext,interrupt):
+        ilen = len(mytext)
+        skip = False
 
-	# Check which button was pressed
-	def checkButtons(self):
-		if self.buttonPressed(self.MENU_BUTTON):
-			self.event.set(self.event.MENU_BUTTON_DOWN)
-			# 2 seconds button down shuts down the radio
-			count = 10
-			while self.buttonPressed(self.MENU_BUTTON):
-				time.sleep(0.2)
-				count -= 1
-				if count < 0:
-					self.event.set(self.event.SHUTDOWN)
-					break
+        self._string(line,mytext[0:self.width + 1])
+    
+        if (ilen <= self.width):
+            skip = True
 
-		elif self.buttonPressed(self.UP_BUTTON):
-			self.event.set(self.event.UP_SWITCH)
+        if not skip:
+            # Delay before scrolling
+            for i in range(0, 5):
+                time.sleep(0.2)
+                if interrupt():
+                    skip = True
+                    break
 
-		elif self.buttonPressed(self.DOWN_BUTTON):
-			self.event.set(self.event.DOWN_SWITCH)
+        if not skip:
+            # Scroll the line
+            for i in range(0, ilen - self.width + 1 ):
+                self._string(line,mytext[i:i+self.width])
+                if interrupt():
+                    skip = True
+                    break
 
-		elif self.buttonPressed(self.LEFT_BUTTON):
-			self.event.set(self.event.LEFT_SWITCH)
-			count = 10
-			while self.buttonPressed(self.RIGHT_BUTTON):
-				time.sleep(0.2)
-				count -= 1
-				if count < 0:
-					self.event.set(self.event.MUTE_BUTTON_DOWN)
-					time.sleep(0.5)
-					break
+        if not skip:
+            # Delay after scrolling
+            for i in range(0, 5):
+                time.sleep(0.2)
+                if interrupt():
+                    break
+        return
 
-		elif self.buttonPressed(self.RIGHT_BUTTON):
-			self.event.set(self.event.RIGHT_SWITCH)
-			count = 10
-			while self.buttonPressed(self.LEFT_BUTTON):
-				time.sleep(0.2)
-				count -= 1
-				if count < 0:
-					self.event.set(self.event.MUTE_BUTTON_DOWN)
-					time.sleep(0.5)
-					break
+    # Check which button was pressed
+    def checkButtons(self):
+        if self.buttonPressed(self.MENU_BUTTON):
+            self.event.set(self.event.MENU_BUTTON_DOWN)
+            # 2 seconds button down shuts down the radio
+            count = 10
+            while self.buttonPressed(self.MENU_BUTTON):
+                time.sleep(0.2)
+                count -= 1
+                if count < 0:
+                    self.event.set(self.event.SHUTDOWN)
+                    break
 
-		return
+        elif self.buttonPressed(self.UP_BUTTON):
+            self.event.set(self.event.UP_SWITCH)
 
-	# Dummy routine
-	def setScrollSpeed(self,speed):
-		return
+        elif self.buttonPressed(self.DOWN_BUTTON):
+            self.event.set(self.event.DOWN_SWITCH)
 
-	# Set raw mode on (No translation)
-	def setRawMode(self,value):
-		self.RawMode = value
-		return
-	
-	# Read state of single button
-	def buttonPressed(self, b):
-		button =  self.cad.switches[b].value
-		return button
+        elif self.buttonPressed(self.LEFT_BUTTON):
+            self.event.set(self.event.LEFT_SWITCH)
+            count = 10
+            while self.buttonPressed(self.RIGHT_BUTTON):
+                time.sleep(0.2)
+                count -= 1
+                if count < 0:
+                    self.event.set(self.event.MUTE_BUTTON_DOWN)
+                    time.sleep(0.5)
+                    break
 
-	# Clear the display
-	def clear(self):
-		self.cad.lcd.clear()
-	
-	# Sets cursor home
-	def home(self):
-		self.cad.lcd.home()
-		return
+        elif self.buttonPressed(self.RIGHT_BUTTON):
+            self.event.set(self.event.RIGHT_SWITCH)
+            count = 10
+            while self.buttonPressed(self.LEFT_BUTTON):
+                time.sleep(0.2)
+                count -= 1
+                if count < 0:
+                    self.event.set(self.event.MUTE_BUTTON_DOWN)
+                    time.sleep(0.5)
+                    break
 
-	# Get LCD width
-	def getWidth(self):
-		return self.width
+        return
 
-	# Does this screen support color
-	def hasColor(self):
-		return False
+    # Dummy routine
+    def setScrollSpeed(self,speed):
+        return
+
+    # Set raw mode on (No translation)
+    def setRawMode(self,value):
+        self.RawMode = value
+        return
+    
+    # Read state of single button
+    def buttonPressed(self, b):
+        button =  self.cad.switches[b].value
+        return button
+
+    # Clear the display
+    def clear(self):
+        self.cad.lcd.clear()
+    
+    # Sets cursor home
+    def home(self):
+        self.cad.lcd.home()
+        return
+
+    # Get LCD width
+    def getWidth(self):
+        return self.width
+
+    # Does this screen support color
+    def hasColor(self):
+        return False
 
 # End of Lcd class
 # Class test routine
 if __name__ == "__main__":
-	import pwd
+    import pwd
 
-	if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-		print ("This program must be run with sudo or root permissions!")
-		sys.exit(1)
+    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
+        print ("This program must be run with sudo or root permissions!")
+        sys.exit(1)
 
-	try:
-		print ("Test lcd_class.py")
-		lcd = Lcd_Piface_Cad()
-		lcd.init()
-		lcd.setWidth(16)
-		lcd.out(1,"bobrathbone.com")
-		lcd.out(2,"Press any button")
-		#time.sleep(4)
-		#lcd.out(4,"Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", no_interrupt)
-		#lcd.out(4,"End of test")
+    try:
+        print ("Test lcd_class.py")
+        lcd = Lcd_Piface_Cad()
+        lcd.init()
+        lcd.setWidth(16)
+        lcd.out(1,"bobrathbone.com")
+        lcd.out(2,"Press any button")
+        #time.sleep(4)
+        #lcd.out(4,"Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", no_interrupt)
+        #lcd.out(4,"End of test")
 
-		while True:
-			msg = ""
-			if lcd.buttonPressed(lcd.MENU_BUTTON):
-				msg = "MENU button pressed"
-			elif lcd.buttonPressed(lcd.UP_BUTTON):
-				msg = "UP button pressed"
-			elif lcd.buttonPressed(lcd.DOWN_BUTTON):
-				msg = "DOWN button pressed"
-			elif lcd.buttonPressed(lcd.LEFT_BUTTON):
-				msg = "LEFT button pressed"
-			elif lcd.buttonPressed(lcd.RIGHT_BUTTON):
-				msg = "RIGHT button pressed"
+        while True:
+            msg = ""
+            if lcd.buttonPressed(lcd.MENU_BUTTON):
+                msg = "MENU button pressed"
+            elif lcd.buttonPressed(lcd.UP_BUTTON):
+                msg = "UP button pressed"
+            elif lcd.buttonPressed(lcd.DOWN_BUTTON):
+                msg = "DOWN button pressed"
+            elif lcd.buttonPressed(lcd.LEFT_BUTTON):
+                msg = "LEFT button pressed"
+            elif lcd.buttonPressed(lcd.RIGHT_BUTTON):
+                msg = "RIGHT button pressed"
 
-			if len(msg) > 0: 
-				print (msg)
-				lcd.out(2,msg)
+            if len(msg) > 0: 
+                print (msg)
+                lcd.out(2,msg)
 
-			time.sleep(0.1)
+            time.sleep(0.1)
 
-	except KeyboardInterrupt:
-		print ("\nExit")
-		sys.exit(0)
+    except KeyboardInterrupt:
+        print ("\nExit")
+        sys.exit(0)
 # End of test routine
+
+# :set tabstop=4 shiftwidth=4 expandtab
+# :retab

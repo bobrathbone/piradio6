@@ -1,28 +1,37 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.14 2020/11/15 19:27:08 bob Exp $
+# $Id: display_config.sh,v 1.16 2021/03/21 16:45:54 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
-# This program is used during installation to set up which
-# radio daemon is to be used
+# This program is diagnostic to display the OS and radio configuration
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 #            The authors shall not be liable for any loss or damage however caused.
 #
+
+# This script requires an English locale(C)
+export LC_ALL=C
+
 DIR=/usr/share/radio
 LOG=${DIR}/config.log
 BOOTCONFIG=/boot/config.txt
 MPD_CONFIG=/etc/mpd.conf
 OS_RELEASE=/etc/os-release
+CONFIG=/etc/radiod.conf
 RADIOLIB=/var/lib/radiod
 ASOUND=/etc/asound.conf
 SOUND_CARD=0
 EMAIL=bob@bobrathbone.com
-AUTOSTART=~/.config/lxsession/LXDE-pi/autostart
+AUTOSTART=/home/pi/.config/lxsession/LXDE-pi/autostart
+
+if [[ ! -d ${DIR} ]]; then
+    echo "Error: Radio software not installed - Exiting."
+    exit 1
+fi
 
 echo "Configuration log for $(hostname) $(date)" | tee ${LOG}
 echo "IP address: $(hostname -I)"  | tee ${LOG}
@@ -71,6 +80,15 @@ echo "Radio version" | tee -a ${LOG}
 echo "-------------" | tee -a ${LOG}
 sudo ${DIR}/radiod.py version | tee -a ${LOG}
 
+echo | tee -a ${LOG}
+echo "Patches" | tee -a ${LOG}
+echo "-------" | tee -a ${LOG}
+if [[ -f radiod-patch* ]]; then
+    ls radiod-patch*
+else
+    echo "No patches found" | tee -a ${LOG}
+fi
+
 # Display MPD configuration
 echo | tee -a ${LOG}
 echo "MPD Configuration" | tee -a ${LOG}
@@ -97,7 +115,9 @@ echo ${BOOTCONFIG} | tee -a ${LOG}
 echo "----------------" | tee -a ${LOG}
 grep ^hdmi ${BOOTCONFIG} | tee -a ${LOG}
 grep ^dtparam=audio ${BOOTCONFIG} | tee -a ${LOG}
-grep -A 8  ^dtoverlay ${BOOTCONFIG} | tee -a ${LOG}
+grep ^dtparam=i2s ${BOOTCONFIG} | tee -a ${LOG}
+grep ^dtoverlay ${BOOTCONFIG} | tee -a ${LOG}
+grep ^gpio=..=op,dh ${BOOTCONFIG} | tee -a ${LOG}
 
 # Display configuration
 echo | tee -a ${LOG}
@@ -105,16 +125,33 @@ echo "Radio configuration" | tee -a ${LOG}
 echo "-------------------" | tee -a ${LOG}
 echo "Configuration file /etc/radiod.conf" | tee -a ${LOG}
 ${DIR}/config_class.py | tee -a  ${LOG}
+echo | tee -a ${LOG}
+${DIR}/wiring.py | tee -a  ${LOG}
+echo "---------------------------------------" | tee -a ${LOG}
+
 
 # Display sound devices
+AUDIO_OUT=$(grep "audio_out=" ${CONFIG})
 echo | tee -a ${LOG}
-echo "---------------------------------------" | tee -a ${LOG}
-/usr/bin/aplay -l | tee -a ${LOG}
+echo "========= Audio Configuration =========" | tee -a ${LOG}
+if [[ ${AUDIO_OUT} =~ bluetooth  ]]; then
+    echo ${AUDIO_OUT}  | tee -a ${LOG}
+else
+    /usr/bin/aplay -l | tee -a ${LOG}
+fi
 
 echo | tee -a ${LOG}
 echo "Mixer controls" | tee -a ${LOG}
 echo "--------------" | tee -a ${LOG}
-amixer -c ${SOUND_CARD} controls | tee -a ${LOG}
+
+if [[ ${AUDIO_OUT} =~ bluetooth  ]]; then
+    amixer -D bluealsa controls | tee -a ${LOG}
+elif [[ ${AUDIO_OUT} =~ USB  ]]; then
+    SOUNDCARD=1
+    amixer -c ${SOUND_CARD} controls | tee -a ${LOG}
+else
+    amixer -c ${SOUND_CARD} controls | tee -a ${LOG}
+fi
 
 # Display /etc/asound.conf configuration
 if [[ -f ${ASOUND} ]]; then 
@@ -130,6 +167,11 @@ echo "Mixer ID Configuration (${RADIOLIB}/mixer_volume_id)" | tee -a ${LOG}
 echo "-------------------------------------------------------" | tee -a ${LOG}
 echo "mixer_volume_id=$(cat ${RADIOLIB}/mixer_volume_id)" | tee -a ${LOG}
 
+echo | tee -a ${LOG}
+echo "Remote control daemon (irradiod.service)" | tee -a ${LOG}
+echo "----------------------------------------" | tee -a ${LOG}
+sudo ${DIR}/remote_control.py status | tee -a ${LOG}
+sudo ${DIR}/remote_control.py config | tee -a ${LOG}
 
 echo | tee -a ${LOG}
 echo "Hardware information" | tee -a ${LOG}

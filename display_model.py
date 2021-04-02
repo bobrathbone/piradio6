@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-$Id: display_model.py,v 1.10 2020/11/12 11:08:21 bob Exp $
+$Id: display_model.py,v 1.5 2020/12/02 18:26:54 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -113,7 +113,7 @@ class ModelInfo(object):
                 self.model, self.revision, self.ram_mb, self.maker, self.info = \
                         model_data[rev_hex.lstrip("0")]
         except:
-                print "Unknown model", rev_hex.lstrip("0")
+                print ("Unknown model", rev_hex.lstrip("0"))
 
     def __repr__(self):
         s = "%s: Model %s, Revision %s, RAM: %s MB, Maker: %s%s" % ( \

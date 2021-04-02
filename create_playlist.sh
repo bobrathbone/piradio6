@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.28 2020/06/05 13:53:10 bob Exp $
+# $Id: create_playlist.sh,v 1.1 2020/10/10 15:00:44 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

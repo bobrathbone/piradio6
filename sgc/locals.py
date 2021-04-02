@@ -12,7 +12,8 @@ Constants:
 
 import types
 
-from widgets._locals import GUI
+from .widgets._locals import GUI
+import collections
 
 class EventSlot(object):
     """
@@ -48,7 +49,7 @@ class EventSlot(object):
           func: A function or sequence of functions to be added.
 
         """
-        if callable(func):
+        if isinstance(func, collections.Callable):
             self._funcs.append(func)
         else:
             self._funcs.extend(func)

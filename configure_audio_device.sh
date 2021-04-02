@@ -2,7 +2,7 @@
 # set -x
 # Raspberry Pi Internet Radio
 # Audio output configurator
-# $Id: configure_audio_device.sh,v 1.4 2020/11/09 14:09:09 bob Exp $
+# $Id: configure_audio_device.sh,v 1.5 2021/03/04 15:45:19 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -17,6 +17,9 @@
 # The authors shall not be liable for any loss or damage however caused.
 #
 
+# This script requires an English locale(C)
+export LC_ALL=C
+
 MPDCONFIG=/etc/mpd.conf
 ASOUNDCONF=/etc/asound.conf
 CONFIG=/etc/radiod.conf
@@ -29,10 +32,10 @@ DEVICE=$1
 # Returns the card number for the specified device string
 # If no audio_out parameter specified, configure for card 0
 function getCard {
-	sDevice=$1
+    sDevice=$(echo $1 | sed -e 's/^"//' -e 's/"$//')
 	${APLAY} > ${TMP}
 	aplay -l | grep -i ^card > ${TMP} 
-	while IFS= read -r card
+	while read -r card
 	do
 		echo ${card} | grep -i ${sDevice} >/dev/null 2>&1 
 		ret=$?

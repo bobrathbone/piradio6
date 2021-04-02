@@ -11,9 +11,9 @@ import pygame
 from pygame.locals import *
 from pygame import draw
 
-from _locals import *
-from base_widget import Simple
-from _interface.text import SelectableText
+from ._locals import *
+from .base_widget import Simple
+from ._interface.text import SelectableText
 
 class InputBox(Simple, SelectableText):
 
@@ -81,7 +81,7 @@ class InputBox(Simple, SelectableText):
         return "".join(self._text)
     @text.setter
     def text(self, txt):
-        self._text = [unicode(char) for char in txt]
+        self._text = [str(char) for char in txt]
         # Re-evaluate cursor position.
         self._cursor_pos = self._cursor_pos
         self._calc_chars()

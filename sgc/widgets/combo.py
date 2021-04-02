@@ -11,8 +11,8 @@ import pygame
 from pygame.locals import *
 from pygame import draw
 
-from _locals import *
-from base_widget import Simple
+from ._locals import *
+from .base_widget import Simple
 
 class Combo(Simple):
 
@@ -25,7 +25,7 @@ class Combo(Simple):
     """
 
     _can_focus = True
-    _default_size = (150, 30)
+    _default_size = (200, 30)
     _settings_default = {"values": ()}
 
     _selection = -1
@@ -167,14 +167,14 @@ class _Selection(Simple):
     def _event(self, event):
         if event.type == MOUSEMOTION:
             if self.rect_abs.collidepoint(event.pos):
-                y = (event.pos[1] - self.pos_abs[1]) / self._item_height
+                y = (event.pos[1] - self.pos_abs[1]) // self._item_height
                 self._images["selection"].rect.y = y * self._item_height
                 self._images["selection"]._show = True
             else:
                 self._images["selection"]._show = False
         elif event.type == MOUSEBUTTONDOWN:
             if self.rect_abs.collidepoint(event.pos):
-                y = (event.pos[1] - self.pos_abs[1]) / self._item_height
+                y = (event.pos[1] - self.pos_abs[1]) // self._item_height
                 self._parent_combo.selection = y
                 self._parent_combo.on_select()
             self.remove()

@@ -11,9 +11,9 @@ import pygame.mouse
 from pygame.locals import *
 from pygame import draw
 
-from _locals import *
-from _locals import focus
-from base_widget import Simple
+from ._locals import *
+from ._locals import focus
+from .base_widget import Simple
 
 class Radio(Simple):
 
@@ -35,7 +35,7 @@ class Radio(Simple):
     """
 
     _can_focus = True
-    _default_size = (25,25)
+    _default_size = (15,15)
     _available_images = ("over",)
     _surf_flags = SRCALPHA
     _extra_images = {"active": ((.7, 0), (.7, 0))}
@@ -73,7 +73,7 @@ class Radio(Simple):
 
     def _draw_base(self):
         pos = self.rect.center
-        r = min(self.rect.size) / 2
+        r = min(self.rect.size) // 2
         # Background circles
         draw.circle(self._images["image"], (255,255,255), pos, r)
         draw.circle(self._images["over"], self._settings["col"], pos, r)
@@ -83,8 +83,8 @@ class Radio(Simple):
 
     def _draw_active(self, image, size):
         # Central dot for 'active' state
-        r = min(size) / 2
-        pos = (size[0] / 2, size[1] / 2)
+        r = min(size) // 2
+        pos = (size[0] // 2, size[1] // 2)
         draw.circle(image, (92,161,233), pos, r)
 
     def on_select(self):

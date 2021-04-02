@@ -2,7 +2,7 @@
 set -e
 # Raspberry Pi Internet Radio - Install Icecast2
 # This script installs and configures Airplay (shairport)
-# $Id: install_airplay.sh,v 1.5 2018/03/24 14:59:07 bob Exp $
+# $Id: install_airplay.sh,v 1.1 2020/10/10 15:00:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

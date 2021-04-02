@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radiod display title and station/track name from MPD
 #
-# $Id: display_title.sh,v 1.2 2020/04/09 12:09:28 bob Exp $
+# $Id: display_title.sh,v 1.1 2020/10/10 15:00:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

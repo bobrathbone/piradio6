@@ -10,9 +10,9 @@ Container widget, can be inherited to implement more complex behaviour.
 import pygame.sprite
 from pygame.locals import *
 
-from _locals import *
-from _locals import Focus
-from base_widget import Simple
+from ._locals import *
+from ._locals import Focus
+from .base_widget import Simple
 
 class Container(Simple):
 
@@ -88,7 +88,7 @@ class Container(Simple):
         for w in self._settings["widgets"]:
             copy = w.image.copy()
             # Blit extra images onto copy
-            for img in map(lambda x: w._images[x], w._extra_images):
+            for img in [w._images[x] for x in w._extra_images]:
                 if img._show:
                     copy.blit(img.image, img.rect)
             self.image.blit(copy, w.pos)

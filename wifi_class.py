@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Wifi Class
-# $Id: wifi_class.py,v 1.2 2018/05/29 09:50:30 bob Exp $
+# $Id: wifi_class.py,v 1.2 2020/10/13 07:04:29 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 	from wifi_class import WiFi
 
 	if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-		print "This program must be run with sudo or root permissions!"
+		print("This program must be run with sudo or root permissions!")
 		sys.exit(1)
 
 	wifi =  WiFi()
@@ -143,3 +143,5 @@ if __name__ == '__main__':
 	sys.exit(0)
 
 # End of __main__
+# :set tabstop=4 shiftwidth=4 expandtab
+# :retab

@@ -10,7 +10,7 @@ Screen class to store rect information with the screen and setup the toolkit.
 import pygame.display
 from pygame.locals import *
 
-import widgets._locals
+from .widgets import _locals
 
 class Screen(object):
     """
@@ -35,8 +35,8 @@ class Screen(object):
         self.rect = Rect((0,0), size)
         self.image = pygame.display.set_mode(size, flags, depth)
         self._opengl = flags & OPENGL
-        widgets._locals.SCREEN = self
-        widgets._locals.Font.set_fonts()
+        _locals.SCREEN = self
+        _locals.Font.set_fonts()
 
     def __getattr__(self, attr):
         """Redirect attribute access to self.image"""

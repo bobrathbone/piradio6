@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Raspberry OLED test program 
 #
-# $Id: oled_hello.py,v 1.2 2018/04/17 06:46:17 bob Exp $
+# $Id: oled_hello.py,v 1.2 2020/10/13 06:59:53 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -21,7 +21,7 @@ import pdb,sys
 import time,datetime
 from time import strftime
 
-#dis = OLED(0) 	# Original Raspberry Pi only
+#dis = OLED(0)  # Original Raspberry Pi only
 # Connect to the display on /dev/i2c-1
 dis = OLED(1)
 

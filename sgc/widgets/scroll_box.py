@@ -12,9 +12,9 @@ import pygame.mouse
 from pygame.locals import *
 from pygame import draw
 
-from _locals import *
-from _locals import special_case, modal_widgets
-from base_widget import Simple
+from ._locals import *
+from ._locals import special_case, modal_widgets
+from .base_widget import Simple
 
 class ScrollBox(Simple):
 

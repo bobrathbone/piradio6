@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Raspberry Pi pHAT Beat Class
-# $Id: phatbeat_class.py,v 1.4 2019/07/05 10:26:34 bob Exp $
+# $Id: phatbeat_class.py,v 1.2 2020/10/13 06:59:53 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -22,65 +22,68 @@ import phatbeat
 
 class Phat:
 
-        def __init__(self,callback,log):
-                self.callback = callback
-                self.log = log
-		self.log.message("pHat beat initialised ", log.DEBUG)
+    def __init__(self,callback,log):
+        self.callback = callback
+        self.log = log
+        self.log.message("pHat beat initialised ", log.DEBUG)
 
 # End of class
 
 def interrupt(gpio):
-        print "Button pressed on GPIO", gpio
+        print("Button pressed on GPIO", gpio)
         return
 
 ### Test routine ###
 if __name__ == "__main__":
-	from config_class import Configuration
-	from log_class import Log
-	config = Configuration()
-        log = Log()
-	log.init('radio')
-	phat = Phat(interrupt,log)
+    from config_class import Configuration
+    from log_class import Log
+    config = Configuration()
+    log = Log()
+    log.init('radio')
+    phat = Phat(interrupt,log)
 
-	# pHAT callbacks
-	@phatbeat.on(phatbeat.BTN_FASTFWD)
-	def fast_forward(pin):
-		log.message("pHat button " + str(phatbeat.BTN_FASTFWD), log.DEBUG)
-		print "DEBUG pHat button " + str(phatbeat.BTN_FASTFWD)
-		phat.callback(phatbeat.BTN_FASTFWD)
+    # pHAT callbacks
+    @phatbeat.on(phatbeat.BTN_FASTFWD)
+    def fast_forward(pin):
+        log.message("pHat button " + str(phatbeat.BTN_FASTFWD), log.DEBUG)
+        print("DEBUG pHat button " + str(phatbeat.BTN_FASTFWD))
+        phat.callback(phatbeat.BTN_FASTFWD)
 
-	@phatbeat.on(phatbeat.BTN_REWIND)
-	def fast_forward(pin):
-		phat.callback(phatbeat.BTN_REWIND)
+    @phatbeat.on(phatbeat.BTN_REWIND)
+    def fast_forward(pin):
+        phat.callback(phatbeat.BTN_REWIND)
 
-	@phatbeat.on(phatbeat.BTN_PLAYPAUSE)
-	def fast_forward(pin):
-		phat.callback(phatbeat.BTN_PLAYPAUSE)
+    @phatbeat.on(phatbeat.BTN_PLAYPAUSE)
+    def fast_forward(pin):
+        phat.callback(phatbeat.BTN_PLAYPAUSE)
 
-	@phatbeat.on(phatbeat.BTN_VOLUP)
-	def fast_forward(pin):
-		phat.callback(phatbeat.BTN_VOLUP)
+    @phatbeat.on(phatbeat.BTN_VOLUP)
+    def fast_forward(pin):
+        phat.callback(phatbeat.BTN_VOLUP)
 
-	@phatbeat.on(phatbeat.BTN_VOLDN)
-	def fast_forward(pin):
-		phat.callback(phatbeat.BTN_VOLDN)
+    @phatbeat.on(phatbeat.BTN_VOLDN)
+    def fast_forward(pin):
+        phat.callback(phatbeat.BTN_VOLDN)
 
-	@phatbeat.on(phatbeat.BTN_ONOFF)
-	def fast_forward(pin):
-		phat.callback(phatbeat.BTN_ONOFF)
+    @phatbeat.on(phatbeat.BTN_ONOFF)
+    def fast_forward(pin):
+        phat.callback(phatbeat.BTN_ONOFF)
 
         if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-                print "This program must be run with sudo or root permissions!"
-                sys.exit(1)
+            print("This program must be run with sudo or root permissions!")
+            sys.exit(1)
 
-	print "Test pHAT Beat interface board"
+    print("Test pHAT Beat interface board")
 try:
-	while True:
-		#pdb.set_trace()
-		#phatbeat.set_all(0,128,0,0.1,channel=0)
-		#phatbeat.set_all(255,155,0,0.1,channel=1)
-		#phatbeat.show()
-		time.sleep(1)
+    while True:
+        #pdb.set_trace()
+        #phatbeat.set_all(0,128,0,0.1,channel=0)
+        #phatbeat.set_all(255,155,0,0.1,channel=1)
+        #phatbeat.show()
+        time.sleep(1)
 
 except KeyboardInterrupt:
-	sys.exit()
+    sys.exit()
+
+# :set tabstop=4 shiftwidth=4 expandtab
+# :retab

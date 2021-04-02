@@ -1,7 +1,7 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio - Install Icecast2
 # This script installs and configures Icecast2 to run with MPD 
-# $Id: install_streaming.sh,v 1.2 2018/01/13 08:43:27 bob Exp $
+# $Id: install_streaming.sh,v 1.1 2020/10/10 15:00:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

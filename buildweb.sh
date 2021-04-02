@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: buildweb.sh,v 1.6 2020/02/16 15:45:09 bob Exp $
+# $Id: buildweb.sh,v 1.2 2020/10/12 18:31:25 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -49,15 +49,15 @@ equivs-build ${PKG}
 echo -n "Check using Lintian y/n: "
 read ans
 if [[ ${ans} == 'y' ]]; then
-	echo "Checking package ${DEBPKG} with lintian"
-	lintian ${DEBPKG}
-	if [[ $? = 0 ]]
-	then
-	    dpkg -c ${DEBPKG}
-	    echo "Package ${DEBPKG} OK"
-	else
-	    echo "Package ${DEBPKG} has errors"
-	fi
+    echo "Checking package ${DEBPKG} with lintian"
+    lintian ${DEBPKG}
+    if [[ $? = 0 ]]
+    then
+        dpkg -c ${DEBPKG}
+        echo "Package ${DEBPKG} OK"
+    else
+        echo "Package ${DEBPKG} has errors"
+    fi
 fi
 
 # End of build script

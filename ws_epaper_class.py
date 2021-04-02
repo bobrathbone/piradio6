@@ -3,7 +3,7 @@
 #!/usr/bin/env python
 # This class drives the Solomon Systech SSD1306 128 by 64 pixel OLED
 #
-# $Id: ws_epaper_class.py,v 1.13 2019/02/06 14:51:25 bob Exp $
+# $Id: ws_epaper_class.py,v 1.1 2020/10/10 15:00:48 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #

@@ -10,9 +10,9 @@ Label to display information to the user.
 import pygame.mouse
 from pygame.locals import *
 
-from _locals import *
-from base_widget import Simple
-from _interface.text import SelectableText
+from ._locals import *
+from .base_widget import Simple
+from ._interface.text import SelectableText
 
 class Label(Simple, SelectableText):
 
@@ -49,10 +49,10 @@ class Label(Simple, SelectableText):
             strings = pygame.cursors.textmarker_strings
             cursor = pygame.cursors.compile(strings)
             size = (len(strings[0]), len(strings))
-            hotspot = (size[0]/2, size[1]/2)
+            hotspot = (size[0]//2, size[1]//2)
             self._cursor = (size, hotspot) + cursor
         if "text" in kwargs:
-            if isinstance(kwargs["text"], (str, unicode)):
+            if isinstance(kwargs["text"], (str, 'utf-8')):
                 self._settings["text"] = kwargs["text"]
             else:
                 self._settings["text"] = kwargs["text"][0]

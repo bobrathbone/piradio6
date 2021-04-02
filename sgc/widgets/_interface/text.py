@@ -211,7 +211,7 @@ class SelectableText:
                             else:
                                 sel = (self._cursor_pos, self._cursor_pos)
                             # Get list of text to insert into input_text
-                            text = [unicode(char) for char in text]
+                            text = [str(char) for char in text]
                             self._text[sel[0]:sel[1]] = text
                             self._calc_chars()
                             self._cursor_pos = sel[0] + len(text)

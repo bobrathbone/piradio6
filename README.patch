@@ -1,15 +1,22 @@
-Patch 2 for version 6.14 - 2 December 2020
+Patch 5 for version 7.0 - 22 March 2021
 
 Changes
 =======
-1) Client timeout (client_timeout) in radiod.conf increased to 10 seconds 
-2) Translation routines added to spotify class 
+1) Correction to UDP client/server for Remote control software
+2) remote_control.py can now send valid KEYs to the radio daemon
+3) Correction to select source in web interface
+4) Correction to shoutcast playlist selection in web interface
+5) Shell scripts which failing with country locale amended to run with locale LC_ALL=C
+6) Bluetooth devices now working 
+7) Correct create_stations.py skipping URLs with special non-ascii characters
 
 To install the patch
 ====================
 cd /usr/share/radio
-wget wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-6.15-1.tar.gz
-tar -xvf radiod-patch-6.15-1.tar.gz
+wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.0-5.tar.gz
+tar -xvf radiod-patch-7.0-5.tar.gz
 sudo systemctl restart radiod.service
+
+This patch supercedes radiod-patch-7.0-1 through 4 which are included in this patch 
 
 End of README.patch

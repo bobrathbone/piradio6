@@ -1,5 +1,5 @@
 # Radio remote control systemd script
-# $Id: irradiod.service,v 1.1 2017/10/14 10:51:04 bob Exp $
+# $Id: irradiod.service,v 1.1 2020/10/10 15:03:21 bob Exp $
 [Unit]
 Description=Radio remote control daemon
 After=network.target

@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: no_display.py,v 1.3 2018/04/22 13:13:31 bob Exp $
+# $Id: no_display.py,v 1.2 2020/10/13 05:39:44 bob Exp $
 # Raspberry Pi display routines
 # Null screen routines used by retro radio 
 #
@@ -23,41 +23,45 @@ from config_class import Configuration
 
 # No interrupt routine if none supplied
 def no_interrupt():
-	return False
+    return False
 
 # Lcd Class 
 class No_Display:
 
-        def __init__(self):
-		return
+    def __init__(self):
+        return
 
-	# Initialise for either revision 1 or 2 boards
-	def init(self,revision=2):
-		return
+    # Initialise for either revision 1 or 2 boards
+    def init(self,revision=2):
+        return
 
-	# Set the display width
-	def setWidth(self,width):
-		return 
+    # Set the display width
+    def setWidth(self,width):
+        return 
 
-	# Get LCD width 
-	def getWidth(self):
-		return 0
+    # Get LCD width 
+    def getWidth(self):
+        return 0
 
-	# Display Line on LCD
-	def out(self,line_number=1,text="",interrupt=no_interrupt):
-		return
+    # Display Line on LCD
+    def out(self,line_number=1,text="",interrupt=no_interrupt):
+        return
 
         # Set Scroll line speed - Best values are 0.2 and 0.3
         # Limit to between 0.05 and 1.0
         def setScrollSpeed(self,speed):
                 return
 
-	# Clear display
-	def clear(self):
+    # Clear display
+    def clear(self):
                 return
 
-	# Return colour False
-	def hasColor(self):
+    # Return colour False
+    def hasColor(self):
                 return False
 
 # End of No Screen class
+
+# :set tabstop=4 shiftwidth=4 expandtab
+# :retab
+

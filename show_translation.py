@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio
-# $Id: show_translation.py,v 1.1 2020/06/07 09:34:56 bob Exp $
+# $Id: show_translation.py,v 1.1 2020/10/10 15:00:47 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

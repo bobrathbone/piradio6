@@ -13,19 +13,20 @@ pcm.!default {
       }
 }
 
-# Bluetooth speaker
+# Bluetooth speakers
 pcm.bluetooth {
       type plug
       slave {
             pcm {
-                type bluetooth
+                type bluealsa
+		service org.bluealsa
                 device 00:75:58:41:B1:25
-                profile "auto"
+                profile "a2dp"
             }
       }
       hint {
            show on
-           description "JVC Bluetooth speaker"
+           description "Bluetooth speakers"
       }
 }
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.21 2020/03/14 16:23:13 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.3 2021/02/06 10:54:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -33,7 +33,7 @@ STRETCH=1
 BUSTER=2
 
 OS=${STRETCH}
-IR_GPIO=9	
+IR_GPIO=9   
 IR_REMOTE_LED=0
 DT_OVERLAY=""
 REMOTE_LED=0
@@ -63,7 +63,7 @@ do
         ans=$(whiptail --title "Select operating system" --menu "Choose your option" 15 75 9 \
         "1" "Rasbian Buster or later" \
         "2" "Rasbian Stretch" \
-	3>&1 1>&2 2>&3)
+    3>&1 1>&2 2>&3)
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -72,12 +72,12 @@ do
 
         if [[ ${ans} == '1' ]]; then
                 DESC="Rasbian Buster or later selected"
-		OS=${BUSTER}
+        OS=${BUSTER}
 
         elif [[ ${ans} == '2' ]]; then
                 DESC="Rasbian Stretch selected"
-		OS=${STRETCH}
-	fi
+        OS=${STRETCH}
+    fi
 
         whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
         selection=$?
@@ -96,7 +96,7 @@ do
         "5" "All versions using a DAC (GPIO 25)" \
         "6" "IQaudIO Cosmic Controller (GPIO 25)" \
         "7" "PiFace CAD (GPIO 23)" \
-	3>&1 1>&2 2>&3)
+    3>&1 1>&2 2>&3)
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -105,78 +105,78 @@ do
 
         if [[ ${ans} == '1' ]]; then
                 DESC="Directly connected LCD - No DAC (GPIO 9 pin 21)"
-		IR_GPIO=9	
+        IR_GPIO=9   
 
         elif [[ ${ans} == '2' ]]; then
                 DESC="Directly connected LCD with a USB DAC (GPIO 9 pin 21)"
-		IR_GPIO=9	
+        IR_GPIO=9   
 
         elif [[ ${ans} == '3' ]]; then
                 DESC="LCD with I2C backpack - No DAC (GPIO 9)"
-		IR_GPIO=9	
+        IR_GPIO=9   
 
         elif [[ ${ans} == '4' ]]; then
                 DESC="Adafruit RGB plate (GPIO 16)"
-		IR_GPIO=16	
+        IR_GPIO=16  
 
         elif [[ ${ans} == '5' ]]; then
                 DESC="All 40 pin versions using a DAC (GPIO 25)"
-		IR_GPIO=25	
+        IR_GPIO=25  
 
         elif [[ ${ans} == '6' ]]; then
                 DESC="IQaudIO Cosmic Controller (GPIO 25)"
-		IR_GPIO=25	
+        IR_GPIO=25  
 
         elif [[ ${ans} == '7' ]]; then
                 DESC="Piface CAD (GPIO 23)"
-		IR_GPIO=23	
-	fi
+        IR_GPIO=23  
+    fi
 
         whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
         selection=$?
 done
 
 if [[ ${OS} == ${STRETCH} ]]; then
-	echo "" | tee -a ${LOG}
-	echo "You have selected Stretch as the OS version you are using."  | tee -a ${LOG}
-	echo "Please note the release date of the kernel you are using from the line below:"  | tee -a ${LOG}
-	echo -n "    " | tee -a ${LOG}
-	uname -s -r -v | tee -a ${LOG}
-	echo -n "Enter to continue:"
-	read ans
+    echo "" | tee -a ${LOG}
+    echo "You have selected Stretch as the OS version you are using."  | tee -a ${LOG}
+    echo "Please note the release date of the kernel you are using from the line below:"  | tee -a ${LOG}
+    echo -n "    " | tee -a ${LOG}
+    uname -s -r -v | tee -a ${LOG}
+    echo -n "Enter to continue:"
+    read ans
 
-	ans=0
-	selection=1
-	while [ $selection != 0 ]
-	do
-		ans=$(whiptail --title "Select kernel version" --menu "Choose your option" 15 75 9 \
-		"1" "Kernel is April 2019 or later" \
-		"2" "Kernel is before April 2019" \
-		3>&1 1>&2 2>&3)
+    ans=0
+    selection=1
+    while [ $selection != 0 ]
+    do
+        ans=$(whiptail --title "Select kernel version" --menu "Choose your option" 15 75 9 \
+        "1" "Kernel is April 2019 or later" \
+        "2" "Kernel is before April 2019" \
+        3>&1 1>&2 2>&3)
 
-		exitstatus=$?
-		if [[ $exitstatus != 0 ]]; then
-			exit 0
-		fi
+        exitstatus=$?
+        if [[ $exitstatus != 0 ]]; then
+            exit 0
+        fi
 
-		if [[ ${ans} == '1' ]]; then
-			DESC="Kernel is April 2019 or later"
-			DT_OVERLAY="dtoverlay=gpio-ir,gpio_pin=${IR_GPIO}"
-			DT_COMMAND="sudo dtoverlay gpio-ir gpio_pin=${IR_GPIO}"
+        if [[ ${ans} == '1' ]]; then
+            DESC="Kernel is April 2019 or later"
+            DT_OVERLAY="dtoverlay=gpio-ir,gpio_pin=${IR_GPIO}"
+            DT_COMMAND="sudo dtoverlay gpio-ir gpio_pin=${IR_GPIO}"
 
-		elif [[ ${ans} == '2' ]]; then
-			DESC="Kernel is before April 2019"
-			DT_OVERLAY="dtoverlay=lirc-rpi,gpio_in_pin=${IR_GPIO},gpio_in_pull=up"
-			DT_COMMAND="sudo dtoverlay lirc-rpi gpio_in_pin=${IR_GPIO} gpio_in_pull=up"
-		fi
+        elif [[ ${ans} == '2' ]]; then
+            DESC="Kernel is before April 2019"
+            DT_OVERLAY="dtoverlay=lirc-rpi,gpio_in_pin=${IR_GPIO},gpio_in_pull=up"
+            DT_COMMAND="sudo dtoverlay lirc-rpi gpio_in_pin=${IR_GPIO} gpio_in_pull=up"
+        fi
 
-		whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
-		selection=$?
-	done
+        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
+        selection=$?
+    done
 else
-	# OS is Raspbian Buster or later
-	DT_OVERLAY="dtoverlay=gpio-ir,gpio_pin=${IR_GPIO}"
-	DT_COMMAND="sudo dtoverlay gpio-ir gpio_pin=${IR_GPIO}"
+    # OS is Raspbian Buster or later
+    DT_OVERLAY="dtoverlay=gpio-ir,gpio_pin=${IR_GPIO}"
+    DT_COMMAND="sudo dtoverlay gpio-ir gpio_pin=${IR_GPIO}"
 fi
 
 # Configure remote activity LED
@@ -189,8 +189,8 @@ do
         "2" "All designs using DAC sound card GPIO 16 (pin 36)" \
         "3" "Adafruit plate  GPIO 13 (pin 33)" \
         "4" "IQaudIO Cosmic Controller GPIO 14 (pin 8)" \
-	"5" "No remote activity LED or manually configure" \
-	3>&1 1>&2 2>&3)
+    "5" "No remote activity LED or manually configure" \
+    3>&1 1>&2 2>&3)
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -199,24 +199,24 @@ do
 
         if [[ ${ans} == '1' ]]; then
                 DESC="Default GPIO 11 selected"
-		REMOTE_LED=11	
+        REMOTE_LED=11   
 
         elif [[ ${ans} == '2' ]]; then
                 DESC="All designs using DAC sound cards, GPIO 16 (pin 36)"
-		REMOTE_LED=16	
+        REMOTE_LED=16   
 
         elif [[ ${ans} == '3' ]]; then
                 DESC="Adafruit plate/PiFace CAD, GPIO 13 (pin 33)"
-		REMOTE_LED=13	
+        REMOTE_LED=13   
 
         elif [[ ${ans} == '4' ]]; then
                 DESC="IQaudIO Cosmic controller, GPIO 14 (pin 8)"
-		REMOTE_LED=14	
+        REMOTE_LED=14   
 
         elif [[ ${ans} == '4' ]]; then
                 DESC="No remote activity LED"
-		REMOTE_LED=0	
-	fi
+        REMOTE_LED=0    
+    fi
 
         whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
         selection=$?
@@ -243,8 +243,8 @@ echo ${DT_OVERLAY} | tee -a ${LOG}
 echo ${DT_COMMAND} | tee -a ${LOG}
 ${DT_COMMAND}
 if [[ $? -ne '0' ]]; then       # Do not seperate from above
-	# The overlay may be already loaded
-	echo "Warning: Failed to run ${DT_COMMAND}" | tee -a ${LOG}
+    # The overlay may be already loaded
+    echo "Warning: Failed to run ${DT_COMMAND}" | tee -a ${LOG}
 fi
 echo "" | tee -a ${LOG}
 
@@ -255,53 +255,55 @@ echo "Configured remote_led=${REMOTE_LED} in ${CONFIG}" | tee -a ${LOG}
 # Install LIRC packages
 echo "" | tee -a ${LOG}
 if [[ ${OS} == ${STRETCH} ]]; then
-	packages="lirc ir-keytable python-lirc"
-	lirc_service="lirc"
+    packages="lirc ir-keytable python-lirc"
+    lirc_service="lirc"
 else
-	# Buster or later
-	packages="lirc ir-keytable python-pylirc lirc-compat-remotes lirc-drv-irman lirc-doc "
-	lirc_service="lircd"
+    # Buster or later
+    packages="lirc ir-keytable python-pylirc lirc-compat-remotes lirc-drv-irman lirc-doc "
+    lirc_service="lircd"
 fi
 
 for package in ${packages}
 do
-	echo "Installing ${package}"  | tee -a ${LOG}
-	sudo apt-get -y install ${package}
-	if [[ $? -ne '0' ]]; then       # Do not seperate from above
-		if [[  ${package} == "lirc" || ${package} == "lircd" ]]; then
-			# Set up lirc(d) package
-			echo "Setting up ${package}" | tee -a ${LOG}
-			
-			# Set-up remotes config directory
-			if [[ -f ${LIRCD_CONFIG}  &&  ${OS} == ${BUSTER} ]]; then
-				CMD="sudo cp ${LIRCD_CONFIG}.dist ${LIRCD_CONFIG}"
-				echo ${CMD};${CMD} | tee -a ${LOG}
-			fi
+    echo "Installing ${package}"  | tee -a ${LOG}
+    sudo apt-get -y install ${package}
+    if [[ $? -ne '0' ]]; then       # Do not seperate from above
+        if [[  ${package} == "lirc" || ${package} == "lircd" ]]; then
+            # Set up lirc(d) package
+            echo "Setting up ${package}" | tee -a ${LOG}
+            
+            # Set-up remotes config directory
+            if [[ -f ${LIRCD_CONFIG}  &&  ${OS} == ${BUSTER} ]]; then
+                CMD="sudo cp ${LIRCD_CONFIG}.dist ${LIRCD_CONFIG}"
+                echo ${CMD};${CMD} | tee -a ${LOG}
+            fi
 
-			# Run the configuration conversion script
-			CMD="sudo ${CONVERT_SCRIPT}"
-			echo ${CMD};${CMD}  | tee -a ${LOG}
+            # Run the configuration conversion script
+            CMD="sudo ${CONVERT_SCRIPT}"
+            echo ${CMD};${CMD}  | tee -a ${LOG}
 
-			# Start LIRC
-			CMD="sudo systemctl start ${lirc_service}"
-			echo ${CMD};${CMD}
-			if [[ $? -ne '0' ]]; then       # Do not seperate from above
-				echo "Warning: Failed to start ${lirc_service}" | tee -a ${LOG}
-			fi
-		else
-			echo "Failed to install ${package}" | tee -a ${LOG}
-			ERRORS=$(($ERRORS+1))
-		fi
-	fi
+            # Start LIRC
+            CMD="sudo systemctl start ${lirc_service}"
+            echo ${CMD};${CMD}
+            if [[ $? -ne '0' ]]; then       # Do not seperate from above
+                echo "Warning: Failed to start ${lirc_service}" | tee -a ${LOG}
+            fi
+        else
+            echo "Failed to install ${package}" | tee -a ${LOG}
+            ERRORS=$(($ERRORS+1))
+        fi
+    fi
 done
 
 # Copy options file 
-CMD="sudo cp ${LIRC_OPTIONS}.dist ${LIRC_OPTIONS}"  
-echo ${CMD} | tee -a ${LOG}
-${CMD}
-if [[ $? -ne '0' ]]; then       # Do not seperate from above
-	echo "Failed to copy ${LIRC_OPTIONS}" | tee -a ${LOG}
-	ERRORS=$(($ERRORS+1))
+if [[ -f  ${LIRC_OPTIONS}.dist ]]; then
+    CMD="sudo cp ${LIRC_OPTIONS}.dist ${LIRC_OPTIONS}"  
+    echo ${CMD} | tee -a ${LOG}
+    ${CMD}
+    if [[ $? -ne '0' ]]; then       # Do not seperate from above
+        echo "Failed to copy ${LIRC_OPTIONS}" | tee -a ${LOG}
+        ERRORS=$(($ERRORS+1))
+    fi
 fi
 
 # Configure driver and device in lirc_options.conf
@@ -315,13 +317,13 @@ sudo sed -i -e '/^device/s/auto/\/dev\/lirc0/' ${LIRC_OPTIONS}
 # Copy keymaps
 echo "" | tee -a ${LOG}
 if [[ -f  ${KEYMAPS_TOML}/rc6_mce.toml ]]; then
-	CMD="sudo cp ${KEYMAPS_TOML}/rc6_mce.toml ${KEYMAPS}/rc6_mce"
-	echo ${CMD} | tee -a ${LOG}
-	${CMD}
-	if [[ $? -ne '0' ]]; then       # Do not seperate from above
-		echo "Failed to copy keymaps" | tee -a ${LOG}
-		ERRORS=$(($ERRORS+1))
-	fi
+    CMD="sudo cp ${KEYMAPS_TOML}/rc6_mce.toml ${KEYMAPS}/rc6_mce"
+    echo ${CMD} | tee -a ${LOG}
+    ${CMD}
+    if [[ $? -ne '0' ]]; then       # Do not seperate from above
+        echo "Failed to copy keymaps" | tee -a ${LOG}
+        ERRORS=$(($ERRORS+1))
+    fi
 fi
 
 # Copy lircrc (IR remote control button definitions) to /etc/lirc 
@@ -329,20 +331,20 @@ CMD="sudo cp ${RADIO_DIR}/lircrc.dist /etc/lirc/lircrc"
 echo ${CMD} | tee -a ${LOG}
 ${CMD}
 if [[ $? -ne '0' ]]; then       # Do not seperate from above
-	echo "Failed to copy ${RADIO_DIR}/lircrc.dist to /etc/lirc" | tee -a ${LOG}
-	ERRORS=${ERRORS}+1
+    echo "Failed to copy ${RADIO_DIR}/lircrc.dist to /etc/lirc" | tee -a ${LOG}
+    ERRORS=${ERRORS}+1
 fi
 
 # Disable devinput.lircd.conf
 DEVINPUT=${CONFIG_DIR}/devinput.lircd.conf
 if [[ -f ${DEVINPUT} ]]; then
-	CMD="sudo mv ${DEVINPUT} ${DEVINPUT}.dist"
-	echo ${CMD} | tee -a ${LOG}
-	${CMD}
-	if [[ $? -ne '0' ]]; then       # Do not seperate from above
-		echo "Warning: failed to disable ${CONFIG_DIR}/devinput.lircd.conf" | tee -a ${LOG}
-		exit 1
-	fi
+    CMD="sudo mv ${DEVINPUT} ${DEVINPUT}.dist"
+    echo ${CMD} | tee -a ${LOG}
+    ${CMD}
+    if [[ $? -ne '0' ]]; then       # Do not seperate from above
+        echo "Warning: failed to disable ${CONFIG_DIR}/devinput.lircd.conf" | tee -a ${LOG}
+        exit 1
+    fi
 fi
 
 # Make configuration file readable to all
@@ -350,7 +352,7 @@ sudo chmod og+r ${LIRCD_CONFIG}
 
 
 if [[ ${ERRORS} > 0 ]]; then
-	echo "There were ${ERRORS} errors" | tee -a ${LOG}
+    echo "There were ${ERRORS} errors" | tee -a ${LOG}
 fi
 
 # Print configuration instructions
@@ -358,15 +360,15 @@ echo "" |  tee -a ${LOG}
 echo "Configuration of LIRC completed OK" |  tee -a ${LOG}
 echo "Reboot the system and then run the following " |  tee -a ${LOG}
 echo "to configure your IR remote control" |  tee -a ${LOG}
-echo "	  sudo irrecord -f -d /dev/lirc0 ~/lircd.conf " |  tee -a ${LOG}
+echo "    sudo irrecord -f -d /dev/lirc0 ~/lircd.conf " |  tee -a ${LOG}
 echo "" |  tee -a ${LOG}
 if [[ ${OS} == ${STRETCH} ]]; then
-	echo "Then copy your configuration file (myremote.conf) to  ${LIRCD_CONFIG}" |  tee -a ${LOG}
-	echo "	  sudo cp myremote.conf ${LIRCD_CONFIG}" |  tee -a ${LOG}
+    echo "Then copy your configuration file (myremote.conf) to  ${LIRCD_CONFIG}" |  tee -a ${LOG}
+    echo "    sudo cp myremote.conf ${LIRCD_CONFIG}" |  tee -a ${LOG}
 else
-	# OS Buster or later
-	echo "Then copy your configuration file (myremote.conf) to  ${CONFIG_DIR}" |  tee -a ${LOG}
-	echo "	  sudo cp myremote.conf ${CONFIG_DIR}/." |  tee -a ${LOG}
+    # OS Buster or later
+    echo "Then copy your configuration file (myremote.conf) to  ${CONFIG_DIR}" |  tee -a ${LOG}
+    echo "    sudo cp myremote.conf ${CONFIG_DIR}/." |  tee -a ${LOG}
 fi
 echo "" |  tee -a ${LOG}
 echo "Reboot the Raspberry Pi " |  tee -a ${LOG}

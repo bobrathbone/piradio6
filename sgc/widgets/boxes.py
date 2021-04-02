@@ -7,7 +7,7 @@ Boxes are container widgets with automatic positioning/padding of widgets.
 
 """
 
-from container import Container
+from .container import Container
 
 class VBox(Container):
 

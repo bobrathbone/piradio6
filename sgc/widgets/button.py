@@ -11,8 +11,8 @@ import pygame
 from pygame.locals import *
 from pygame import draw
 
-from _locals import *
-from base_widget import Simple
+from ._locals import *
+from .base_widget import Simple
 
 class Button(Simple):
 
@@ -95,7 +95,7 @@ class Button(Simple):
             draw.polygon(self._images[img], frame_rb_c, self._frame_rb)
 
     def _draw_final(self):
-        for img in self._images.values():
+        for img in list(self._images.values()):
             # Blit label onto button
             for line in self._settings["label"][1:]:
                 img.blit(line.image, line.pos)

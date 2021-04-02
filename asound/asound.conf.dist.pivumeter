@@ -1,4 +1,3 @@
-# asound.conf configuration for pivumeter 
 pcm.!default {
         type plug
         slave.pcm "softvol_and_pivumeter"

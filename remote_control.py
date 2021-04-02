@@ -1,33 +1,33 @@
 #!/usr/bin/env python
 #       
 # Raspberry Pi remote control daemon
-# $Id: remote_control.py,v 1.18 2019/08/29 09:48:16 bob Exp $
+# $Id: remote_control.py,v 1.10 2021/03/28 11:25:02 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
 # This program uses LIRC (Linux Infra Red Control) and python-pylirc
 # For Raspbian Buster run:
-# 	apt-get install lirc python-pylirc
+#   apt-get install lirc python-pylirc
+#
+# Note: This program cannot be converted Python 3 as pylirc2 is not yet available 
 #
 # For Raspbian Jessie run:
-# 	apt-get install lirc python-lirc
+#   apt-get install lirc python-lirc
 # and amend all statements containing pylirc to lirc
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
-#	    The authors shall not be liable for any loss or damage however caused.
+#       The authors shall not be liable for any loss or damage however caused.
 #
 # The important configuration files are
-# 	/etc/lirc/lircrc Program to event registration file
-#	/etc/lircd.conf	 User generated remote control configuration file
+#   /etc/lirc/lircrc Program to event registration file
+#   /etc/lircd.conf  User generated remote control configuration file
 #
 
 import RPi.GPIO as GPIO
-import ConfigParser
-# import lirc # For Raspbian Jessie only
-#import pylirc
+import configparser
 import sys
 import pwd
 import os
@@ -35,6 +35,7 @@ import time
 import signal
 import socket
 import errno
+import re
 import pdb
 
 # Radio project imports
@@ -43,13 +44,13 @@ from rc_daemon import Daemon
 from log_class import Log
 
 log = Log()
-IR_LED=11	# GPIO 11 pin 23
+IR_LED=11   # GPIO 11 pin 23
 remote_led = IR_LED
 muted = False
-udphost = 'localhost'	# IR Listener UDP host default localhost
-udpport = 5100		# IR Listener UDP port number default 5100
+udphost = 'localhost'   # IR Listener UDP host default localhost
+udpport = 5100      # IR Listener UDP port number default 5100
 blocking = 1
-use_pylirc = False	# For Buster use pylirc module instead of lirc 
+use_pylirc = False  # For Buster use pylirc module instead of lirc 
 
 config = Configuration()
 
@@ -60,245 +61,271 @@ pylirc_module='/usr/lib/python2.7/dist-packages/pylircmodule.so'
 
 # Signal SIGTERM handler
 def signalHandler(signal,frame):
-	global log
-	pid = os.getpid()
-	log.message("Remote control stopped, PID " + str(pid), log.INFO)
-	sys.exit(0)
+    global log
+    pid = os.getpid()
+    log.message("Remote control stopped, PID " + str(pid), log.INFO)
+    sys.exit(0)
 
 # Daemon class
 class RemoteDaemon(Daemon):
 
-	def run(self):
-		global remote_led
-		global udpport
-		global udphost
-		global use_pylirc
+    def run(self):
+        global remote_led
+        global udpport
+        global udphost
+        global use_pylirc
 
-		log.init('radio')
-		progcall = str(sys.argv)
-		log.message(progcall, log.DEBUG)
-		log.message('Remote control running pid ' + str(os.getpid()), log.INFO)
-		signal.signal(signal.SIGHUP,signalHandler)
+        log.init('radio')
+        progcall = str(sys.argv)
+        log.message(progcall, log.DEBUG)
+        log.message('Remote control running pid ' + str(os.getpid()), log.INFO)
+        signal.signal(signal.SIGHUP,signalHandler)
 
-		#pdb.set_trace()
-		# In Buster the lirc module has been renamed to pylirc
-		if os.path.exists(pylirc_module):
-			msg = "Using pylirc module"
-			print msg
-			log.message(msg, log.DEBUG)
-			import pylirc
-			global pylirc
-			use_pylirc = True
-		else:
-			msg = "Using lirc module"
-			print msg
-			log.message(msg, log.DEBUG)
-			import lirc
-			global lirc
-			
-		# Start lirc service
-		if os.path.exists(lircd_service):
-			log.message("Starting lircd daemon", log.DEBUG)
-			execCommand('sudo systemctl start lircd')	# For Stretch		
-			time.sleep(1)
-			# Load all IR protocols if ir-keytable installed
-			if os.path.exists("/usr/bin/ir-keytable"):
-				execCommand('sudo ir-keytable -p all')
-			
-		else:
-			# Earlier Jessie and Stretch OS
-			log.message("Starting lirc daemon", log.DEBUG)
-			execCommand('sudo service lirc start')	# For Jessie
+        #pdb.set_trace()
+        # In Buster the lirc module has been renamed to pylirc
+        if os.path.exists(pylirc_module):
+            msg = "Using pylirc module"
+            print(msg)
+            log.message(msg, log.DEBUG)
+            import pylirc
+            global pylirc
+            use_pylirc = True
+        else:
+            msg = "Using lirc module"
+            print(msg)
+            log.message(msg, log.DEBUG)
+            import lirc
+            global lirc
+            
+        # Start lirc service
+        if os.path.exists(lircd_service):
+            log.message("Starting lircd daemon", log.DEBUG)
+            execCommand('sudo systemctl start lircd')   # For Stretch       
+            time.sleep(1)
+            # Load all IR protocols if ir-keytable installed
+            if os.path.exists("/usr/bin/ir-keytable"):
+                execCommand('sudo ir-keytable -p all')
+            
+        else:
+            # Earlier Jessie and Stretch OS
+            log.message("Starting lirc daemon", log.DEBUG)
+            execCommand('sudo service lirc start')  # For Jessie
 
-		remote_led = config.getRemoteLed()
-		if remote_led > 0:
-			print "Flashing LED on GPIO", remote_led
-			GPIO.setwarnings(False)      # Disable warnings
-			GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
-			GPIO.setup(remote_led, GPIO.OUT)  # Output LED
-			flash_led(remote_led)
-		else:
-			log.message("Remote control LED disabled", log.DEBUG)
-		udpport = config.getRemoteUdpPort()
-		udphost = config.getRemoteUdpHost()
-		log.message("UDP connect host " + udphost + " port " + str(udpport), log.DEBUG)
-		listener()
+        remote_led = config.getRemoteLed()
+        if remote_led > 0:
+            print("Flashing LED on GPIO", remote_led)
+            GPIO.setwarnings(False)      # Disable warnings
+            GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
+            GPIO.setup(remote_led, GPIO.OUT)  # Output LED
+            flash_led(remote_led)
+        else:
+            log.message("Remote control LED disabled", log.DEBUG)
+        udpport = config.getRemoteUdpPort()
+        udphost = config.getRemoteUdpHost()
+        log.message("UDP connect host " + udphost + " port " + str(udpport), log.DEBUG)
+        listener()
 
-	# Status enquiry
-	def status(self):
-		# Get the pid from the pidfile
-		try:
-			pf = file(self.pidfile,'r')
-			pid = int(pf.read().strip())
-			pf.close()
-		except IOError:
-			pid = None
+    # Status enquiry
+    def status(self):
+        # Get the pid from the pidfile
+        try:
+            pf = file(self.pidfile,'r')
+            pid = int(pf.read().strip())
+            pf.close()
+        except IOError:
+            pid = None
 
-		if not pid:
-			message = "Remote control status: not running"
-			log.message(message, log.INFO)
-			print message
-		else:
-			message = "Remote control running pid " + str(pid)
-			log.message(message, log.INFO)
-			print message
-		return
+        if not pid:
+            message = "Remote control status: not running"
+            log.message(message, log.INFO)
+            print(message)
+        else:
+            message = "Remote control running pid " + str(pid)
+            log.message(message, log.INFO)
+            print(message)
+        return
 
-	# Test udp send
-	def send(self,msg):
-		udpSend(msg)
-		return
-		
-	# Test the LED
-	def flash(self):
-		log.init('radio')
-		remote_led = config.getRemoteLed()
-		if remote_led > 0:
-			GPIO.setwarnings(False)      # Disable warnings
-			GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
-			GPIO.setup(remote_led, GPIO.OUT)  # Output LED
-			flash_led(remote_led)
-		return
+    # Test udp send
+    def send(self,msg):
+        reply = udpSend(msg)
+        return reply
+        
+    # Test the LED
+    def flash(self):
+        log.init('radio')
+        remote_led = config.getRemoteLed()
+        if remote_led > 0:
+            GPIO.setwarnings(False)      # Disable warnings
+            GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
+            GPIO.setup(remote_led, GPIO.OUT)  # Output LED
+            flash_led(remote_led)
+        return
 
 # End of class overrides
 
 # The main Remote control listen routine
 def listener():
-	try:
-		if use_pylirc:
-			sockid = pylirc.init("piradio", lircrc, blocking)
-		else:
-			# The following line is for Jessie  and Stretch only
-			sockid = lirc.init("piradio", lircrc, blocking)
+    try:
+        if use_pylirc:
+            sockid = pylirc.init("piradio", lircrc, blocking)
+        else:
+            # The following line is for Jessie  and Stretch only
+            sockid = lirc.init("piradio", lircrc, blocking)
 
-		log.message("Listener on socket " + str(socket) + " established", log.DEBUG)
+        log.message("Listener on socket " + str(socket) + " established", log.DEBUG)
 
-		# Main Listen loop
-		print "Listening for input on IR sensor"
-		while True:
-			#pdb.set_trace()
+        # Main Listen loop
+        print("Listening for input on IR sensor")
+        while True:
+            #pdb.set_trace()
 
-			if use_pylirc:
-				nextcode =  pylirc.nextcode()
-			else:
-				nextcode =  lirc.nextcode()
+            if use_pylirc:
+                nextcode =  pylirc.nextcode()
+            else:
+                nextcode =  lirc.nextcode()
 
-			# For Jessie amend pylirc.nextcode to lirc.nextcode
+            # For Jessie amend pylirc.nextcode to lirc.nextcode
 
-			if nextcode != None and len(nextcode) > 0:
-				if remote_led > 0:
-					GPIO.output(remote_led, True)
-				button = nextcode[0]
-				log.message(button, log.DEBUG)
-				print button
-				udpSend(button)	# Send to radiod program
-				if remote_led > 0:
-					GPIO.output(remote_led, False)
-			else:
-				time.sleep(0.2)
+            if nextcode != None and len(nextcode) > 0:
+                if remote_led > 0:
+                    GPIO.output(remote_led, True)
+                button = nextcode[0]
+                log.message(button, log.DEBUG)
+                print(button)
+                udpSend(button) # Send to radiod program
+                if remote_led > 0:
+                    GPIO.output(remote_led, False)
+            else:
+                time.sleep(0.2)
 
-	except Exception as e:
-		log.message(str(e), log.ERROR)
-		print str(e)
-		mesg = "Possible configuration error, check /etc/lirc/lircd.conf"
-		log.message(mesg, log.ERROR)
-		print mesg
-		mesg = "Activation IR Remote Control failed - Exiting"
-		log.message(mesg, log.ERROR)
-		print mesg
-		sys.exit(1)
+    except Exception as e:
+        log.message(str(e), log.ERROR)
+        print(str(e))
+        mesg = "Possible configuration error, check /etc/lirc/lircd.conf"
+        log.message(mesg, log.ERROR)
+        print(mesg)
+        mesg = "Activation IR Remote Control failed - Exiting"
+        log.message(mesg, log.ERROR)
+        print(mesg)
+        sys.exit(1)
 
 # The main Remote control listen routine
 
 # Send button data to radio program
 def udpSend(button):
-	global udpport
-	global udphost
-	data = ''
-	log.message("Remote control daemon udpSend " + button, log.DEBUG)
-	
-	try:
-		clientsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		clientsocket.settimeout(3)
-		clientsocket.sendto(button, (udphost, udpport))
-		data = clientsocket.recv(100).strip()
-		clientsocket.close()
+    global udpport
+    global udphost
+    data = ''
+    log.message("Remote control daemon udpSend " + button, log.DEBUG)
+    
+    try:
+        clientsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        clientsocket.settimeout(3)
+        button = button.encode('utf-8')
+        clientsocket.sendto(button, (udphost, udpport))
+        data = clientsocket.recv(100).strip()
+        clientsocket.close()
 
-	except socket.error, e:
-		err = e.args[0]
-		if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
-			msg = "IR remote udpSend no data: " + str(e)
-			print msg
-			log.message(msg, log.ERROR)
-		else:
-			# Errors such as timeout
-			msg = "IR remote udpSend: " + str(e)
-			print msg
-			log.message(msg , log.ERROR)
+    except socket.error as e:
+        err = e.args[0]
+        if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
+            msg = "IR remote udpSend no data: " + str(e)
+            print(msg)
+            log.message(msg, log.ERROR)
+        else:
+            # Errors such as timeout
+            msg = "IR remote udpSend: " + str(e)
+            print(msg)
+            log.message(msg , log.ERROR)
 
-	if len(data) > 0:
-		log.message("IR daemon server sent: " + data, log.DEBUG)
-	return data
+    if len(data) > 0:
+        data = data.decode('utf-8')
+        log.message("IR daemon server sent: " + data, log.DEBUG)
+    return data
 
 # Flash the IR activity LED
 def flash_led(led):
-	count = 6
-	delay = 0.3
-	log.message("Flash LED on GPIO " + str(led), log.DEBUG)
+    count = 6
+    delay = 0.3
+    log.message("Flash LED on GPIO " + str(led), log.DEBUG)
 
-	while count > 0:
-		GPIO.output(led, True)
-		time.sleep(delay)
-		GPIO.output(led, False)
-		time.sleep(delay)
-		count -= 1
-	return
+    while count > 0:
+        GPIO.output(led, True)
+        time.sleep(delay)
+        GPIO.output(led, False)
+        time.sleep(delay)
+        count -= 1
+    return
 
 # Execute system command
 def execCommand(cmd):
-	p = os.popen(cmd)
-	return  p.readline().rstrip('\n')
+    p = os.popen(cmd)
+    return  p.readline().rstrip('\n')
 
 # Print usage
 def usage():
-	print "usage: %s start|stop|status|nodaemon|version|flash|send|config" % sys.argv[0]
-	sys.exit(2)
+    print(("Usage: sudo %s start|stop|status|nodaemon|flash|config|send <KEY>" % sys.argv[0]))
+    sys.exit(2)
+
+def usageSend():
+    print(("Usage: %s send <KEY>" % sys.argv[0]))
+    print ("Where <KEY> is a valid IR_KEY")
+    print ("   KEY_VOLUMEUP,KEY_VOLUMEDOWN,KEY_CHANNELUP,KEY_CHANNELDOWN,")
+    print ("   KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK,KEY_INFO")
+    sys.exit(2)
+
+def getBootConfig(str):
+    file = file("/boot/config.txt", "r")
+    for line in file:
+        if re.search(str, line):
+            return line
 
 ### Main routine ###
 if __name__ == "__main__":
 
-	if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-		print "This program must be run with sudo or root permissions!"
-		sys.exit(1)
+    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
+        print("This program must be run with sudo or root permissions!")
+        usage()
+        sys.exit(1)
 
-	daemon = RemoteDaemon('/var/run/remote.pid')
-	if len(sys.argv) == 2:
-		if 'start' == sys.argv[1]:
-			daemon.start()
-		elif 'nodaemon' == sys.argv[1]:
-			daemon.nodaemon()
-		elif 'stop' == sys.argv[1]:
-			daemon.stop()
-		elif 'flash' == sys.argv[1]:
-			daemon.flash()
-		elif 'status' == sys.argv[1]:
-			daemon.status()
-		elif 'version' == sys.argv[1]:
-			print "Version 0.1"
-		elif 'send' == sys.argv[1]:
-			daemon.send('IR_REMOTE')
-		elif 'config' == sys.argv[1]:
-			config = Configuration()
-			print "LED = GPIO", config.getRemoteLed()
-			print "HOST =", config.getRemoteUdpHost()
-			print "PORT =", config.getRemoteUdpPort()
-			print "LISTEN =", config.getRemoteListenHost()
-		else:
-			print "Unknown command: " + sys.argv[1]
-			usage()
-		sys.exit(0)
-	else:
-		usage()
+    daemon = RemoteDaemon('/var/run/remote.pid')
+    if len(sys.argv) >= 2:
+        if 'start' == sys.argv[1]:
+            daemon.start()
+        elif 'nodaemon' == sys.argv[1]:
+            daemon.nodaemon()
+        elif 'stop' == sys.argv[1]:
+            daemon.stop()
+        elif 'flash' == sys.argv[1]:
+            daemon.flash()
+        elif 'status' == sys.argv[1]:
+            daemon.status()
+        elif 'send' == sys.argv[1]:
+            msg = 'IR_REMOTE'
+            if len(sys.argv) > 2:   
+                msg = sys.argv[2]
+                reply = daemon.send(msg)
+                print(reply)
+            else:
+                usageSend()
+        elif 'config' == sys.argv[1]:
+            config = Configuration()
+            print("LED = GPIO", config.getRemoteLed())
+            print("HOST =", config.getRemoteUdpHost())
+            print("PORT =", config.getRemoteUdpPort())
+            print("LISTEN =", config.getRemoteListenHost())
+            line = getBootConfig("^dtoverlay=lirc-rpi") 
+            if line != None:
+                print(line)
+            line = getBootConfig("^dtoverlay=gpio-ir")  
+            if line != None:
+                print(line)
+        else:
+            print("Unknown command: " + sys.argv[1])
+            usage()
+        sys.exit(0)
+    else:
+        usage()
 
 # End of script
 

@@ -11,9 +11,10 @@ import pygame
 from pygame.locals import Rect, SRCALPHA
 from pygame import draw
 
-from _locals import *
-from _locals import (has_focus, is_active, add_widget, remove_widget_order,
+from ._locals import *
+from ._locals import (has_focus, is_active, add_widget, remove_widget_order,
                      set_cursor, remove_cursor)
+import collections
 class Simple(pygame.sprite.Sprite):
 
     """
@@ -144,7 +145,7 @@ class Simple(pygame.sprite.Sprite):
         callbacks = [x for x in kwargs if x.startswith("on_")]
         for f in callbacks:
             assert f in dir(self), "Invalid callback name: %s" % f
-            assert callable(kwargs[f]), \
+            assert isinstance(kwargs[f], collections.Callable), \
                 "Callback '%s' must be callable: %s" % (f, kwargs[f])
             setattr(self, f, kwargs[f])
         self._config(**kwargs)

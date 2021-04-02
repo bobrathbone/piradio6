@@ -1,0 +1,14 @@
+# Software volume control for cards without hardware volume control
+pcm.sftvol {
+    type            softvol
+    slave.pcm       "plughw:0"
+    control {
+        name        "PCM"
+        card        0
+    }
+}
+
+pcm.!default {
+    type             plug
+    slave.pcm       "sftvol"
+}

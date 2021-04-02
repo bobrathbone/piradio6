@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Diagnostic to Raspberry Pi Display current stream using MPD library
-# $Id: display_current.py,v 1.2 2019/01/22 08:07:09 bob Exp $
+# $Id: display_current.py,v 1.2 2020/10/11 15:01:36 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,36 +24,36 @@ client.timeout = 10
 client.idletimeout = None
 
 try:
-	client.connect("localhost", 6600)
+    client.connect("localhost", 6600)
 except:
-	print "Music player daemon not running!"
-	print "Start radio (or MPD) and re-run program"
-	sys.exit(1)
+    print("Music player daemon not running!")
+    print("Start radio (or MPD) and re-run program")
+    sys.exit(1)
 
 currentsong = client.currentsong()
 
-print ""
+print("")
 if len(currentsong) > 0:
-	for text in currentsong:
-		print text + ": " + str(currentsong.get(text))
+    for text in currentsong:
+        print(text + ": " + str(currentsong.get(text)))
 
-	current_id = int(currentsong.get("pos")) + 1
-	print "current_id", current_id
+    current_id = int(currentsong.get("pos")) + 1
+    print("current_id", current_id)
 else:
-	print "No current song"
+    print("No current song")
 
-print ""
-print "Status"
+print("")
+print("Status")
 status = client.status()
 for text in status:
-	print text + ": " + str(status.get(text))
+    print(text + ": " + str(status.get(text)))
 
-print ""
+print("")
 stats = client.stats()
 for text in stats:
-	print text + ": " + str(stats.get(text))
+    print(text + ": " + str(stats.get(text)))
 
-print "Bit rate", status.get('bitrate')
+print("Bit rate", status.get('bitrate'))
 
 # End of program
 

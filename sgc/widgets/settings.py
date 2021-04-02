@@ -21,8 +21,8 @@ import pygame
 from pygame.locals import *
 
 from ..locals import *
-from _locals import *
-from base_widget import Simple
+from ._locals import *
+from .base_widget import Simple
 
 
 class Keys(Simple):

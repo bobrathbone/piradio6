@@ -11,8 +11,8 @@ import pygame
 from pygame.locals import *
 from pygame import draw
 
-from _locals import *
-from base_widget import Simple
+from ._locals import *
+from .base_widget import Simple
 
 class Scale(Simple):
 
@@ -30,7 +30,7 @@ class Scale(Simple):
     """
 
     _can_focus = True
-    _default_size = (200, 50)
+    _default_size = (200, 40)
     _surf_flags = SRCALPHA
     _extra_images = {"handle": ((), (0.5, 0)), "handle_drag": "handle"}
     _settings_default = {"col": (127, 127, 169), "inverted": False,
@@ -88,17 +88,17 @@ class Scale(Simple):
                 self._settings[key] = kwargs[key]
 
         if "init" in kwargs:
-            self._images["handle"].rect.topleft = (3, self.rect.h / 2)
-            self._images["handle_drag"].rect.topleft = (3, self.rect.h / 2)
+            self._images["handle"].rect.topleft = (3, self.rect.h / 2)  # TODO: Possible floats when int expected.
+            self._images["handle_drag"].rect.topleft = (3, self.rect.h / 2)  # TODO: Possible floats when int expected.
             self._images["handle_drag"]._show = False
             # Make sure handle is in correct place when inverted
             self.value = self._settings["min"]
 
     def _draw_handle(self, image, size, col=(158,162,152)):
         pygame.draw.circle(image, (244,244,243),
-                           (size[0]/2, size[1]/2), size[0]/2-1)
+                           (size[0]//2, size[1]//2), size[0]//2-1)
         pygame.draw.circle(image, col,
-                           (size[0]/2, size[1]/2), size[0]/2, 2)
+                           (size[0]//2, size[1]//2), size[0]//2, 2)
 
     def _draw_handle_drag(self, image, size):
         self._draw_handle(image, size, (149,181,216))
@@ -106,7 +106,7 @@ class Scale(Simple):
     def _draw_base(self):
         y = int(self.rect.h * .75) - 2
         colors = ((167,171,167), (181,184,181), (237,237,237), (167,171,167))
-        for x, y, col in zip((1,0,0,1), range(y, y+4), colors):
+        for x, y, col in zip((1,0,0,1), list(range(y, y+4)), colors):
             pygame.draw.line(self._images["image"], col,
                              (3+x,y), (self.rect.w-3-x,y))
 
@@ -116,7 +116,7 @@ class Scale(Simple):
             lbl = "%.*f" % (self._settings["show_value"], self.value)
             val = self._settings["label_font"].render(
                 lbl, True, self._settings["label_col"])
-            x = self._images["handle"].rect.centerx - (val.get_width() / 2)
+            x = self._images["handle"].rect.centerx - (val.get_width() / 2)  # TODO: Possible floats when int expected.
             x = max(0, min(self.rect.w - val.get_width(), x))
             y = self._images["handle"].rect.top - val.get_height()
             self.image.blit(val, (x,y))

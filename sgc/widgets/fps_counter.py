@@ -9,8 +9,8 @@ FPS counter, display current FPS performance to the user.
 
 from pygame.locals import SRCALPHA
 
-from _locals import *
-from base_widget import Simple
+from ._locals import *
+from .base_widget import Simple
 
 class FPSCounter(Simple):
 

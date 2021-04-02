@@ -3,7 +3,7 @@
 # Raspberry Pi Radio Character translation codes
 # HTML entities used by the RSS class (rss_class.py)
 #
-# $Id: HTMLcodes.py,v 1.5 2020/04/13 15:56:51 bob Exp $
+# $Id: HTMLcodes.py,v 1.2 2020/10/11 06:46:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -22,23 +22,23 @@ rss_amp_codes = {
 }
 
 html_entities = {
-        # HTML Entities. See https://dev.w3.org/html5/html-author/charref
-        '&raquo;' : ">>",       # Right double angle (Russian)
-        '&laquo;' : ">>",       # Left double angle (Russian)
-        '&amp;' : " ",          # Ampersand
-        '&apos;' : "'",         # Apostrophe
-        '&nbsp;' : " ",         # Space
-        '&quot;' : '"',         # Quotation mark
-        '&lt;' : "<",           # Less than
-        '&gt;' : ">",           # Greater than
-        '&pound;' : "#",        # Pound
-        '&cent;' : "c",         # Cent
-        '&copy;' : "(C)",       # Copyright
-        '&reg;' : "(R)",        # Registered
+    # HTML Entities. See https://dev.w3.org/html5/html-author/charref
+    '&raquo;' : ">>",       # Right double angle (Russian)
+    '&laquo;' : ">>",       # Left double angle (Russian)
+    '&amp;' : " ",          # Ampersand
+    '&apos;' : "'",         # Apostrophe
+    '&nbsp;' : " ",         # Space
+    '&quot;' : '"',         # Quotation mark
+    '&lt;' : "<",           # Less than
+    '&gt;' : ">",           # Greater than
+    '&pound;' : "#",        # Pound
+    '&cent;' : "c",         # Cent
+    '&copy;' : "(C)",       # Copyright
+    '&reg;' : "(R)",        # Registered
 
-        # Special characters
-        '\t' : " ",     # Tabs
-        '\n' : " ",     # Newlines
+    # Special characters
+    '\t' : " ",     # Tabs
+    '\n' : " ",     # Newlines
 }
 
 # Tags to strip out but leave text
@@ -68,13 +68,13 @@ tags = ('<h1>', '</h1>',
 # Delete both tags and all content between them
 # These must be specified in opening and closing pair
 deletion_tags = [
-		 '<iframe ','</iframe>',
-		 '<div ','</div>',
-		 '<dl ','</dl>',
-		 '<dd ','</dd>',
-		 '<a ','</a>',
-		 '<a ','>',
-		 '<p ','>',
-	]
+        '<iframe ','</iframe>',
+        '<div ','</div>',
+        '<dl ','</dl>',
+        '<dd ','</dd>',
+        '<a ','</a>',
+        '<a ','>',
+        '<p ','>',
+    ]
 
 # End of tags

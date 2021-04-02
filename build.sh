@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.9 2019/12/10 15:33:47 bob Exp $
+# $Id: build.sh,v 1.4 2021/02/18 10:09:30 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -7,8 +7,8 @@
 # sudo apt-get -y install equivs apt-file lintian
 
 # Compatability rules
-# Edit the compat file and change 7 to 9
-# sudo vi /usr/share/equivs/template/debian/compat (Replace 7 with 9)
+# Edit the compat file and change 9 to 10
+# sudo vi /usr/share/equivs/template/debian/compat (Replace 9 with 10)
 
 PKGDEF=piradio
 PKG=radiod
@@ -36,11 +36,6 @@ if [[ ${ID} -lt 10 ]]; then
         exit 1
 fi
 IFS=${SAVEIFS}
-
-# Tar build files
-BUILDFILES="piradio piradio.postinst piradio.postrm piradio.preinst"
-BUILDTAR=piradio_build.tar.gz
-tar -cvzf ${BUILDTAR} ${BUILDFILES} > /dev/null
 
 echo "Building package ${PKG} version ${VERSION}" | tee ${BUILDLOG}
 echo "from input file ${PKGDEF}" | tee -a ${BUILDLOG}

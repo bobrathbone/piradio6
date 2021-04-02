@@ -96,7 +96,7 @@ def update(time):
         """Blit extra images, handle transparency fades and blit to screen."""
         copy = w.image.copy()
         # Blit extra images onto copy
-        for img in map(lambda x: w._images[x], w._extra_images):
+        for img in [w._images[x] for x in w._extra_images]:
             if img._show:
                 copy.blit(img.image, img.rect)
         # Blend transparent surface when fading and blit to screen.
@@ -231,8 +231,9 @@ def event(event):
 
 class _Font():
     """Wrapper class for font objects."""
-    __slots__ = ("_font",)
-    _font = None
+    
+    def __init__(self):
+        self._font = None
 
     def replace(self, font):
         """Replace the font in-place."""
@@ -241,7 +242,7 @@ class _Font():
     def __getattr__(self, atr):
         return getattr(self._font, atr)
 
-    def __nonzero__(self):
+    def __bool__(self):
         return True if self._font else False
 
 class FontMetaclass(type):
@@ -249,7 +250,7 @@ class FontMetaclass(type):
     def __getitem__(cls, item):
         return cls._fonts[item]
 
-class Font():
+class Font(metaclass=FontMetaclass):
     """
     Class containing fonts available for use.
 
@@ -264,9 +265,6 @@ class Font():
       col: (r,g,b) tuple, containing the default font colour.
 
     """
-
-    __metaclass__ = FontMetaclass
-    __slots__ = ("_fonts", "col")
     _fonts = {"widget": _Font(), "title": _Font(), "mono": _Font()}
     col = (255,255,255)
 
@@ -391,7 +389,7 @@ def remove_widget_order(widget):
     order = sum(focus_order,())
     if widget in order:
         # Remove from focus_order
-        num = (order.index(widget)-1)/2
+        num = (order.index(widget)-1)//2
         del focus_order[num]
 
 def has_focus(widget):

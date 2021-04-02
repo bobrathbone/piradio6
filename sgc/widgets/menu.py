@@ -14,10 +14,10 @@ import json
 from pygame import Surface
 from pygame.locals import SRCALPHA, BLEND_RGBA_MULT
 
-from _locals import *
-from base_widget import Simple
-from boxes import VBox
-from scroll_box import ScrollBox
+from ._locals import *
+from .base_widget import Simple
+from .boxes import VBox
+from .scroll_box import ScrollBox
 from .. import *
 
 class Menu(Simple):
@@ -70,13 +70,13 @@ class Menu(Simple):
 
             menu = kwargs["menu"]
             # If file, read config tuple
-            if isinstance(menu, file):
+            try:
                 menu = json.load(menu)
                 # Replace all $tokens
                 def check(m):
-                    a = m.iteritems() if isinstance(m, dict) else enumerate(m)
+                    a = iter(m.items()) if isinstance(m, dict) else enumerate(m)
                     for i,item in a:
-                        if isinstance(item, (str, unicode)) and item[0] == "$":
+                        if isinstance(item, str) and item[0] == "$":
                             parts = item[1:].split("(")
                             f = self._funcs[parts[0]]
                             if len(parts) > 1:
@@ -87,7 +87,8 @@ class Menu(Simple):
                         elif isinstance(item, (list, tuple, dict)):
                             check(item)
                 check(menu)
-
+            except ValueError:
+                pass
             menu_data = [(menu, None)]  # (data, parent)
             # Create each submenu, by iterating through the menu data
             while menu_data:
@@ -120,7 +121,7 @@ class Menu(Simple):
                 num = len(self._menus)-1 + len(data_queue)
                 widgets[-1].on_click = lambda n=num: self.change_menu(n)
             # Category/divider
-            elif isinstance(item, (str, unicode)):
+            elif isinstance(item, str):
                 Font["widget"].set_underline(True)
                 div = Simple(Font["widget"].render(item, True, Font.col))
                 Font["widget"].set_underline(False)
@@ -144,7 +145,7 @@ class Menu(Simple):
             elif item[0].startswith("f:"):
                 surf = Font["widget"].render(item[0][2:], True, Font.col)
                 widgets.append(Button(surf=surf))
-                if isinstance(item[1], (str, unicode)):
+                if isinstance(item[1], str):
                     widgets[-1].on_click = self._funcs[item[1]]
                 else:   
                     widgets[-1].on_click = item[1]

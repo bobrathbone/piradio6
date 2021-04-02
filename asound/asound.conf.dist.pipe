@@ -1,0 +1,48 @@
+# asound.conf for Bluetooth device used with MPD type pipe
+defaults.bluealsa.service "org.bluealsa"
+defaults.bluealsa.device <btdevice>
+defaults.bluealsa.profile "a2dp"
+
+# Set default mixer controls
+ctl.!default {
+    type hw
+    card 0
+}
+
+# Set default PCM device
+pcm.!default {
+      type plug
+      slave {
+          pcm "plughw:0,0"
+          format S32_LE
+      }
+}
+
+# Bluetooth speakers
+pcm.btdevice {
+      type plug
+      slave {
+            pcm {
+                type bluealsa
+                service org.bluealsa
+                device <btdevice>
+                profile "a2dp"
+            }
+      }
+      hint {
+           show on
+           description "Bluetooth device"
+      }
+}
+
+ctl.btdevice {
+      type bluetooth
+}
+
+# Below are the settings for /etc/mpd.conf
+#audio_output {
+#        type            "pipe"
+#        name            "SP-AD70-B"
+#        command         "aplay -D bluealsa -f cd"
+#        format          "44100:16:2"
+#        mixer_type      "software"

@@ -11,9 +11,9 @@ import pygame
 from pygame.locals import *
 from pygame import display, draw
 
-from _locals import *
-from _locals import focus
-from base_widget import Simple
+from ._locals import *
+from ._locals import focus
+from .base_widget import Simple
 
 class Switch(Simple):
 

@@ -1,7 +1,7 @@
 #
 # Raspberry Pi Radio Waveshare eInk hardware interface
 #
-# $Id: epdif.py,v 1.1 2018/12/30 09:52:16 bob Exp $
+# $Id: epdif.py,v 1.1 2020/10/10 15:24:47 bob Exp $
 #
 #  @filename   :   epdif.py
 #  @brief      :   EPD hardware interface implements (GPIO, SPI)

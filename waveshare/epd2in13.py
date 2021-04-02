@@ -1,7 +1,7 @@
 #
 # Raspberry Pi Radio Waveshare eInk display functions
 #
-# $Id: epd2in13.py,v 1.1 2018/12/30 09:52:16 bob Exp $
+# $Id: epd2in13.py,v 1.1 2020/10/10 15:24:47 bob Exp $
 #
 #  @filename   :   epd2in13.py
 #  @brief      :   Implements for e-paper library

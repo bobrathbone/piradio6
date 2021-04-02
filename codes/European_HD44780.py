@@ -3,7 +3,7 @@
 # OLED/LCD Western European languages character translation table
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: European_HD44780.py,v 1.7 2020/06/07 11:01:07 bob Exp $
+# $Id: European_HD44780.py,v 1.2 2020/10/11 06:46:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -19,7 +19,7 @@
 #       http://www.codetable.net/
 #       http://www.ascii-code.com/
 
-# The following codes are best effort to translate European charachters to the
+# The following codes are best effort to translate European characters to the
 # available LCD fonts. The tables are not perfect nor complete so amend if necessary
 # Note that this table is for controller HD44780 character character table A02 
 # Do not use for HD44780U controller devices. See Russian.py

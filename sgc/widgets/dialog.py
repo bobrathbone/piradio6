@@ -11,8 +11,8 @@ import pygame.mouse
 from pygame.locals import *
 from pygame import draw
 
-from _locals import *
-from base_widget import Simple
+from ._locals import *
+from .base_widget import Simple
 
 class Dialog(Simple):
 
@@ -74,13 +74,13 @@ class Dialog(Simple):
 
     def _draw_close_off(self, image, size):
         image.fill(self._settings["col_border"])
-        draw.circle(image, (140,6,15), (size[0]/2, size[1]/2), 8)
+        draw.circle(image, (140,6,15), (size[0]//2, size[1]//2), 8)
         draw.line(image, (0,0,1), (5,5), (11,11), 3)
         draw.line(image, (0,0,1), (5,11), (11,5), 3)
 
     def _draw_close_over(self, image, size):
         image.fill(self._settings["col_border"])
-        draw.circle(image, (234,14,50), (size[0]/2, size[1]/2), 8)
+        draw.circle(image, (234,14,50), (size[0]//2, size[1]//2), 8)
         draw.line(image, (0,0,1), (5,5), (11,11), 5)
         draw.line(image, (0,0,1), (5,11), (11,5), 5)
 

@@ -4,23 +4,51 @@ Author : Bob Rathbone
 Site   : http://www.bobrathbone.com
 Email  : bob@bobrathbone.com
 
-This program uses  Music Player Daemon 'mpd', its client 'mpc' and the python-mpd library
+
+This program uses  Music Player Daemon 'mpd', its client 'mpc' and the python3-mpd library
 See http://www.musicpd.org/
-Use "apt-get install mpd mpc python-mpd" to install the library
-This software uses the python-mpd library. See https://pypi.python.org/pypi/python-mpd/
+Use "apt-get install mpd mpc python3-mpd" to install the libraries
+This software uses the python3-mpd library. See https://packages.debian.org/sid/python3-mpd
+
+Version 7.1 release notes 
+-------------------------
+2nd April 2021
+1) Use MPD socket listener (mpd.socket) to handle client requests
+2) Correction to UDP client/server for Remote control software
+3) remote_control.py amended to send valid KEYs to the radio daemon
+4) Correction to select source in web interface
+5) Correction to shoutcast playlist selection in web interface
+6) Added internet_timeout setting for Internet check in /etc/radiod.conf
+7) set_mixer_id.sh uses audio_out setting in radiod.conf to select correct audio card
+8) Correct crash in full feature graphic radio when selecting playlists
+9) Store volume in /var/lib/radiod/volume if changed by an external client
+10) Set locale to LC_ALL=C in scripting relying upon English messages
+11) New parameter audio_config_locked add to prevent dynamic update of audio configuration
+12) New parameter --input_file=<station.urls> in create_stations.py program
+13) get_shoutcast.py converted to Python 3
+14) Correction to select source "Internal Server Error" in web interface
+
+Version 7.0 release notes  (Compared to version 6.15)
+-------------------------
+28th January 2021
+1) Major release - All Python code converted to Python 3
+2) MPD interface now uses python3-mpd instead of python-mpd
+3) Improved audio device section including PCM5102A devices
+4) Improve reconnection to stream after Internet connection restored
+5) Prevent duplicate log messages
+6) Add wiring scheme display to display configuration script (display_config.sh)
+7) Internet check added (Prevent skipping if Internet connection lost)
+8) Improved error messages (Bad stations, time outs etc.)
 
 Version 6.15 release notes
 -------------------------
-22nd December 2020
+16th November 2020
 1) Oled class now uses the smbus2 library instead of the python-smbus package
 2) Amended configure_audio_device.sh to not overwrite equalizer plugin setting in /etc/mpd.conf
 3) Raspberry Pi 400 added to display_model.py program
 4) The display_config.sh script displays X-Windows autostart configuration
 5) Graphic versions of radio now log screen size error
-6) Correct error in configure_audio_device adding dtoverlay to incorrect location in config.txt
-7) Correct invalid mixer id file contents (Must be an numeric character)
-8) Correct vgradio and gradio not launching from desktop icons
-9) Set client_timeout in /etc/radiod.conf to 10 seconds
+6) Raspberry Pi 400 added to display_model.py program
 
 Version 6.14 release notes
 -------------------------
@@ -38,226 +66,23 @@ Version 6.14 release notes
 11) Prevent gradio and radiod cycling through menus when holing down menu button(shutdown).
 12) Configuration and installation progs now store logs in /usr/share/radio/logs directory 
 
-Version 6.13 release notes
--------------------------
-26th April 2020
-1) Always force update of the MPD database from the options menu, not just when it is empty
-2) Force program back to main display (time) after updating the MPD database 
-3) Add new parameter translate_lcd=on/off to better support European/Russian/Cyrillic LCDs
-4) Remove redundant /etc/inittab manipulation from installation scripts
-5) Create stations program now checks embedded stream URL in PLS and ASX files
-6) Handle new web interface v1.8 playlist selection (Now all playlists displayed)
-7) Update show_model.py program to display latest 4B models (1GB,2GB and 4GB)
-8) Variable LCD scroll scroll_speed in /etc/radiod.conf parameter implemented for LCD classes
-10) Removed /etc/init.d/radiod System V startup script from package (Deprecated)
-11) Added Romanization of Russian Cyrillic characters to Translate class
-12) New parameters translate_lcd and romanize_russian to /etc/radiod.conf
-13) New parameter lcd_font_table to select different LCD fonts
-14) Depending on LCD, Cyrillic characters displayed on LCD (see codepage parameter)
-15) All font translation tables removed from transl;ate_class.py and moved to sub-directory fonts 
-16) LCD lcd_class.py timings and initialisation changed to reduce bus noise and random characters
-17) Improved media search facility for 2x16 displays (Track displayed not just artist)  
-18) Correct i2c pcf8574 backpack support for 4x16 LCDs/OLEDs
-19) More informative INFO logging at start-up time
-20) Backpack software amended to use smbus2 in place of smbus to correct i2c display problems
-21) Display "No information"if no name or bit rate found in a radio stream 
-22) Don't delete other playlists when running create_playlists from cron job
-
-Version 6.12 release notes
--------------------------
-25th January 2020
-1) Add bluetooth speaker support to configure_audio.sh audio configuration program
-2) New configure_ir_remote.sh to configure LIRC and remote control
-3) Improve skipping of bad stations
-4) I2C Backpacks can be configured with Hex address 0x3F
-5) New mute_action parameter in radiod.conf for either mpc stop or pause when muting
-6) Changes to MPD needed a new configuration for USB DACs
-7) Install anacron if not already installed (configure_radio.sh)
-8) Correct mute function constantly switching between mute and un-mute when cursor 
-   held above the mute icon
-9) New configuration parameter client_timeout 3 to 15 seconds
-10) Correct erroneous display of Equalizer Icon vgradio when in Full Screen mode
-
-Version 6.11 release notes
--------------------------
-30th August 2019
-1) New paramter log_creation_mode paramete either truncate or tail.
-2) Hungarian translation table updated  
-3) Hungarian language file updated
-4) Configure radio program ${LINES} parameter corrupted by whiptail (in BUSTER)
-5) Added model 4B to display_model.py 
-6) For output-jack or HDMI permanently store settings with "alsactl store" command
-7) Correct circumstances that pulseaudio is installed by configure_audio.sh
-8) Correct create_playlists.sh to correctly include WMA files
-9) Suppress MPD from playing on startup 
-10) Correct volume display on 4 line displays when playing media tracks
-11) IR Remote control program amended to use pylirc module instead of lirc to run with Buster 
-
-Version 6.10 release notes
--------------------------
-26 April 2019
-1) Update shoutcast get radio stream URL 
-2) Correct crash when setting alarm
-3) Add missing autostart file (Removed by Rasbian) for graphic versions of the radio
-4) Configurable CODECS list in /etc/radiod.conf
-5) Report missing USB stick or share when running create_playlists.py
-6) Report MPD not running when executing display_current.py
-7) Configure dtoverlay=i2s-mmap in /boot/config.txt
-8) Configure /etc/asound.conf as required for chosen DAC 
-9) Install or warn if pulseaudio required by chosen DAC
-10) New display_config.sh program for analyzing problems
-11) Cron job added in /etc/cron.weekly to regularly update station playlist
-
-Version 6.9 release notes
--------------------------
-1 December 2018
-1) Re-implement verbose=yes feature
-2) Added speak_info configuration item
-3) Support for Pimoroni pHAT-Beat added 
-4) Correct language file minor read error
-5) Improve response of volume control
-6) Add set_mixer_id.sh program to set mixer_volume_id in /etc/radiod.conf
-7) PiFace CAD support added
-8) Create stations program skips unsupported UDP protocol
-9) mixer_volume_id parameter removed. Mixer ID now stored /var/lib/radiod/mixer_volume_id
-10) Correct iqaudio DAC configuration in /boot/config.txt
-11) Add hostname to info display on two line LCDs
-12) Create install.log when running configure_radio.py
-
-Version 6.8 release notes
--------------------------
-18 July 2018
-1) Support for small screens 480x320 added
-2) Correct display of artwork exiting if mouse hover
-3) Playlist creation for music library on an SD card
-4) New pull_up_down parameter for configuring button interface pull up/down resistors
-5) Improved Cyrillic character handling for LCD versions
-6) Support for pulseaudio (if installed) added
-7) Allow disabling of rotary encoders GPIOs by setting switch settings to 0
-8) Set short date format if using Olimex OLED display
-9) Set volume range to 10 if using Olimex OLED display
-10) Correct mute function if espeak  enabled and using IQaudIO Cosmic Controller
-11) Correct clear OLED last line (Volume text display overwrite error)
-12) Display of special characters in graphic versions of radio (gradio and vgradio)
-13) Popup messages use language file
-
-Version 6.7 release notes
--------------------------
-27th June 2018
-1) Spotify (raspotify) implemented
-2) Missing [SCREEN] section in radiod.conf added
-3) Improved volume slider for OLED version of the radio
-4) Correct shift A for volume up in gradio.py and vgradiod.py
-5) Keyboard key M mutes vgradio
-7) All volume and and mixer functions moved to a new volume_class.py file
-7) Support for Adafruit 3.5 inch TFT touch-screen added
-8) Auto-load Media (USB stick) if no network
-
-Version 6.6 release notes
--------------------------
-1 May 2018
-1) vgradio and gradio check for X-windows desktop
-2) Cosmic controller from IQAudio (3 button + Rotary encoder) added
-3) Olimex 128x64 pixel OLED screen support added (connects to Cosmic controller)
-4) Check if user wishes to re-configure radio if upgrading
-
-Version 6.5 release notes
--------------------------
-5th April 2018
-1) Display model changed to support the Raspberry PI 3B Plus
-2) Correct information display (IP, hosname and version info) in gradio.py
-3) Shoutcast playlist creation from either command line or web interface added
-4) Error in config_class.py test routine corrected
-5) UDP clients (remote_control) now close socket after send/receive 
-6) New script install_airplay.sh created to install shairport-sync
-7) Airplay volume stored in /var/lib/radiod/airplay_volume
-8) Improved bad station URL error handling
-9) Correct RSS feed and title display end of text being clipped
-10) Correct button/rotary encoder insensitivity when in mute 
-
-Version 6.4 release notes
--------------------------
-16th February 2018
-1) Hide cursor if display_cursor=no
-2) Screen blanking implemented and screen_saver=<minutes>
-3) Report if a stream isn't transmitting
-4) Switch between gradio and vgradio.py (if configured)
-5) Menu button long press on Adafruit RGB plate issues shutdown
-6) Correct radio configuration program when switching from graphic radio to LCD version
-
-Version 6.3 release notes
--------------------------
-4th February 2018
-1) Date and time uses correct Locale
-2) Windowed graphic radio now displays launch equalizer icon
-3) Correct mouse wrongly generating click events on hover
-4) Added vintage graphic radio
-5) Correct hanging after reloading media  
-
-Version 6.2 release notes
--------------------------
-18 January 2018
-The main change is the introduction of a Graphical/Touchscreen version of the radio
-This uses the Raspbian desktop and the pygame interface and is designed
-to run on the Raspberry Pi 7 inch touch screen
-1) Introduction of the Graphical/Touchscreen version
-2) Icecast streaming implemented
-3) remote_control now detects if lircd or lirc service must be started
-4) Missing create_playlist.sh added to build
-5) Correct button versions of the radio not shutting down when menu button held in
-6) Skip RSS and INFO if radio has no display configured
-7) Create playlists splits large playlists into 5,000 line chunks
-8) Create playlists also starts MPD database update
-9) Create playlists selection filter implemented 
-10) Implement MPD single option:
-11) Startup configuration now support options RADIO,MEDIA,LAST or playlist name  
-12) Improved overall program response
-
-Version 6.1 release notes
--------------------------
-1st December 2017
-1) Correct random setting not being stored
-2) Prevent time display in Search,Info,Source modes
-3) Missing i2c_class.py file added 
-4) Correct rotary encoder selection description in configure_radio
-5) Prevent occasional hanging when installing
-6) Correct failure to create default playlists during installation
-
-Version 6.0 release notes
--------------------------
-28th October 2017
-Version 6.00 release notes
-1) Complete rewrite to use a single radiod program instead of 9 seperate ones
-2) LCD text only displayed if it has change. This removes screen flicker
-3) New common event handler handles all user interfaces such as push buttons, 
-   rotary encoders, IR remote control and web interface
-4) New display module provides a common interface to all supported screens
-5) New configure_radio.py program allows configuration of any hardware combination
-6) PifaceCad display software not supported on Raspbian Stretch. Version 5.12 of the software
-   can still be downloaded allowing PiFaceCad to run on Rspbian Jessie
-7) Due to lack of PiFace software on Raspbian Stretch the IR remote control has been
-   re-written to use the standard LIRC (Linux Remote Control)
-8) Push button handler now in a seperate button_class.py file
-9) Volume can display either as text or a series of blocks (volume_display parameter)
-
 Manuals
 -------
-Version 6.x
+Version 7.x
 https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio.pdf
 
 Vintage radio
 https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Vintage%20Radio.pdf
 https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Vintage%20Radio%20Operating%20Instructions.pdf
 
-Version 5.x (For PiFace CAD support only)
-https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio%20V5.pdf
+Version 6.x (For PiFace CAD support only)
+https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio%206.x.pdf
 
 
 Github
 ------
 Source available from Github
-Version 6.x see:  https://github.com/bobrathbone/piradio6
-Version 5.x see:  https://github.com/bobrathbone/piradio 
+Version 7.x see:  https://github.com/bobrathbone/piradio6
 
 Licenses
 --------

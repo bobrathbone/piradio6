@@ -16,26 +16,26 @@ Modules:
 """
 __version__ = "0.2.1"
 
-import surface
-import locals
-import widgets
-from widgets._locals import Font, update, event
+from . import surface
+from . import locals
+from . import widgets
+from .widgets._locals import Font, update, event
 # Import widgets
-from widgets.base_widget import Simple
-from widgets.boxes import VBox, HBox
-from widgets.button import Button
-from widgets.combo import Combo
-from widgets.container import Container
-from widgets.composite.dialogs import DialogSaveQuit
-from widgets.dialog import Dialog
-from widgets.fps_counter import FPSCounter
-from widgets.input_box import InputBox
-from widgets.label import Label
-from widgets.radio_button import Radio
-from widgets.scroll_box import ScrollBox
-from widgets.settings import Keys
-from widgets.scale import Scale
-from widgets.switch import Switch
+from .widgets.base_widget import Simple
+from .widgets.boxes import VBox, HBox
+from .widgets.button import Button
+from .widgets.combo import Combo
+from .widgets.container import Container
+from .widgets.composite.dialogs import DialogSaveQuit
+from .widgets.dialog import Dialog
+from .widgets.fps_counter import FPSCounter
+from .widgets.input_box import InputBox
+from .widgets.label import Label
+from .widgets.radio_button import Radio
+from .widgets.scroll_box import ScrollBox
+from .widgets.settings import Keys
+from .widgets.scale import Scale
+from .widgets.switch import Switch
 
 # Import Menu last, so it can import the other widgets from here.
-from widgets.menu import Menu
+from .widgets.menu import Menu
