@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet language Class
-# $Id: message_class.py,v 1.1 2020/10/10 15:00:46 bob Exp $
+# $Id: message_class.py,v 1.4 2021/05/15 09:58:14 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -49,7 +49,7 @@ class Message:
         self.width = display.getWidth()
 
         # Is speech enabled
-        self.speech = config.hasSpeech()
+        self.speech = config.speech
         language = Language(self.speech)
         return
 
@@ -82,8 +82,7 @@ class Message:
 
     # Return date and time
     def getDateTime(self,config):
-        dateFormat = config.getDateFormat()
-        todaysdate = strftime(dateFormat)
+        todaysdate = strftime(config.dateformat)
         self.line = 1   # Display on line 1
 
         if self.width < 16:
@@ -167,8 +166,7 @@ class Message:
             if self.speech and len(text) > 1 and text != self.speech_text:
                 if not self.radio.spotify.isRunning() and not self.radio.airplay.isRunning():
                     volume = self.radio.getVolume()/2
-                    speech_volume_adjust = config.getSpeechVolumeAdjust()
-                    volume = (volume * speech_volume_adjust/100)
+                    volume = (volume * config.speech_volume/100)
                     if volume < 5:
                         volume = 5
 

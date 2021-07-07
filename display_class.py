@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.1 2020/10/10 15:00:44 bob Exp $
+# $Id: display_class.py,v 1.22 2021/06/08 20:28:31 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -16,6 +16,7 @@
 import pdb
 import os,sys
 import time,pwd
+import threading
 from config_class import Configuration
 from log_class import Log
 
@@ -46,11 +47,18 @@ class Display:
     has_buttons = False
     has_screen = True
 
+    # The OLED_128x64, ST7789TFT and SSD1306 OLEDS all display volume as
+    # a bar on the bottom line of the screen. True for OLEDs, False for LCDs 
+    _isOLED = False
+    _mute_line = 4  # OLEDs only. Line to display mute message
+    _refresh_volume_bar = False  # If previously mutred force display of OLED volume slider
+
     i2c_bus = 1 # All later RPIs use bus 1 (old RPIs use bus 0)
 
     lineBuffer = []     # Line buffer 
 
     def __init__(self,translate):
+        threading.Thread.__init__(self)
         self.translate = translate
         return
 
@@ -66,13 +74,13 @@ class Display:
         global screen
         dtype = config.getDisplayType()
         i2c_address = 0x0
-        configured_i2c = config.getI2Caddress()
-        self.i2c_bus = config.getI2Cbus()
+        configured_i2c = config.i2c_address
+        self.i2c_bus = config.i2c_bus
         i2c_interface = False
 
         # Set up font code page. If 0 use codepage in font file
                 # If > 1 override with the codepage parameter in configuration file
-        code_page = config.getLcdFontPage() # 0, 1 or 2
+        code_page = config.codepage # 0, 1 or 2
         log.message("Translation code page in radiod.conf = " + str(code_page),log.INFO)
 
         if code_page > 0:
@@ -132,7 +140,9 @@ class Display:
             self.width = 20
             self.lines = 5
             # Set vertical display
-            screen.flip_display_vertically(config.flipVertical())
+            screen.flip_display_vertically(config.flip_display_vertically)
+            self._isOLED = True
+            self._mute_line = 4
 
         elif dtype == config.PIFACE_CAD:
             from lcd_piface_class import Lcd_Piface_Cad
@@ -146,6 +156,16 @@ class Display:
             screen = ST7789()
             screen.init(callback=self.callback,code_page = code_page)
             self.has_buttons = False # Use standard button ineterface
+            self._isOLED = True
+            self._mute_line = 5
+
+        elif dtype == config.SSD1306:
+            from ssd1306_class import SSD1306
+            screen = SSD1306()
+            screen.init(callback=self.callback,code_page = code_page)
+            self.has_buttons = False # Use standard button interface
+            self._isOLED = True
+            self._mute_line = 4
 
         else:
             # Default LCD
@@ -161,11 +181,11 @@ class Display:
             log.message("Loaded " + str(font_files[i]), log.INFO)
 
         # Set up screen width (if 0 use default)
-        self.width = config.getWidth()  
+        self.width = config.display_width  
         self.lines = self.getLines()
 
         if self.width != 0:
-            screen.setWidth(config.getWidth())
+            screen.setWidth(config.display_width)
         else:
             screen.setWidth(SCREEN_WIDTH)
 
@@ -195,7 +215,7 @@ class Display:
 
     # Get LCD width
     def getWidth(self):
-        self.width = config.getWidth()
+        self.width = config.display_width
         return self.width
 
     # Set the display width
@@ -205,9 +225,12 @@ class Display:
 
     # Get LCD number of lines
     def getLines(self):
-        self.lines = config.getLines()
-        if self.lines < 1:
-            self.lines = 2
+        if self.isOLED():
+            self.lines = screen.getLines()
+        else:
+            self.lines = config.display_lines
+            if self.lines < 1:
+                self.lines = 2
         return self.lines
 
     # Set font
@@ -226,8 +249,6 @@ class Display:
         global screen
         leng = len(message)
         index = line-1
-        displayType = config.getDisplayType()
-        #pdb.set_trace()
 
         if leng < 1:
             message = " "
@@ -238,28 +259,26 @@ class Display:
             # Always display messages that need to be scrolled
             if leng > self.width:
                 screen.out(line,message,interrupt)
-                self.update(screen,displayType)
 
             # Only display if this is a different message on this line
-            elif message !=  self.lineBuffer[index]:
+            elif message !=  self.lineBuffer[index] or self.isOLED():
                 screen.out(line,message,interrupt)
-                self.update(screen,displayType)
 
             # Store the message in the line buffer for comparison
             # with the next message
             self.lineBuffer[index] = message    
+            self.update()
         return
 
-    # Update screen (Only OLED and ST7789 TFT)
-    def update(self,screen,type):
-        if type == config.OLED_128x64 or type == config.ST7789TFT:
+    # Update screen buffer (Only for OLEDs)
+    def update(self):
+        if self.isOLED(): 
             screen.update()
         return
 
     # Clear display and line buffer
     def clear(self):
-        dType = config.getDisplayType()
-        if dType == config.OLED_128x64 or dType == config.ST7789TFT:
+        if self.isOLED(): 
             screen.clear()
             self.lineBuffer = []        # Line buffer 
             for i in range(0, self.lines):
@@ -310,21 +329,26 @@ class Display:
     def getBackColorName(self, index):
         return config.getBackColorName(index)
 
-    # Oled volume bar
+    # Oled volume bar. Not used by LCDs
     def volume(self,volume):
-        if self.saved_volume != volume:
-            screen.volume(volume)
+        if self.saved_volume != volume or self.checkRefreshVolumeBar():
             self.saved_volume = volume
-            if config.getDisplayType() == config.ST7789TFT:
-                self.out(5," ") # Clear mute message
+            if config.getDisplayType() != config.SSD1306:
+                self.out(self._mute_line," ") # Clear mute message
+            screen.volume(volume)
+            self.update()
+            self._refresh_volume_bar = False
+
+    # Is this an OLED display (Volume bar on the bottom line)
+    def isOLED(self):
+        return self._isOLED
 
     # Display splash logo
     def splash(self):
         delay = 3
-        dtype = config.getDisplayType()
-        if dtype == config.OLED_128x64 or dtype == config.ST7789TFT:
+        if self.isOLED():
             dir = os.path.dirname(__file__)
-            bitmap = dir + '/' + config.getSplash()
+            bitmap = dir + '/' + config.splash_screen
             try:
                 if os.path.exists(bitmap):
                     screen.drawSplash(bitmap,delay)
@@ -332,12 +356,24 @@ class Display:
                     print(bitmap,"does not exist")
             except Exception as e:
                 print("Splash:",e)
+    
+    # Forces OLED volume to be re-displayed
+    def checkRefreshVolumeBar(self):
+        return self._refresh_volume_bar
+            
+    def refreshVolumeBar(self):
+        self._refresh_volume_bar = True
+            
+    def clearRefreshVolumeBar(self):
+        self._refresh_volume_bar = False
             
 # End of Display class
 
 
 ### Test routine ###
 if __name__ == "__main__":
+    from translate_class import Translate
+    translate = Translate()
 
     if pwd.getpwuid(os.geteuid()).pw_uid > 0:
         print("This program must be run with sudo or root permissions!")
@@ -345,16 +381,16 @@ if __name__ == "__main__":
 
     try:
         print("Test display_class.py")
-        display = Display()
+        display = Display(translate)
         display.init()
         display_type = display.getDisplayType()
         display_name = display.getDisplayName()
         print("Display type",display_type,display_name)
-        #pdb.set_trace()
         color = display.getBackColor('bg_color')
         print("bg_color",color,display.getBackColorName(display.getBackColor('bg_color')))
         display.backlight('search_color')
-        #display.splash()
+        display.splash()
+        time.sleep(2)
         display.out(1,"bobrathbone.com")
         display.out(2,"Line 2 123456789")
         display.out(3,"Line 3 123456789")

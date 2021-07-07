@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.4 2021/02/05 11:38:27 bob Exp $
+# $Id: configure_radio.sh,v 1.13 2021/06/30 11:34:47 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,9 +24,17 @@ FLAGS=$1
 SERVICE=/lib/systemd/system/radiod.service
 BINDIR="\/usr\/share\/radio\/"  # Used for sed so \ needed
 DIR=/usr/share/radio
+
+# Development directory
+if [[ ! -d ${DIR} ]];then
+    echo "Fatal error: radiod package not installed!"
+    exit 1
+fi
+
 LOGDIR=${DIR}/logs
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/config.txt
+ETCMODULES=/etc/modules
 LOG=${LOGDIR}/install.log
 SPLASH="bitmaps\/raspberry-pi-logo.bmp" # Used for sed so \ needed
 
@@ -50,7 +58,9 @@ DISPLAY_TYPE=""
 I2C_REQUIRED=0
 I2C_ADDRESS="0x0"
 SPI_REQUIRED=0
-PIFACE_REQUIRED=0
+PIFACE_REQUIRED=0	
+ROTARY_HAS_RESISTORS=0	# Support for KY040 or ABC Rotary encoders
+ADAFRUIT_SSD1306=0	# Adafruit SSD1306 libraries required
 
 # Display characteristics
 I2C_ADDRESS=0x00    # I2C device address
@@ -215,6 +225,39 @@ if [[ ${USER_INTERFACE} == "1" ]]; then
     echo ${DESC} | tee -a ${LOG}
 fi
 
+# Configure pull-up resistors for type of rotary encoder
+if [[ ${USER_INTERFACE} == "2" ]]; then
+    ans=0
+    selection=1 
+    while [ $selection != 0 ]
+    do
+        ans=$(whiptail --title "Do the rotary encoders have their own pull-up resistors?" --menu "Choose your option" 15 75 9 \
+        "1" "Standard rotary encoders with A, B and C inputs only" \
+        "2" "Rotary encoders encoders (eg KY040) with own pull-up resistors" \
+        "3" "Not sure" 3>&1 1>&2 2>&3) 
+
+        exitstatus=$?
+        if [[ $exitstatus != 0 ]]; then
+            exit 0
+        fi
+
+        if [[ ${ans} == '1' ]]; then
+            DESC="Configuring standard rotary encoders"
+
+        elif [[ ${ans} == '2' ]]; then
+            DESC="Configuring rotary encoders (eg. KY040) with own pull-up resistors"
+            ROTARY_HAS_RESISTORS=1
+
+        else
+            DESC="Standard rotary encoders"  
+            echo ${DESC} | tee -a ${LOG}
+        fi
+
+        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
+        selection=$?
+    done
+    echo ${DESC} | tee -a ${LOG}
+fi
 # Select the wiring type (40 or 26 pin) if not already specified
 if [[ ${GPIO_PINS} == "0" ]]; then
     ans=0
@@ -300,8 +343,9 @@ do
     "6" "Olimex 128x64 pixel OLED display" \
     "7" "PiFace CAD display" \
     "8" "Pimoroni Audio ST7789 TFT" \
-    "9" "No display used/Pimoroni Pirate radio" \
-    "10" "Do not change display type" 3>&1 1>&2 2>&3) 
+    "9" "Sitronix SSD1306 128x64 monochrome OLED" \
+    "10" "No display used/Pimoroni Pirate radio" \
+    "11" "Do not change display type" 3>&1 1>&2 2>&3) 
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -360,12 +404,23 @@ do
         DISPLAY_TYPE="ST7789TFT"
         DESC="Pimoroni Audio ST7789 TFT"
         VOLUME_RANGE=10
-        DLINES=7
+        DLINES=6
         DWIDTH=16
         SPLASH="images\/raspberrypi.png"
         SPI_REQUIRED=1
 
     elif [[ ${ans} == '9' ]]; then
+        DISPLAY_TYPE="SSD1306"
+        DESC="Sitronix SSD1306 128x64 OLED"
+        DLINES=4
+        DWIDTH=16
+        VOLUME_RANGE=10
+        I2C_REQUIRED=1
+        I2C_ADDRESS="0x3C"
+        ADAFRUIT_SSD1306=1
+        SPLASH="images\/raspberrypi.png"
+
+    elif [[ ${ans} == '10' ]]; then
         DISPLAY_TYPE="NO_DISPLAY"
         DLINES=0
         DWIDTH=0
@@ -460,7 +515,7 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
         "2" "Hex 0x27 (PCF8574 devices)" \
         "3" "Hex 0x37 (PCF8574 devices alternative address)" \
         "4" "Hex 0x3F (PCF8574 devices 2nd alternative address)" \
-        "5" "Hex 0x3C (Olimex OLED with Cosmic controller)" \
+        "5" "Hex 0x3C (Olimex Cosmic controller/Sitronix SSD1306)" \
         "6" "Manually configure i2c_address in ${CONFIG}" \
         "7" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
@@ -501,36 +556,15 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
         selection=$?
     done
 
-    echo | tee -a ${LOG}
-    echo "The selected display interface type requires the" | tee -a ${LOG}
-    echo "I2C kernel libraries to be loaded at boot time." | tee -a ${LOG}
-    echo "The program will call the raspi-config program" | tee -a ${LOG}
-    echo "Select the following options on the next screens:" | tee -a ${LOG}
-    echo "   5 Interfacing options" | tee -a ${LOG}
-    echo "   P5 Enable/Disable automatic loading of I2C kernel module" | tee -a ${LOG}
-    echo; echo -n "Press enter to continue: "
-    read ans
-
-    # Enable the I2C libraries 
-    ans=0
-    ans=$(whiptail --title "Enable I2C interface" --menu "Choose your option" 15 75 9 \
-    "1" "Enable I2C libraries " \
-    "2" "Do not change configuration" 3>&1 1>&2 2>&3) 
-
-    exitstatus=$?
-    if [[ $exitstatus != 0 ]]; then
-        exit 0
-    fi
-
-    if [[ ${ans} == '1' ]]; then
-        sudo raspi-config
-
         # Update boot config
         echo "Enabling I2C interface in ${BOOTCONFIG}" | tee -a ${LOG}
         sudo sed -i -e "0,/^\#dtparam=i2c_arm/{s/\#dtparam=i2c_arm.*/dtparam=i2c_arm=yes/}" ${BOOTCONFIG}
-    else
-        echo "I2C configuration unchanged"   | tee -a ${LOG}
-    fi
+        grep -q ^i2c-dev ${ETCMODULES}
+        if [[ $? -ne 0 ]]; then
+            param=i2c-dev
+            echo "Adding ${param} to  ${ETCMODULES}"
+            echo $param | sudo tee -a ${ETCMODULES} > /dev/null
+        fi
 fi
 
 # Select the display type (Lines and Width)
@@ -575,7 +609,6 @@ if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
         selection=$?
     done
 
-#elif [[ ${DISPLAY_TYPE} != "NO_DISPLAY" &&  ${DISPLAY_TYPE} != "PIFACE_CAD" ]]; then
 elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     # Configure graphical display
     ans=0
@@ -735,7 +768,7 @@ AUTOSTART="${LXDE}/autostart"
 if [[ ! -d ${LXDE} ]]; then
     mkdir -p ${LXDE}
     cp ${DIR}/lxsession/autostart ${AUTOSTART} 
-    chmod -R pi:pi /home/pi/.config/lxsession
+    chown -R pi:pi /home/pi/.config/lxsession
 fi
 
 # Configure desktop autostart if X-Windows installed
@@ -749,6 +782,11 @@ if [[ -f ${AUTOSTART} ]]; then
     else
         sudo sed -i -e "/radio/d" ${AUTOSTART}
     fi
+fi
+
+# Install Adafruit SSD1306 package if required
+if [[ ${ADAFRUIT_SSD1306} > 0  ]]; then
+    ${DIR}/install_ssd1306.sh | tee -a ${LOG}
 fi
 
 #######################################
@@ -779,12 +817,15 @@ if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     sudo sed -i -e "0,/^screen_size/{s/screen_size.*/screen_size=${SCREEN_SIZE}/}" ${CONFIG}
 fi
 
-# Configure user interface (Buttons or Rotary encoders)
+# Configure user interface
 if [[ ${USER_INTERFACE} == "1" || ${USER_INTERFACE} == "8" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=buttons/}" ${CONFIG}
 
 elif [[ ${USER_INTERFACE} == "2" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=rotary_encoder/}" ${CONFIG}
+    if [[ ${ROTARY_HAS_RESISTORS} == 1 ]]; then
+        sudo sed -i -e "0,/^rotary_gpio_pullup/{s/rotary_gpio_pullup.*/rotary_gpio_pullup=none/}" ${CONFIG}
+    fi
 
 elif [[ ${USER_INTERFACE} == "3" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=graphical/}" ${CONFIG}
@@ -1033,7 +1074,7 @@ fi
 ans=0
 ans=$(whiptail --title "Configure audio interface?" --menu "Choose your option" 15 75 9 \
 "1" "Run audio configuration program (configure_audio.sh)" \
-"2" "Do not change configuration" 3>&1 1>&2 2>&3) 
+"2" "Do not change audio configuration" 3>&1 1>&2 2>&3) 
 
 if [[ ${ans} == '1' ]]; then
     sudo ${DIR}/configure_audio.sh ${FLAGS}

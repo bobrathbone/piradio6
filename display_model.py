@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-$Id: display_model.py,v 1.5 2020/12/02 18:26:54 bob Exp $
+$Id: display_model.py,v 1.7 2021/04/10 11:58:02 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -66,25 +66,28 @@ model_data = {
     'a020a0': ('Compute Module 3', '1.0', 1024, 'Sony UK', 'and CM3 Lite'),
     'a22082': ('3B', '1.2', 1024, 'Embest', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
     'a32082': ('3B', '1.2', 1024, 'Sony UK (Japan)', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
+    'a220a0': ('CM3', '1.0', 1024, 'Embest', 'Quad Core 1.2MHz, Compute module DDR2 SODIMM connector '),
+    'a22100': ('CM3+', '1.0', 1024, 'Sony', 'Quad Core 1.2MHz, Compute module DDR2 SODIMM connector '),
+    '900061': ('CM', '1.1', 512, 'Embest', 'Compute module DDR2 SODIMM connector'),
     '900091': ('A+', '1.1', 512, 'Sony UK', ''),
     '900032': ('B+', '1.2', 512, 'Sony UK', ''),
     '900092': ('Zero', '1.2', 512, 'Embest', ''),
     '920093': ('Zero', '1.3', 512, 'Embest', ''),
-    'a02082': ('CM3', '1.0', 512, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
     '9000c1': ('Zero W', '1.1', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
     '9000d3': ('3B+', '1.1', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
     '9000e0': ('3A+', '1.0', 512, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
     'a02082': ('3 Model B', '1.2', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
     'a020a0': ('Compute Module 3 (and CM3 Lite)', '1.0', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
-    'a22082': ('3B', '1.2', 1024, 'Embest', 'Onboard WiFi and Bluetooth 4.1'),
-    'a32082': ('3B', '1.2', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
-    'a52082': ('3B', '1.2', 1024, 'Stadium', 'Onboard WiFi and Bluetooth 4.1'),
-    'a020d3': ('3B+', '1.3', 1024, 'Sony UK', '1.4GHz quad core, Blutooth 4.2, POE support'),
-    'a03111': ('4B', '1.1', 1024, 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
-    'b03111': ('4B', '1.1', 2048, 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
-    'c03111': ('4B', '1.1', 4096, 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
-    'c03112': ('4B', '1.2', 4096, 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
-    'c03130': ('400', '1.0', 4096, 'Sony UK', '64 bit 1.8GHz quad core, Bluetooth 5, USB 2/3'),
+    'a22082': ('3B', '1.2', '1GB', 'Embest', 'Onboard WiFi and Bluetooth 4.1'),
+    'a32082': ('3B', '1.2', '1GB', 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
+    'a52082': ('3B', '1.2', '1GB', 'Stadium', 'Onboard WiFi and Bluetooth 4.1'),
+    'a020d3': ('3B+', '1.3', '1GB', 'Sony UK', '1.4GHz quad core, Blutooth 4.2, POE support'),
+    'a03111': ('4B', '1.1', '1GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'b03111': ('4B', '1.1', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'c03111': ('4B', '1.1', '4GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'c03112': ('4B', '1.2', '4GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'c03114': ('4B', '1.4','8GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'c03130': ('400', '1.0','4GB', 'Sony UK', '64 bit 1.8GHz quad core, Bluetooth 5, USB 2/3'),
 }
 
 

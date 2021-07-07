@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.10 2021/03/16 15:50:29 bob Exp $
+# $Id: volume_class.py,v 1.18 2021/05/19 16:18:51 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -41,7 +41,6 @@ class Volume:
     mixer_preset = 90   # Alsa mixer preset level (When MPD volume used)
     mixer_volume_id = 0 # Alsa mixer ID 
     speech_volume = 0   # Speech volume level
-    range = 5       # Volume range (Sensitivity)
     OK=0            # Volume status OK
     ERROR=1         # Error status
     status = OK     # Volume get status
@@ -58,13 +57,12 @@ class Volume:
         self.airplay = airplay
         log = logging
         self.mixer_volume_id = self.getMixerVolumeID()
-        self.mixer_preset = config.getMixerPreset()
+        self.mixer_preset = config.mixer_preset
     
         # Set up initial volume
         vol = self._getStoredVolume()
         self.speech_volume = vol
-        self.range = self.config.getVolumeRange()
-        self.audio_device = self.config.getAudioOut()
+        self.audio_device = self.config.audio_out
 
         # Are we using bluetooth?
         if self.audio_device == "bluetooth":
@@ -148,13 +146,12 @@ class Volume:
         if volume < 0:  
             volume = 0
 
-        if self.volume != volume:
+        if self.volume != volume and store and volume > 0:
             log.message("volume._setMpdVolume " + str(volume), log.DEBUG)
+            self.storeVolume(self.volume)
         try:
             mpd_client.setvol(volume)
             self.volume = volume
-            if store:
-                self.storeVolume(self.volume)
 
         except Exception as e:
             log.message("volume._setMpdVolume error vol=" \
@@ -164,9 +161,9 @@ class Volume:
         
     # Set the Mixer volume level
     def _setMixerVolume(self,volume,store):
-        log.message("volume._setMixerVolume " + str(volume), log.DEBUG) 
         
-        if self.mixer_volume_id > 0: 
+        if self.mixer_volume_id > 0 and volume != self.mixer_volume: 
+            log.message("volume._setMixerVolume " + str(volume), log.DEBUG) 
             cmd = "sudo amixer " + self.mixer_device + " cset numid=" + str(self.mixer_volume_id) \
                                   + " " + str(volume) + "%"
             log.message(cmd, log.DEBUG)
@@ -241,15 +238,15 @@ class Volume:
         self.mixer_volume_id = self.getStoredInteger(MixerIdFile,0)
         return self.mixer_volume_id
 
-    # Increase volume using range value
+    # Increase volume using configiuration range value
     def increase(self):
-        increment = int(100/self.range)
+        increment = int(100/self.config.volume_range)
         volume = self._changeVolume(self.mpd_client,increment)
         return volume
 
     # Decrease volume using range value
     def decrease(self):
-        decrement = int(0 - 100/self.range)
+        decrement = int(0 - 100/self.config.volume_range)
         volume = self._changeVolume(self.mpd_client,decrement)
         return volume
 
@@ -263,7 +260,7 @@ class Volume:
 
     # Get volume display value
     def displayValue(self):
-        value = float(self.get()/float(100)) * float(self.range)
+        value = float(self.get()/float(100)) * float(self.config.volume_range)
         return int(value)
 
     # Get the integer value stored in /var/lib/radiod
@@ -285,7 +282,7 @@ class Volume:
         source_type = self.source.getType()
 
         self.set(0,store=False)
-        mute_action = self.config.getMuteAction()
+        mute_action = self.config.mute_action
 
         try:
             if mute_action == PAUSE or source_type == self.source.MEDIA:

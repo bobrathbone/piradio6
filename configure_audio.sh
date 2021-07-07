@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_audio.sh,v 1.23 2021/03/19 11:07:03 bob Exp $
+# $Id: configure_audio.sh,v 1.24 2021/04/14 09:08:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -203,7 +203,7 @@ do
         DESC="IQAudio DAC plus or DigiAMP"
         NAME="IQAudio DAC+"
         TYPE=${DAC}
-        DTOVERLAY="iqaudio-dacplus,unmute_amp"
+        DTOVERLAY="iqaudio-dacplus"
         MIXER="software"
         TYPE=${DAC}
 
@@ -284,11 +284,11 @@ if [[ ${USE_PULSE} == 1 ]]; then
         fi
     fi
 else
-    if [[ ${SKIP_PKG_CHANGE} == "-s" ]]; then
+    if [[ ${SKIP_PKG_CHANGE} == "-s" && -f ${PULSEAUDIO} ]]; then
         echo "${DESC} requires pulseaudio to be removed" | tee -a ${LOG}
         echo "Run: sudo apt-get remove pulseaudio" | tee -a ${LOG}
         echo "and re-run ${SCRIPT}" | tee -a ${LOG}
-        exit 1
+        echo "" | tee -a ${LOG}
     else
         echo "Un-installng pulseaudio" | tee -a ${LOG}
         sudo apt-get --yes remove pulseaudio | tee -a ${LOG}

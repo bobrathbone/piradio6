@@ -10,6 +10,26 @@ See http://www.musicpd.org/
 Use "apt-get install mpd mpc python3-mpd" to install the libraries
 This software uses the python3-mpd library. See https://packages.debian.org/sid/python3-mpd
 
+Version 7.2 release notes 
+-------------------------
+30th June 2021
+1) Add Compute Model and 8GB 4B to display_model.py
+2) Correct report of X-Windows detected if Lite OS installed
+3) Correct remote control configuration display error
+4) Correct DAC overlay not being configured in /boot/config.txt if called from configure_radio.sh
+5) Alternative rotary class, remove sudo requirement and edge detection set to BOTH
+6) Comitup WiFi roaming dropped due to problems
+7) New parameter rotary_gpio_pullup=up/off to disable internal pullups for KY-040 rotary encoders
+8) Correct crash in the test routine of event_class.py
+9) Support for Sitronix SSD1306 128x64 monochrome tft with I2C interface 
+10) Virtual rewrite of configuration class to give consistant labels
+11) New display_wifi.sh script to display details of current Wi-Fi connection
+12) Added network information to display_config.sh and display_wifi.sh
+13) Button and Rotary encoder interfaces now run in their own thread
+14) Correct not play MEDIA on start-up if no IP network available
+15) Don't add comment to /boot/cmdline.txt as it is causing boot failure
+16) Configure I2C using configuration script instead of raspi-config (takes two attempts)
+
 Version 7.1 release notes 
 -------------------------
 2nd April 2021
@@ -40,32 +60,6 @@ Version 7.0 release notes  (Compared to version 6.15)
 7) Internet check added (Prevent skipping if Internet connection lost)
 8) Improved error messages (Bad stations, time outs etc.)
 
-Version 6.15 release notes
--------------------------
-16th November 2020
-1) Oled class now uses the smbus2 library instead of the python-smbus package
-2) Amended configure_audio_device.sh to not overwrite equalizer plugin setting in /etc/mpd.conf
-3) Raspberry Pi 400 added to display_model.py program
-4) The display_config.sh script displays X-Windows autostart configuration
-5) Graphic versions of radio now log screen size error
-6) Raspberry Pi 400 added to display_model.py program
-
-Version 6.14 release notes
--------------------------
-16th September 2020
-1) Support for Pimoroni 4-button Pirate Audio (ST7789 TFT 240x240 screen)
-2) Speed up initial display when changing menu by not scrolling lines first time in
-3) Changes to support O!MPD web interface (Version 2.x of the Web interface)
-4) Correct European codes not being loaded if language=English
-5) Support for comitup WiFi configurator added
-6) New configure_audio_device.sh created to handle new alsa device configuration
-7) New parameters comitup_ip and audio_out parameters
-8) Correct vgradio from skipping to next page when using menu button shutdown
-9) Configure audio script correct sed error with '/'characters in the description
-10) Improved setting of mixer_volume_id (for Spotify amixer cset command)
-11) Prevent gradio and radiod cycling through menus when holing down menu button(shutdown).
-12) Configuration and installation progs now store logs in /usr/share/radio/logs directory 
-
 Manuals
 -------
 Version 7.x
@@ -79,10 +73,11 @@ Version 6.x (For PiFace CAD support only)
 https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio%206.x.pdf
 
 
-Github
+GitHub
 ------
-Source available from Github
+Source available from GitHub
 Version 7.x see:  https://github.com/bobrathbone/piradio6
+Run ./setup.sh from the command line to create the radiod package
 
 Licenses
 --------

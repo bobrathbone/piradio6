@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.2 2020/12/23 14:57:48 bob Exp $
+# $Id: source_class.py,v 1.3 2021/05/15 06:29:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -31,7 +31,6 @@ log = Log()
 
 # Definitions
 PlaylistsDir = "/var/lib/mpd/playlists"
-mpdport = 6600  # MPD port number
 
 class Source:
 
@@ -57,7 +56,6 @@ class Source:
         self.airplay = airplay
         self.spotify = spotify
         self.client = client
-        self.mpdport = mpdport
         log.init('radio')
         return
 

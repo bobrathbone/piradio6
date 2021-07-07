@@ -4,7 +4,7 @@
 # LCD class for  Adafruit RGB-backlit LCD plate for Raspberry Pi.
 # Adapted by Bob Rathbone from code by Adafruit Industries.  MIT license.
 # Amended for version 6.0 and later of the Rathbone Internet Radio
-# $Id: lcd_adafruit_class.py,v 1.3 2020/10/14 19:24:36 bob Exp $
+# $Id: lcd_adafruit_class.py,v 1.4 2021/05/11 17:41:45 bob Exp $
 
 # Original code based on code from lrvick and LiquidCrystal.
 # lrvic - https://github.com/lrvick/raspi-hd44780/blob/master/hd44780.py
@@ -186,7 +186,7 @@ class Adafruit_lcd(i2c):
 
         self.write(self.LCD_RETURNHOME)
 
-        self.scroll_speed = config.getScrollSpeed()
+        self.scroll_speed = config.scroll_speed
         self.setScrollSpeed(self.scroll_speed)
 
 

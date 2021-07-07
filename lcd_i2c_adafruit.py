@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_adafruit.py,v 1.3 2020/10/16 07:26:12 bob Exp $
+# $Id: lcd_i2c_adafruit.py,v 1.5 2021/05/11 17:41:45 bob Exp $
 #
 # I2C Adafruit I2C backback driver
 # Adapted from RpiLcdBackpack from Paul Knox-Kennedy
@@ -131,7 +131,7 @@ class Lcd_i2c_Adafruit:
     # Initialise
     def __init__(self,code_page=0x0):
         self.code_page = code_page
-        self.scroll_speed = config.getScrollSpeed()
+        self.scroll_speed = config.scroll_speed
         self.setScrollSpeed(self.scroll_speed)
         return
 
@@ -268,7 +268,7 @@ class Lcd_i2c_Adafruit:
 
     # Get LCD width 0 = use default for program
     def getWidth(self):
-        return config.getWidth()
+        return config.display_width
 
     # Set the display width
     def setWidth(self,width):

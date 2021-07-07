@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.62 2021/03/23 10:27:24 bob Exp $
+# $Id: radio_class.py,v 1.81 2021/06/24 10:56:58 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -135,7 +135,6 @@ class Radio:
     currentsong = None  # Current song / station
     state = 'play'      # State (used if get state fails) 
     getIdError = False  # Prevent repeated display of ID error
-    rotary_class = None
     display_artist = False      # Display artist (or track) flag
     current_file = ""       # Currently playing track or station
     option_changed = False      # Option changed
@@ -208,7 +207,6 @@ class Radio:
         log = logobj
         log.message("Initialising radio", log.INFO)
         self.config = config
-        self.rotary_class = self.config.STANDARD  # Rotary class standard all alternate
         self.translate = translate
         self.airplay = AirplayReceiver(translate)
         self.spotify = SpotifyReceiver(translate)
@@ -288,7 +286,7 @@ class Radio:
             if id < 1:
                 update = True
             else:
-                if not self.config.audioConfigLocked():
+                if not self.config.audio_config_locked:
                     update = True
         else:
             update = True
@@ -301,15 +299,14 @@ class Radio:
     def waitForNetwork(self):
         ipaddr = ""
         waiting4network = True
-        comit_ip = self.config.getComitupIp()
-        count = 60
+        count = 30
         while waiting4network:
             ipaddr = self.execCommand('hostname -I')
             log.message("IP: " + str(ipaddr) +  " " + str(count), log.DEBUG)
             count -= 1
             if (count < 0) or (len(ipaddr) > 1):
                 # Don't use Comitup web address
-                if not comit_ip in ipaddr:
+                if not self.config.comitup_ip in ipaddr:
                     waiting4network = False
             time.sleep(0.5)
         return ipaddr
@@ -413,13 +410,12 @@ class Radio:
         self.config.display()
         # Get Configuration parameters /etc/radiod.conf
         self.boardrevision = self.getBoardRevision()
-        self.mpdport = self.config.getMpdPort()
-        self.udpport = self.config.getRemoteUdpPort()
-        self.udphost = self.config.getRemoteListenHost()
-        self.display_playlist_number = self.config.getDisplayPlaylistNumber()
-        self.speech = self.config.hasSpeech()
+        self.mpdport = self.config.mpdport
+        self.udpport = self.config.remote_control_port
+        self.udphost = self.config.remote_listen_host
+        self.display_playlist_number = self.config.display_playlist_number
+        self.speech = self.config.speech
         language = Language(self.speech) # language is a global
-        self.rotary_class = self.config.getRotaryClass()
 
         # Log OS version information 
         OSrelease = self.execCommand("cat /etc/os-release | grep NAME")
@@ -440,7 +436,7 @@ class Radio:
         self.connect(self.mpdport)
 
         # Is Airplay installed (shairport-sync)
-        self.airplayInstalled = self.config.getAirplay()
+        self.airplayInstalled = self.config.airplay
         if self.airplayInstalled:
             self.stopAirplay()
         log.message("self.airplayInstalled " + str(self.airplayInstalled), log.DEBUG)
@@ -451,28 +447,36 @@ class Radio:
         self.source = Source(client=self.client,airplay=self.airplayInstalled,
                     spotify=self.spotifyInstalled)
 
-        # Set up source
+        # Set up source/playlist depending upon startup=<source> in /etc/radiod.conf
         self.getSources()
-        sourceType = self.config.getSource()
+        sourceType = self.config.source
 
         # Set up volume controls
         self.volume = Volume(self.client,self.source,self.spotify,
                 self.airplay,self.config,log)
 
-        startup_playlist = self.config.getStartupPlaylist()
-        if len(startup_playlist) > 0:
-            log.message("Startup playlist " + startup_playlist, log.DEBUG)
-            self.source.setPlaylist(startup_playlist)
+        startup_playlist = self.config.startup_playlist
+        log.message("Startup playlist " + startup_playlist, log.DEBUG)
+        sources = ['RADIO', 'MEDIA', 'AIRPLAY', 'SPOTIFY']
 
-        elif self.config.loadLast():
+        if self.config.load_last:
             log.message("Load last playlist", log.DEBUG)
             self.source_index = self.getStoredSourceIndex()
             self.source.setIndex(self.source_index)
-        else:
+
+        elif startup_playlist in sources:
             # Load either MEDIA, RADIO, AIRPLAY or SPOTIFY depending on config
             self.source.setType(sourceType)
             log.message("Load  MEDIA/RADIO", log.DEBUG)
-        
+
+        elif len(startup_playlist) > 1:
+            log.message("Startup playlist " + startup_playlist, log.DEBUG)
+            self.source.setPlaylist(startup_playlist)
+
+        else: 
+            # Default to any radio playlist
+            self.source.setType(self.source.RADIO)
+
         # Get stored values from Radio lib directory
         self.getStoredValue(self.menu.OPTION_RANDOM)
         self.current_id = self.getStoredID(self.current_file)
@@ -508,8 +512,8 @@ class Radio:
                     + " port " + str(self.udpport), log.ERROR)
 
         # Configure the audio device from audio_out parameter in the configuration
-        audio_out = self.config.getAudioOut()
-        if not self.config.audioConfigLocked():
+        audio_out = self.config.audio_out
+        if not self.config.audio_config_locked:
             if len(audio_out) > 1 and audio_out != 'bluetooth':
                 dir = os.path.dirname(__file__)
                 self.execCommand(dir + '/configure_audio_device.sh 2>&1 >/dev/null')
@@ -528,7 +532,7 @@ class Radio:
         retry = 2
         while retry > 0:
             try:
-                self.client.timeout = self.config.getClientTimeout()
+                self.client.timeout = self.config.client_timeout
                 self.client.idletimeout = None
                 self.client.connect("localhost", port)
                 # Wait for stations to be loaded before playing
@@ -568,8 +572,8 @@ class Radio:
         connected = False
 
         # Check to see if bluetooth configured
-        audio_out = self.config.getAudioOut()
-        bluetooth_device=self.config.getBluetoothDevice()
+        audio_out = self.config.audio_out
+        bluetooth_device=self.config.bluetooth_device
         if bluetooth_device == "00:00:00:00:00:00" or len(bluetooth_device) != 17\
                                 or audio_out != "bluetooth": 
             connectBT = False
@@ -1639,7 +1643,7 @@ class Radio:
     def getCurrentTitle(self):
         if self.errorCode > 0:
             errorStr = self.errorStrings[self.errorCode]
-            log.message (errorStr, log.DEBUG)
+            log.message (errorStr, log.ERROR)
             now = int(time.time())
             if now > self.error_display_delay + 10:
                 self.clearError() 
@@ -1663,7 +1667,7 @@ class Radio:
 
         if self.channelChanged: 
             self.channelChanged = False
-            if self.config.verbose():
+            if self.config.verbose:
                 if source_type == self.source.RADIO:
                     sSource = "Station "
                 else: 
@@ -1955,9 +1959,9 @@ class Radio:
     def checkInternet(self):
         success = False
         iTime = time.time()
-        host = self.config.getInternetCheckUrl()
-        port = self.config.getInternetCheckPort()
-        timeout = self.config.getInternetTimeout()
+        host = self.config.internet_check_url
+        port = self.config.internet_check_port
+        timeout = self.config.internet_timeout
 
         # Disable if no Internet URL defined
         if len(host) < 1:
@@ -1969,10 +1973,12 @@ class Radio:
                 socket.setdefaulttimeout(timeout)
                 socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
                 if self.gotError() and self.errorCode == INTERNET_ERROR:
-                    self.clearError()
                     self.setInterrupt()
                     log.message("Internet reconnected", log.INFO)
                     time.sleep(0.5)
+                    self.clearError()
+                    if not self.connected:
+                        self.connect(self.udpport)
                     self.play(self.current_id)
                 success = True
             except socket.error as e:

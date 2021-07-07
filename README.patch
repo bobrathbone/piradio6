@@ -1,22 +1,21 @@
-Patch 5 for version 7.0 - 22 March 2021
+Patch 2 for version 7.1 - 28 April 2021
 
 Changes
 =======
-1) Correction to UDP client/server for Remote control software
-2) remote_control.py can now send valid KEYs to the radio daemon
-3) Correction to select source in web interface
-4) Correction to shoutcast playlist selection in web interface
-5) Shell scripts which failing with country locale amended to run with locale LC_ALL=C
-6) Bluetooth devices now working 
-7) Correct create_stations.py skipping URLs with special non-ascii characters
+1) Add Compute Model and 8GB 4B to display_model.py
+2) Correct report of X-Windows detected if Lite OS installed
+3) Correct remote control configuration display error
+4) Correct DAC overlay not being configured in /boot/config.txt if called from configure_radio.sh
+5) Alternative rotary class, remove sudo requirement and edge detection set to BOTH
+6) Comitup WiFi roaming dropped due to problems
 
 To install the patch
 ====================
 cd /usr/share/radio
-wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.0-5.tar.gz
-tar -xvf radiod-patch-7.0-5.tar.gz
+wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.1-2.tar.gz
+tar -xvf radiod-patch-7.1-2.tar.gz
 sudo systemctl restart radiod.service
 
-This patch supercedes radiod-patch-7.0-1 through 4 which are included in this patch 
+This patch contains all previous patches
 
 End of README.patch

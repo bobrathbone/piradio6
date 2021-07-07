@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: rotary_class_alternative.py,v 1.1 2020/10/10 15:00:46 bob Exp $
+# $Id: rotary_class_alternative.py,v 1.3 2021/06/08 20:11:31 bob Exp $
 #
 # Raspberry Pi Alternative Rotary Encoder Class
 # Certain Rotary Encoders will not work with the current version of the Rotary class.
@@ -24,6 +24,7 @@
 import os,sys,pwd
 import time
 import RPi.GPIO as GPIO
+import threading
 
 class RotaryEncoderAlternative:
 
@@ -40,6 +41,7 @@ class RotaryEncoderAlternative:
 
     # Initialise rotary encoder object
     def __init__(self,pinA,pinB,button,callback):
+        threading.Thread.__init__(self)
         self.pinA = pinA
         self.pinB = pinB
         self.button = button
@@ -54,8 +56,8 @@ class RotaryEncoderAlternative:
             GPIO.setup(self.pinA, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.setup(self.pinB, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             # Add event detection to the GPIO inputs
-            GPIO.add_event_detect(self.pinA, GPIO.FALLING, callback=self.switch_event)
-            GPIO.add_event_detect(self.pinB, GPIO.FALLING, callback=self.switch_event)
+            GPIO.add_event_detect(self.pinA, GPIO.BOTH, callback=self.switch_event)
+            GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.switch_event)
         if button > 0:
             GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             # Add event detection to the GPIO inputs
@@ -150,9 +152,6 @@ if __name__ == "__main__":
     from config_class import Configuration
     config = Configuration()
 
-    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-        print("This program must be run with sudo or root permissions!")
-        sys.exit(1)
     print("Test rotary encoder Class")
 
     # Get configuration

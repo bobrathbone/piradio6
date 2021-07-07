@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.2 2020/10/10 15:30:55 bob Exp $
+# $Id: button_class.py,v 1.4 2021/06/08 20:11:30 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,11 +16,13 @@
 import os,sys,pwd
 import time
 import RPi.GPIO as GPIO
+import threading
 from constants import *
 
 class Button:
 
     def __init__(self,button,callback,log,pull_up_down=DOWN):
+        threading.Thread.__init__(self)
         self.button = button
         self.callback = callback
         self.pull_up_down = pull_up_down
@@ -92,6 +94,10 @@ if __name__ == "__main__":
     pullupdown = ['DOWN','UP'] 
 
     print("Test Button Class")
+
+    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
+        print("This program must be run with sudo or root permissions!")
+        sys.exit(1)
     
     # Get configuration
     left_switch = config.getSwitchGpio("left_switch")
@@ -107,15 +113,14 @@ if __name__ == "__main__":
     print("Down switch GPIO", down_switch)
     print("Mute switch GPIO", mute_switch)
     print("Menu switch GPIO", menu_switch)
-    pull_up_down = config.getPullUpDown()
-    print("Pull Up/Down resistors", pullupdown[pull_up_down])
+    print("Pull Up/Down resistors", pullupdown[config.pull_up_down])
 
-    Button(left_switch, interrupt, log, pull_up_down)
-    Button(right_switch, interrupt, log, pull_up_down)
-    Button(mute_switch, interrupt, log, pull_up_down)
-    Button(down_switch, interrupt, log, pull_up_down)
-    Button(up_switch, interrupt, log, pull_up_down)
-    Button(menu_switch, interrupt, log, pull_up_down)
+    Button(left_switch, interrupt, log, config.pull_up_down)
+    Button(right_switch, interrupt, log, config.pull_up_down)
+    Button(mute_switch, interrupt, log, config.pull_up_down)
+    Button(down_switch, interrupt, log, config.pull_up_down)
+    Button(up_switch, interrupt, log, config.pull_up_down)
+    Button(menu_switch, interrupt, log, config.pull_up_down)
 
     try:
         while True:

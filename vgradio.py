@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.17 2021/03/19 11:07:03 bob Exp $
+# $Id: vgradio.py,v 1.34 2021/06/23 08:46:18 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -122,7 +122,7 @@ def getPage(currentID,maxStations):
 
 # Get the maximum stations labels to be displayed per page
 def getMaximumLabels(display,radio): 
-    maxLabels = display.config.getMaximumStations()
+    maxLabels = display.config.stations_per_page
     plsize = radio.getPlayListLength()
     currentID = radio.getCurrentID()
     page = getPage(currentID,maxLabels)
@@ -144,7 +144,7 @@ def drawTunerSlider(tunerSlider,screen,display,currentID):
     width = 5
     ySize = size[1]-(2*margin)-12
     border = 0
-    color = getColor(display.config.getSliderColor())
+    color = getColor(display.config.slider_color)
     bcolor = color
     tunerSlider.draw(screen,color,bcolor,xPos,yPos,width,ySize,border)
     return 
@@ -180,8 +180,8 @@ def handleEvent(radio,radioEvent):
 
     if event_type == radioEvent.SHUTDOWN:
         radio.stop()
-        print("doShutdown", config.doShutdown())
-        if config.doShutdown():
+        if config.shutdown:
+            print("Shutdown", config.shutdown)
             radio.shutdown() # Shutdown the system
         else:
             print("Exiting")
@@ -215,6 +215,7 @@ def handleEvent(radio,radioEvent):
 
     elif event_type == radioEvent.MPD_CLIENT_CHANGE:
         log.message("radioEvent Client Change",log.DEBUG)
+
         if radio.muted():
             radio.unmute()
 
@@ -246,7 +247,7 @@ def handleSourceChange(event,radio,message):
     elif event_type == event.LOAD_AIRPLAY:
             msg = message.get('starting_airplay')
             message.speak(msg)
-            if display.config.getAirplay():
+            if display.config.airplay:
                     radio.cycleWebSource(radio.source.AIRPLAY)
 
     # Version 1.8 onwards of the web interface
@@ -310,7 +311,7 @@ def handleKeyEvent(key,display,radio,radioEvent):
         radio.stop()
         quit()
 
-    elif event.key == K_x and display.config.switchPrograms():
+    elif event.key == K_x and display.config.switch_programs:
         dir = os.path.dirname(__file__)
         os.popen("sudo " + dir + "/gradio.py&")
         run = False
@@ -336,11 +337,10 @@ def calculateID(radio,listIndex):
 
 # This routine displays the title or bit rate
 def displayTimeDate(screen,radio,message):
-    dateFormat = config.getGraphicDateFormat()
+    dateFormat = config.graphic_dateformat
     timedate = strftime(dateFormat)
-    banner_color_name = display.config.getBannerColor()
     try:
-        color = pygame.Color(banner_color_name)
+        color = pygame.Color(display.config.banner_color)
     except:
         color = pygame.Color('white')
     font = pygame.font.SysFont('freesans', 16, bold=False)
@@ -478,7 +478,7 @@ def drawScaleNames(screen,radio,playlist,index,maxLabels,lmargin):
         tSize = 30
     clip =  screen.get_clip()
     font = pygame.font.SysFont('freesans', 11, bold=False)
-    color = getColor(display.config.getScaleLabelsColor())
+    color = getColor(display.config.scale_labels_color)
     plsize = len(playlist)
     range = size[0] - lmargin - rmargin
     xInc= int(range / maxLabels)
@@ -593,7 +593,7 @@ def pageUp(display,radio):
     global playlist,plName
     currentID = radio.getCurrentID()
     plsize = radio.getPlayListLength()
-    maxLabels = display.config.getMaximumStations()
+    maxLabels = display.config.stations_per_page
     page = getPage(currentID,maxLabels)
     newID = ((page + 1) * maxLabels) + 1 
     
@@ -608,7 +608,7 @@ def pageUp(display,radio):
 # Page down through playlist
 def pageDown(display,radio):
     currentID = radio.getCurrentID()
-    maxLabels = display.config.getMaximumStations()
+    maxLabels = display.config.stations_per_page
     page = getPage(currentID,maxLabels)
 
     # If first page go to last sation in the playlist
@@ -662,7 +662,7 @@ def openEqualizer(radio,equalizer_cmd):
 
 # Set draw equalizer true/false
 def displayEqualizerIcon(display):
-    if display.config.fullScreen():
+    if display.config.fullscreen:
         draw_equalizer_icon = False
     else:
         draw_equalizer_icon = True
@@ -711,16 +711,16 @@ if __name__ == "__main__":
 
     font = pygame.font.SysFont('freesans', 13)
     display = GraphicDisplay(font)
-    size = display.getSize()
+    size = display.config.screen_size
 
-    if display.config.fullScreen():
+    if display.config.fullscreen:
         flags = FULLSCREEN|DOUBLEBUF
     else:
         flags = DOUBLEBUF
 
     # Setup radio
     log.init('radio')
-    if config.logTruncate():
+    if config.log_creation_mode:
         log.truncate()
 
     log.message("===== Graphic radio (vgradio.py) started ===", log.INFO)
@@ -729,7 +729,7 @@ if __name__ == "__main__":
     log.message("Python version " + str(sys.version_info[0]) ,log.INFO)
 
     # Set up the screen
-    size = config.getSize()
+    size = config.screen_size
     try:
         screen = pygame.display.set_mode(size,flags)
     except Exception as e:
@@ -745,7 +745,7 @@ if __name__ == "__main__":
     ipaddr = radio.waitForNetwork()
 
     # Hide mouse if configured
-    if display.config.fullScreen() and not display.config.displayMouse():
+    if display.config.fullscreen and not display.config.display_mouse:
         pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 
     # Paint screen background (Keep at start of draw routines)
@@ -812,7 +812,7 @@ if __name__ == "__main__":
     equalizerIcon = EqualizerIcon(pygame)
     drawUpIcon(display,screen,upIcon)
     drawDownIcon(display,screen,downIcon)
-    if display.config.switchPrograms():
+    if display.config.switch_programs:
         drawSwitchIcon(display,screen,switchIcon)
     MuteButton = MuteButton(pygame)
     MuteButton.draw(screen,display,(size[0]-(rmargin/2)-5,size[1]/2),
@@ -824,7 +824,7 @@ if __name__ == "__main__":
 
     playlist = radio.getPlayList()
     maxLabels = getMaximumLabels(display,radio)
-    maxStations = display.config.getMaximumStations()
+    maxStations = display.config.stations_per_page
     listIndex = 0   # Playlist index
     keyPress = -1
     sliderIndex = 0
@@ -832,7 +832,7 @@ if __name__ == "__main__":
 
     # Screen saver times
     screenBlank = False
-    screenMinutes = display.config.screenSaverTime()
+    screenMinutes = display.config.screen_saver
     if screenMinutes > 0:
         blankTime = int(time.time()) + screenMinutes*60
     else:
@@ -892,7 +892,7 @@ if __name__ == "__main__":
                     draw_equalizer_icon = False
                     equalizerIcon.disable()
                     
-                elif display.config.switchPrograms() and switchIcon.clicked():
+                elif display.config.switch_programs and switchIcon.clicked():
                     dir = os.path.dirname(__file__)
                     os.popen("sudo " + dir + "/gradio.py&")
                     run = False
@@ -931,7 +931,7 @@ if __name__ == "__main__":
         screen.blit(pygame.transform.scale(picWallpaper,size),(0,0))
 
         # Display the radio details
-        if display.config.displayDate():
+        if display.config.display_date:
             displayTimeDate(screen,radio,message)
 
         displayPlaylistName(screen,plName)
@@ -955,7 +955,7 @@ if __name__ == "__main__":
         if draw_equalizer_icon:
             drawEqualizerIcon(display,screen,equalizerIcon)
 
-        if display.config.switchPrograms():
+        if display.config.switch_programs:
             drawSwitchIcon(display,screen,switchIcon)
 
         volumeScale.drawSlider(screen,volume,lmargin)
@@ -964,11 +964,11 @@ if __name__ == "__main__":
 
         # Display title and page position
         plsize = len(playlist)
-        if display.config.displayTitle():
+        if display.config.display_title:
             displayTitle(screen,radio,message,plsize)
         displayPagePosition(page,maxStations,plsize)
     
-        if screenBlank and display.config.fullScreen(): 
+        if screenBlank and display.config.fullscreen: 
             screen.fill(Color(0,0,0))
 
         pygame.display.flip()

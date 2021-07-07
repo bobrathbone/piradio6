@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.3 2021/03/25 15:50:24 bob Exp $
+# $Id: event_class.py,v 1.7 2021/05/11 08:52:05 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -324,10 +324,9 @@ class Event():
         userInterfaces = ["Rotary encoders", "Buttons", "Touchscreen",
                   "Cosmic controller", "Piface CAD"]
         rotaryClasses = ["Standard", "Alternative"]
-        self.user_interface = self.config.getUserInterface()
+        self.user_interface = self.config.user_interface
         self.display_type = self.config.getDisplayType()
         log.message("User interface: " + userInterfaces[self.user_interface], log.DEBUG)
-        self.rotary_class = self.config.getRotaryClass()
         return
 
     # Get switches GPIO configuration
@@ -381,21 +380,24 @@ class Event():
         global tunerknob
         global volumeknob
 
-        if self.rotary_class == self.config.ALTERNATIVE:
+        # Internal pullup resistors can be disabled for rotary encoders (eg KY-040)
+        # with their own pullup resistors. See rotary_gpio_pullup in radiod.conf
+
+        if self.config.rotary_class == self.config.ALTERNATIVE:
             log.message("event.setInterface RotaryEncoder ALTERNATIVE", log.DEBUG)
             volumeknob = RotaryEncoderAlternative(self.left_switch, self.right_switch,
                     self.mute_switch,self.volume_event)
             tunerknob = RotaryEncoderAlternative(self.down_switch, self.up_switch,
                     self.menu_switch,self.tuner_event)
 
-        elif self.rotary_class == self.config.STANDARD:
+        elif self.config.rotary_class == self.config.STANDARD:
             log.message("event.setInterface RotaryEncoder STANDARD", log.DEBUG)
 
             volumeknob = RotaryEncoder(self.left_switch, self.right_switch,
-                    self.mute_switch,self.volume_event)
+                    self.mute_switch,self.volume_event,pullup=self.config.rotary_gpio_pullup)
 
             tunerknob = RotaryEncoder(self.down_switch, self.up_switch,
-                    self.menu_switch,self.tuner_event)
+                    self.menu_switch,self.tuner_event,pullup=self.config.rotary_gpio_pullup)
     
         msg = "Volume knob", self.left_switch, self.right_switch, self.mute_switch
         log.message(msg, log.DEBUG)
@@ -410,7 +412,7 @@ class Event():
         global up_button,down_button,menu_button 
 
         # Get pull up/down resistor configuration
-        up_down = self.config.getPullUpDown()
+        up_down = self.config.pull_up_down
         
         log.message("event.setInterface Push Buttons pull_up_down=" + str(up_down), 
                         log.DEBUG)

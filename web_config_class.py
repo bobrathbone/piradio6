@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Web Configuration Class
-# $Id: web_config_class.py,v 1.4 2021/03/23 20:12:00 bob Exp $
+# $Id: web_config_class.py,v 1.5 2021/05/16 06:35:29 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -27,12 +27,11 @@ config = configparser.ConfigParser()
 class Configuration:
 
     # Remote control parameters 
-    remote_led = 0  # Remote Control activity LED 0 = No LED    
-    remote_control_host = 'localhost'   # Remote control to radio communication port
-    remote_control_port = 5100      # Remote control to radio communication port
+    _remote_control_host = 'localhost'   # Remote control to radio communication port
+    _remote_control_port = 5100      # Remote control to radio communication port
 
     # Shoutcast ID
-    shoutcast_key = "anCLSEDQODrElkxl"
+    _shoutcast_key = "anCLSEDQODrElkxl"
 
     # Initialisation routine
     def __init__(self):

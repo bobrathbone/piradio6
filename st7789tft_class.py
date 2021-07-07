@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This class drives the Sitronix ST7789 controller and 240x240 pixel TFT
 #
-# $Id: st7789tft_class.py,v 1.6 2021/02/11 09:35:17 bob Exp $
+# $Id: st7789tft_class.py,v 1.7 2021/05/26 06:12:53 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -51,6 +51,10 @@ class ST7789:
     scroll_speed = 0.01
     #        1  2  3  4  5  6
     TextLines = ['','','','','','']
+
+    # Define display characteristics
+    nlines = 7
+    nchars = 16 # Character width can vary
 
     # Line 2 is different from the others and uses a larger font
     default_font = ImageFont.truetype("DejaVuSansMono.ttf", default_fontSize)
@@ -238,6 +242,14 @@ class ST7789:
         x2 = x1 + range
         draw.rectangle((x1, y1, x2, y2), (100, 0, 255))
         self.update()
+
+    # Get number of lines for this OLED
+    def getLines(self):
+        return self.nlines
+
+    # Get character width for this OLED
+    def getChars(self):
+        return self.nchars
 
 if __name__ == '__main__':
     import os

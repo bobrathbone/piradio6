@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: graphic_display.py,v 1.2 2020/10/12 08:26:57 bob Exp $
+# $Id: graphic_display.py,v 1.4 2021/05/17 12:48:30 bob Exp $
 # Raspberry Pi display routines
 # Graphic screen routines used by touch graphic screen
 #
@@ -56,7 +56,7 @@ class GraphicDisplay:
 
     def __init__(self,font):
         self.font = font
-        self.size = self.config.getSize()
+        self.size = self.config.screen_size
         self.setSize(self.size)
         return
 
@@ -98,7 +98,7 @@ class GraphicDisplay:
     def getWindowTitle(self,radio):
         version = radio.getVersion()
         hostname = socket.gethostname()
-        title = self.config.getWindowTitle()
+        title = self.config.window_title
         title = title.replace('%V',version)
         title = title.replace('%H',hostname)
         return title
@@ -112,10 +112,6 @@ class GraphicDisplay:
         self.columns = int(1.1 * self.size[0]/w)
         self.rows = int(self.size[1]/(h*1.5))
         return size 
-
-    # Get the display size, rows and columns
-    def getSize(self):
-        return self.size
 
     # Scroll text routine
     def scroll(self,text,line,max_columns):

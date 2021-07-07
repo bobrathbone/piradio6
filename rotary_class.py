@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.1 2020/10/10 15:00:46 bob Exp $
+# $Id: rotary_class.py,v 1.5 2021/06/08 19:51:40 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -74,6 +74,7 @@
 import os,sys,pwd
 import time
 import RPi.GPIO as GPIO
+import threading
 
 R_CCW_BEGIN   = 0x1
 R_CW_BEGIN    = 0x2
@@ -141,6 +142,12 @@ STATE_TAB = HALF_TAB if HALF_STEP else FULL_TAB
 # the table, the encoder outputs are 00, 01, 10, 11, and the value
 # in that position is the new state to set.
 
+# The Raspberry Pi GPIOs have internal 10K pull-up resistors
+# Rotary encoders need these to be set to GPIO.PUD_UP
+# However, KY-040 encoders have their own physical 10K pull-up resistors 
+# In such a case set resistor=GPIO.PUD_OFF in the initialisation call
+# otherwise there will be two 10K resistors paralleled across each other giving 5K
+
 class RotaryEncoder:
     state = R_START
     pinA = None
@@ -150,11 +157,13 @@ class RotaryEncoder:
     BUTTONDOWN=3
     BUTTONUP=4
 
-    def __init__(self, pinA, pinB, button,callback):
+    def __init__(self, pinA, pinB, button,callback,pullup=GPIO.PUD_UP):
+        threading.Thread.__init__(self)
         self.pinA = pinA
         self.pinB = pinB
         self.button = button
         self.callback = callback
+        self.pullup = pullup
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
@@ -162,13 +171,13 @@ class RotaryEncoder:
         try:
             # The following lines enable the internal pull-up resistors
             if pinA > 0 and pinB > 0:
-                GPIO.setup(self.pinA, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-                GPIO.setup(self.pinB, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.setup(self.pinA, GPIO.IN, pull_up_down=self.pullup)
+                GPIO.setup(self.pinB, GPIO.IN, pull_up_down=self.pullup)
                 # Add event detection to the GPIO inputs
                 GPIO.add_event_detect(self.pinA, GPIO.BOTH, callback=self.rotary_event)
                 GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.rotary_event)
             if button > 0:
-                GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.setup(self.button, GPIO.IN, pull_up_down=self.pullup)
                 # Add event detection to the GPIO input
                 GPIO.add_event_detect(self.button, GPIO.FALLING, callback=self.button_event, 
                         bouncetime=150)

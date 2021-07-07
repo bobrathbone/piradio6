@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.22 2021/03/19 11:07:03 bob Exp $
+# $Id: gradio.py,v 1.38 2021/07/01 08:48:10 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -138,13 +138,12 @@ def setupRadio(radio):
 
 # This routine displays the time string
 def displayTimeDate(screen,myfont,radio,message):
-    dateFormat = config.getGraphicDateFormat()
+    dateFormat = config.graphic_dateformat
     timedate = strftime(dateFormat)
     timedate = uEncode(timedate)
 
-    banner_color_name = display.config.getBannerColor()
     try:
-        color = pygame.Color(banner_color_name)
+        color = pygame.Color(display.config.banner_color)
     except:
         color = pygame.Color('white')
 
@@ -184,7 +183,7 @@ def displayPopup(screen,radio,text):
 
 # Display source load
 def displayLoadingSource(screen,font,radio,message):
-    lcolor = getLabelColor(display.config.getDisplayLabelsColor())
+    lcolor = getLabelColor(display.config.display_window_labels_color)
     color = pygame.Color(lcolor)
     sourceName = radio.getSourceName()
     column = 12
@@ -202,7 +201,7 @@ def displayLoadingSource(screen,font,radio,message):
 
 # Display information
 def displayInfo(screen,font,radio,message):
-    lcolor = getLabelColor(display.config.getDisplayLabelsColor())
+    lcolor = getLabelColor(display.config.display_window_labels_color)
     color = pygame.Color(lcolor)
     startColumn = display.getStartColumn()
     #column = 12
@@ -281,7 +280,7 @@ def displayCurrent(screen,font,radio,message):
     source_type = radio.getSourceType()
 
     row = 3
-    lcolor = getLabelColor(display.config.getDisplayLabelsColor())
+    lcolor = getLabelColor(display.config.display_window_labels_color)
     color = pygame.Color(lcolor)
     rowPos = display.getRowPos(row)
 
@@ -371,7 +370,7 @@ def displayCurrent(screen,font,radio,message):
 
 # Display Spotify information and logo
 def displaySpotify(display,radio,font):
-    lcolor = getLabelColor(display.config.getDisplayLabelsColor())
+    lcolor = getLabelColor(display.config.display_window_labels_color)
     color = pygame.Color(lcolor)
     columns = display.getColumns()
     max_columns = columns - 20
@@ -422,7 +421,7 @@ def displayAirplay(display,radio,font):
     title = info[1]
     album = info[2]
 
-    lcolor = getLabelColor(display.config.getDisplayLabelsColor())
+    lcolor = getLabelColor(display.config.display_window_labels_color)
     color = pygame.Color(lcolor)
     column = 4
     columnPos = display.getColumnPos(column)
@@ -537,8 +536,7 @@ def handleEvent(radio,radioEvent):
     
     if event_type == radioEvent.SHUTDOWN:
         radio.stop()
-        print("doShutdown", config.doShutdown())
-        if config.doShutdown():
+        if config.shutdown:
             radio.shutdown() # Shutdown the system
         else:
             print("radioEvent.SHUTDOWN")
@@ -582,6 +580,7 @@ def handleEvent(radio,radioEvent):
         log.message("radioEvent Client Change",log.DEBUG)
         if source_type == radio.source.MEDIA:
             artwork_file = getArtWork(radio)
+
         if radio.muted():
             radio.unmute()
 
@@ -628,7 +627,7 @@ def handleSourceChange(event,radio,message):
     elif event_type == event.LOAD_AIRPLAY:
         msg = message.get('starting_airplay')
         message.speak(msg)
-        if display.config.getAirplay():
+        if display.config.airplay:
             radio.cycleWebSource(radio.source.AIRPLAY)
 
     elif event_type == event.LOAD_SPOTIFY:
@@ -699,7 +698,7 @@ def drawDisplayWindow(surface,screen,display):
     xSize = display.getColumnPos(cols - startColumn * 2)
     ySize = display.getRowPos(3)    
     border = 4
-    wcolor = getLabelColor(display.config.getDisplayWindowColor())
+    wcolor = getLabelColor(display.config.display_window_color)
     color = pygame.Color(wcolor)
     bcolor = (25,25,25)     # Border colour
     DisplayWindow.draw(screen,color,bcolor,xPos,yPos,xSize,ySize,border)
@@ -764,7 +763,7 @@ def getLabelColor(lcolor):
 
 # Draw option buttons (Random,Repeat and Consume)
 def drawOptionButtons(display,screen,radio,RandomButton,RepeatButton,ConsumeButton,SingleButton):
-    lcolor = getLabelColor(display.config.getLabelsColor())
+    lcolor = getLabelColor(display.config.labels_color)
     row = 13.5
     startColumn = display.getStartColumn()
     xPos = display.getColumnPos(startColumn + 1)
@@ -847,8 +846,8 @@ def drawSearchWindow(surface,screen,display,searchID):
     iLeng = len(textArray)
     if iLeng > 0:
         SearchWindow.drawText(screen,font,color,textArray[idx:])
-        lcolor = getLabelColor(display.config.getLabelsColor())
-        scolor = getLabelColor(display.config.getSliderColor())
+        lcolor = getLabelColor(display.config.labels_color)
+        scolor = getLabelColor(display.config.slider_color)
         if rows >= 20:
             SearchWindow.slider.setPosition(searchID,iLeng,scolor,lcolor)
         else:
@@ -1060,7 +1059,7 @@ def handleKeyEvent(key,radioEvent,searchID,srange):
     elif key == K_ESCAPE:
         quit()
 
-    elif event.key == K_x and display.config.switchPrograms():
+    elif event.key == K_x and display.config.switch_programs:
         dir = os.path.dirname(__file__)
         os.popen("sudo " + dir + "/vgradio.py&")
         run = False
@@ -1109,7 +1108,7 @@ def openEqualizer(radio,equalizer_cmd):
 
 # Set draw equalizer true/false
 def displayEqualizerIcon(display):
-    if display.config.fullScreen():
+    if display.config.fullscreen:
         draw_equalizer_icon = False
     else:
         draw_equalizer_icon = True
@@ -1170,20 +1169,21 @@ if __name__ == "__main__":
 
     font = pygame.font.SysFont('freesans', 13)
     display = GraphicDisplay(font)
-    size = display.getSize()
+    size = display.config.screen_size
 
-    if display.config.fullScreen():
+    if display.config.fullscreen:
         flags = FULLSCREEN|DOUBLEBUF
     else:
         flags = DOUBLEBUF
 
     radioEvent = Event(config)        # Add radio event handler
 
-    if config.logTruncate():
+    if config.log_creation_mode:
         log.truncate()
+
     log.message("===== Graphic radio (gradio.py) started ==", log.INFO)
     radio = Radio(rmenu,radioEvent,translate,config,log)  # Define radio
-    size = config.getSize()
+    size = config.screen_size
     log.message("Python version " + str(sys.version_info[0]) ,log.INFO)
 
     ipaddr = radio.waitForNetwork()
@@ -1200,7 +1200,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Hide mouse if configured
-    if display.config.fullScreen() and not display.config.displayMouse():
+    if display.config.fullscreen and not display.config.display_mouse:
         pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 
     log.init('radio')
@@ -1216,7 +1216,7 @@ if __name__ == "__main__":
 
     # see https://www.webucator.com/blog/2015/03/python-color-constants-module/
     # Paint screen background (Keep at start of draw routines)
-    wallpaper = display.config.getWallPaper()
+    wallpaper = display.config.wallpaper
     if len(wallpaper) > 1:
         picWallpaper=pygame.image.load(wallpaper)
         screen.blit(pygame.transform.scale(picWallpaper,size),(0,0))
@@ -1253,7 +1253,7 @@ if __name__ == "__main__":
         draw_equalizer_icon = displayEqualizerIcon(display)
 
     # Create SGC widgets
-    labels_color_name = display.config.getLabelsColor()
+    labels_color_name = display.config.labels_color
     try:
         label_col = pygame.Color(labels_color_name)
     except:
@@ -1288,7 +1288,7 @@ if __name__ == "__main__":
     if draw_equalizer_icon:
         drawEqualizerIcon(display,screen,equalizerIcon)
 
-    if display.config.switchPrograms():
+    if display.config.switch_programs:
         drawSwitchIcon(display,screen,switchIcon)
 
     # Option buttons
@@ -1312,7 +1312,7 @@ if __name__ == "__main__":
 
     # Screen saver times
     screenBlank = False
-    screenMinutes = display.config.screenSaverTime()
+    screenMinutes = display.config.screen_saver
     if screenMinutes > 0:
         blankTime = int(time.time()) + screenMinutes*60
     else:
@@ -1407,7 +1407,7 @@ if __name__ == "__main__":
                     if searchID > srange:
                         searchID = 1
 
-                elif display.config.switchPrograms() and switchIcon.clicked():
+                elif display.config.switch_programs and switchIcon.clicked():
                     if radio.spotify.isRunning():
                         radio.spotify.stop()
                     dir = os.path.dirname(__file__)
@@ -1589,7 +1589,7 @@ if __name__ == "__main__":
                     drawLeftArrow(display,screen,LeftArrow)
                     drawRightArrow(display,screen,RightArrow)
 
-        if display.config.switchPrograms() and largeDisplay:
+        if display.config.switch_programs and largeDisplay:
             drawSwitchIcon(display,screen,switchIcon)
 
         if draw_equalizer_icon:
@@ -1609,7 +1609,7 @@ if __name__ == "__main__":
         sgc.update(tick)
 
         # Screen blanking
-        if screenBlank and display.config.fullScreen():
+        if screenBlank and display.config.fullscreen:
             screen.fill(Color(0,0,0))
 
         #if not largeDisplay:

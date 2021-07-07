@@ -4,7 +4,7 @@
 # This program produces a wiring diagram based on the 
 #      configuration in the /etc/radiod.conf file
 
-# $Id: wiring.py,v 1.3 2021/01/19 14:02:18 bob Exp $
+# $Id: wiring.py,v 1.6 2021/05/25 05:41:04 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -94,10 +94,9 @@ def displaySwitch(config,params):
         except:
             print("Invalid GPIO", label + '=' + str(gpio))
     print()
-    pull_up_down = config.getPullUpDown()
-    print("Pull Up/Down resistors", pullupdown[pull_up_down])
+    print("Pull Up/Down resistors", pullupdown[config.pull_up_down])
     print()
-    print("Push button switches must be wired to " + voltages[pull_up_down])
+    print("Push button switches must be wired to " + voltages[config.pull_up_down])
     print("Rotary push switches must always be wired to GND 0V")
     print()
     return
@@ -155,7 +154,7 @@ def displayOther(config,params):
         gpio = 0
         comment = ''
         if label is 'remote_led':
-            gpio = config.getRemoteLed()
+            gpio = config.remote_led
             if not params:
                 label = label.capitalize()
         elif label is 'I2C_Clock':
@@ -194,7 +193,7 @@ if len(sys.argv) > 1:
         usage()
 
 print("Radio wiring scheme based upon configuration in /etc/radiod.conf")
-print("----------------------------------------------------------------")
+print("================================================================")
 print()
 
 displaySwitch(config,params)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #       
 # Raspberry Pi remote control daemon
-# $Id: remote_control.py,v 1.10 2021/03/28 11:25:02 bob Exp $
+# $Id: remote_control.py,v 1.15 2021/05/16 06:48:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -111,7 +111,7 @@ class RemoteDaemon(Daemon):
             log.message("Starting lirc daemon", log.DEBUG)
             execCommand('sudo service lirc start')  # For Jessie
 
-        remote_led = config.getRemoteLed()
+        remote_led = config.remote_led
         if remote_led > 0:
             print("Flashing LED on GPIO", remote_led)
             GPIO.setwarnings(False)      # Disable warnings
@@ -120,8 +120,8 @@ class RemoteDaemon(Daemon):
             flash_led(remote_led)
         else:
             log.message("Remote control LED disabled", log.DEBUG)
-        udpport = config.getRemoteUdpPort()
-        udphost = config.getRemoteUdpHost()
+        udphost = config.remote_control_host
+        udpport = config.remote_control_port
         log.message("UDP connect host " + udphost + " port " + str(udpport), log.DEBUG)
         listener()
 
@@ -153,7 +153,7 @@ class RemoteDaemon(Daemon):
     # Test the LED
     def flash(self):
         log.init('radio')
-        remote_led = config.getRemoteLed()
+        remote_led = config.remote_led
         if remote_led > 0:
             GPIO.setwarnings(False)      # Disable warnings
             GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
@@ -214,10 +214,11 @@ def listener():
 # Send button data to radio program
 def udpSend(button):
     global udpport
-    global udphost
     data = ''
     log.message("Remote control daemon udpSend " + button, log.DEBUG)
     
+    # The host to send to is either local host or the IP address of the remote server
+    udphost = config.remote_listen_host
     try:
         clientsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         clientsocket.settimeout(3)
@@ -271,12 +272,12 @@ def usageSend():
     print(("Usage: %s send <KEY>" % sys.argv[0]))
     print ("Where <KEY> is a valid IR_KEY")
     print ("   KEY_VOLUMEUP,KEY_VOLUMEDOWN,KEY_CHANNELUP,KEY_CHANNELDOWN,")
-    print ("   KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK,KEY_INFO")
+    print ("   KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK,KEY_INFO,KEY_MUTE")
     sys.exit(2)
 
 def getBootConfig(str):
-    file = file("/boot/config.txt", "r")
-    for line in file:
+    f = file("/boot/config.txt", "r")
+    for line in f:
         if re.search(str, line):
             return line
 
@@ -310,10 +311,10 @@ if __name__ == "__main__":
                 usageSend()
         elif 'config' == sys.argv[1]:
             config = Configuration()
-            print("LED = GPIO", config.getRemoteLed())
-            print("HOST =", config.getRemoteUdpHost())
-            print("PORT =", config.getRemoteUdpPort())
-            print("LISTEN =", config.getRemoteListenHost())
+            print("LED = GPIO " + str(config.remote_led))
+            print("HOST = " + config.remote_control_host)
+            print("PORT = " + str(config.remote_control_port))
+            print("LISTEN = " + str(config.remote_control_port))
             line = getBootConfig("^dtoverlay=lirc-rpi") 
             if line != None:
                 print(line)

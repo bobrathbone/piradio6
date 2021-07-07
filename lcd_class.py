@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.1 2020/10/10 15:00:45 bob Exp $
+# $Id: lcd_class.py,v 1.3 2021/05/11 17:41:45 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -125,7 +125,7 @@ class Lcd:
         GPIO.setup(self.lcd_data7, GPIO.OUT) # DB7
         self.lcd_init()
 
-        self.scroll_speed = config.getScrollSpeed()
+        self.scroll_speed = config.scroll_speed
         self.setScrollSpeed(self.scroll_speed)
 
         return
@@ -214,7 +214,7 @@ class Lcd:
 
     # Get LCD width 
     def getWidth(self):
-        return config.getWidth()
+        return config.display_width
 
     # Display Line on LCD
     def out(self,line_number=1,text="",interrupt=no_interrupt):

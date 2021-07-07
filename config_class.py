@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.11 2021/03/12 13:08:33 bob Exp $
+# $Id: config_class.py,v 1.63 2021/06/24 10:56:58 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -18,6 +18,7 @@ import sys
 import configparser
 from log_class import Log
 from constants import *
+import RPi.GPIO as GPIO
 import pdb
 
 # System files
@@ -40,6 +41,8 @@ class Configuration:
     LIST = 0
     STREAM = 1
 
+    _stationNamesSource = ['list','stream'] 
+
     # Display types
     NO_DISPLAY = 0      # No screen attached
     LCD = 1         # Directly connected LCD
@@ -50,12 +53,13 @@ class Configuration:
     OLED_128x64 = 6     # OLED 128 by 64 pixels
     PIFACE_CAD = 7      # Piface CAD 
     ST7789TFT = 8       # Pirate audio TFT with ST7789 controller
+    SSD1306 = 9         # Sitronix SSD1306 controller for the 128x64 tft
 
     display_type = LCD
     DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574', 
              'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 
              'GRAPHICAL_DISPLAY', 'OLED_128x64', 
-             'PIFACE_CAD','ST7789TFT' ]
+             'PIFACE_CAD','ST7789TFT','SSD1306' ]
 
     # User interface ROTARY or BUTTONS
     ROTARY_ENCODER = 0
@@ -64,7 +68,7 @@ class Configuration:
     COSMIC_CONTROLLER = 3   # IQAudio cosmic controller
     PIFACE_BUTTONS = 4  # PiFace CAD buttons 
     ADAFRUIT_RGB = 5    # Adafruit RGB I2C 5 button interface
-    user_interface = ROTARY_ENCODER
+    _user_interface = ROTARY_ENCODER
 
     UserInterfaces = [ 'ROTARY_ENCODER','BUTTONS', 'GRAPHICAL', 
              'COSMIC_CONTROLLER', 'PIFACE_BUTTONS', 'ADAFRUIT_RGB', 
@@ -74,93 +78,97 @@ class Configuration:
     STANDARD = 0    # Select rotary_class.py
     ALTERNATIVE = 1 # Select rotary_class_alternate.py
 
-    # Configuration parameters
-    mpdport = 6600          # MPD port number
-    client_timeout = 10     # MPD client timeout in secons 3 to 15 seconds
-    dateFormat = "%H:%M %d/%m/%Y"   # Date format
-    volume_range = 100      # Volume range 10 to 100
-    volume_increment = 1    # Volume increment 1 to 10
-    display_playlist_number = False # Two line displays only, display station(n)
-    source = RADIO          # Source RADIO or Player
-    load_last = False       # Auto load media if no Internet on startup
-    rotary_class = STANDARD # Rotary class STANDARD or ALTERNATIVE 
-    display_width = 0       # Line width of display width 0 = use program default
-    display_lines = 2       # Number of display lines
-    scroll_speed = float(0.3)   # Display scroll speed (0.01 to 0.3)
-    airplay = False     # Use airplay
-    mixerPreset = 0     # Mixer preset volume (0 disable setting as MPD controls it)
-    audio_out=""        # Audio device string such as headphones, HDMI or DAC
-    audio_config_locked = True    # Don't allow dynamic updating of audio configuration
-    display_blocks = False  # Display volume in blocks
-    fullscreen = True   # Graphics screen fullscreen yes no 
-    startup_playlist = ""   # Startup playlist if defined
-    screen_saver = 0    # Screen saver time n minutes, 0 = No screen save
-    flip_display_vertically = False # Flip OLED display vertically
-    stationNamesSource = LIST # Station names from playlist names or STREAM
-    mute_action = 0     # MPD action on mute, 1=pause, 2=stop, 0=volume off only
+    # Configuration parameters accesible through @property and @<parameter>.setter
+    _mpdport = 6600         # MPD port number
+    _client_timeout = 10    # MPD client timeout in secons 3 to 15 seconds
+    _dateformat = "%H:%M %d/%m/%Y"   # Date format
+    _volume_range = 100     # Volume range 10 to 100
+    _volume_increment = 1   # Volume increment 1 to 10
+    _display_playlist_number = False # Two line displays only, display station(n)
+    _source = RADIO          # Source RADIO or MEDIA Player
+    _rotary_class = STANDARD # Rotary class STANDARD or ALTERNATIVE 
+    _rotary_gpio_pullup =  GPIO.PUD_UP  # KY-040 encoders have own 10K pull-up resistors. 
+                            # Set internal pullups to off with rotary_gpio_pullup = GPIO.PUD_OFF
+    _display_width = 0      # Line width of display width 0 = use program default
+    _display_lines = 2      # Number of display lines
+    _scroll_speed = float(0.3)   # Display scroll speed (0.01 to 0.3)
+    _airplay = False     # Use airplay
+    _mixer_preset = 0    # Mixer preset volume (0 disable setting as MPD controls it)
+    _audio_out=""        # Audio device string such as headphones, HDMI or DAC
+    _audio_config_locked = True    # Don't allow dynamic updating of audio configuration
+    _display_blocks = False  # Display volume in blocks
+    _startup_playlist = ""   # Startup playlist RADIO,MEDIA,LAST or specific playlist 
+    _load_last = False       # Load the last playlist played. Set by startup_playlist=LAST
+    _screen_saver = 0        # Screen saver time n minutes, 0 = No screen save
+    _flip_display_vertically = False # Flip OLED display vertically
+    _station_names = LIST # Station names from playlist names or STREAM
+    _mute_action = 0       # MPD action on mute, 1=pause, 2=stop, 0=volume off only
+    MuteActions =  ['Pause','Stop']  # Text for above _mute_action
 
     # Remote control parameters 
-    remote_led = 0  # Remote Control activity LED 0 = No LED    
-    remote_control_host = 'localhost'   # Remote control to radio communication port
-    remote_listen_host = 'localhost'    # Remote control to radio communication port
-    remote_control_port = 5100          # Remote control to radio communication port
+    _remote_led = 0  # Remote Control activity LED 0 = No LED    
+    _remote_control_host = 'localhost'   # Remote control to radio communication host
+    _remote_control_port = 5100          # Remote control to radio communication port
+    _remote_listen_host = 'localhost'    # Address (locahost) or IP adress of remote UDP server
 
-    i2c_address = 0x00  # Use defaults or use setting in radiod.conf 
-    i2c_bus = 1     # The I2C bus is normally 1
-    speech = False          # Speech on for visually impaired or blind persons
-    isVerbose = False       # Extra speech verbosity
-    speak_info = False      # If speach enable also speak info (IP address and hostname)
-    speech_volume = 80      # Percentage speech volume 
-    logfile_truncate = False    # Truncate logfile otherwise write to end
-    comitup_ip = "10.41.0.1"    # Comitup initial IP address.
+    _i2c_address = 0x00  # Use defaults or use setting in radiod.conf 
+    _i2c_bus = 1         # The I2C bus is normally 1
+    _speech = False          # Speech on for visually impaired or blind persons
+    _speak_info = False      # If speach enable also speak info (IP address and hostname)
+    _speech_volume = 80      # Percentage speech volume 
+    _verbose = False         # Extra speech verbosity
+    _logfile_truncate = False   # Truncate logfile otherwise tail the file
+    _shutdown = True            # Shutdown when exiting radio
+    _comitup_ip = "10.41.0.1"   # Comitup initial IP address.
 
     # Shoutcast ID
-    shoutcast_key = "anCLSEDQODrElkxl"
+    _shoutcast_key = "anCLSEDQODrElkxl"
 
     # Internet check URL and port number
-    internet_check_url="google.com"
-    internet_check_port=80
-    internet_timeout=10
+    _internet_check_url="google.com"
+    _internet_check_port=80
+    _internet_timeout=10
+    _bluetooth_device='00:00:00:00:00:00'    # Bluetooth device ID
+
+    # Cyrillic Romanization
+    _romanize = True        # Romanize language(convert to Latin). e.g. Russian
+    _codepage = 0           # LCD font page 0,1,2 depending upon make of LCD
+    _language='English'     # Translation table in /usr/share/radio/fonts eg Russian
+    _controller='HD44780U'  # LCD/OLED controller type (LCD can have multiple code pages)
+    _translate_lcd = True   # Translate characters for LCD display
+                            # True for latin character LCDs.
+                            # False for Russian/Cyrillic character LCDs
 
     # Graphics screen default parameters [SCREEN] section
-    fullscreen = True   # Display graphics fulll screen
-    window_title = "Bob Rathbone Internet Radio %V - %H"    # Window title
-    window_color = 'blue'   # Graphics screen background colour
-    labels_color = 'white'  # Graphics screen labels colour
-    display_window_color = 'navy'       # Display window background colour
-    display_window_labels_color = 'white'   # Display window labels colour
-    display_mouse = False   # Hide mouse
-    switch_programs = False # Allow switch between gradio and vgradio
-    slider_color = 'red'    # Search window slider default colour 
-    banner_color = 'black'  # Time banner text colour
-    wallpaper = ''      # Background wallpaper
-    graphicDateFormat="%H:%M:%S %A %e %B %Y"    # Format for graphic screen
+    _fullscreen = True   # Graphics screen fullscreen yes no 
+    _window_title = "Bob Rathbone Internet Radio %V - %H"    # Window title
+    _window_color = 'blue'   # Graphics screen background colour
+    _labels_color = 'white'  # Graphics screen labels colour
+    _display_window_color = 'navy'       # Display window background colour
+    _display_window_labels_color = 'white'   # Display window labels colour
+    _display_mouse = False   # Hide mouse
+    _switch_programs = False # Allow switch between gradio and vgradio
+    _slider_color = 'red'    # Search window slider default colour 
+    _banner_color = 'white'  # Time banner text colour
+    _wallpaper = ''          # Background wallpaper
+    _graphic_dateformat="%H:%M:%S %A %e %B %Y"    # Format for graphic screen
 
-    # Specific to the vintage graphic radio
-    scale_labels_color = 'white'    # Vintage screen labels colour
-    stations_per_page = 50      # maximum stations per page
-    display_date = True         # Display time and date
-    display_title = True        # Display title play (at bottom of screen)
-    splash_screen = 'bitmaps/raspberry-pi-logo.bmp' # Splash screen (OLED)
-    screen_size = (800,480)     # Screen size 800x480 (7 inch) or 720x480 (3.5 inch)
-    bluetooth_device='00:00:00:00:00:00'    # Bluetooth device ID
-    translate_lcd = True        # Translate characters for LCD display
-                                # True for latin character LCDs.
-                                # False for Russian/Cyrillic character LCDs
-    romanize = True     # Romanize language(convert to Latin). e.g. Russian
-    codepage = 0        # LCD font page 0,1,2 depending upon make of LCD
-    language='English'  # Translation table in /usr/share/radio/fonts eg Russian
-    controller='HD44780U'   # LCD/OLED controller type
-
-    shutdown = True     # Shutdown when exiting radio
-    
+    # Parameters specific to the vintage graphic radio
+    _scale_labels_color = 'white'    # Vintage screen labels colour
+    _stations_per_page = 50      # maximum stations per page
+    _display_date = True         # Display time and date
+    _display_title = True        # Display title play (at bottom of screen)
+    _splash_screen = 'bitmaps/raspberry-pi-logo.bmp' # Splash screen (OLED)
+    _screen_size = (800,480)     # Screen size 800x480 (7 inch) or 720x480 (3.5 inch)
     # Colours for Adafruit LCD
     color = { 'OFF': 0x0, 'RED' : 0x1, 'GREEN' : 0x2, 'YELLOW' : 0x3,
           'BLUE' : 0x4, 'VIOLET' : 0x5, 'TEAL' : 0x6, 'WHITE' : 0x7 }
 
+    # These are for the Adafruit RGB plate and for not any graphics screen
     colorName = { 0: 'Off', 1 : 'Red', 2 : 'Green', 3 : 'Yellow',
             4 : 'Blue', 5 : 'Violet', 6 : 'Teal', 7 : 'White' }
 
+    # These are for the Adafruit RGB plate and not for any graphics screen
     colors = { 'bg_color' : 0x0,
            'mute_color' : 0x0,
            'shutdown_color' : 0x0,
@@ -175,6 +183,7 @@ class Configuration:
     configOptions = {}
 
     #  GPIOs for switches and rotary encoder configuration (40 pin wiring)
+    _switch_gpio = 0    # Switch GPIO
     switches = { "menu_switch": 17,
              "mute_switch": 4,
              "left_switch": 14,
@@ -184,7 +193,7 @@ class Configuration:
            }
 
     # Pull up/down resistors (For button class only)
-    pull_up_down = DOWN # Default
+    _pull_up_down = DOWN # Default
 
     # Values for the rotary switch on vintage radio (Not rotary encoders)
     # Zero values disable usage 
@@ -224,7 +233,8 @@ class Configuration:
     def getConfig(self):
         section = 'RADIOD'
 
-        # Get options
+        # Get options from /etc/radiod.conf
+        # Parameter for each option is passed to the @property setter for that option
         config.read(ConfigFile)
         try:
             options =  config.options(section)
@@ -254,18 +264,7 @@ class Configuration:
                         self.invalidParameter(ConfigFile,option,parameter)
 
                 elif option == 'user_interface':
-                    if parameter == 'buttons':
-                        self.user_interface =  self.BUTTONS
-                    elif parameter == 'rotary_encoder':
-                        self.user_interface =  self.ROTARY_ENCODER
-                    elif parameter == 'graphical':
-                        self.user_interface =  self.GRAPHICAL
-                    elif parameter == 'cosmic_controller':
-                        self.user_interface =  self.COSMIC_CONTROLLER
-                    elif parameter == 'phatbeat':
-                        self.user_interface =  self.BUTTONS
-                    elif parameter == 'pifacecad':
-                        self.user_interface =  self.PIFACE_BUTTONS
+                    self.user_interface = parameter
 
                 elif option == 'remote_led':
                     try:
@@ -298,42 +297,27 @@ class Configuration:
                         self.invalidParameter(ConfigFile,option,parameter)
 
                 elif option == 'dateformat':
-                    self.dateFormat = parameter
+                    self.dateformat = parameter
 
                 elif option == 'display_playlist_number':
                     self.display_playlist_number = self.convertYesNo(parameter)
 
                 elif option == 'station_names':
-                    if parameter == 'stream':
-                        self.stationNamesSource =  self.STREAM
-                    else:
-                        self.stationNamesSource =  self.LIST
+                    self.station_names = parameter
 
                 elif option == 'flip_display_vertically':
-                    self.flip_display_vertically = self.convertYesNo(parameter)
+                    self.flip_display_vertically = parameter
 
                 elif option == 'splash':
                     self.splash_screen = parameter
 
                 elif option == 'startup':
-                    if parameter == 'RADIO': 
-                        self.source =  self.RADIO
-                    elif parameter == 'MEDIA':
-                        self.source =  self.PLAYER
-                    elif parameter == 'AIRPLAY':
-                        self.source =  self.AIRPLAY
-                    elif parameter == 'LAST': 
-                        self.load_last = True
-                    elif len(parameter) > 0:
-                        self.startup_playlist = parameter
+                    self.startup_playlist = parameter
 
                 elif option == 'i2c_address':
                     try:
-                        value = int(parameter,16)
-                        if value  > 0x0:
-                            self.i2c_address =  value
+                        self.i2c_address = int(parameter,16)
                     except Exception as e:
-                        print ("i2c_address", e)
                         self.invalidParameter(ConfigFile,option,parameter)
 
                 elif option == 'i2c_bus':
@@ -354,17 +338,16 @@ class Configuration:
                         self.invalidParameter(ConfigFile,option,parameter)
 
                 elif option == 'speech':
-                    self.speech = self.convertYesNo(parameter)
+                    self.speech = parameter
 
                 elif option == 'verbose':
-                    self.isVerbose = self.convertYesNo(parameter)
+                    self.verbose = parameter
 
                 elif option == 'speak_info':
-                    self.speak_info = self.convertYesNo(parameter)
+                    self.speak_info = parameter
 
                 elif option == 'volume_display':
-                    if parameter == 'blocks':
-                        self.display_blocks = True
+                    self.display_blocks = parameter
 
                 elif option == 'speech_volume':
                     try:
@@ -403,9 +386,10 @@ class Configuration:
                         self.invalidParameter(ConfigFile,option,parameter)
 
                 elif 'codepage' in option:
-                    codepage = int(parameter)
-                    if codepage >= 0 and codepage <= 4:
-                        self.codepage = codepage
+                    try:
+                        self.codepage = int(parameter)
+                    except:
+                        self.invalidParameter(ConfigFile,option,parameter)
                     
                 elif 'lcd_' in option:
                     try:
@@ -459,6 +443,9 @@ class Configuration:
                     elif parameter == 'ST7789TFT':
                         self.display_type = self.ST7789TFT
 
+                    elif parameter == 'SSD1306':
+                        self.display_type = self.SSD1306
+
                     else:
                         self.invalidParameter(ConfigFile,option,parameter)
 
@@ -468,17 +455,17 @@ class Configuration:
                     else:
                         self.rotary_class = self.ALTERNATIVE
 
-                elif option == 'exit_action':
-                    if parameter == 'stop_radio':
-                        self.shutdown = False
+                elif option == 'rotary_gpio_pullup':
+                    if parameter == 'none':
+                        self.rotary_gpio_pullup = GPIO.PUD_OFF 
                     else:
-                        self.shutdown = True
+                        self.rotary_gpio_pullup = GPIO.PUD_UP 
+
+                elif option == 'exit_action':
+                    self.shutdown = parameter
 
                 elif option == 'log_creation_mode':
-                    if parameter == 'truncate':
-                        self.logfile_truncate = True
-                    else:
-                        self.logfile_truncate = False
+                    self.log_creation_mode = parameter 
 
                 elif option == 'shoutcast_key':
                     self.shoutcast_key = parameter
@@ -487,22 +474,25 @@ class Configuration:
                     self.internet_check_url = parameter
 
                 elif option == 'internet_check_port':
-                    self.internet_check_port = int(parameter)
+                    try:
+                        self.internet_check_port = int(parameter)
+                    except:
+                        self.invalidParameter(ConfigFile,option,parameter)
 
                 elif option == 'internet_timeout':
-                    self.internet_timeout = int(parameter)
+                    try:
+                        self.internet_timeout = int(parameter)
+                    except:
+                        self.invalidParameter(ConfigFile,option,parameter)
 
                 elif option == 'bluetooth_device':
                     self.bluetooth_device = parameter
 
                 elif option == 'mute_action':
-                    if parameter == 'pause':
-                        self.mute_action = PAUSE
-                    elif parameter == 'stop':
-                        self.mute_action = STOP
+                    self.mute_action = parameter
 
                 elif option == 'translate_lcd':
-                    self.translate_lcd = self.convertOnOff(parameter)
+                    self.translate_lcd = parameter
 
                 elif option == 'language':
                     self.language = parameter
@@ -511,14 +501,13 @@ class Configuration:
                     self.controller = parameter
                 
                 elif option == 'romanize':
-                    self.romanize = self.convertOnOff(parameter)
+                    self.romanize = parameter
 
                 elif option == 'audio_out':
-                    audio_out = parameter.lstrip('"')
-                    self.audio_out = audio_out.rstrip('"')
+                    self.audio_out = parameter
 
                 elif option == 'audio_config_locked':
-                    self.audio_config_locked = self.convertYesNo(parameter)
+                    self.audio_config_locked = parameter
 
                 elif option == 'comitup_ip':
                     self.comitup_ip = parameter
@@ -546,19 +535,13 @@ class Configuration:
                 self.configOptions[option] = parameter
 
                 if option == 'airplay':
-                    if parameter == 'yes' and os.path.isfile(Airplay):
-                        self.airplay = True
+                    self.parameter = parameter
 
                 # Name has been changed from mixer_volume to mixer_preset in v6.7
                 elif option == 'mixer_volume' or option == 'mixer_preset':
-                    volume = 100
                     try:
                         volume = int(parameter)
-                        if volume < 0:
-                            volume = 0
-                        if volume > 100:
-                            volume = 100
-                        self.mixerPreset = volume
+                        self.mixer_preset = volume
                     except:
                         self.invalidParameter(ConfigFile,option,parameter)
 
@@ -587,13 +570,10 @@ class Configuration:
                 self.configOptions[option] = parameter
 
                 if option == 'screen_size':
-                    sW,sH = parameter.split('x')    
-                    w = int(sW)
-                    h = int(sH)
-                    self.screen_size = (w,h)
+                    self.screen_size = parameter
             
                 if option == 'fullscreen':
-                    self.fullscreen = self.convertYesNo(parameter)
+                    self.fullscreen = parameter
                 
                 elif option == 'window_color':
                     self.window_color = parameter
@@ -620,29 +600,31 @@ class Configuration:
                     self.slider_color = parameter
 
                 elif option == 'stations_per_page':
-                    self.stations_per_page = int(parameter)
+                    try:
+                        self.stations_per_page = int(parameter)
+                    except:
+                        self.invalidParameter(ConfigFile,option,parameter)
 
                 elif option == 'screen_saver':
                     self.screen_saver = int(parameter)
 
                 elif option == 'wallpaper':
-                    if os.path.exists(parameter):
-                        self.wallpaper = parameter
+                    self.wallpaper = parameter
 
-                elif option == 'dateformat':
-                    self.graphicDateFormat = parameter
+                elif option == 'dateformat' or option == 'graphic_dateformat':
+                    self.graphic_dateformat = parameter
 
                 elif option == 'display_mouse':
-                    self.display_mouse = self.convertYesNo(parameter)
+                    self.display_mouse = parameter
                     
                 elif option == 'switch_programs':
-                    self.switch_programs = self.convertYesNo(parameter)
+                    self.switch_programs = parameter
                     
                 elif option == 'display_date':
-                    self.display_date = self.convertYesNo(parameter)
+                    self.display_date = parameter
                     
                 elif option == 'display_title':
-                    self.display_title = self.convertYesNo(parameter)
+                    self.display_title = parameter
 
         except configparser.NoSectionError:
             msg = configparser.NoSectionError(section),'in',ConfigFile
@@ -673,108 +655,179 @@ class Configuration:
     # Get routines
 
     # Get I2C backpack address
-    def getI2Caddress(self):
-        return self.i2c_address
+    @property
+    def i2c_address(self):
+        return self._i2c_address
+
+    @i2c_address.setter
+    def i2c_address(self, value):
+        if value  > 0x0:
+            self._i2c_address = value
 
     # Get I2C bus number
-    def getI2Cbus(self):
-        return self.i2c_bus
+    @property
+    def i2c_bus(self):
+        return self._i2c_bus
+
+    @i2c_bus.setter
+    def i2c_bus(self, value):
+        if value  > 0x0:
+            self._i2c_bus = value
 
     # Get the volume range
-    def getVolumeRange(self):
-        return self.volume_range
+    @property
+    def volume_range(self):
+        return self._volume_range
+
+    @volume_range.setter
+    def volume_range(self, value):
+        self._volume_range = value
 
     # Get the volume increment
-    def getVolumeIncrement(self):
-        return self.volume_increment
+    @property
+    def volume_increment(self):
+        return self._volume_increment
 
-    # Get the volume display
-    def displayVolumeBlocks(self):
-        return self.display_blocks
+    @volume_increment.setter
+    def volume_increment(self, value):
+        self._volume_increment = value
+
+    # Display volume as text or blocks
+    @property
+    def display_blocks(self):
+        return self._display_blocks
+
+    @display_blocks.setter
+    def display_blocks(self, parameter):
+        if parameter == 'blocks':
+            self._display_blocks = True
+        else:
+            self._display_blocks = False
 
     # Get the remote control activity LED number
-    def getRemoteLed(self):
-        return self.remote_led
+    @property
+    def remote_led(self):
+        return self._remote_led
 
-    # Get the remote Host default localhost
-    def getRemoteUdpHost(self):
-        return self.remote_control_host
+    @remote_led.setter
+    def remote_led(self, value):
+        self._remote_led = value
+
+    # Get the remote Host, default localhost 
+    @property
+    def remote_control_host(self):
+        return self._remote_control_host
+
+    @remote_control_host.setter
+    def remote_control_host(self, value):
+        self._remote_control_host = value
 
     # Get the UDP server listener IP Host default localhost
     # or 0.0.0.0 for all interfaces
-    def getRemoteListenHost(self):
-        return self.remote_listen_host
+    @property
+    def remote_listen_host(self):
+        return self._remote_listen_host
+
+    @remote_listen_host.setter
+    def remote_listen_host(self, host):
+        self._remote_listen_host = host
 
     # Get the remote Port  default 5100
-    def getRemoteUdpPort(self):
-        return self.remote_control_port
+    @property
+    def remote_control_port(self):
+        return self._remote_control_port
+
+    @remote_control_port.setter
+    def remote_control_port(self, port):
+        self._remote_control_port = port
 
     # Get the mpdport
-    def getMpdPort(self):
-        return self.mpdport
+    @property
+    def mpdport(self):
+        return self._mpdport
 
-    # Get the date format
-    def getDateFormat(self):
-        return self.dateFormat
+    @mpdport.setter
+    def mpdport(self, value):
+        self._mpdport = value
 
     # Get the date format for graphic screen
-    def getGraphicDateFormat(self):
-        return self.graphicDateFormat
+    @property
+    def graphic_dateformat(self):
+        return self._graphic_dateformat
+
+    @graphic_dateformat.setter
+    def graphic_dateformat(self, parameter):
+        self._graphic_dateformat = parameter
 
     # Get display playlist number (Two line displays only)
-    def getDisplayPlaylistNumber(self):
-        return self.display_playlist_number
+    @property
+    def display_playlist_number(self):
+        return self._display_playlist_number
 
-    # Get the startup source 0=RADIO or 1=MEDIA
-    def getSource(self):
-        return self.source
+    @display_playlist_number.setter
+    def display_playlist_number(self, value):
+        self._display_playlist_number = value
+
+    # Get the startup source 0=RADIO or 1=MEDIA 
+    @property
+    def source(self):
+        return self._source
+
+    @source.setter
+    def source(self, parameter):
+        self._source = parameter
 
     # Get load last playlist option
-    def loadLast(self):
-        return self.load_last
+    @property
+    def load_last(self):
+        return self._load_last
 
-    # Get the startup source name RADIO MEDIA
-    def getSourceName(self):
-        source_name = "MEDIA"
-        if self.getSource() < 1:
-            source_name = "RADIO"
-        return source_name
+    @load_last.setter
+    def load_last(self, parameter):
+        self._load_last = self.convertYesNo(parameter)
 
-    # Get the remote Port  default 5100
-    def getRemoteUdpPort(self):
-        return self.remote_control_port
+    # Get the remote UDP communication port default 5100
+    def remote_control_port(self):
+        return self._remote_control_port
 
-    # Get the mpdport
-    def getMpdPort(self):
-        return self.mpdport
+    @remote_control_host.setter
+    def remote_control_host(self, host):
+        self._remote_control_port = host
 
     # Get MPD Client Timeout 2 to 15 seconds (default 5)
-    def getClientTimeout(self):
-        timeout = self.client_timeout
-        if timeout < 2:
-            timeout = 2
-        elif timeout > 15:
-            timout = 15
-        return timeout
+    @property
+    def client_timeout(self):
+        return self._client_timeout
+
+    @client_timeout.setter
+    def client_timeout(self, value):
+        # Value 2 to 15 
+        if value < 2:
+            value = 2
+        elif value > 15:
+            value = 15
+        self._client_timeout = value
 
     # Get the date format
-    def getDateFormat(self):
-        return self.dateFormat
+    @property
+    def dateformat(self):
+        return self._dateformat
 
-    # Get display playlist number (Two line displays only)
-    def getDisplayPlaylistNumber(self):
-        return self.display_playlist_number
+    @dateformat.setter
+    def dateformat(self, value):
+        self._dateformat = value
 
-    # Get the startup source 0=RADIO or 1=MEDIA
-    def getSource(self):
-        return self.source
-
-    # Get the startup source name RADIO MEDIA
-    def getSourceName(self):
+    # Get the startup source name RADIO or MEDIA
+    @property
+    def source_name(self):
         source_name = "MEDIA"
-        if self.getSource() < 1:
+        if self.source < 1:
             source_name = "RADIO"
         return source_name
+
+    @source_name.setter
+    def source_name(self, parameter):
+        self._source_name = parameter
 
     # Get the background color (Integer)
     def getBackColor(self,sColor):
@@ -795,20 +848,42 @@ class Configuration:
         return sColor
 
     # Get speech
-    def hasSpeech(self):
-        return self.speech  
+    @property
+    def speech(self):
+        return self._speech
 
-    # Get verbose
+    @speech.setter
+    def speech(self, parameter):
+        self._speech = self.convertYesNo(parameter)
+
+    # speech verbose - Speak hostname and IP address
+    @property
     def verbose(self):
-        return self.isVerbose   
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, parameter):
+        self._verbose = self.convertYesNo(parameter)
 
     # Get verbose
-    def speakInfo(self):
-        return self.speak_info  
+
+    # Get verbose
+    @property
+    def speak_info(self):
+        return self._speak_info
+
+    @speak_info.setter
+    def speak_info(self, parameter):
+        self._speak_info = self.convertYesNo(parameter)
 
     # Get speech volume % of normal volume level
-    def getSpeechVolumeAdjust(self):
-        return self.speech_volume
+    @property
+    def speech_volume(self):
+        return self._speech_volume
+
+    @speech_volume.setter
+    def speech_volume(self, value):
+        self._speech_volume = value
 
     # Display parameters
     def display(self):
@@ -819,18 +894,40 @@ class Configuration:
         return
 
     # Return the ID of the rotary class to be used STANDARD or ALTERNATIVE
-    def getRotaryClass(self):
-        return self.rotary_class
+    @property
+    def rotary_class(self):
+        return self._rotary_class
+
+    @rotary_class.setter
+    def rotary_class(self, value):
+        self._rotary_class = value
+
+    # Get rotary encoder pull-up resistor configuration
+    @property
+    def rotary_gpio_pullup(self):
+        return self._rotary_gpio_pullup
+
+    @rotary_gpio_pullup.setter
+    def rotary_gpio_pullup(self, value):
+        self._rotary_gpio_pullup = value
 
     # Returns the switch GPIO configuration by label
-    def getSwitchGpio(self,label):
+    @property
+    def switch_gpio(self):
+        return self._switch_gpio
+
+    @switch_gpio.setter
+    def switch_gpio(self, label):
         switch = -1
         try:
-            switch = self.switches[label]
+            self._switch_gpio = self.switches[label]
         except:
             msg = "Invalid switch label " + label
             log.message(msg, log.ERROR)
-        return switch
+
+    def getSwitchGpio(self,switch_label):
+        self.switch_gpio = switch_label
+        return self.switch_gpio
 
     # Returns the LCD GPIO configuration by label
     def getLcdGpio(self,label):
@@ -863,264 +960,592 @@ class Configuration:
         return menuswitch
 
     # User interface (Buttons or Rotary encoders or uther)
-    def getUserInterface(self):
-        return self.user_interface
+    @property
+    def user_interface(self):
+        return self._user_interface
 
-    # User interface (Buttons or Rotary encoders)
-    def getUserInterfaceName(self):
-        return self.UserInterfaces[self.user_interface]
+    @user_interface.setter
+    def user_interface(self, parameter):
+        if parameter == 'rotary_encoder':
+            self._user_interface =  self.ROTARY_ENCODER
+        elif parameter == 'graphical':
+            self._user_interface =  self.GRAPHICAL
+        elif parameter == 'cosmic_controller':
+            self._user_interface =  self.COSMIC_CONTROLLER
+        elif parameter == 'phatbeat':
+            self._user_interface =  self.BUTTONS
+        elif parameter == 'pifacecad':
+            self._user_interface =  self.PIFACE_BUTTONS
+        else:
+            self._user_interface =  self.BUTTONS
 
     # Get Display type
     def getDisplayType(self):
         return self.display_type
+
+    # User interface (Buttons or Rotary encoders)
+    def getUserInterfaceName(self):
+        return self.UserInterfaces[self.user_interface]     
 
     # Get Display name
     def getDisplayName(self):
         return self.DisplayTypes[self.display_type]
 
     # Get LCD width
-    def getWidth(self):
-        return self.display_width
+    @property
+    def display_width(self):
+        return self._display_width
+
+    @display_width.setter
+    def display_width(self, value):
+        self._display_width = value
 
     # Get Display lines
-    def getLines(self):
-        return self.display_lines
+    @property
+    def display_lines(self):
+        return self._display_lines
+
+    @display_lines.setter
+    def display_lines(self, value):
+        self._display_lines = value
+
 
     # Get scroll speed
-    def getScrollSpeed(self):
-        return self.scroll_speed
+    @property
+    def scroll_speed(self):
+        return self._scroll_speed
 
-    # Get airplay option
-    def getAirplay(self):
-        return self.airplay
+    @scroll_speed.setter
+    def scroll_speed(self, value):
+        self._scroll_speed = value
+
+    # Get airplay option (True or false)
+    @property
+    def airplay(self):
+        return self._airplay
+
+    @airplay.setter
+    def airplay(self, parameter):
+        self.airplay = False
+        if parameter == 'yes' and os.path.isfile(Airplay):
+            self.airplay = True
 
     # Get mixer volume preset
-    def getMixerPreset(self):
-        return self.mixerPreset
+    @property
+    def mixer_preset(self):
+        return self._mixer_preset
+
+    @mixer_preset.setter
+    def mixer_preset(self, volume):
+        if volume < 0:
+            volume = 0
+        if volume > 100:
+            volume = 100
+        self._mixer_preset = volume
 
     # Get startup playlist
-    def getStartupPlaylist(self):
-        return self.startup_playlist
+    @property
+    def startup_playlist(self):
+        return self._startup_playlist
+
+    @startup_playlist.setter
+    def startup_playlist(self,parameter):
+        if parameter == 'RADIO': 
+            self._source =  self.RADIO
+        elif parameter == 'MEDIA':
+            self._source =  self.PLAYER
+        elif parameter == 'AIRPLAY':
+            self._source =  self.AIRPLAY
+        elif parameter == 'SPOTIFY':
+            self._source =  self.SPOTIFY
+        elif parameter == 'LAST': 
+            self._load_last = True
+        self._startup_playlist = parameter
 
     # Shutdown option
-    def doShutdown(self):
-        return self.shutdown
+    @property
+    def shutdown(self):
+        return self._shutdown
+
+    @shutdown.setter
+    def shutdown(self, parameter):
+        if parameter == 'stop_radio':
+            self._shutdown = False
+        else:
+            self._shutdown = True
 
     # Pull Up/Down resistors (Button interface only)
-    def getPullUpDown(self):
-        return self.pull_up_down
+    @property
+    def pull_up_down(self):
+        return self._pull_up_down
+
+    @pull_up_down.setter
+    def pull_up_down(self, value):
+        self._pull_up_down = value
 
     # Truncate logfile
-    def logTruncate(self):
-        return self.logfile_truncate
+    @property
+    def log_creation_mode(self):
+        return self._logfile_truncate
 
-    # SCREEN section
-    def getSize(self):
-        return self.screen_size
+    @log_creation_mode.setter
+    def log_creation_mode(self, parameter):
+        if parameter == 'truncate':
+            self._logfile_truncate = True
+        else:
+            self._logfile_truncate = False
+
+    # ===== SCREEN section =====
+    @property
+    def screen_size(self):
+        return self._screen_size
+
+    @screen_size.setter
+    def screen_size(self,parameter):
+        sW,sH = parameter.split('x')    
+        w = int(sW)
+        h = int(sH)
+        self._screen_size = (w,h)
 
     # Fullscreen option for graphical screen
-    def fullScreen(self):
-        return self.fullscreen
+    @property
+    def fullscreen(self):
+        return self._fullscreen
+
+    @fullscreen.setter
+    def fullscreen(self,parameter):
+        self._fullscreen = self.convertYesNo(parameter)
 
     # Get graphics window title
-    def getWindowTitle(self):
-        return self.window_title
+    @property
+    def window_title(self):
+        return self._window_title
+
+    @window_title.setter
+    def window_title(self,title):
+        self._window_title = title
 
     # Get graphics window colour
-    def getWindowColor(self):
-        return self.window_color
+    @property
+    def window_color(self):
+        return self._window_color
+
+    @window_color.setter
+    def window_color(self,color):
+        self._window_color = color
 
     # Get time banner text colour
-    def getBannerColor(self):
-        return self.banner_color
+    @property
+    def banner_color(self):
+        return self._banner_color
+
+    @banner_color.setter
+    def banner_color(self,color):
+        self._banner_color = color
 
     # Get graphics labels colour
-    def getLabelsColor(self):
-        return self.labels_color
+    @property
+    def labels_color(self):
+        return self._labels_color
 
-    # Get graphics labels colour
-    def getScaleLabelsColor(self):
-        return self.scale_labels_color
+    @labels_color.setter
+    def labels_color(self,color):
+        self._labels_color = color
 
-    # Get display window colour
-    def getDisplayWindowColor(self):
-        return self.display_window_color
+    # Get graphics sdcale labels color
+    @property
+    def scale_labels_color(self):
+        return self._scale_labels_color
 
-    # Get display window labels colour
-    def getDisplayLabelsColor(self):
-        return self.display_window_labels_color
+    @scale_labels_color.setter
+    def scale_labels_color(self,color):
+        self._scale_labels_color = color
+
+    # Get display window color
+    @property
+    def display_window_color(self):
+        return self._display_window_color
+
+    @display_window_color.setter
+    def display_window_color(self,color):
+        self._display_window_color = color
+
+    # Get display window labels color
+    @property
+    def display_window_labels_color(self):
+        return self._display_window_labels_color
+
+    @display_window_labels_color.setter
+    def display_window_labels_color(self,color):
+        self._display_window_labels_color = color
 
     # Get slider colour
-    def getSliderColor(self):
-        return self.slider_color
+    @property
+    def slider_color(self):
+        return self._slider_color
+
+    @slider_color.setter
+    def slider_color(self,color):
+        self._slider_color = color
 
     # Get maximum stations displayed per page (vintage graphic radio)
-    def getMaximumStations(self):
-        if self.stations_per_page > 50:
-            self.stations_per_page = 50
-        return self.stations_per_page
+    @property
+    def stations_per_page(self):
+        return self._stations_per_page
+
+    @stations_per_page.setter
+    def stations_per_page(self,value):
+        if value > 50:
+            value = 50
+        self._stations_per_page = value
 
     # Get window wallpaper
-    def getWallPaper(self):
-        return self.wallpaper
+    @property
+    def wallpaper(self):
+        return self._wallpaper
 
-    # Mouse hidden 
-    def displayMouse(self):
-        return self.display_mouse
+    @wallpaper.setter
+    def wallpaper(self,parameter):
+        if os.path.exists(parameter):
+            self._wallpaper = parameter
+
+    # Hide mouse True/False 
+    @property
+    def display_mouse(self):
+        return self._display_mouse
+
+    @display_mouse.setter
+    def display_mouse(self, parameter):
+        self._display_mouse = self.convertYesNo(parameter)
 
     # Allow program switch
-    def switchPrograms(self):
-        return self.switch_programs
+    @property
+    def switch_programs(self):
+        return self._switch_programs
+
+    @switch_programs.setter
+    def switch_programs(self, parameter):
+        self._switch_programs = self.convertYesNo(parameter)
 
     # Display date and time yes/no
-    def displayDate(self):
-        return self.display_date
+    @property
+    def display_date(self):
+        return self._display_date
+
+    @display_date.setter
+    def display_date(self, parameter):
+        self._display_date = self.convertYesNo(parameter)
 
     # Display date and time yes/no
-    def displayTitle(self):
-        return self.display_title
+    @property
+    def display_title(self):
+        return self._display_title
+
+    @display_title.setter
+    def display_title(self, parameter):
+        self._display_title = self.convertYesNo(parameter)
 
     # Screensaver time
-    def screenSaverTime(self):
-        return self.screen_saver
+    @property
+    def screen_saver(self):
+        return self._screen_saver
+
+    @screen_saver.setter
+    def screen_saver(self, value):
+        self._screen_saver = value
 
     # Shoutcast key
-    def getShoutcastKey(self):
-        return self.shoutcast_key
+    @property
+    def shoutcast_key(self):
+        return self._shoutcast_key
+
+    @shoutcast_key.setter
+    def shoutcast_key(self, parameter):
+        self._shoutcast_key = parameter
 
     # Bluetooth device
-    def getBluetoothDevice(self):
-        return self.bluetooth_device
+    @property
+    def bluetooth_device(self):
+        return self._bluetooth_device
 
-    # Bluetooth device
-    def getMuteAction(self):
-        return self.mute_action
+    @bluetooth_device.setter
+    def bluetooth_device(self, parameter):
+        self._bluetooth_device = parameter
+
+    # Mute action is either mpc pause or stop
+    @property
+    def mute_action(self):
+        return self._mute_action
+
+    @mute_action.setter
+    def mute_action(self, parameter):
+        if parameter == 'pause':
+            self._mute_action = PAUSE
+        elif parameter == 'stop':
+            self._mute_action = STOP
 
     # Oled flip display setting
-    def flipVertical(self):
-        return self.flip_display_vertically
+    @property
+    def flip_display_vertically(self):
+        return self._flip_display_vertically
 
-    # Oled flip display setting
-    def getSplash(self):
-        return self.splash_screen
+    @flip_display_vertically.setter
+    def flip_display_vertically(self, parameter):
+        self._flip_display_vertically = self.convertYesNo(parameter)
+
+    # Get screen splash image
+    @property
+    def splash_screen(self):
+        return self._splash_screen
+
+    @splash_screen.setter
+    def splash_screen(self, parameter):
+        self._splash_screen = parameter
 
     # Station names from playlist names or from the stream 
-    def getStationNamesSource(self):
-        return self.stationNamesSource
+    @property
+    def station_names(self):
+        return self._station_names
 
-    # Get translate LCD characters
-    def getTranslate(self):
-        return self.translate_lcd
+    @station_names.setter
+    def station_names(self, parameter):
+        if parameter == 'stream':
+            self._station_names =  self.STREAM
+        else:
+            self._station_names =  self.LIST
 
-    # Get translate LCD characters
-    def getLcdFontPage(self):
-        return self.codepage
+    # Get translate LCD characters True/False
+    @property
+    def translate_lcd(self):
+        return self._translate_lcd
+
+    @translate_lcd.setter
+    def translate_lcd(self, parameter):
+        self._translate_lcd = self.convertOnOff(parameter)
+
+    # Get LCD translation codepage 
+    @property
+    def codepage(self):
+        return self._codepage
+
+    @codepage.setter
+    def codepage(self, codepage):
+        if codepage >= 0 and codepage <= 4:
+            self._codepage = codepage
 
     # Get Romanize language e.g. Russian/Cyrillic characters
-    def getRomanize(self):
-        return self.romanize
+    @property
+    def romanize(self):
+        return self._romanize
 
-    def getAudioOut(self):
-        return self.audio_out
+    @romanize.setter
+    def romanize(self, parameter):
+        self._romanize = self.convertOnOff(parameter)
 
-    # Get language e.g. Russian or English etc
-    def getLanguage(self):
-        return self.language
+    # Get audio_outetting HDMI, headphones DAC tec.
+    @property
+    def audio_out(self):
+        return self._audio_out
+
+    @audio_out.setter
+    def audio_out(self, parameter):
+        audio_out = parameter.lstrip('"')
+        audio_out = audio_out.rstrip('"')
+        self._audio_out = audio_out
+
+    # Get language e.g. Russian, European or English etc
+    @property
+    def language(self):
+        return self._language
+
+    @language.setter
+    def language(self, language):
+        self._language = language
 
     # Get controller type HD44780U or HD44780
-    def getController(self):
-                return self.controller
+    @property
+    def controller(self):
+        return self._controller
 
-    def getComitupIp(self):
-                return self.comitup_ip
+    @controller.setter
+    def controller(self, parameter):
+        self._controller = parameter
 
-    def getInternetCheckUrl(self):
-        return self.internet_check_url
+    # Get the comitup IP address
+    @property
+    def comitup_ip(self):
+        return self._comitup_ip
 
-    def getInternetCheckPort(self):
-        return self.internet_check_port
+    @comitup_ip.setter
+    def comitup_ip(self, parameter):
+        self._comitup_ip = parameter
 
-    def getInternetTimeout(self):
-        return self.internet_timeout
+    # Internet check URL (Usually goolge.com)
+    @property
+    def internet_check_url(self):
+        return self._internet_check_url
 
-    def audioConfigLocked(self):
-        return self.audio_config_locked
+    @internet_check_url.setter
+    def internet_check_url(self, url):
+        self._internet_check_url = url
+
+    # Internet check port (Usually port 80)
+    @property
+    def internet_check_port(self):
+        return self._internet_check_port
+
+    @internet_check_port.setter
+    def internet_check_port(self, port):
+        self._internet_check_port = port
+
+    # Get Internet check timeout
+    @property
+    def internet_timeout(self):
+        return self._internet_timeout
+
+    @internet_timeout.setter
+    def internet_timeout(self, port):
+        self._internet_timeout = port
+
+    # Audio configuration locked - disable dynamic HDMI/headphone 
+    @property
+    def audio_config_locked(self):
+        return self._audio_config_locked
+
+    @audio_config_locked.setter
+    def audio_config_locked(self, parameter):
+        self._audio_config_locked = self.convertYesNo(parameter)
 
 # End Configuration of class
 
-# Test Configuration class
+# Test Configuration class and diagnostics
 if __name__ == '__main__':
+    import pwd 
+
+    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
+        print("This program must be run with sudo or root permissions!")
+        sys.exit(1)
 
     config = Configuration()
-    print ("User interface:", config.getUserInterface(), config.getUserInterfaceName())
     print ("Configuration file:", ConfigFile)
-    print ("Volume range:", config.getVolumeRange())
-    print ("Volume increment:", config.getVolumeIncrement())
-    print ("Mpd port:", config.getMpdPort())
-    print ("Mpd client timeout:", config.getClientTimeout())
-    print ("Remote LED:", config.getRemoteLed())
-    print ("Remote LED port:", config.getRemoteUdpPort())
-    print ("Date format:", config.getDateFormat())
-    print ("Display playlist number:", config.getDisplayPlaylistNumber())
-    print ("Source:", config.getSource(), config.getSourceName())
-    print ("Load last playlist", config.loadLast())
+    print ("\n[RADIO] section")
+    print ("---------------")
+
+    print ("Truncate log file (log_creation_mode):", config.log_creation_mode)
+    print ("User interface (user_interface):",config.user_interface, config.getUserInterfaceName())
+    print ("Mpd port (mpdport):", config.mpdport)
+    print ("Mpd client timeout (client_timeout):", config.client_timeout)
+    print ("Date format (dateformat):", config.dateformat)
+    print ("Display playlist number(playlist_number):", config.display_playlist_number)
+    print ("Source (source):", config.source, config.source_name)
+    print ("Startup playlist(startup_playlist):", config.startup_playlist)
     print ("Background colour number:", config.getBackColor('bg_color'))
     print ("Background colour:", config.getBackColorName(config.getBackColor('bg_color')))
-    print ("Speech:", config.hasSpeech())
-    print ("Speech volume adjustment:", str(config.getSpeechVolumeAdjust()) + '%')
-    print ("Verbose:", config.verbose())
-    print ("Speak info:", config.speakInfo())
-    print ("Audio out:",config.getAudioOut())
-    print ("Audio Configuration locked:",config.audioConfigLocked())
-    print ("Comitup IP:",config.getComitupIp())
+    print ("Station names source(station_names):",config._stationNamesSource[config.station_names])
+    print ("Do shutdown on exit (shutdown):",config.shutdown)
+    print ("Comitup IP (comitup_ip):",config.comitup_ip)
+    print ("Shoutcast key:", config.shoutcast_key)
 
-    print ("pull_up_down:", config.getPullUpDown())
-    for switch in config.switches:
-        print (switch, config.getSwitchGpio(switch))
+    print('')
+    print ("Volume range (volume_range):", config.volume_range)
+    print ("Volume increment (volume_increment):", config.volume_increment)
+    print ("Mute action (mute_action):",config.MuteActions[config.mute_action])
+    print ("Audio out(audio_out):",config.audio_out)
+    print ("Audio Configuration locked(audio_config_locked):",config.audio_config_locked)
+    print ("Bluetooth device (bluetooth_device):", config.bluetooth_device)
+
+    print('')
+    print ("Remote control host (remote_control_host):", config.remote_control_host)
+    print ("Remote control port (remote_control_port):", config.remote_control_port)
+    print ("UDP server listen host (remote_listen_host):", config.remote_listen_host)
+    print ("Remote LED (remote_led):", config.remote_led)
+
+    print('')
+    print ("Speech (speech):", config.speech)
+    print ("Verbose speech(verbose):", config.verbose)
+    print ("Speech volume adjustment (speech_volume):", str(config.speech_volume) + '%')
+    print ("Verbose (verbose):", config.verbose)
+    print ("Speak info (speak_info):", config.speak_info)
+
+    print('')
+    for switch_label in config.switches:
+        switch_gpio = config.getSwitchGpio(switch_label)
+        print ("%s: %s" % (switch_label, switch_gpio))
     
+    print('')
     for lcdconnect in sorted(config.lcdconnects):
         print (lcdconnect, config.getLcdGpio(lcdconnect))
     
+    print('')
     for led in config.rgb_leds:
         print (led, config.getRgbLed(led))
     
+    print('')
     for menuswitch in config.menu_switches:
         print (menuswitch, config.getMenuSwitch(menuswitch))
     
+    print('')
     rclass = ['Standard', 'Alternative']
-    rotary_class = config.getRotaryClass()
-    print ("Rotary class:", rotary_class, rclass[rotary_class])
-    print ("Display type:", config.getDisplayType(), config.getDisplayName())
-    print ("Display lines:", config.getLines())
-    print ("Display width:", config.getWidth())
-    print ("LCD font page:", config.getLcdFontPage())
-    print ("Full screen:", config.fullScreen())
-    print ("Grapic screen size:", config.getSize())
-    print ("Scroll speed:", config.getScrollSpeed())
-    print ("Airplay:", config.getAirplay())
-    print ("Mixer Volume Preset:", config.getMixerPreset())
-    print ("Translate LCD characters:", config.getTranslate())
-    print ("LCD Controller:", config.getController())
-    print ("Language:", config.getLanguage())
-    print ("Romanize:", config.getRomanize())
+    print ("Rotary class:", config.rotary_class, rclass[config.rotary_class])
+    rotary_pullup = "PUD_UP" 
+    if  config.rotary_gpio_pullup == GPIO.PUD_OFF: 
+        rotary_pullup = "PUD_OFF" 
+    print ("Rotary resistor pullup:", rotary_pullup)
 
-    print ("Bluetooth device:", config.getBluetoothDevice())
+    print('')
+    print ("Display type:", config.getDisplayType(), config.getDisplayName())
+    print ("Display lines:", config.display_lines)
+    print ("Display width:", config.display_width)
+    print ("Scroll speed:", config.scroll_speed)
+    print ("Mixer Volume Preset:", config.mixer_preset)
+    print('')
+    print ("Translate LCD characters (translate_lcd):", config.translate_lcd)
+    print ("LCD translation code page (codepage):", config.codepage)
+    print ("LCD Controller (controller):", config.controller)
+    print ("Language (language):", config.language)
+    print ("Romanize Cyrillic (romanize):", config.romanize)
 
     # I2C parameters
-    print ("I2C bus", config.getI2Cbus())
-    print ("I2C address:", hex(config.getI2Caddress()))
+    print('')
+    print ("I2C bus:", config.i2c_bus)
+    print ("I2C address:", hex(config.i2c_address))
     
-    # Shoucast
-    print ("Shoutcast key:", config.getShoutcastKey())
 
     # Internet check
-    print ("Internet check URL: ", config.getInternetCheckUrl())
-    print ("Internet check port:", config.getInternetCheckPort())
-    print ("Internet timeout: ", config.getInternetTimeout())
+    print('')
+    print ("Internet check URL: ", config.internet_check_url)
+    print ("Internet check port:", config.internet_check_port)
+    print ("Internet timeout: ", config.internet_timeout)
     
     # OLED
-    print ("Flip screen vertical:",config.flipVertical())
-    print ("Splash screen:",config.getSplash())
+    print ("OLED flip screen vertical:",config.flip_display_vertically)
+    print ("OLED splash screen (splash_screen):",config.splash_screen)
+
+    print ("\n[SCREEN] section")
+    print ("----------------")
+    print ("Graphic screen size (screen_size):", config.screen_size)
+    print ("Full screen (fullscreen):", config.fullscreen)
+    print ("Window title (window_title):", config.window_title)
+    print ("Window color (window_color):", config.window_color)
+    print ("Display window color (display_window_color):", config.display_window_color)
+    print ("Graphic date format (graphic_dateformat):", config.graphic_dateformat)
+    print ("Window wallpaper (wallpaper):", config.wallpaper)
+    print ("Labels color (labels_color):", config.labels_color)
+    print ("Slider color (slider_color):", config.slider_color)
+    print ("Banner color (banner_color):", config.banner_color)
+    print ("Display window labels color (display_window_labels_color):", 
+            config.display_window_labels_color)
+    print ("Scale labels color (scale_labels_color):", config.scale_labels_color)
+    print ("Sations per page (stations_per_page):", config.stations_per_page)
+    print ("Display mouse (display_mouse):", config.display_mouse)
+    print ("Display title (display_title):", config.display_title)
+    print ("Display date (display_date):", config.display_date)
+    print ("Allow programs switch (switch_programs):", config.switch_programs)
+
+    print ("Screen saver time:", config.screen_saver)
+    print ("\n[AIRPLAY] section")
+    print ("----------------")
+    print ("Airplay (airplay):", config.airplay)
 # End of __main__
 
 # set tabstop=4 shiftwidth=4 expandtab

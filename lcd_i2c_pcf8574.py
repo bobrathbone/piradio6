@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_pcf8574.py,v 1.3 2020/10/15 13:01:05 bob Exp $
+# $Id: lcd_i2c_pcf8574.py,v 1.5 2021/05/11 17:41:45 bob Exp $
 #
 # PCF8574 I2C LCD Backpack LCD class
 # Use this program to test I2C Backpack LCD wiring
@@ -108,7 +108,7 @@ class Lcd_i2c_pcf8574:
     # __init__
     def __init__(self):
         self._backlight = self.LCD_BACKLIGHT
-        self.scroll_speed = config.getScrollSpeed()
+        self.scroll_speed = config.scroll_speed
         self.setScrollSpeed(self.scroll_speed)
 
     # Initialisation routine
@@ -263,7 +263,7 @@ class Lcd_i2c_pcf8574:
 
     # Get LCD width 0 = use default for program
     def getWidth(self):
-        return config.getWidth()
+        return config.display_width
 
     # Set the display width
     def setWidth(self,width):

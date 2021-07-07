@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This class drives the Solomon Systech SSD1306 128 by 64 pixel OLED
 #
-# $Id: oled_class.py,v 1.3 2020/10/13 11:07:13 bob Exp $
+# $Id: oled_class.py,v 1.7 2021/06/03 09:13:12 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -24,7 +24,7 @@ from config_class import Configuration
 config = Configuration()
 
 # Line addresses
-#    1 2  3  4  5  
+#        1 2  3  4  5  
 Lines = [0,16,32,48,56]
 
 # No interrupt routine if none supplied
@@ -38,7 +38,7 @@ class   Oled:
     width = 20
     lines = 4
     scroll_line = 0
-    scroll_speed = 0.3
+    scroll_speed = 0.1
 
     def __init__(self,revision=1):
         # Connect to the display on /dev/i2c-1
@@ -60,7 +60,7 @@ class   Oled:
         self.dis.set_scan_direction(0)
         self.dis.set_inverse_display(False) # Black on white
         self.clear()
-        self.scroll_speed = config.getScrollSpeed()
+        self.scroll_speed = config.scroll_speed
         self.setScrollSpeed(self.scroll_speed)
         self.stop_scroll()  # Stop native scrolling
 
@@ -193,10 +193,10 @@ class   Oled:
         self.drawHorizontalSlider(volume,8)
 
     # Width and line parameters
-    def getWidth():
+    def getWidth(self):
         return self.width
 
-    def getLines():
+    def getLines(self):
         return self.lines
 
     def setWidth(self,notused):
@@ -358,6 +358,10 @@ def _print_string(self,x0, y0, text):
         self.print_char(x, y, i)
         x += (6 * self.scale)
 
+    # Get character width for this OLED
+    def getChars():
+        return self.width
+
 # Class test routine
 if __name__ == "__main__":
     import time,datetime
@@ -380,7 +384,6 @@ if __name__ == "__main__":
         sDate = strftime(dateformat)
         oled.out(1,sDate,no_interrupt)
         oled.setFont(1)
-        #oled.scroll(3)
         oled.out(2,"abcdefghijklmonopqrstuvwxyz",no_interrupt)
         oled.out(3,mesg,no_interrupt)
         oled.out(4,"ABCEFGHIJKLMONOPQRSTUVWXYZz",no_interrupt)

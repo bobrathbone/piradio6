@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.16 2021/03/21 16:45:54 bob Exp $
+# $Id: display_config.sh,v 1.26 2021/05/20 06:51:44 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -51,8 +51,7 @@ uname -a  | tee -a ${LOG}
 echo | tee -a ${LOG}
 echo "Desktop installation" | tee -a ${LOG}
 echo "--------------------" | tee -a ${LOG}
-ps -e | grep -E -i "xfce|kde|gnome" >/dev/null 2>&1
-if [[ $? == 0 ]]; then
+if [[ -f /usr/bin/startx ]]; then
 	echo "X-Windows appears to be installed" | tee -a ${LOG}
     if [[ -f ${AUTOSTART} ]]; then
         entry=$(grep -i "radio" ${AUTOSTART})
@@ -83,8 +82,12 @@ sudo ${DIR}/radiod.py version | tee -a ${LOG}
 echo | tee -a ${LOG}
 echo "Patches" | tee -a ${LOG}
 echo "-------" | tee -a ${LOG}
-if [[ -f radiod-patch* ]]; then
-    ls radiod-patch*
+ls ${DIR}/radiod-patch*.gz >/dev/null 2>&1
+if [[ $? == 0 ]]; then
+    for f in $(ls ${DIR}/radiod-patch*.gz)
+    do
+        basename ${f}
+    done
 else
     echo "No patches found" | tee -a ${LOG}
 fi
@@ -124,7 +127,7 @@ echo | tee -a ${LOG}
 echo "Radio configuration" | tee -a ${LOG}
 echo "-------------------" | tee -a ${LOG}
 echo "Configuration file /etc/radiod.conf" | tee -a ${LOG}
-${DIR}/config_class.py | tee -a  ${LOG}
+sudo ${DIR}/config_class.py | tee -a  ${LOG}
 echo | tee -a ${LOG}
 ${DIR}/wiring.py | tee -a  ${LOG}
 echo "---------------------------------------" | tee -a ${LOG}
@@ -174,9 +177,33 @@ sudo ${DIR}/remote_control.py status | tee -a ${LOG}
 sudo ${DIR}/remote_control.py config | tee -a ${LOG}
 
 echo | tee -a ${LOG}
+echo "${RADIOLIB} settings" | tee -a ${LOG}
+echo "------------------------" | tee -a ${LOG}
+for file in ${RADIOLIB}/*
+do
+    if [[ $(basename ${file}) == "stationlist" ]]; then
+        continue
+    fi
+    if [[ $(basename ${file}) == "language" ]]; then
+        continue
+    fi
+    param=$(head -1 ${file})
+    echo "$(basename ${file}): ${param}" | tee -a ${LOG}
+done
+
+echo | tee -a ${LOG}
 echo "Hardware information" | tee -a ${LOG}
 echo "--------------------" | tee -a ${LOG}
 sudo ${DIR}/display_model.py version | tee -a ${LOG}
+
+echo | tee -a ${LOG}
+echo "Network information" | tee -a ${LOG}
+echo "-------------------" | tee -a ${LOG}
+echo "IP address: $(hostname -I)" | tee -a ${LOG}
+echo "IP route:" | tee -a ${LOG}
+ip route | tee -a ${LOG}
+
+./display_wifi.sh | tee -a ${LOG}
 
 # Create tar file
 tar -zcf ${LOG}.tar.gz ${LOG} >/dev/null 2>&1

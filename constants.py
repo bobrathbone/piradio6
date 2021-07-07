@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio Class
-# $Id: constants.py,v 1.2 2021/02/04 11:40:10 bob Exp $
+# $Id: constants.py,v 1.4 2021/05/13 11:01:54 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -16,12 +16,12 @@
 #             The authors shall not be liable for any loss or damage however caused.
 #
 
-__version__ = "7.1"
+__version__ = "7.2"
 
 # Up/Down constants (switch levels)
 UP = 1 
 DOWN = 0
 
 # MPD mute actions
-PAUSE = 1
-STOP = 2
+PAUSE = 0
+STOP = 1

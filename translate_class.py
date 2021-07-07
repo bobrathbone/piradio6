@@ -4,7 +4,7 @@
 # Raspberry Pi Radio Character translation class
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: translate_class.py,v 1.5 2020/10/14 19:10:52 bob Exp $
+# $Id: translate_class.py,v 1.6 2021/05/17 06:05:40 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -47,8 +47,8 @@ class Translate:
 
     def __init__(self):
         # Import font table according to language
-        self._language = config.getLanguage()
-        self._controller = config.getController()
+        self._language = config.language
+        self._controller = config.controller
         self.code_pages = self._import_codes(self._language)
         if len(self.code_pages) < 1:
             print ("No code tables found for controller",self._controller)

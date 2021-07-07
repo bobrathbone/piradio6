@@ -1,0 +1,188 @@
+### Commented entries have reasonable defaults.
+### Uncomment to edit them.
+# $Id: piradio64,v 1.1 2021/05/04 05:47:33 bob Exp $
+# This package must be built under Raspbian Buster (Not Jessie or earlier)
+# This is the 64 bit version
+# Source: <source package name; defaults to package name>
+Section: misc
+Priority: optional
+Homepage: http://www.bobrathbone.com
+Standards-Version: 4.0.0
+
+Package: radiod
+Version: 7.2
+Maintainer: Bob Rathbone <bob@bobrathbone.com>
+Email-Address : bob@bobrathbone.com
+
+# Pre-Depends: <comma-separated list of packages>
+# Depends: <comma-separated list of packages>
+Depends:  python,python3,python3-mpd,python3-rpi.gpio,python-configparser,mpd,mpc 
+# Recommends: <comma-separated list of packages>
+# Suggests: <comma-separated list of packages>
+# Provides: <comma-separated list of packages>
+# Replaces: <comma-separated list of packages>
+# Architecture: all
+Architecture: arm64
+
+# Copyright: <defaults to GPL2>
+# Changelog: <changelog file; defaults to a generic changelog>
+# Readme: <README.Debian file; defaults to a generic one>
+# Extra-Files: <comma-separated list of additional files for the doc directory>
+preinst: piradio.preinst
+
+Extra-Files: README
+
+# Files: <pair of space-separated paths; First is file to include, second is destination>
+Files:  radiod.py /usr/share/radio/
+	constants.py /usr/share/radio/
+	config_class.py /usr/share/radio/
+	web_config_class.py /usr/share/radio/
+	airplay_class.py /usr/share/radio/
+	spotify_class.py /usr/share/radio/
+	volume_class.py /usr/share/radio/
+	display_current.py /usr/share/radio/
+	display_model.py /usr/share/radio/
+	display_class.py /usr/share/radio/
+	oled_class.py /usr/share/radio/
+	cosmic_class.py /usr/share/radio/
+	st7789tft_class.py /usr/share/radio/
+	message_class.py /usr/share/radio/
+	menu_class.py /usr/share/radio/
+	event_class.py /usr/share/radio/
+	log_class.py /usr/share/radio/
+	rss_class.py /usr/share/radio/
+	translate_class.py /usr/share/radio/
+	source_class.py /usr/share/radio/
+	display_current.py /usr/share/radio/
+	button_class.py /usr/share/radio/
+	rotary_class.py /usr/share/radio/
+	rotary_switch_class.py /usr/share/radio/
+	rotary_class_alternative.py /usr/share/radio/
+	create_stations.py /usr/share/radio/
+	create_playlist.sh /usr/share/radio/
+	configure_audio_device.sh /usr/share/radio/
+	radio_class.py /usr/share/radio/
+	lcd_class.py /usr/share/radio/
+	i2c_class.py /usr/share/radio/
+	lcd_i2c_adafruit.py /usr/share/radio/
+	lcd_i2c_pcf8574.py /usr/share/radio/
+	lcd_adafruit_class.py /usr/share/radio/
+	lcd_piface_class.py /usr/share/radio/
+	no_display.py /usr/share/radio/
+	radio_daemon.py /usr/share/radio/
+	wiring.py /usr/share/radio/
+	configure_radio.sh /usr/share/radio/
+	configure_audio.sh /usr/share/radio/
+	configure_ir_remote.sh /usr/share/radio/
+	display_config.sh /usr/share/radio/
+	display_title.sh /usr/share/radio/
+	set_mixer_id.sh /usr/share/radio/
+	install_streaming.sh /usr/share/radio/
+	install_airplay.sh /usr/share/radio/
+	station.urls /usr/share/radio/
+	voice.dist /usr/share/radio/
+	lircrc.dist  /usr/share/radio/
+	remote_control.py  /usr/share/radio/
+	get_shoutcast.py  /usr/share/radio/
+	rc_daemon.py  /usr/share/radio/
+	udp_server_class.py /usr/share/radio/
+	language_class.py /usr/share/radio/
+	status_led_class.py /usr/share/radio/
+	oled/__init__.py /usr/share/radio/oled/
+	oled/Font.py /usr/share/radio/oled/
+	oled/Graphics.py /usr/share/radio/oled/
+	oled/OLED.py /usr/share/radio/oled/
+	smbus2/__init__.py /usr/share/radio/smbus2
+	smbus2/smbus2.py /usr/share/radio/smbus2
+	README /usr/share/radio/
+	logrotate.d/radiod /etc/logrotate.d/
+	cron.weekly/radiod /etc/cron.weekly/
+	asound/asound.conf.dist /usr/share/radio/asound
+	asound/asound.conf.dist.equalizer /usr/share/radio/asound
+	asound/asound.conf.dist.blue /usr/share/radio/asound
+	asound/asound.conf.dist.bonnet /usr/share/radio/asound
+	asound/asound.conf.dist.pivumeter /usr/share/radio/asound
+	asound/asound.conf.dist.pipe /usr/share/radio/asound
+	asound/asound.conf.dist.softvol /usr/share/radio/asound
+	codes/__init__.py /usr/share/radio/codes/
+	codes/English.py /usr/share/radio/codes/
+	codes/Russian.py /usr/share/radio/codes/
+	codes/European.py /usr/share/radio/codes/
+	codes/Russian_HD44780.py /usr/share/radio/codes/
+	codes/European_HD44780.py /usr/share/radio/codes/
+	codes/HTMLcodes.py /usr/share/radio/codes/
+	codes/README /usr/share/radio/codes/
+	configs/mpdstream /usr/share/radio/configs/
+	shairport-sync.service /lib/systemd/system/
+	radiod.conf /usr/share/radio/
+	radiod.service /lib/systemd/system/
+	irradiod.service /lib/systemd/system/
+	language/language.en /usr/share/radio/language/
+	language/language.en-2x8 /usr/share/radio/language/
+	language/language.hu /usr/share/radio/language/
+	language/language.fr /usr/share/radio/language/
+	language/language.nl /usr/share/radio/language/
+	rss/rss /usr/share/radio/rss/
+	gradio.py /usr/share/radio/
+	vgradio.py /usr/share/radio/
+	graphic_display.py /usr/share/radio/
+	gcontrols_class.py /usr/share/radio/
+	images/airplay_icon.png /usr/share/radio/images/
+	images/arrow_left_double.png /usr/share/radio/images/
+	images/arrow_right_double.png /usr/share/radio/images/
+	images/equalizer.png /usr/share/radio/images/
+	images/mute.png /usr/share/radio/images/
+	images/radio.png /usr/share/radio/images/
+	images/raspberrypi.png /usr/share/radio/images/
+	images/scale.jpg /usr/share/radio/images/
+	images/search_cycle_icon.png /usr/share/radio/images/
+	images/speaker.png /usr/share/radio/images/
+	images/spotify_logo.png /usr/share/radio/images/
+	images/spotify_logo_text.png /usr/share/radio/images/
+	images/spotify.png /usr/share/radio/images/
+	images/up_icon.png /usr/share/radio/images/
+	images/down_icon.png /usr/share/radio/images/
+	images/switch_program.png /usr/share/radio/images/
+	images/Vintage.png /usr/share/radio/images/
+	bitmaps/raspberry-pi-logo.bmp /usr/share/radio/bitmaps/
+	sgc/LICENSE /usr/share/radio/sgc/
+	sgc/__init__.py /usr/share/radio/sgc/
+	sgc/locals.py /usr/share/radio/sgc/
+	sgc/surface.py /usr/share/radio/sgc/
+	sgc/widgets/__init__.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/_locals.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/base_widget.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/boxes.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/button.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/combo.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/container.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/dialog.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/fps_counter.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/input_box.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/label.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/menu.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/radio_button.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/scale.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/scroll_box.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/settings.py /usr/share/radio/sgc/widgets/
+	sgc/widgets/switch.py /usr/share/radio/sgc/widgets/
+	Desktop/gradio.desktop /usr/share/radio/Desktop/
+	Desktop/vgradio.desktop /usr/share/radio/Desktop/
+	Desktop/equalizer.desktop /usr/share/radio/Desktop/
+	equalizer.cmd /usr/share/radio/
+	sgc/widgets/composite/dialogs.py /usr/share/radio/sgc/widgets/composite/
+	sgc/widgets/composite/__init__.py /usr/share/radio/sgc/widgets/composite/
+	sgc/widgets/_interface/__init__.py /usr/share/radio/sgc/widgets/_interface/
+	sgc/widgets/_interface/text.py /usr/share/radio/sgc/widgets/_interface/
+	lxsession/README /usr/share/radio/lxsession/
+	lxsession/autostart /usr/share/radio/lxsession/
+
+postinst: piradio.postinst
+postrm: piradio.postrm
+#  <more pairs, if there's more than one file to include. Notice the starting space>
+Description: Raspberry PI radio
+ This package provides a radio daemon using MPD
+ .
+ It requires mpc, mpd and python3-mpd to run (Install separately)
+ The touchscreen version uses pygame
+

@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 #
 # Raspberry Pi Internet Radio Menu Class
-# $Id: get_shoutcast.py,v 1.10 2021/03/28 10:12:36 bob Exp $
+# $Id: get_shoutcast.py,v 1.11 2021/05/16 06:35:29 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -256,9 +256,9 @@ if __name__ == "__main__":
     install = False  # Copy parameter
     create_dir(playlist_store)
 
-    shoutcast_key = config.getShoutcastKey()
-    udpport = config.getRemoteUdpPort()
-    udphost = config.getRemoteUdpHost()
+    shoutcast_key = config.shoutcast_key
+    udphost = config.remote_control_host
+    udpport = config.remote_control_port
     print("Shoutcast UDP connect host " + udphost + " port " + str(udpport))
 
     # Check if running as root (sudo)

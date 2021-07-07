@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.12 2021/03/31 19:20:21 bob Exp $
+# $Id: piradio,v 1.20 2021/06/20 09:30:53 bob Exp $
 # This package must be built under Raspbian Buster (Not Jessie or earlier)
 # Source: <source package name; defaults to package name>
 Section: misc
@@ -9,13 +9,13 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 4.0.0
 
 Package: radiod
-Version: 7.1
+Version: 7.2
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
 # Pre-Depends: <comma-separated list of packages>
 # Depends: <comma-separated list of packages>
-Depends:  python,python3,python3-mpd,python3-rpi.gpio,mpc,mpd 
+Depends:  python,python3,python3-mpd,python3-rpi.gpio,python-configparser,mpd,mpc 
 # Recommends: <comma-separated list of packages>
 # Suggests: <comma-separated list of packages>
 # Provides: <comma-separated list of packages>
@@ -45,6 +45,7 @@ Files:  radiod.py /usr/share/radio/
 	oled_class.py /usr/share/radio/
 	cosmic_class.py /usr/share/radio/
 	st7789tft_class.py /usr/share/radio/
+	ssd1306_class.py /usr/share/radio/
 	message_class.py /usr/share/radio/
 	menu_class.py /usr/share/radio/
 	event_class.py /usr/share/radio/
@@ -59,6 +60,7 @@ Files:  radiod.py /usr/share/radio/
 	rotary_class_alternative.py /usr/share/radio/
 	create_stations.py /usr/share/radio/
 	create_playlist.sh /usr/share/radio/
+	setup.sh /usr/share/radio/
 	configure_audio_device.sh /usr/share/radio/
 	radio_class.py /usr/share/radio/
 	lcd_class.py /usr/share/radio/
@@ -74,10 +76,12 @@ Files:  radiod.py /usr/share/radio/
 	configure_audio.sh /usr/share/radio/
 	configure_ir_remote.sh /usr/share/radio/
 	display_config.sh /usr/share/radio/
+	display_wifi.sh /usr/share/radio/
 	display_title.sh /usr/share/radio/
 	set_mixer_id.sh /usr/share/radio/
 	install_streaming.sh /usr/share/radio/
 	install_airplay.sh /usr/share/radio/
+	install_ssd1306.sh /usr/share/radio/
 	station.urls /usr/share/radio/
 	voice.dist /usr/share/radio/
 	lircrc.dist  /usr/share/radio/
