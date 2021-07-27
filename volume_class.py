@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.18 2021/05/19 16:18:51 bob Exp $
+# $Id: volume_class.py,v 1.22 2021/07/12 06:38:25 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -162,7 +162,8 @@ class Volume:
     # Set the Mixer volume level
     def _setMixerVolume(self,volume,store):
         
-        if self.mixer_volume_id > 0 and volume != self.mixer_volume: 
+        #if self.mixer_volume_id > 0 and volume != self.mixer_volume: 
+        if self.mixer_volume_id > 0: 
             log.message("volume._setMixerVolume " + str(volume), log.DEBUG) 
             cmd = "sudo amixer " + self.mixer_device + " cset numid=" + str(self.mixer_volume_id) \
                                   + " " + str(volume) + "%"
@@ -282,30 +283,36 @@ class Volume:
         source_type = self.source.getType()
 
         self.set(0,store=False)
-        mute_action = self.config.mute_action
+        if source_type == self.source.RADIO or source_type == self.source.MEDIA:
+            try:
+                if mute_action == PAUSE or source_type == self.source.MEDIA:
+                    log.message("volume.mute MPD pause",log.DEBUG)
+                    self.mpd_client.pause() # Streaming continues
 
-        try:
-            if mute_action == PAUSE or source_type == self.source.MEDIA:
-                log.message("volume.mute MPD pause",log.DEBUG)
-                self.mpd_client.pause() # Streaming continues
-
-            elif mute_action == STOP:
-                log.message("volume.mute MPD stop",log.DEBUG)
-                self.mpd_client.stop()  # Streaming stops
-        except:
-            pass
+                elif mute_action == STOP:
+                    log.message("volume.mute MPD stop",log.DEBUG)
+                    self.mpd_client.stop()  # Streaming stops
+            except:
+                pass
         return
 
     # Unmute the volume
     def unmute(self):
+        source_type = self.source.getType()
         volume = self._getStoredVolume()
-        if volume < 1:
-           volume = 5
-        self.set(volume)
-        try:
-            self.mpd_client.play()
-        except:
-            pass
+        if source_type == self.source.AIRPLAY or source_type == self.source.SPOTIFY:
+            store = True
+            if volume == 0:
+                volume = 90
+            self.mixer_volume = self._setMixerVolume(volume,store)
+        else:
+            if volume < 1:
+               volume = 5
+            self.set(volume)
+            try:
+                self.mpd_client.play()
+            except:
+                pass
         return
 
     # Is sound muted

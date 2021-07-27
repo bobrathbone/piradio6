@@ -12,7 +12,7 @@ This software uses the python3-mpd library. See https://packages.debian.org/sid/
 
 Version 7.2 release notes 
 -------------------------
-30th June 2021
+26th July 2021
 1) Add Compute Model and 8GB 4B to display_model.py
 2) Correct report of X-Windows detected if Lite OS installed
 3) Correct remote control configuration display error
@@ -26,9 +26,13 @@ Version 7.2 release notes
 11) New display_wifi.sh script to display details of current Wi-Fi connection
 12) Added network information to display_config.sh and display_wifi.sh
 13) Button and Rotary encoder interfaces now run in their own thread
-14) Correct not play MEDIA on start-up if no IP network available
+14) Correct not playing MEDIA on start-up if no IP network available
 15) Don't add comment to /boot/cmdline.txt as it is causing boot failure
 16) Configure I2C using configuration script instead of raspi-config (takes two attempts)
+17) Correct Spotify/Airplay not unmuting correctly (Only volume change would unmute)  
+18) Improve Graphic screens scrolling in particular RSS display
+19) Integrity check of /boot/config.txt added. Make sure it isn't null
+20) Support for Waveshare 2.8 and 3.5-inch TFTs added
 
 Version 7.1 release notes 
 -------------------------

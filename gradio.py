@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.38 2021/07/01 08:48:10 bob Exp $
+# $Id: gradio.py,v 1.43 2021/07/18 07:27:44 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -261,10 +261,14 @@ def displayCurrent(screen,font,radio,message):
     if radio.gotError():
         errorStr = radio.getErrorString()
 
-    # Scroll if necessary
+    # Scroll title if necessary
     linebuf = 1
     if len(title) > max_columns:
-        title = display.scroll(title,linebuf,max_columns)
+        # Cannot scroll long titles and RSS together
+        if display.getMode() == display.RSS:
+            title = title[:max_columns]
+        else:
+            title = display.scroll(title,linebuf,max_columns)
 
     linebuf += 1
     if len(search_name) > max_columns:
@@ -575,14 +579,12 @@ def handleEvent(radio,radioEvent):
             radio.unmute()
         else:
             radio.mute()
+        time.sleep(0.5)     # Prevent unmute
 
     elif event_type == radioEvent.MPD_CLIENT_CHANGE:
         log.message("radioEvent Client Change",log.DEBUG)
         if source_type == radio.source.MEDIA:
             artwork_file = getArtWork(radio)
-
-        if radio.muted():
-            radio.unmute()
 
     elif event_type == radioEvent.LOAD_RADIO or event_type == radioEvent.LOAD_MEDIA \
                or event_type == radioEvent.LOAD_AIRPLAY\
@@ -1152,6 +1154,8 @@ if __name__ == "__main__":
     signal.signal(signal.SIGSEGV,signalCrash)
     signal.signal(signal.SIGABRT,signalCrash)
 
+    log.init('radio')
+
     picWallpaper = None
     # Check we have a desktop
     try:
@@ -1196,14 +1200,13 @@ if __name__ == "__main__":
         log.message(msg, log.ERROR)
         msg = "Fatal error - exiting"
         print (msg)
-        log.message(msg, log.ERROR)
+        log.message(msg, log.CRITICAL)
         sys.exit(1)
 
     # Hide mouse if configured
     if display.config.fullscreen and not display.config.display_mouse:
         pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 
-    log.init('radio')
 
     # Prevent LCD version from running and disable it
     os.popen("sudo systemctl stop radiod")

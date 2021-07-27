@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.52 2021/06/27 18:59:48 bob Exp $
+# $Id: radiod.py,v 1.57 2021/07/25 08:53:24 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -387,6 +387,9 @@ def handleEvent(event,display,radio,menu):
     elif event_type != event.NO_EVENT:
         handleRadioEvent(event,display,radio,menu)
 
+    elif event_type == radioEvent.MPD_CLIENT_CHANGE:
+        log.message("handleEvent Client Change",log.DEBUG)
+
     # Clear event 
     event.clear()
     statusLed.set(StatusLed.NORMAL)
@@ -472,8 +475,8 @@ def handleRadioEvent(event,display,radio,menu):
                     speakCurrent(message,radio)
             else:
                 mute(radio,display)
-                time.sleep(0.5) # Prevent unmute
-        ##pdb.set_trace()
+
+        time.sleep(0.5) # Prevent unmute
         displayVolume(display,radio)
 
     if event_type == event.CHANNEL_UP:
@@ -929,14 +932,12 @@ def displaySource(display,radio,menu,message):
 
     if lines > 2:
         display.out(3, station ,interrupt)
-        message.speak(sSource)
     else:
         if display.getDelay() > 0:
             displayVolume(display, radio)
             time.sleep(0.1)
-        else:
-            message.speak(str(index+1) + ' ' +  search_station[0:50])
 
+    message.speak(sSource)
     newMenu = False
     return 
 

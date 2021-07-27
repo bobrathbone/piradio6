@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.34 2021/06/23 08:46:18 bob Exp $
+# $Id: vgradio.py,v 1.37 2021/07/18 07:27:44 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -212,12 +212,10 @@ def handleEvent(radio,radioEvent):
             radio.unmute()
         else:
             radio.mute()
+        time.sleep(0.5)     # Prevent unmute
 
     elif event_type == radioEvent.MPD_CLIENT_CHANGE:
         log.message("radioEvent Client Change",log.DEBUG)
-
-        if radio.muted():
-            radio.unmute()
 
     elif event_type == radioEvent.LOAD_RADIO or event_type == radioEvent.LOAD_MEDIA \
                or event_type == radioEvent.LOAD_AIRPLAY\
@@ -683,6 +681,8 @@ if __name__ == "__main__":
     signal.signal(signal.SIGSEGV,signalCrash)
     signal.signal(signal.SIGABRT,signalCrash)
 
+    log.init('radio')
+
     picWallpaper = None
 
     locale.setlocale(locale.LC_ALL, '')
@@ -719,7 +719,6 @@ if __name__ == "__main__":
         flags = DOUBLEBUF
 
     # Setup radio
-    log.init('radio')
     if config.log_creation_mode:
         log.truncate()
 
@@ -738,7 +737,7 @@ if __name__ == "__main__":
         log.message(msg, log.ERROR)
         msg = "Fatal error - exiting"
         print (msg)
-        log.message(msg, log.ERROR)
+        log.message(msg, log.CRITICAL)
         sys.exit(1)
 
     log.message("DEBUG 2 radio.waitForNetwork()",log.DEBUG)

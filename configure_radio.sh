@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.13 2021/06/30 11:34:47 bob Exp $
+# $Id: configure_radio.sh,v 1.15 2021/07/24 06:57:02 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -617,7 +617,7 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     do
         ans=$(whiptail --title "Select graphical display type?" --menu "Choose your option" 15 75 9 \
         "1" "Raspberry Pi 7-inch touch-screen (800x480)" \
-        "2" "Adafruit 3.5 inch TFT touch-screen (720x480)" \
+        "2" "Medium 3.5 inch TFT touch-screen (720x480)" \
         "3" "Small 2.8 inch TFT touch-screen (480x320)" \
         "4" "7-inch TFT touch-screen (1024x600)" \
         "5" "HDMI television or monitor (800x480)" \
@@ -633,7 +633,7 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
             SCREEN_SIZE="800x480"
 
         elif [[ ${ans} == '2' ]]; then
-            DESC="Adafruit 3.5 inch TFT touch-screen"
+            DESC="Medium 3.5 inch TFT touch-screen"
             SCREEN_SIZE="720x480"
 
         elif [[ ${ans} == '3' ]]; then
@@ -1081,6 +1081,23 @@ if [[ ${ans} == '1' ]]; then
 else
     echo "Audio configuration unchanged."    | tee -a ${LOG}
 fi
+
+# Integrity check of /boot/config.txt
+declare -i lines=$(wc -l ${BOOTCONFIG} | awk '{print $1}')
+if [[ ${lines} -lt 10 ]]; then
+    echo "ERROR: ${BOOTCONFIG} failed integrity check"
+    echo "Restoring ${BOOTCONFIG} from ${BOOTCONFIG}.orig"
+    sudo cp ${BOOTCONFIG} ${BOOTCONFIG}.orig
+    echo "Re-run sudo ${0} "
+    exit 1
+else 
+    echo
+    echo "${BOOTCONFIG} has ${lines} lines"
+    echo
+fi
+
+# Sync changes to disk
+sync;sync
 
 echo "Reboot Raspberry Pi to enable changes." | tee -a ${LOG}
 echo "A log of these changes has been written to ${LOG}"

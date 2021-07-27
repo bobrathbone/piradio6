@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: latin-1 -*-
 #
-# $Id: rss_class.py,v 1.3 2020/12/24 12:29:45 bob Exp $
+# $Id: rss_class.py,v 1.4 2021/07/13 09:06:44 bob Exp $
 # Raspberry Pi RSS feed class
 #
 # Author : Bob Rathbone
@@ -237,6 +237,8 @@ class Rss:
                 self.rss_delay1 = 0
                 if self.rss_delay2 == 0:
                     self.rss_delay2 = DELAY
+                # Strip trailing space (Indicator for delay function)
+                self.rss_line2 = self.rss_line2.rstrip()
         else:
             self.rss_line2 = self.rss_line1[:max_columns]
 

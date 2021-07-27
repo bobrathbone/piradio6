@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: graphic_display.py,v 1.4 2021/05/17 12:48:30 bob Exp $
+# $Id: graphic_display.py,v 1.8 2021/07/14 04:54:08 bob Exp $
 # Raspberry Pi display routines
 # Graphic screen routines used by touch graphic screen
 #
@@ -34,6 +34,8 @@ class GraphicDisplay:
     current_column = 1
     delay = 15
     config = Configuration()
+    scroll_speed = 0.25
+    scroll_delay = 0
 
     # Display window modes
     MAIN = 0
@@ -57,6 +59,7 @@ class GraphicDisplay:
     def __init__(self,font):
         self.font = font
         self.size = self.config.screen_size
+        self.scroll_speed = self.config.scroll_speed
         self.setSize(self.size)
         return
 
@@ -128,9 +131,12 @@ class GraphicDisplay:
         newText = text[index:(max_columns + index)]
 
         # Increment index and check
-        index += 1
+        now = time.time()
+        if now > self.scroll_delay:
+            self.scroll_delay = now + self.scroll_speed
+            index += 1
 
-        # this delays scrolling at beginning of sroll
+        # this delays scrolling at beginning of display
         if self.holdCountBegin[idx] > 0:
             self.holdCountBegin[idx] -= 1
             index = 0
@@ -141,10 +147,14 @@ class GraphicDisplay:
                 self.holdCountEnd[idx] = self.delay
                 self.holdCountBegin[idx] = self.delay
                 self.textIndex[idx] = 0
-            
-            self.holdCountEnd[idx] -= 1
+            else:
+                self.holdCountEnd[idx] -= 1
         else:
             self.textIndex[idx] = index
+            # Add a space to prevent rss_class.scrollRssFeed from
+            # thinking that the end has been reached before delay count 
+            # has been exhausted.
+            newText = newText + ' '
 
         return newText
         
