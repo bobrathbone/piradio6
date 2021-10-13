@@ -3,7 +3,7 @@
 # Raspberry Pi Internet Radio
 # Graphic screen controls
 #
-# $Id: gcontrols_class.py,v 1.5 2020/10/12 14:09:56 bob Exp $
+# $Id: gcontrols_class.py,v 1.8 2021/09/03 14:39:59 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -593,6 +593,43 @@ class SwitchIcon(Image):
     def clicked(self):
         return self.switchIcon.clicked()
 
+# Draw the Shutdown Icon
+class ShutdownIcon(Image):
+    # Initialisation routine
+    def __init__(self,pygame):
+        self.pygame = pygame
+        pass
+
+    def draw(self,screen,xPos,yPos,path="images/shutdown.png",iSize=35):
+        self.shutdownIcon = Image(self.pygame)
+        mysize = (iSize,iSize)
+        self.shutdownIcon.draw(screen,path,(xPos,yPos),(mysize))
+        return
+
+    def clicked(self):
+        return self.shutdownIcon.clicked()
+
+# Draw the Icecast2 streaming Icon
+class IcecastIcon(Image):
+    # Initialisation routine
+    def __init__(self,pygame):
+        self.pygame = pygame
+        pass
+
+    def draw(self,screen,xPos,yPos,enabled,iSize=35):
+        if enabled:
+            img = "images/icecast.png"
+        else:
+            img = "images/icecast_off.png"
+        self.icecastIcon = Image(self.pygame)
+        mysize = (iSize,iSize)
+        self.icecastIcon.draw(screen,img,(xPos,yPos),(mysize))
+        return
+
+    def clicked(self):
+        return self.icecastIcon.clicked()
+
+# Draw the Equalizer Icon
 # Draw the Equalizer Icon
 class EqualizerIcon(Image):
     # Initialisation routine

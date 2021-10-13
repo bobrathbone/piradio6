@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.37 2021/07/18 07:27:44 bob Exp $
+# $Id: vgradio.py,v 1.48 2021/09/14 09:01:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -65,6 +65,7 @@ lmargin = 30    # Left margin
 rmargin = 80    # Right margin 
 
 pidfile = "/var/run/radiod.pid"
+RadioLib =  "/var/lib/radiod"
 
 playlist = []
 plName = '' # Playlist name if more than one
@@ -223,6 +224,11 @@ def handleEvent(radio,radioEvent):
             
         handleSourceChange(radioEvent,radio,message)
 
+    elif event_type == event.PLAYLIST_CHANGED:
+        log.message('PLAYLIST_CHANGED event received', log.DEBUG)
+        radio.handlePlaylistChange()
+
+    # Finally clear the event
     radioEvent.clear()
     return
 
@@ -392,8 +398,15 @@ def displayTitle(screen,radio,message,plsize):
 # Display playlist name if more than one
 def displayPlaylistName(screen,plName):
     if len(plName) > 0:
+        # Display old style names beginning with an underscore
+        if plName[0] == '_':
+            oldname = True
+        else:
+            oldname = False
         plName = plName.replace('_',' ')
         plName = plName.lstrip()
+        if oldname:
+            plName = '_' + plName
         font = pygame.font.SysFont('freesans', 12, bold=False)
         xPos = 10
         yPos = 13
@@ -420,7 +433,7 @@ def displayPagePosition(page,maxStations,plsize):
     return
 
 # Display message popup
-def displayPopup(screen,radio,text):
+def displayPopup(screen,text,bcolor=(255,255,255)):
     text = uEncode(text)
     displayPopup = TextRectangle(pygame)    # Text window
     font = pygame.font.SysFont('freesans', 30, bold=True)
@@ -430,7 +443,6 @@ def displayPopup(screen,radio,text):
     xSize = fx
     ySize = fy
     color = (50,50,50)
-    bcolor = (255,255,255)
     border = 4
     displayPopup.draw(screen,color,bcolor,xPos,yPos,xSize,ySize,border)
     line = 1    # Not used but required
@@ -438,6 +450,20 @@ def displayPopup(screen,radio,text):
     displayPopup.drawText(screen,font,color,line,text)
     pygame.display.flip()
     return
+
+# Handle shutdown button click
+def handleShutdown(screen):
+    if config.shutdown:
+        msg = message.get("shutdown")
+        displayPopup(screen,msg,bcolor=(255,255,255))
+        time.sleep(3)
+        radio.shutdown()
+    else:
+        radio.stop()
+        msg = message.get("stop")
+        displayPopup(screen,msg,bcolor=(255,255,255))
+        time.sleep(3)
+        sys.exit(0)
 
 # Display the radio station name
 def displayStationName(screen,radio):
@@ -586,6 +612,13 @@ def drawEqualizerIcon(display,screen,equalizerIcon):
     equalizerIcon.draw(screen,xPos,yPos)
     return
 
+# Draw Shutdown Icon
+def drawShutdownIcon(display,screen,shutdownIcon):
+    xPos = size[0] - 120
+    yPos = 35
+    shutdownIcon.draw(screen,xPos,yPos,iSize=30)
+    return
+
 # Page up through playlist
 def pageUp(display,radio):
     global playlist,plName
@@ -650,12 +683,12 @@ def checkPid(pidfile):
 # Open equalizer window
 def openEqualizer(radio,equalizer_cmd):
     #dir = os.path.dirname(__file__)
-    dir = "/usr/share/radio"
-    cmd_file = open(dir + '/' + equalizer_cmd,"r")
+    cmd_file = open(RadioLib + '/' + equalizer_cmd,"r")
     for line in cmd_file:
-      if line.startswith('lxterminal'):
-           radio.execCommand(line)
-           break
+        if line.startswith('lxterminal'):
+            log.message(line,log.DEBUG)
+            radio.execCommand(line)
+            break
     return
 
 # Set draw equalizer true/false
@@ -761,7 +794,7 @@ if __name__ == "__main__":
     if display.getRows() < 20:
         msg = "Screen size is too small!"
         print(msg)
-        displayPopup(screen,radio,msg)
+        displayPopup(screen,msg)
         time.sleep(7)
         dir = os.path.dirname(__file__)
         os.popen("sudo " + dir + "/gradio.py&")
@@ -770,7 +803,7 @@ if __name__ == "__main__":
     message = Message(radio,display,translate)
     text = message.get('loading_radio')
 
-    displayPopup(screen,radio,text)
+    displayPopup(screen,text)
     surface=pygame.Surface((size))
 
     # Set up Xauthority for root user
@@ -809,6 +842,7 @@ if __name__ == "__main__":
     downIcon = DownIcon(pygame)
     switchIcon = SwitchIcon(pygame)
     equalizerIcon = EqualizerIcon(pygame)
+    shutdownIcon = ShutdownIcon(pygame)
     drawUpIcon(display,screen,upIcon)
     drawDownIcon(display,screen,downIcon)
     if display.config.switch_programs:
@@ -820,6 +854,9 @@ if __name__ == "__main__":
     
     if draw_equalizer_icon:
         drawEqualizerIcon(display,screen,equalizerIcon)
+
+    if config.display_shutdown_button:
+        drawShutdownIcon(display,screen,shutdownIcon)
 
     playlist = radio.getPlayList()
     maxLabels = getMaximumLabels(display,radio)
@@ -878,6 +915,9 @@ if __name__ == "__main__":
                     radio.unmute()
                     pageUp(display,radio)
 
+                elif config.display_shutdown_button and shutdownIcon.clicked():
+                    handleShutdown(screen)
+
                 elif upIcon.clicked():
                     radio.unmute()
                     radioEvent.set(radioEvent.CHANNEL_UP)
@@ -890,7 +930,7 @@ if __name__ == "__main__":
                     openEqualizer(radio,"equalizer.cmd")
                     draw_equalizer_icon = False
                     equalizerIcon.disable()
-                    
+
                 elif display.config.switch_programs and switchIcon.clicked():
                     dir = os.path.dirname(__file__)
                     os.popen("sudo " + dir + "/gradio.py&")
@@ -953,6 +993,9 @@ if __name__ == "__main__":
         
         if draw_equalizer_icon:
             drawEqualizerIcon(display,screen,equalizerIcon)
+
+        if config.display_shutdown_button:
+            drawShutdownIcon(display,screen,shutdownIcon)
 
         if display.config.switch_programs:
             drawSwitchIcon(display,screen,switchIcon)

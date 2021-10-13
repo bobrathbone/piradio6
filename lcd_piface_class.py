@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_piface_class.py,v 1.2 2020/10/12 17:40:44 bob Exp $
+# $Id: lcd_piface_class.py,v 1.3 2021/09/30 09:08:49 bob Exp $
 # Raspberry Pi Internet Radio
 # using a Piface backlit LCD plate
 #
@@ -246,10 +246,6 @@ class Lcd_Piface_Cad:
 # Class test routine
 if __name__ == "__main__":
     import pwd
-
-    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-        print ("This program must be run with sudo or root permissions!")
-        sys.exit(1)
 
     try:
         print ("Test lcd_class.py")

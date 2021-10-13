@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Airplay receiver Class
-# $Id: airplay_class.py,v 1.2 2020/10/13 05:39:43 bob Exp $
+# $Id: airplay_class.py,v 1.3 2021/09/30 09:03:15 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -49,9 +49,6 @@ class AirplayReceiver:
     # Initialisation routine
     def __init__(self, translate):
         self.translate = translate
-        if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-            print("This program must be run with sudo or root permissions!")
-            sys.exit(1)
 
         log.init('radio')
         self.setupConfiguration()
@@ -192,6 +189,7 @@ class AirplayReceiver:
 # End of class
 
 ### Test routine ###
+# Only instatiates the Airplay object and does nothing further
 if __name__ == "__main__":
     from translate_class import Translate
     translate = Translate()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_adafruit.py,v 1.5 2021/05/11 17:41:45 bob Exp $
+# $Id: lcd_i2c_adafruit.py,v 1.6 2021/09/30 08:03:28 bob Exp $
 #
 # I2C Adafruit I2C backback driver
 # Adapted from RpiLcdBackpack from Paul Knox-Kennedy
@@ -303,10 +303,6 @@ if __name__ == "__main__":
 
     i2c_addres = 0x27
 
-    #if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-    #   print "This program must be run with sudo or root permissions!"
-    #   sys.exit(1)
-
     try:
         print("Test I2C Adafruit backpack class")
         lcd = Lcd_i2c_Adafruit()
@@ -322,6 +318,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\nExit")
         sys.exit(0)
+
 # End of test routine
 # :set tabstop=4 shiftwidth=4 expandtab
 # :retab

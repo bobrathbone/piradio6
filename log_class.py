@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: log_class.py,v 1.2 2021/01/17 12:37:27 bob Exp $
+# $Id: log_class.py,v 1.4 2021/09/30 08:03:28 bob Exp $
 # Raspberry Pi Internet Radio Logging class
 #
 # Author : Bob Rathbone
@@ -56,7 +56,7 @@ class Log:
         if level != self.NONE and message != self.sMessage:
             try:
                 logger = logging.getLogger('gipiod')
-                hdlr = logging.FileHandler('/var/log/' + self.module + '.log')
+                hdlr = logging.FileHandler('/var/log/radiod/' + self.module + '.log')
                 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
                 hdlr.setFormatter(formatter)
                 logger.addHandler(hdlr)
@@ -84,7 +84,7 @@ class Log:
 
     # Truncate the log file
     def truncate(self):
-        logging.FileHandler('/var/log/' + self.module + '.log','w')
+        logging.FileHandler('/var/log/radiod/' + self.module + '.log','w')
         return
 
     # Temporary set log level

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.3 2021/05/11 17:41:45 bob Exp $
+# $Id: lcd_class.py,v 1.5 2021/09/23 08:12:02 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -350,15 +350,16 @@ if __name__ == "__main__":
             text4 = translate.all(text4)
         else:
             text2 = "Line 2 123456789"
-            text3 = "Line 2 123456789"
-            text4 = "Line 2 123456789"
+            text3 = "Line 3 123456789"
+            text4 = "Line 4 123456789"
 
         lcd.out(2,text2)
         lcd.out(3,text3)
         lcd.out(4,text4)
-        #time.sleep(4)
-        #lcd.out(4,"Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", no_interrupT)
-        #lcd.out(4,"End of test")
+        time.sleep(2)
+        lcd.out(4,"Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", no_interrupt)
+        time.sleep(2)
+        lcd.out(4,"End of test")
         sys.exit(0)
 
     except KeyboardInterrupt:

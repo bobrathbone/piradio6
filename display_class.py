@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.22 2021/06/08 20:28:31 bob Exp $
+# $Id: display_class.py,v 1.37 2021/09/30 08:59:30 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -56,6 +56,7 @@ class Display:
     i2c_bus = 1 # All later RPIs use bus 1 (old RPIs use bus 0)
 
     lineBuffer = []     # Line buffer 
+    ImageColor = None
 
     def __init__(self,translate):
         threading.Thread.__init__(self)
@@ -73,6 +74,7 @@ class Display:
     def setupDisplay(self):
         global screen
         dtype = config.getDisplayType()
+        scroll_speed = config.scroll_speed
         i2c_address = 0x0
         configured_i2c = config.i2c_address
         self.i2c_bus = config.i2c_bus
@@ -104,6 +106,24 @@ class Display:
 
             screen.init(address = i2c_address,busnum=self.i2c_bus,
                     code_page=self.code_page)
+            screen.setScrollSpeed(scroll_speed)
+            i2c_interface = True
+
+        elif dtype == config.LCD_I2C_JHD1313:
+            print("LCD_I2C_JHD1313")
+            from PIL import ImageColor
+            self.ImageColor = ImageColor
+            from lcd_i2c_jhd1313 import Lcd_i2c_jhd1313
+            print("LCD_I2C_JHD1313 A")
+            screen = Lcd_i2c_jhd1313()
+
+            if configured_i2c != 0:
+                i2c_address = configured_i2c
+            else:
+                i2c_address = 0x3e
+
+            screen.init(address = i2c_address,code_page=self.code_page)
+            screen.setScrollSpeed(scroll_speed)
             i2c_interface = True
 
         elif dtype == config.LCD_I2C_ADAFRUIT:
@@ -116,6 +136,7 @@ class Display:
                 i2c_address = 0x20
 
             screen.init(address = i2c_address, busnum=self.i2c_bus)
+            screen.setScrollSpeed(scroll_speed)
             i2c_interface = True
 
         elif dtype == config.LCD_ADAFRUIT_RGB:
@@ -154,7 +175,7 @@ class Display:
         elif dtype == config.ST7789TFT:
             from st7789tft_class import ST7789
             screen = ST7789()
-            screen.init(callback=self.callback,code_page = code_page)
+            screen.init(callback=self.callback,flip=config.flip_display_vertically)
             self.has_buttons = False # Use standard button ineterface
             self._isOLED = True
             self._mute_line = 5
@@ -167,11 +188,26 @@ class Display:
             self._isOLED = True
             self._mute_line = 4
 
+        elif dtype == config.LUMA:
+            from luma_class import LUMA
+            screen = LUMA()
+            luma_device = config.luma_device
+            rotation = 0
+            if config.flip_display_vertically:
+                rotation = 2
+            screen.init(callback=self.callback,code_page=code_page, 
+                        luma_device=luma_device,rotation=rotation)
+            screen.setScrollSpeed(scroll_speed)
+            self.has_buttons = False # Use standard button interface
+            self._isOLED = True
+            self._mute_line = 4
+
         else:
             # Default LCD
             from lcd_class import Lcd
             screen = Lcd()
             screen.init(code_page = self.code_page)
+            screen.setScrollSpeed(scroll_speed)
 
         # Log code files used and codepage
         log.message("Display code page " + str(hex(self.code_page)), log.INFO)
@@ -315,10 +351,19 @@ class Display:
     def hasColor(self):
         return screen.hasColor()
 
-    # For Adafruit screen with RGB colour
+    # LCD Backlight
     def backlight(self, label):
         if self.hasColor():
-            screen.backlight(self.getBackColor(label))
+            dtype = config.getDisplayType()
+            if dtype == config.LCD_ADAFRUIT_RGB:
+                # For Adafruit screen with RGB colour
+                color = self.getBackColor(label)
+                screen.backlight(color)
+            elif dtype == config.LCD_I2C_JHD1313:
+                # For Grove JHD1313 RGB display
+                rgbcolor = config.getRgbColor(label)
+                rgb = self.ImageColor.getrgb(rgbcolor)
+                screen.backlight(rgb)
         return
     
     # Get background colour by name label. Returns an integer
@@ -374,10 +419,6 @@ class Display:
 if __name__ == "__main__":
     from translate_class import Translate
     translate = Translate()
-
-    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-        print("This program must be run with sudo or root permissions!")
-        sys.exit(1)
 
     try:
         print("Test display_class.py")

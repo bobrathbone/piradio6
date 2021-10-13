@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi pHAT Beat Class
-# $Id: phatbeat_class.py,v 1.2 2020/10/13 06:59:53 bob Exp $
+# $Id: phatbeat_class.py,v 1.3 2021/09/30 09:08:49 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -68,10 +68,6 @@ if __name__ == "__main__":
     @phatbeat.on(phatbeat.BTN_ONOFF)
     def fast_forward(pin):
         phat.callback(phatbeat.BTN_ONOFF)
-
-        if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-            print("This program must be run with sudo or root permissions!")
-            sys.exit(1)
 
     print("Test pHAT Beat interface board")
 try:

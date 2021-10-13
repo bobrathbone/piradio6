@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.4 2021/06/08 20:11:30 bob Exp $
+# $Id: button_class.py,v 1.7 2021/10/02 13:14:03 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
-# This class uses standard rotary encoder with push switch
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
@@ -13,7 +12,7 @@
 #
 #
 
-import os,sys,pwd
+import os,sys
 import time
 import RPi.GPIO as GPIO
 import threading
@@ -21,8 +20,12 @@ from constants import *
 
 class Button:
 
-    def __init__(self,button,callback,log,pull_up_down=DOWN):
-        threading.Thread.__init__(self)
+    def __init__(self,button,callback,log,pull_up_down=GPIO.PUD_DOWN):
+        t = threading.Thread(target=self._run,args=(button,callback,log,pull_up_down,))
+        t.daemon = True
+        t.start()
+
+    def _run(self,button,callback,log,pull_up_down):
         self.button = button
         self.callback = callback
         self.pull_up_down = pull_up_down
@@ -95,10 +98,6 @@ if __name__ == "__main__":
 
     print("Test Button Class")
 
-    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-        print("This program must be run with sudo or root permissions!")
-        sys.exit(1)
-    
     # Get configuration
     left_switch = config.getSwitchGpio("left_switch")
     right_switch = config.getSwitchGpio("right_switch")

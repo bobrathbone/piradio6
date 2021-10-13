@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.63 2021/06/24 10:56:58 bob Exp $
+# $Id: config_class.py,v 1.86 2021/10/08 07:56:59 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -54,12 +54,14 @@ class Configuration:
     PIFACE_CAD = 7      # Piface CAD 
     ST7789TFT = 8       # Pirate audio TFT with ST7789 controller
     SSD1306 = 9         # Sitronix SSD1306 controller for the 128x64 tft
+    LUMA = 10           # Luma driver for 
+    LCD_I2C_JHD1313 = 11    # Grove 2x16 I2C LCD RGB 
 
     display_type = LCD
     DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574', 
              'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 
              'GRAPHICAL_DISPLAY', 'OLED_128x64', 
-             'PIFACE_CAD','ST7789TFT','SSD1306' ]
+             'PIFACE_CAD','ST7789TFT','SSD1306','LUMA','LCD_I2C_JHD1313' ]
 
     # User interface ROTARY or BUTTONS
     ROTARY_ENCODER = 0
@@ -77,6 +79,8 @@ class Configuration:
     # Rotary class selection
     STANDARD = 0    # Select rotary_class.py
     ALTERNATIVE = 1 # Select rotary_class_alternate.py
+    RGB_ROTARY = 2  # Select rotary_class_rgb.py
+    RGB_I2C_ROTARY = 3  # Select rotary_class_rgb_i2c.py
 
     # Configuration parameters accesible through @property and @<parameter>.setter
     _mpdport = 6600         # MPD port number
@@ -86,9 +90,11 @@ class Configuration:
     _volume_increment = 1   # Volume increment 1 to 10
     _display_playlist_number = False # Two line displays only, display station(n)
     _source = RADIO          # Source RADIO or MEDIA Player
-    _rotary_class = STANDARD # Rotary class STANDARD or ALTERNATIVE 
+    _rotary_class = STANDARD # Rotary class STANDARD,RGB_ROTARY or ALTERNATIVE 
     _rotary_gpio_pullup =  GPIO.PUD_UP  # KY-040 encoders have own 10K pull-up resistors. 
                             # Set internal pullups to off with rotary_gpio_pullup = GPIO.PUD_OFF
+    _volume_rgb_i2c=0x0F    # Volume RGB I2C Rotary encoder hex address
+    _channel_rgb_i2c=0x1F   # Channel RGB I2C Rotary encoder hex address
     _display_width = 0      # Line width of display width 0 = use program default
     _display_lines = 2      # Number of display lines
     _scroll_speed = float(0.3)   # Display scroll speed (0.01 to 0.3)
@@ -102,7 +108,8 @@ class Configuration:
     _screen_saver = 0        # Screen saver time n minutes, 0 = No screen save
     _flip_display_vertically = False # Flip OLED display vertically
     _station_names = LIST # Station names from playlist names or STREAM
-    _mute_action = 0       # MPD action on mute, 1=pause, 2=stop, 0=volume off only
+    _update_playlists = False  # Allow update of playlists by external clients
+    _mute_action = 0      # MPD action on mute, 1=pause, 2=stop, 0=volume off only
     MuteActions =  ['Pause','Stop']  # Text for above _mute_action
 
     # Remote control parameters 
@@ -152,6 +159,8 @@ class Configuration:
     _banner_color = 'white'  # Time banner text colour
     _wallpaper = ''          # Background wallpaper
     _graphic_dateformat="%H:%M:%S %A %e %B %Y"    # Format for graphic screen
+    _display_shutdown_button = True    # Shutdown button
+    _shutdown_command = "sudo shutdown -h now"   # Shutdown command
 
     # Parameters specific to the vintage graphic radio
     _scale_labels_color = 'white'    # Vintage screen labels colour
@@ -169,6 +178,7 @@ class Configuration:
             4 : 'Blue', 5 : 'Violet', 6 : 'Teal', 7 : 'White' }
 
     # These are for the Adafruit RGB plate and not for any graphics screen
+    # Adfafruit uses color codes 0 to 7 and not RGB
     colors = { 'bg_color' : 0x0,
            'mute_color' : 0x0,
            'shutdown_color' : 0x0,
@@ -178,6 +188,17 @@ class Configuration:
            'info_color' : 0x0,
            'menu_color' : 0x0,
            'sleep_color': 0x0 }
+
+    # These for LCDs such as the Grove LCD which uses RGB colors
+    rgbcolors = { 'bg_color' : 'WHITE',
+           'mute_color' : 'VIOLET',
+           'shutdown_color' : 'TEAL',
+           'error_color' : 'RED',
+           'search_color' : 'GREEN',
+           'source_color' : 'TEAL',
+           'info_color' : 'BLUE',
+           'menu_color' : 'YELLOW',
+           'sleep_color': 'BLACK' }
 
     # List of loaded options for display
     configOptions = {}
@@ -331,11 +352,12 @@ class Configuration:
                     except:
                         self.invalidParameter(ConfigFile,option,parameter)
 
-                elif 'color' in option:
+                elif '_color' in option:
+                    self.rgbcolors[option] = parameter
                     try:
                         self.colors[option] = self.color[parameter]
                     except:
-                        self.invalidParameter(ConfigFile,option,parameter)
+                        pass
 
                 elif option == 'speech':
                     self.speech = parameter
@@ -398,7 +420,7 @@ class Configuration:
                     except:
                         self.invalidParameter(ConfigFile,option,parameter)
 
-                elif 'rgb' in option:
+                elif option == 'rgb_red' or option == 'rgb_green' or option == 'rgb_blue':
                     try:
                         led = int(parameter)
                         self.rgb_leds[option] = led
@@ -446,14 +468,29 @@ class Configuration:
                     elif parameter == 'SSD1306':
                         self.display_type = self.SSD1306
 
+                    elif parameter == 'LCD_I2C_JHD1313':
+                        self.display_type = self.LCD_I2C_JHD1313
+
+                    elif 'LUMA' in parameter:
+                        param = parameter.upper()
+                        self.display_type = self.LUMA
+                        self.luma_device = 'SH1106'  # Default
+                        luma_devices = param.split('.')
+                        if len(luma_devices) > 0:
+                            self.luma_device = luma_devices[1]
+
                     else:
                         self.invalidParameter(ConfigFile,option,parameter)
 
                 elif option == 'rotary_class':
-                    if parameter == 'standard':
-                        self.rotary_class = self.STANDARD
-                    else:
+                    if parameter == 'alternative':
                         self.rotary_class = self.ALTERNATIVE
+                    elif parameter == 'rgb_rotary':
+                        self.rotary_class = self.RGB_ROTARY
+                    elif parameter == 'rgb_i2c_rotary':
+                        self.rotary_class = self.RGB_I2C_ROTARY
+                    else:
+                        self.rotary_class = self.STANDARD
 
                 elif option == 'rotary_gpio_pullup':
                     if parameter == 'none':
@@ -491,6 +528,9 @@ class Configuration:
                 elif option == 'mute_action':
                     self.mute_action = parameter
 
+                elif option == 'update_playlists':
+                    self.update_playlists = parameter
+
                 elif option == 'translate_lcd':
                     self.translate_lcd = parameter
 
@@ -511,6 +551,15 @@ class Configuration:
 
                 elif option == 'comitup_ip':
                     self.comitup_ip = parameter
+
+                elif option == 'volume_rgb_i2c':
+                    self.volume_rgb_i2c = parameter
+
+                elif option == 'channel_rgb_i2c':
+                    self.channel_rgb_i2c = parameter
+
+                elif option == 'shutdown_command':
+                    self.shutdown_command = parameter
 
                 else:
                     msg = "Invalid option " + option + ' in section ' \
@@ -625,6 +674,12 @@ class Configuration:
                     
                 elif option == 'display_title':
                     self.display_title = parameter
+
+                elif option == 'display_shutdown_button':
+                    self.display_shutdown_button = parameter
+
+                elif option == 'display_shutdown_button':
+                    self.display_shutdown_button = parameter
 
         except configparser.NoSectionError:
             msg = configparser.NoSectionError(section),'in',ConfigFile
@@ -838,6 +893,12 @@ class Configuration:
             log.message("Invalid option " + sColor, log.ERROR)
         return color
 
+    # Get the background color (color format (r,g,b))
+    # Used by Grove LCD RGB
+    def getRgbColor(self,sColor):
+        rgbcolor = self.rgbcolors[sColor]
+        return rgbcolor
+
     # Get the background colour string name
     def getBackColorName(self,iColor):
         sColor = 'None' 
@@ -959,6 +1020,15 @@ class Configuration:
             log.message(msg, log.ERROR)
         return menuswitch
 
+    # Get update playlists switch
+    @property
+    def update_playlists(self):
+        return self._update_playlists
+
+    @update_playlists.setter
+    def update_playlists(self, parameter):
+        self._update_playlists = self.convertYesNo(parameter)
+
     # User interface (Buttons or Rotary encoders or uther)
     @property
     def user_interface(self):
@@ -979,7 +1049,7 @@ class Configuration:
         else:
             self._user_interface =  self.BUTTONS
 
-    # Get Display type
+    # Get Display type 
     def getDisplayType(self):
         return self.display_type
 
@@ -989,7 +1059,19 @@ class Configuration:
 
     # Get Display name
     def getDisplayName(self):
-        return self.DisplayTypes[self.display_type]
+        name = self.DisplayTypes[self.display_type]
+        if name == 'LUMA':
+            name = name + '.' + self.luma_device
+        return name
+
+    # Get LUMA device name eg SH1106 SSD1306
+    @property
+    def luma_device(self):
+        return self._luma_device
+
+    @luma_device.setter
+    def luma_device(self, value):
+        self._luma_device = value
 
     # Get LCD width
     @property
@@ -1017,6 +1099,10 @@ class Configuration:
 
     @scroll_speed.setter
     def scroll_speed(self, value):
+        if value < 0.001:
+            value = 0.001   
+        if value > 0.5:
+            value = 0.5
         self._scroll_speed = value
 
     # Get airplay option (True or false)
@@ -1416,18 +1502,60 @@ class Configuration:
     def audio_config_locked(self, parameter):
         self._audio_config_locked = self.convertYesNo(parameter)
 
+    # Display the shutown button
+    @property
+    def display_shutdown_button(self):
+        return self._display_shutdown_button
+
+    @display_shutdown_button.setter
+    def display_shutdown_button(self, parameter):
+        self._display_shutdown_button = self.convertYesNo(parameter)
+
+    # RGB I2C Rotary Encoder Hex addresses
+    @property
+    def volume_rgb_i2c(self):
+        return self._volume_rgb_i2c
+
+    @volume_rgb_i2c.setter
+    def volume_rgb_i2c(self, parameter):
+        if self.hexValue(parameter):
+            self._volume_rgb_i2c = int(parameter,16)
+
+    @property
+    def channel_rgb_i2c(self):
+        return self._channel_rgb_i2c
+
+    @channel_rgb_i2c.setter
+    def channel_rgb_i2c(self, parameter):
+        if self.hexValue(parameter):
+            self._channel_rgb_i2c = int(parameter,16)
+
+    # Shutdown command
+    @property
+    def shutdown_command(self):
+        return self._shutdown_command
+
+    @shutdown_command.setter
+    def shutdown_command(self, parameter):
+        self._shutdown_command = parameter
+
+    # Check for valid hex value
+    def hexValue(self,x):
+        try:
+            int(x,16)
+            isHex = True
+        except:
+            isHex = False
+        return isHex
+
 # End Configuration of class
 
 # Test Configuration class and diagnostics
 if __name__ == '__main__':
-    import pwd 
-
-    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-        print("This program must be run with sudo or root permissions!")
-        sys.exit(1)
 
     config = Configuration()
     print ("Configuration file:", ConfigFile)
+    print ("Labels in brackets (...) are the parameters found in",ConfigFile) 
     print ("\n[RADIO] section")
     print ("---------------")
 
@@ -1439,12 +1567,12 @@ if __name__ == '__main__':
     print ("Display playlist number(playlist_number):", config.display_playlist_number)
     print ("Source (source):", config.source, config.source_name)
     print ("Startup playlist(startup_playlist):", config.startup_playlist)
-    print ("Background colour number:", config.getBackColor('bg_color'))
+    print ("Background colour number ('bg_color'):", config.getBackColor('bg_color'))
     print ("Background colour:", config.getBackColorName(config.getBackColor('bg_color')))
     print ("Station names source(station_names):",config._stationNamesSource[config.station_names])
     print ("Do shutdown on exit (shutdown):",config.shutdown)
     print ("Comitup IP (comitup_ip):",config.comitup_ip)
-    print ("Shoutcast key:", config.shoutcast_key)
+    print ("Shoutcast key (shoutcast_key):", config.shoutcast_key)
 
     print('')
     print ("Volume range (volume_range):", config.volume_range)
@@ -1466,6 +1594,7 @@ if __name__ == '__main__':
     print ("Speech volume adjustment (speech_volume):", str(config.speech_volume) + '%')
     print ("Verbose (verbose):", config.verbose)
     print ("Speak info (speak_info):", config.speak_info)
+    print ("Allow playlists playlists (update_playlists):", config.update_playlists)
 
     print('')
     for switch_label in config.switches:
@@ -1485,19 +1614,21 @@ if __name__ == '__main__':
         print (menuswitch, config.getMenuSwitch(menuswitch))
     
     print('')
-    rclass = ['Standard', 'Alternative']
-    print ("Rotary class:", config.rotary_class, rclass[config.rotary_class])
+    rclass = ['Standard', 'Alternative',  'rgb_rotary', 'rgb_i2c_rotary']
+    print ("Rotary class:", config.rotary_class, rclass[config._rotary_class])
     rotary_pullup = "PUD_UP" 
     if  config.rotary_gpio_pullup == GPIO.PUD_OFF: 
         rotary_pullup = "PUD_OFF" 
-    print ("Rotary resistor pullup:", rotary_pullup)
+    print ("Rotary resistor pullup (rotary_pullup):", rotary_pullup)
+    print ("Volume RGB I2C hex address (volume_rgb_i2c):", hex(config.volume_rgb_i2c))
+    print ("Channel RGB I2C hex address (channel_rgb_i2c):", hex(config.channel_rgb_i2c))
 
     print('')
-    print ("Display type:", config.getDisplayType(), config.getDisplayName())
-    print ("Display lines:", config.display_lines)
-    print ("Display width:", config.display_width)
-    print ("Scroll speed:", config.scroll_speed)
-    print ("Mixer Volume Preset:", config.mixer_preset)
+    print ("Display type (display_type):", config.getDisplayType(), config.getDisplayName())
+    print ("Display lines (display_lines):", config.display_lines)
+    print ("Display width display_width):", config.display_width)
+    print ("Scroll speed (scroll_speed):", config.scroll_speed)
+    print ("Mixer Volume Preset (config.mixer_preset):", config.mixer_preset)
     print('')
     print ("Translate LCD characters (translate_lcd):", config.translate_lcd)
     print ("LCD translation code page (codepage):", config.codepage)
@@ -1507,19 +1638,21 @@ if __name__ == '__main__':
 
     # I2C parameters
     print('')
-    print ("I2C bus:", config.i2c_bus)
-    print ("I2C address:", hex(config.i2c_address))
-    
+    print ("I2C bus: (config.i2c_bus)", config.i2c_bus)
+    print ("I2C address (i2c_address):", hex(config.i2c_address))
 
     # Internet check
     print('')
-    print ("Internet check URL: ", config.internet_check_url)
-    print ("Internet check port:", config.internet_check_port)
-    print ("Internet timeout: ", config.internet_timeout)
+    print ("Internet check URL (internet_check_url): ", config.internet_check_url)
+    print ("Internet check port (internet_check_port):", config.internet_check_port)
+    print ("Internet timeout (internet_timeout): ", config.internet_timeout)
     
     # OLED
-    print ("OLED flip screen vertical:",config.flip_display_vertically)
+    print ("OLED flip screen vertical (flip_display_vertically):",config.flip_display_vertically)
     print ("OLED splash screen (splash_screen):",config.splash_screen)
+ 
+    # Shutdown command
+    print ("Shutdown command (shutdown_command):",config.shutdown_command)
 
     print ("\n[SCREEN] section")
     print ("----------------")
@@ -1541,6 +1674,7 @@ if __name__ == '__main__':
     print ("Display title (display_title):", config.display_title)
     print ("Display date (display_date):", config.display_date)
     print ("Allow programs switch (switch_programs):", config.switch_programs)
+    print ("Display shutdown button (display_shutdown_button):", config.display_shutdown_button)
 
     print ("Screen saver time:", config.screen_saver)
     print ("\n[AIRPLAY] section")

@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.7 2021/05/11 08:52:05 bob Exp $
+# $Id: event_class.py,v 1.17 2021/09/30 08:53:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -22,6 +22,7 @@ import time,pwd
 
 from rotary_class import RotaryEncoder
 from rotary_class_alternative import RotaryEncoderAlternative
+from rotary_class_rgb import RotaryEncoderRgb
 from log_class import Log
 from rotary_switch_class import RotarySwitch
 import pdb
@@ -82,8 +83,11 @@ class Event():
     LOAD_AIRPLAY = 18
     LOAD_SPOTIFY = 19
 
+    # Playlist events
+    PLAYLIST_CHANGED = 20
+
     # Shutdown radio
-    SHUTDOWN = 20
+    SHUTDOWN = 21
 
     # Alternate event names (easier to understand code )
     VOLUME_UP = RIGHT_SWITCH
@@ -99,7 +103,7 @@ class Event():
               'MENU_BUTTON_UP', 'ALARM_FIRED', 'TIMER_FIRED', 'KEY_LANGUAGE',
               'KEY_INFO', 'ROTARY_SWITCH_CHANGE', 'MPD_CLIENT_CHANGE', 
               'LOAD_RADIO', 'LOAD_MEDIA', 'LOAD_PLAYLIST', 'LOAD_AIRPLAY', 
-              'LOAD_SPOTIFY', 'SHUTDOWN',
+              'LOAD_SPOTIFY','PLAYLIST_CHANGED','SHUTDOWN',
              ]
 
     encoderEventNames = [ 'NONE', 'CLOCKWISE', 'ANTICLOCKWISE',
@@ -399,10 +403,36 @@ class Event():
             tunerknob = RotaryEncoder(self.down_switch, self.up_switch,
                     self.menu_switch,self.tuner_event,pullup=self.config.rotary_gpio_pullup)
     
-        msg = "Volume knob", self.left_switch, self.right_switch, self.mute_switch
-        log.message(msg, log.DEBUG)
-        msg = "Tuner knob", self.down_switch, self.up_switch,self.menu_switch
-        log.message(msg, log.DEBUG)
+        elif self.config.rotary_class == self.config.RGB_ROTARY:
+            log.message("event.setInterface RotaryEncoder RGB_ROTARY", log.DEBUG)
+
+            volumeknob = RotaryEncoderRgb(self.left_switch, self.right_switch,
+                    self.mute_switch,self.volume_event,pullup=self.config.rotary_gpio_pullup)
+
+            tunerknob = RotaryEncoderRgb(self.down_switch, self.up_switch,
+                    self.menu_switch,self.tuner_event,pullup=self.config.rotary_gpio_pullup)
+    
+        elif self.config.rotary_class == self.config.RGB_I2C_ROTARY:
+            from rotary_class_rgb_i2c import RGB_I2C_RotaryEncoder
+            log.message("event.setInterface RotaryEncoder RGB_I2C_ROTARY", log.DEBUG)
+            volume_i2c = 0x0F
+            tuner_i2c = 0x1F
+
+            volumeknob = RGB_I2C_RotaryEncoder(volume_i2c,self.mute_switch,self.volume_event)
+            tunerknob = RGB_I2C_RotaryEncoder(tuner_i2c,self.menu_switch,self.tuner_event)
+            volumeknob.run(True)
+            tunerknob.run(True)
+    
+        if self.config.rotary_class == self.config.RGB_I2C_ROTARY:
+            msg = "Volume knob i2c address %s, mute switch %s" % (hex(volume_i2c),self.mute_switch)
+            log.message(msg, log.DEBUG)
+            msg = "Tuner knob i2c address %s, mute switch %s" % (hex(tuner_i2c),self.menu_switch)
+            log.message(msg, log.DEBUG)
+        else:
+            msg = "Volume knob", self.left_switch, self.right_switch, self.mute_switch
+            log.message(msg, log.DEBUG)
+            msg = "Tuner knob", self.down_switch, self.up_switch,self.menu_switch
+            log.message(msg, log.DEBUG)
         return
 
     # Set up buttons interface
@@ -459,14 +489,11 @@ class Event():
 # End of Event class
 
 ### Main routine ###
+# Only creates the event object but does nothing further 
 if __name__ == "__main__":
 
     from config_class import Configuration
     config = Configuration() 
-
-    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-        print("This program must be run with sudo or root permissions!")
-        sys.exit(1)
 
     event = Event(config)
 
@@ -477,7 +504,6 @@ if __name__ == "__main__":
             else:
                 # This delay must be >= any GPIO bounce times
                 time.sleep(0.2)
-        
 
     except KeyboardInterrupt:
         print(" Stopped")

@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.18 2021/07/04 13:05:29 bob Exp $
+# $Id: station.urls,v 1.22 2021/09/12 10:45:41 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -29,20 +29,20 @@
 # Warning: The BBC have geo-blocked these URLs from being received
 # outside of the United Kingdom. Comment out if this is the case
 
-[BBC - Radio 1] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_one#BBC - Radio 1
-[BBC - Radio 2] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_two#BBC - Radio 2
-[BBC - Radio 3] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_three#BBC - Radio 3
-[BBC - Radio 4] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourfm#BBC - Radio 4
-[BBC - Radio 4 LW (UK only)] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourlw#BBC - Radio 4 LW (UK only)
-[BBC - Radio 4 LW (non-UK)] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourlw_online_nonuk#BBC - Radio 4 LW (non-UK)
-[BBC - Radio 5 live (UK only)] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_five_live#BBC - Radio 5 live (UK only)
-[BBC - Radio 5 live (non-UK)] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_five_live_online_nonuk#BBC - Radio 5 live (non-UK)
-[BBC - Radio 6 Music] http://stream.live.vc.bbcmedia.co.uk/bbc_6music#BBC - Radio 6 Music
-[BBC - Radio 1Xtra] http://stream.live.vc.bbcmedia.co.uk/bbc_1xtra#BBC - Radio 1Xtra
-[BBC - Radio 4 Extra] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_four_extra#BBC - Radio 4 Extra
-[BBC - Radio 5 Live sports extra (UK only)] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_five_live_sports_extra#BBC - Radio 5 Live sports extra (UK only)
-[BBC - Radio Asian Network] http://stream.live.vc.bbcmedia.co.uk/bbc_asian_network#BBC - Radio Asian Network
-[BBC - BBC World Service] http://stream.live.vc.bbcmedia.co.uk/bbc_world_service#BBC - BBC World Service
+[BBC - Radio 1] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_one
+[BBC - Radio 2] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_two
+[BBC - Radio 3] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_three
+[BBC - Radio 4] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourfm
+[BBC - Radio 4 LW (UK only)] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourlw
+[BBC - Radio 4 LW (non-UK)] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourlw_online_nonuk
+[BBC - Radio 5 live (UK only)] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_five_live
+[BBC - Radio 5 live (non-UK)] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_five_live_online_nonuk
+[BBC - Radio 6 Music] http://stream.live.vc.bbcmedia.co.uk/bbc_6music
+[BBC - Radio 1Xtra] http://stream.live.vc.bbcmedia.co.uk/bbc_1xtra
+[BBC - Radio 4 Extra] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_four_extra
+[BBC - Radio 5 Live sports extra (UK only)] http://stream.live.vc.bbcmedia.co.uk/bbc_radio_five_live_sports_extra
+[BBC - Radio Asian Network] http://stream.live.vc.bbcmedia.co.uk/bbc_asian_network
+[BBC - BBC World Service] http://stream.live.vc.bbcmedia.co.uk/bbc_world_service
 
 # UK stations
 [Jack FM] http://playerservices.streamtheworld.com/pls/JACK_FM.pls 
@@ -74,12 +74,6 @@
 [WDR Live1] http://www.wdr.de/wdrlive/media/einslive.m3u
 [89.0 RTL] http://stream.89.0rtl.de/live/mp3-128/stream.89.0rtl.de/play.m3u
 [104,6 RTL] http://stream.104.6rtl.com/rtl-live/mp3-192/listenlive/play.m3u
-[SWR 1] http://mp3-live.swr.de/swr1bw_m.m3u
-[SWR 1 64K] http://mp3-live.swr.de/swr1bw_s.m3u
-[SWR 1 RP] http://mp3-live.swr.de/swr1rp_m.m3u
-[SWR 2] http://mp3-live.swr.de/swr2_m.m3u
-[SWR 3] http://mp3-live.swr3.de/swr3_m.m3u
-[SWR 4] http://mp3-live.swr.de/swr4bw_m.m3u
 [Radio Bodensee]  http://webradio.radio-seefunk.de/live.m3u
 [Antenne Bayern Top 40] http://www.antenne.de/webradio/channels/top-40.m3u
 [Vintage Radio] https://vintageradio.ice.infomaniak.ch/vintageradio-high.mp3
@@ -90,7 +84,6 @@
 [Flux FM] http://streams.fluxfm.de/live/mp3-128/audio/play.pls
 [Radio Top 100] http://www.top100station.de/stream/iphone_lq.pls
 [N-Joy] http://www.ndr.de/resources/metadaten/audio/m3u/n-joy.m3u
-[Radio Hamburg] http://stream.radiohamburg.de/rhh-live/mp3-192/linkradiohamburgde/play.pls
 
 # Austrian radio stations
 [Radio Wien] https://orf-live-wie.mdn.ors.at/out/u/wie/qxa/manifest.m3u8
@@ -111,7 +104,6 @@
 [Radio Sky Music] http://live.radioskymusic.com
 [181.FM Classical Jazz] http://icyrelay.181.fm/181-classicaljazz_128k.mp3
 [Jazz Lounge] http://51.255.235.165:5068/stream
-[SmoothJazz.com Global] http://sj256.hnux.com
 [181.FM Classical Jazz] http://icyrelay.181.fm/181-classicaljazz_128k.mp3
 [181.FM Acid Jazz] http://icyrelay.181.fm/181-acidjazz_128k.mp3
 [181.fm - BeBop Jazz ] http://icyrelay.181.fm/181-bebop_128k.mp3
@@ -125,21 +117,15 @@
 [80's Radio] http://streams.80s80s.de/web/mp3-192/streams.80s80s.de
 [Radio Ena] http://live.radio.si/Radio1
 
-# Russian radio stations
-[Радио Рекорд] http://air.radiorecord.ru:805/naft_320
-
 # Blues
 [HD Radio - The Blues] http://167.114.64.181:8389/stream
 [Joint Radio Blues] http://radio.jointil.net:9992
 [wumb919st] http://wumb.streamguys1.com/wumb919st
 
 # Rock
-[Star FM Rock Classics] http://91.250.82.237:8008
-[Worldwide Rock Classics] http://198.27.83.198:5138
 [181.FM - The Beatles Channel] http://uplink.duplexfx.com:8062
 [Rockland Radio] http://188.94.97.90/rockland.mp3.m3u
 [Digital Impulse - Rock 60s - 80s] http://orion.shoutca.st:8871
-[Classic Rock 109] http://www.classicrock109.com/tunein/cr109hi-mp3.m3u
 [181.FM Rock 181] http://relay.181.fm:8008
 
 # Norwegian stations
@@ -157,18 +143,14 @@
 [P2 Musik] http://http-live.sr.se/p2musik-mp3-192
 [Classical 102] http://tuner.classical102.com:80/
 [Radio Svizzera Classica] http://stream.srg-ssr.ch/rsc_it/mp3_128.m3u
-[GotRadio - Piano Perfect] http://173.244.215.162:8050
 [DI Radio Digital Impulse - Classical] http://5.39.71.159:8978/stream
 [Viva Classica!] http://rondo.iradio.fi:8000/viva-hi.mp3
-[MusicaInfo Concert] http://notendatenbank.net:8000/hnWunschkonzert
 
 # Disco
 [Disco Music Station on Radio 257] http://212.83.138.48:8079/stream
 [1.FM - Disco Ball 70's-80's Radio] http://sc-disco.1.fm:8100
 
 # Chill out
-[GotRadio - New Age Nuance] http://173.244.215.162:8040
-[GotRadio - Urban Lounge] http://173.244.215.162:8160
 [Lounge-radio.com-Swiss made] http://live.streamhosting.ch:80
 [181.FM Chilled Out] http://listen.181fm.com:8700
 
@@ -192,20 +174,24 @@
 # Reggae 
 [Digital Impulse - Reggae] http://orion.shoutca.st:8942
 [1.FM - ReggaeTrade Radio] http://wm.1.fm/reggae/128.m3u
-[GotRadio - Reggae Rasta & Roots] http://173.244.215.163:8470
 [181.FM Reggae Roots] http://listen.181fm.com:8096
 [Jah Music Mansion] http://192.99.41.102:5304/stream
 
 # Chill out
-[GotRadio - Urban Lounge] http://173.244.215.162:8160
 [Lounge-radio.com-Swiss made] http://live.streamhosting.ch:80
 [Ambiesphere] http://uk5.internet-radio.com:8347/stream
 [Chill] http://media-ice.musicradio.com/ChillMP3.m3u
 [Digital Impulse - Ambient & Chillout] http://5.39.71.159:8994
 
-# Russian radio stations
-[Радио Рекорд] http://air.radiorecord.ru:805/naft_320
-[MyRadio24] http://listen6.myradio24.com/50904
+# Russian and Ukranian radio stations
+[Старое радио] http://195.91.237.50:8000/ices128
+[Укр.пісня] http://listen6.myradio24.com/50904
+[Russian nashe] http://nashe.streamr.ru:80/nashe-128.mp3
+[Гуляй Радио] http://online.radioplayer.ua/GuliayRadio_HD
+[Jam FM] http://cast.radiogroup.com.ua:8000/jamfm
+[Радио Рекорд] http://radiorecord.hostingradio.ru/mdl96.aacp
+[Наше радіо] http://online.nasheradio.ua/NasheRadio_HD
+[Радио России] http://icecast.vgtrk.cdnvideo.ru:80/rrzonam_mp3_192kbps?36a9
 
 #(Air traffic)
 # Live_ATC (Uncomment to try)

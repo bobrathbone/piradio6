@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.81 2021/06/24 10:56:58 bob Exp $
+# $Id: radio_class.py,v 1.100 2021/10/08 19:06:42 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -38,6 +38,7 @@ from spotify_class import SpotifyReceiver
 from language_class import Language
 from source_class import Source
 from volume_class import Volume
+from playlist_class import Playlist
 #from mpd import MPDClient
 import mpd
 
@@ -88,7 +89,7 @@ class Radio:
     spotify = None      # Spotify object
 
     client = mpd.MPDClient()    
-    volume = None
+    volume = 0
 
     # Player options
     RANDOM = 0
@@ -146,6 +147,8 @@ class Radio:
     mpd_restart_count = 3       # MPD restart count
     internet_check_delay = 0    # Prevent too many Internet checks
     error_display_delay = 0     # Delay before clearing error messages
+    playlist_size = 0           # For checking changes to the playlist
+    PL = Playlist('Radio')             # Playlist class
     
     # MPD Options
     random = False  # Random tracks
@@ -214,8 +217,6 @@ class Radio:
         if pwd.getpwuid(os.geteuid()).pw_uid > 0:
             print("This program must be run with sudo or root permissions!")
             sys.exit(1)
-
-        #log.init('radio')
 
         # Need to refer to options in menu
         self.menu = menu
@@ -357,7 +358,7 @@ class Radio:
         elif key == 'RELOAD_PLAYLISTS':
             self.getSources()
 
-        elif 'PLAYLIST:' in key:    # Version 1.8 Web interface onwards
+        elif 'PLAYLIST:' in key:    # This event comes from the Web interface
             key_array = key.split(':')
             playlistName = key_array[1]
 
@@ -368,7 +369,8 @@ class Radio:
                 self.mountAll()
                 playlistName = self.source.loadOmpdLibrary();
                 self.client.load(playlistName)
-                self.searchlist = self.createSearchList()
+                #self.searchlist = self.PL.createSearchList(self.client)
+                self.searchlist = self.PL.searchlist
                 log.message("Loaded O!MPD playlist " + playlistName, log.DEBUG)
             else:
                 self.playlistName = playlistName
@@ -454,8 +456,10 @@ class Radio:
         # Set up volume controls
         self.volume = Volume(self.client,self.source,self.spotify,
                 self.airplay,self.config,log)
+        self.volume.setClient(self.client)
 
         startup_playlist = self.config.startup_playlist
+        self.PL.name = startup_playlist
         log.message("Startup playlist " + startup_playlist, log.DEBUG)
         sources = ['RADIO', 'MEDIA', 'AIRPLAY', 'SPOTIFY']
 
@@ -524,6 +528,8 @@ class Radio:
         if self.needMixerUpdate(MixerIdFile):
             self.setMixerId(MixerIdFile)
 
+        # Set-up Playlist callback
+        self.setupPlaylistCallback()
         return
 
     # Connect to MPD
@@ -538,21 +544,16 @@ class Radio:
                 # Wait for stations to be loaded before playing
                 self.client.stop()
                 log.message("Connected to MPD port " + str(port), log.INFO)
-                if self.volume != None:
-                    self.volume.setClient(self.client)
+                ##if self.volume != None:
+                #self.volume.setClient(self.client)
                 connected = True
                 retry = 0
 
             except mpd.ConnectionError as e:
                 log.message( 'radio.connection error port ' + str(port) \
                     + ':'  + str(e), log.ERROR)
-                connected = False   # DEBUG
-                try: 
-                    self.client.play()
-                except:
-                    self.setError(MPD_NO_CONNECTION)
-                    self.setInterrupt()
-                    pass
+                self.setError(MPD_NO_CONNECTION)
+                self.setInterrupt()
 
             except Exception as e:
                 log.message( 'radio.connect failed port ' + str(port) \
@@ -791,7 +792,14 @@ class Radio:
     def getMpdVersion(self):
         if len(self.MpdVersion) < 1:
             sVersion = self.execCommand('mpd -V | grep Daemon')
-            self.MpdVersion = sVersion.split()[3]
+            try:
+                self.MpdVersion = sVersion.split()[3]
+            except:
+                sError = self.execCommand('mpd -V 2>&1 | head -1')
+                msg = "radio.getMpdVersion " + sError 
+                print(msg)
+                log.message(msg,log.CRITICAL)
+                sys.exit(1)
         return self.MpdVersion
 
     # Get options from MPD (synchronise with external mpd clients)
@@ -967,7 +975,7 @@ class Radio:
     # Shutdown the system if so configured
     def shutdown(self):
         log.message("Shutting down system ",log.INFO)
-        self.execCommand("sudo shutdown -h now")
+        self.execCommand(self.config.shutdown_command)
 
         # Exit radio
         exit(0) 
@@ -1886,7 +1894,7 @@ class Radio:
 
         if source_type == self.source.RADIO or source_type == self.source.MEDIA:
             # Create a list for search
-            self.searchlist = self.createSearchList()
+            self.searchlist = self.PL.searchlist
             self.current_id = self.getStoredID(self.current_file)
             self.play(self.current_id)
 
@@ -1899,29 +1907,30 @@ class Radio:
         self.storeSource(self.source_index)
         return
 
-    # Load playlist (Media or Radio)
     def loadPlaylist(self):
         source_type = self.source.getNewType()
-        playlist = self.source.getNewName()
+        pname = self.source.getNewName()
 
-        msg = "Load playlist " + playlist + " type " + str(source_type)
+        msg = "Load playlist " + pname + " type " + str(source_type)
         log.message(msg, log.DEBUG)
 
+        #pdb.set_trace()
         try:
-            self.client.clear()
-            self.client.load(playlist)
-            if len(self.client.playlist()) < 1:
-                log.message("Playlist " + playlist + " is empty", log.ERROR)
+            self.PL.load(self.client,pname)
+            if self.PL.size < 1:
+                log.message("Playlist " + pname + " is empty", log.ERROR)
                 self.current_id = 0
-
         except:
-            log.message("radio.loadPlaylist failed to load " + playlist, log.ERROR)
+            log.message("radio.loadPlaylist failed to load " + pname, log.ERROR)
         return
 
-
-    # Get the playlist dictionary
+    # Get the playlist dictionary (Contains all playlist names and types)
     def getPlaylists(self):
         return self.source.getPlaylists()       
+
+    def reloadCurrentPlaylist(self):
+        log.message("Reloading current playlist", log.INFO)
+        plist = self.client.playlist()
 
     # Update music library 
     def updateLibrary(self,force=False):
@@ -1979,6 +1988,7 @@ class Radio:
                     self.clearError()
                     if not self.connected:
                         self.connect(self.udpport)
+                        self.volume.setClient(self.client)
                     self.play(self.current_id)
                 success = True
             except socket.error as e:
@@ -2134,29 +2144,14 @@ class Radio:
     def getPlayListLength(self):
         return len(self.searchlist)
 
-    # Create search list of tracks or stations
-    def createSearchList(self):
-        log.message("radio.createSearchList", log.DEBUG)
-        plist = []
-        line = ""
-        cmd = "playlist"    
-        p = os.popen(Mpc + " " + cmd)
-        while True:
-            line =  p.readline().strip('\n')
-            if line.__len__() < 1:
-                break
-            if line.startswith("http:") and '#' in line: 
-                url,line = line.split('#')
-            line = self.translate.all(line) 
-            plist.append(line)
+    # Handle the PLAYLIST_CHANGED event and update the searchlist
+    def handlePlaylistChange(self):
+        log.message("radio.handlePlaylistChange", log.DEBUG)
+        self.searchlist = self.PL.update(self.client)
+        log.message("Created new searchlist " + str(len(self.searchlist)), 
+                        log.DEBUG)
         
-        if plist == None:
-            self.searchlist = []
-        else:
-            self.searchlist = plist
-
-        log.message("radio.createSearchList length " + str(len(self.searchlist)), log.DEBUG)
-        return self.searchlist
+    # Get the length of the current list
 
     # Get the length of the current list
     def getListLength(self):
@@ -2357,8 +2352,23 @@ class Radio:
     def audioError(self):
         return self.audio_error
 
+    # Update the MPD playlist
     def updatingDB(self):
         return self.loading_DB
+
+    # See if the current playlist has been changed by an external client
+    def playlistHasChanged(self):
+        playlist_changed = False
+        plist = self.client.playlist()
+        playlist_size = len(plist)
+        if self.playlist_size == 0:
+            self.playlist_size = playlist_size
+        else:
+            if playlist_size != self.playlist_size:
+                playlist_changed = True
+                print ("Playlist size changed",len(plist))
+                self.playlist_size = playlist_size
+        return playlist_changed
 
     # Toggle option value
     def toggleOptionValue(self,option_index):
@@ -2466,6 +2476,20 @@ class Radio:
             value = False
 
         return value
+
+    # Setup the playlist callback
+    def setupPlaylistCallback(self):
+        # Cannot use existing MPD client in a thread so create new
+        newclient = mpd.MPDClient()   # Create the MPD client
+        newclient.connect("localhost", self.mpdport)
+        self.PL.callback(self.playlistChange,newclient)
+
+    # This is the actual playlist callback to update changed playlists
+    # It raises a PLAYLIST_CHANGE event if enabled by update_playlists
+    def playlistChange(self):
+        if self.config.update_playlists:
+            self.event.set(self.event.PLAYLIST_CHANGED)
+            print("event.PLAYLIST_CHANGED sent!")
 
 # End of Radio Class
 

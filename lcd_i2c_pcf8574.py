@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_pcf8574.py,v 1.5 2021/05/11 17:41:45 bob Exp $
+# $Id: lcd_i2c_pcf8574.py,v 1.6 2021/09/30 09:08:49 bob Exp $
 #
 # PCF8574 I2C LCD Backpack LCD class
 # Use this program to test I2C Backpack LCD wiring
@@ -298,10 +298,6 @@ def no_interrupt():
 if __name__ == "__main__":
 
     i2c_addres = 0x27
-
-    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-        print("This program must be run with sudo or root permissions!")
-        sys.exit(1)
 
     try:
         print("Test I2C PCF8574 class")

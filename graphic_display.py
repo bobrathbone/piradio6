@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: graphic_display.py,v 1.8 2021/07/14 04:54:08 bob Exp $
+# $Id: graphic_display.py,v 1.10 2021/08/28 09:45:31 bob Exp $
 # Raspberry Pi display routines
 # Graphic screen routines used by touch graphic screen
 #
@@ -125,6 +125,7 @@ class GraphicDisplay:
         if text != self.lineText[idx]:  
             index = 0
             self.lineText[idx] = text
+            self.scroll_delay = time.time() + 2
 
         leng = len(text)
 
@@ -208,7 +209,10 @@ class GraphicDisplay:
 
 ### Test scroll routine ###
 if __name__ == "__main__":
-    display = GraphicDisplay(None)
+    import pygame
+    pygame.font.init()
+    font = pygame.font.SysFont('freesans', 13)
+    display = GraphicDisplay(font)
     text = "ABCDEFGHIJKLMNOPQRSTUVWXYX 01234567890"
     try:
         while True:

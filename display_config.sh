@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.26 2021/05/20 06:51:44 bob Exp $
+# $Id: display_config.sh,v 1.33 2021/09/26 07:07:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -21,12 +21,15 @@ LOG=${DIR}/config.log
 BOOTCONFIG=/boot/config.txt
 MPD_CONFIG=/etc/mpd.conf
 OS_RELEASE=/etc/os-release
+DEBIAN_VERSION=/etc/debian_version
 CONFIG=/etc/radiod.conf
 RADIOLIB=/var/lib/radiod
 ASOUND=/etc/asound.conf
 SOUND_CARD=0
+EQUALIZER_CMD=${DIR}/equalizer.cmd
 EMAIL=bob@bobrathbone.com
 AUTOSTART=/home/pi/.config/lxsession/LXDE-pi/autostart
+MPDLIB=/var/lib/mpd
 
 if [[ ! -d ${DIR} ]]; then
     echo "Error: Radio software not installed - Exiting."
@@ -41,6 +44,7 @@ echo | tee -a ${LOG}
 echo "OS Configuration" | tee -a ${LOG}
 echo "----------------" | tee -a ${LOG}
 cat ${OS_RELEASE} | tee -a ${LOG}
+echo "Debian version $(cat ${DEBIAN_VERSION})"
 
 echo | tee -a ${LOG}
 echo "Kernel version " | tee -a ${LOG}
@@ -95,17 +99,29 @@ fi
 # Display MPD configuration
 echo | tee -a ${LOG}
 echo "MPD Configuration" | tee -a ${LOG}
-echo "----------------" | tee -a ${LOG}
-mpd -V | grep Music | tee -a ${LOG}
+echo "-----------------" | tee -a ${LOG}
+
+mpd -V | grep Daemon | tee -a ${LOG}
+if [[ $? -ne 0 ]];then
+    mpd -V | tee -a ${LOG}
+fi
+echo | tee -a ${LOG}
+
 if [[ -f  ${MPD_CONFIG} ]]; then
 	grep -A 8 ^audio_output  ${MPD_CONFIG} | tee -a ${LOG}
 else
 	echo "FATAL ERROR!"
 	echo "MPD (Music Player Daemon) has not been installed" | tee -a ${LOG}
-	echo "Install packages mpd,mpc and python-mpd" | tee -a ${LOG}
+	echo "Install packages mpd,mpc and python3-mpd" | tee -a ${LOG}
 	echo "and rerun configure_radio.sh to set-up the radio software" | tee -a ${LOG}
 	exit 1
 fi
+
+# Display MPD outputs
+echo | tee -a ${LOG}
+echo "MPD outputs" | tee -a ${LOG}
+echo "-----------" | tee -a ${LOG}
+mpc outputs | tee -a ${LOG}
 
 if [[ -f /usr/bin/pulseaudio ]];then
 	echo | tee -a ${LOG}
@@ -126,12 +142,10 @@ grep ^gpio=..=op,dh ${BOOTCONFIG} | tee -a ${LOG}
 echo | tee -a ${LOG}
 echo "Radio configuration" | tee -a ${LOG}
 echo "-------------------" | tee -a ${LOG}
-echo "Configuration file /etc/radiod.conf" | tee -a ${LOG}
 sudo ${DIR}/config_class.py | tee -a  ${LOG}
 echo | tee -a ${LOG}
 ${DIR}/wiring.py | tee -a  ${LOG}
 echo "---------------------------------------" | tee -a ${LOG}
-
 
 # Display sound devices
 AUDIO_OUT=$(grep "audio_out=" ${CONFIG})
@@ -146,15 +160,17 @@ fi
 echo | tee -a ${LOG}
 echo "Mixer controls" | tee -a ${LOG}
 echo "--------------" | tee -a ${LOG}
-
 if [[ ${AUDIO_OUT} =~ bluetooth  ]]; then
-    amixer -D bluealsa controls | tee -a ${LOG}
+    cmd="amixer -D bluealsa controls"
 elif [[ ${AUDIO_OUT} =~ USB  ]]; then
-    SOUNDCARD=1
-    amixer -c ${SOUND_CARD} controls | tee -a ${LOG}
+    SOUND_CARD=1
+    cmd="amixer -c ${SOUND_CARD} controls"
 else
-    amixer -c ${SOUND_CARD} controls | tee -a ${LOG}
+    cmd="amixer -c ${SOUND_CARD} controls"
 fi
+echo "audio_out=${AUDIO_OUT}"
+echo ${cmd} | tee -a ${LOG}
+${cmd} | tee -a ${LOG}
 
 # Display /etc/asound.conf configuration
 if [[ -f ${ASOUND} ]]; then 
@@ -163,6 +179,11 @@ if [[ -f ${ASOUND} ]]; then
 	echo "-----------------------------------" | tee -a ${LOG}
 	cat ${ASOUND} | tee -a ${LOG}
 fi
+
+echo | tee -a ${LOG}
+echo "Equalizer command file (${EQUALIZER_CMD}) "  | tee -a ${LOG}
+echo "-------------------------------------------------------" | tee -a ${LOG}
+grep lxterminal ${EQUALIZER_CMD}  | tee -a ${LOG}
 
 # Display mixer ID configuration
 echo | tee -a ${LOG}
@@ -192,6 +213,11 @@ do
 done
 
 echo | tee -a ${LOG}
+echo "MPD Playlists" | tee -a ${LOG}
+echo "-------------" | tee -a ${LOG}
+ls -l ${MPDLIB}/playlists
+
+echo | tee -a ${LOG}
 echo "Hardware information" | tee -a ${LOG}
 echo "--------------------" | tee -a ${LOG}
 sudo ${DIR}/display_model.py version | tee -a ${LOG}
@@ -212,6 +238,10 @@ echo | tee -a ${LOG}
 echo "=================== End of run =====================" | tee -a ${LOG}
 echo "This configuration has been recorded in ${LOG}" 
 echo "A compressed tar file has been saved in ${LOG}.tar.gz" | tee -a ${LOG}
+echo | tee -a ${LOG}
 echo "Send ${LOG}.tar.gz to ${EMAIL} if required" | tee -a ${LOG}
 echo | tee -a ${LOG}
 
+# End of script
+# set tabstop=4 shiftwidth=4 expandtab
+# retab

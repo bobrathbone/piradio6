@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: language_class.py,v 1.1 2020/10/10 15:00:45 bob Exp $
+# $Id: language_class.py,v 1.2 2021/09/07 08:35:59 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -200,7 +200,7 @@ class Language:
             log.message("No " + LanguageFile + " found!", log.ERROR)
         return
 
-    # Remove problem charachters from speech text
+    # Remove problem characters from speech text
     def purgeChars(self,message):
         chars = ['!',':','|','*','[',']',
              '_','"','.']

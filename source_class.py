@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.3 2021/05/15 06:29:45 bob Exp $
+# $Id: source_class.py,v 1.7 2021/09/30 08:56:19 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -193,7 +193,6 @@ class Source:
     def _getDisplayName(self,index): 
         index = self.checkIndex(index)
         playlist = list(self.playlists.keys())[self.index]
-        playlist = playlist.replace('_', ' ')
         playlist = playlist.lstrip()
         playlist = playlist.rstrip()
         playlist = "%s%s" % (playlist[0].upper(), playlist[1:])
@@ -260,10 +259,39 @@ class Source:
         if playlist == '_spotify_':
             type = self.SPOTIFY     
 
-        elif playlist[0] == '_':
-            type = self.RADIO   
+        else:
+            type = self._getPlaylistType(playlist)
             
         return type
+
+    # Identify playlist type RADIO or MEDIA by file contacts
+    def _getPlaylistType(self,playlist_name):
+        playlist_type = self.MEDIA
+        playlist_file = PlaylistsDir + '/' + playlist_name + '.m3u'
+        typeNames = ['RADIO','MEDIA']
+
+        # Check playlist for "#EXTM3U" definition
+        count = 10  # Allow comments 10 lines max at start of file
+        found = False
+        try:
+            f = open(playlist_file, 'r')
+            while count > 0 and not found:
+                line = f.readline()
+                line = line.rstrip()
+                if line.startswith("#EXTM3U"):
+                    found = True
+                    playlist_type = self.RADIO
+                count -= 1
+
+        except Exception as e:
+            msg = "source.getPlaylistType:" + str(e)
+            print(msg)
+            log.message(msg, log.ERROR)
+
+        f.close()
+
+        #print("Processing",playlist_file,typeNames[playlist_type])
+        return playlist_type
 
     # Get the playlists dictionary
     def getPlaylists(self):
@@ -299,12 +327,7 @@ class Source:
 ### Test routine ###
 if __name__ == "__main__":
     
-    
-    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-        print("This program must be run with sudo or root permissions!")
-        sys.exit(1)
-
-    client = mpd.MPDClient()
+    client = MPDClient()
     client.connect("localhost", 6600)
 
     print("Test Source Class")

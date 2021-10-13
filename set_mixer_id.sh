@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: set_mixer_id.sh,v 1.15 2021/03/05 12:08:38 bob Exp $
+# $Id: set_mixer_id.sh,v 1.16 2021/09/03 07:22:59 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -119,6 +119,8 @@ echo "mixer_volume_id=${MIXERID}" | tee -a ${LOG}
 if [[ ${MIXERID} > 0 ]]; then
     sudo rm -f ${LIB_MIXERID}
     sudo echo ${MIXERID} > ${LIB_MIXERID} 
+    sudo chown pi:pi ${LIB_MIXERID}
+    sudo chmod +x ${LIB_MIXERID}
     echo "Mixer numid ${MIXERID} written to ${LIB_MIXERID}" | tee -a ${LOG}
 else
     echo "Invalid mixer numid ${MIXERID}. ${LIB_MIXERID} unchanged" | tee -a ${LOG}

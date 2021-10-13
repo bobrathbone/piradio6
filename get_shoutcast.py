@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 #
 # Raspberry Pi Internet Radio Menu Class
-# $Id: get_shoutcast.py,v 1.11 2021/05/16 06:35:29 bob Exp $
+# $Id: get_shoutcast.py,v 1.12 2021/09/06 15:51:23 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -51,7 +51,8 @@ playlist_dir = "/var/lib/mpd/playlists"
 playlist_store = "/usr/share/radio/playlists"
 
 xml_file = "/tmp/%s.xml"
-m3u_playlist = playlist_store + "/_%s.m3u"
+#m3u_playlist = playlist_store + "/_%s.m3u"
+m3u_playlist = playlist_store + "/%s.m3u"
 station_count = 0
 
 # Create a playlist directory
@@ -315,6 +316,7 @@ if __name__ == "__main__":
 
     if search_type == 'stationsearch' or search_type == 'genresearch':
         fname = search_value.replace(' ','_')
+        fname = search_value.replace(' ','')
         xml_file_s = xml_file % fname
         m3u_playlist_s = m3u_playlist % fname
 

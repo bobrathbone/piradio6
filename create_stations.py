@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.17 2021/03/22 10:33:31 bob Exp $
+# $Id: create_stations.py,v 1.21 2021/09/14 09:16:39 bob Exp $
 #
 # Create playlist files from the following url formats
 #    iPhone stream files (.asx)
@@ -31,6 +31,7 @@ import urllib.request, urllib.error, urllib.parse
 import socket
 from time import strftime
 from xml.dom.minidom import parseString
+from config_class import Configuration
 
 # Output errors to STDERR
 stderr = sys.stderr.write;
@@ -43,6 +44,7 @@ StationList = RadioLibDir + 'stationlist'
 DistFile =  RadioDir + 'station.urls'
 TempDir = '/tmp/radio_stream_files/'
 PlaylistsDir = RadioDir + 'playlists/'
+config = Configuration()
 ErrorUrls = []
 
 duplicateCount = 0
@@ -69,6 +71,7 @@ def createM3uOutput(title,url,filenumber):
     lines = []    
     title = title.rstrip()
     url = url.rstrip()
+    url = url.split('#')[0] # Remove #<station name> 
     lines.append('#EXTM3U')
     lines.append('#EXTINF:-1,%s' % title)
     lines.append(url + '#' + title)
@@ -81,9 +84,9 @@ def createM3uFile(filename,output,nlines):
     if len(filename) < 1:
         filename = 'Radio'
 
-    # All radio playlists begin with '_' (Underscore) 
-    # to make them the first ons in the list
-    outfile = TempDir + '_' + filename + '.m3u' 
+    # Old radio playlists began with '_' (Underscore) 
+    ##outfile = TempDir + '_' + filename + '.m3u' 
+    outfile = TempDir + filename + '.m3u' 
 
     # Create unique files
     exists = True
@@ -316,6 +319,7 @@ def parseM3u(title,url,lines,filenumber):
 def usage():
     stderr("\nUsage: sudo %s [--delete_old] [--no_delete] [--input_file=<input file>] [--help]\n" % sys.argv[0])
     stderr("\tWhere: --delete_old   Delete old playlists\n")
+    stderr("\t       --force        Force update of MPD playlists\n")
     stderr("\t       --no_delete    Don't delete old playlists\n")
     stderr("\t       --input_file=<input_file>  Use alternative input file\n")
     stderr("\t       --help     Display help message\n\n")
@@ -363,12 +367,16 @@ if os.getuid() != 0:
 
 deleteOld =  False
 noDelete  =  False
+forceUpdate = False
 
 if len(sys.argv) > 1:
     for i in range(1,len(sys.argv)):
         param = sys.argv[i]
         if param == '--delete_old':
             deleteOld  = True
+
+        if param == '--force':
+            forceUpdate  = True
 
         elif param == '--no_delete':
             noDelete  = True
@@ -385,6 +393,18 @@ if len(sys.argv) > 1:
             stderr("Invalid parameter %s\n" % param)
             usage()
             sys.exit(1)
+
+# See if playlists being maintained by external clients
+if config.update_playlists:
+    print("Warning: The radio is configured to allow playlist updates by external clients")
+    print("so overwriting them with this program is disabled.")
+    print("See update_playlists=yes in /etc/radiod.conf (Add it if it is missing)")
+    if not forceUpdate:
+        print("Use the --force flag to override this restriction (Current playlists will be overwritten)")
+        print("Exiting program!")
+        sys.exit(0)
+    else:
+        print("The --force flag has been set to overwrite current playlists")
 
 # Create station URL list
 createList()

@@ -1,21 +1,16 @@
-Patch 2 for version 7.1 - 28 April 2021
+Patch 1 for version 7.2 - 27 September 2021
 
 Changes
 =======
-1) Add Compute Model and 8GB 4B to display_model.py
-2) Correct report of X-Windows detected if Lite OS installed
-3) Correct remote control configuration display error
-4) Correct DAC overlay not being configured in /boot/config.txt if called from configure_radio.sh
-5) Alternative rotary class, remove sudo requirement and edge detection set to BOTH
-6) Comitup WiFi roaming dropped due to problems
+1) Don't install pulseaudio if installing the Adafruit Speaker Bonnet
 
 To install the patch
 ====================
 cd /usr/share/radio
-wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.1-2.tar.gz
-tar -xvf radiod-patch-7.1-2.tar.gz
+wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.2-1.tar.gz
+tar -xvf radiod-patch-7.2-1.tar.gz
 sudo systemctl restart radiod.service
 
-This patch contains all previous patches
+This patch contains all previous patches unless patch 1
 
 End of README.patch

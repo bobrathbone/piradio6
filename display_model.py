@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-$Id: display_model.py,v 1.7 2021/04/10 11:58:02 bob Exp $
+$Id: display_model.py,v 1.8 2021/08/27 09:03:31 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -16,7 +16,7 @@ Disclaimer: Software is provided as is and absolutly no warranties are implied o
 
 This script detects a Raspberry Pi's model, manufacturer and mb ram, based
 on the cpu revision number. Data source:
-https://www.raspberrypi.org/documentation/hardware/raspberrypi/revision-codes/README.md
+https://www.raspberrypi.org/documentation/computers/raspberry-pi.html#raspberry-pi-revision-codes
 
 You can instantiate the ModelInfo class either with a parameter `rev_hex`
 (eg. `m = ModelInfo("000f")`), or without a parameter
@@ -54,7 +54,7 @@ model_data = {
     '12': ('A+', '1.1', 256, 'Sony UK', ''),
     '13': ('B+', '1.2', 512, 'Unknown', ''),
     '14': ('Compute Module 1', '1.0', 512, 'Embest', ''),
-    '15': ('A+', '1.0', 512, 'Embest', '256MB or 512MB'),
+    '15': ('A+', '1.1', 512, 'Embest', '256MB or 512MB'),
     'a01040': ('2B', '1.0', 1024, 'Sony UK', ''),
     'a01041': ('2B', '1.1', 1024, 'Embest', ''),
     'a21041': ('2B', '1.1', 1024, 'Embest', ''),
@@ -70,8 +70,10 @@ model_data = {
     'a22100': ('CM3+', '1.0', 1024, 'Sony', 'Quad Core 1.2MHz, Compute module DDR2 SODIMM connector '),
     '900061': ('CM', '1.1', 512, 'Embest', 'Compute module DDR2 SODIMM connector'),
     '900091': ('A+', '1.1', 512, 'Sony UK', ''),
+    '9020e0': ('3A+', '1.0', 512, 'Sony UK', ''),
     '900032': ('B+', '1.2', 512, 'Sony UK', ''),
-    '900092': ('Zero', '1.2', 512, 'Embest', ''),
+    '900092': ('Zero', '1.2', 512, 'Sony UK', ''),
+    '920092': ('Zero', '1.0', 512, 'Embest', ''),
     '920093': ('Zero', '1.3', 512, 'Embest', ''),
     '9000c1': ('Zero W', '1.1', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
     '9000d3': ('3B+', '1.1', 1024, 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),

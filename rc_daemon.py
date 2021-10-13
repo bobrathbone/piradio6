@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi Internet Radio Remote Control Class
-# $Id: rc_daemon.py,v 1.6 2021/03/28 11:25:02 bob Exp $
+# $Id: rc_daemon.py,v 1.10 2021/10/02 11:20:27 bob Exp $
 # 
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
@@ -125,8 +125,8 @@ class Daemon:
             self.daemonize()
         else:
             pid = str(os.getpid())
-            print("IR Remote control listener running pid " + str(pid))
             file(self.pidfile,'w+').write("%s\n" % pid)
+            print("IR Remote control listener running pid " + str(pid))
 
         self.run()
 
@@ -147,19 +147,12 @@ class Daemon:
             sys.stderr.write(message % self.pidfile)
             return # not an error in a restart
 
-        # Stop lircd and irexec
-        try:
-            pid1 = int(self.execCommand("pidof lircd"))
-            os.kill(pid1, SIGKILL)
-        except OSError as err:
-            print(str(err))
-        except ValueError:
-            print("lircd not running")
-        
+        # Remove pid file
+        if os.path.exists(self.pidfile):
+            os.remove(self.pidfile)
+
         # Try killing the daemon process    
         try:
-            if os.path.exists(self.pidfile):
-                os.remove(self.pidfile)
             os.kill(pid, SIGHUP)
             sys.exit(0)
 
@@ -202,7 +195,7 @@ class Daemon:
 
     # Execute system command
     def execCommand(self,cmd):
-        p = os.pfile(cmd)
+        p = os.popen(cmd)
         result = p.readline().rstrip('\n')
         return result
 

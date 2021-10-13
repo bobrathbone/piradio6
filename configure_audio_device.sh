@@ -2,7 +2,7 @@
 # set -x
 # Raspberry Pi Internet Radio
 # Audio output configurator
-# $Id: configure_audio_device.sh,v 1.5 2021/03/04 15:45:19 bob Exp $
+# $Id: configure_audio_device.sh,v 1.6 2021/08/10 08:32:16 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -96,8 +96,8 @@ function backup {
 	if [[ ! -f ${ASOUNDCONF}.org ]]; then
 		sudo cp ${ASOUNDCONF} ${ASOUNDCONF}.org
 	fi
-	if [[ ! -f ${MPDCONFIG}.org ]]; then
-		sudo cp ${MPDCONFIG} ${MPDCONFIG}.org
+	if [[ ! -f ${MPDCONFIG}.orig ]]; then
+		sudo cp ${MPDCONFIG} ${MPDCONFIG}.orig
 	fi
 }
 

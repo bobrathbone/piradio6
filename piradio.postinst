@@ -1,7 +1,7 @@
 #!/bin/bash 
 set -e
 # Radio daemon post install script
-# $Id: piradio.postinst,v 1.3 2021/06/28 13:05:47 bob Exp $
+# $Id: piradio.postinst,v 1.6 2021/09/30 08:03:28 bob Exp $
 # Support for Pulseaudio added
 
 # File locations
@@ -15,6 +15,9 @@ LANGUAGEFILE=language/language.en
 RSSFILE=rss/rss
 CONFIGFILE=/etc/radiod.conf
 DEFAULTRCS=/etc/default/rcS
+EQUALIZERCMD=equalizer.cmd
+LOGDIR=/var/log/radiod
+PIDDIR=/var/run/radiod
 
 # Configure radio but skip any other package installation or removal
 # with the -s flag
@@ -48,6 +51,12 @@ ${DIR}/${CONFIGURATOR}
 if [[ $? != 0 ]]; then
 	echo "${DIR}/${CONFIGURATOR} script failed"
 	exit 1
+fi
+
+# Copy equalizer.cmd
+if [[ ! -f  ${RADIOLIB}/${EQUALIZERCMD} ]]; then
+	echo "Copying ${EQUALIZERCMD} to  ${RADIOLIB}" 
+	sudo cp -f ${DIR}/${EQUALIZERCMD} ${RADIOLIB}/${EQUALIZERCMD} 
 fi
 
 echo "Disabling serial interface in ${BOOTCMD}" 
@@ -122,14 +131,21 @@ fi
 
 ln -fs /usr/share/radio /home/pi/radio
 
-# Install shairport-sync and metadata reader
-#sudo install bin/shairport-sync /usr/local/bin
-#sudo install bin/shairport-sync-metadata-reader /usr/local/bin
-
-
 # Add www-data to sudoers to allow appache to run shoutcast program
 SUDO_ENTRY="www-data ALL=(ALL) NOPASSWD: /usr/share/radio/get_shoutcast.py"
 echo ${SUDO_ENTRY} | sudo tee /etc/sudoers.d/www-data
+
+# Create new logging directory and move old log into it
+if [[ ! -d ${LOGDIR} ]]; then
+    echo "Moving logging to new directory ${LOGDIR}"
+    sudo mkdir -p ${LOGDIR}
+    sudo chown pi:pi ${LOGDIR}
+    if [[ -f /var/log/radio.log ]]; then
+        sudo mv /var/log/radio.log ${LOGDIR}/.
+    fi
+fi
+sudo touch ${LOGDIR}/radio.log
+sudo chown pi:pi  ${LOGDIR}/radio.log
 
 echo
 echo "PI Radio software successfully installed"

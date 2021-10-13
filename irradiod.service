@@ -1,5 +1,5 @@
 # Radio remote control systemd script
-# $Id: irradiod.service,v 1.1 2020/10/10 15:03:21 bob Exp $
+# $Id: irradiod.service,v 1.2 2021/10/02 08:59:31 bob Exp $
 [Unit]
 Description=Radio remote control daemon
 After=network.target
@@ -7,6 +7,7 @@ After=network.target
 [Service]
 Type=simple
 ExecStart=/usr/share/radio/remote_control.py nodaemon
+ExecStop=/usr/share/radio/remote_control.py stop
 
 [Install]
 WantedBy=multi-user.target

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio
-# $Id: show_translation.py,v 1.1 2020/10/10 15:00:47 bob Exp $
+# $Id: show_translation.py,v 1.2 2021/09/28 19:13:34 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -8,7 +8,7 @@
 # Display translation settings
 
 CONFIG=/etc/radiod.conf
-LOG=/var/log/radio.log
+LOG=/var/log/radiod/radio.log
 
 echo "Translation settings in ${CONFIG}"
 echo "========================================"

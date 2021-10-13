@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #       
 # Raspberry Pi remote control daemon
-# $Id: remote_control.py,v 1.15 2021/05/16 06:48:45 bob Exp $
+# $Id: remote_control.py,v 1.18 2021/09/30 10:44:25 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -293,6 +293,7 @@ if __name__ == "__main__":
     if len(sys.argv) >= 2:
         if 'start' == sys.argv[1]:
             daemon.start()
+            daemon.flash()
         elif 'nodaemon' == sys.argv[1]:
             daemon.nodaemon()
         elif 'stop' == sys.argv[1]:

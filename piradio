@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.20 2021/06/20 09:30:53 bob Exp $
+# $Id: piradio,v 1.31 2021/10/03 08:39:16 bob Exp $
 # This package must be built under Raspbian Buster (Not Jessie or earlier)
 # Source: <source package name; defaults to package name>
 Section: misc
@@ -9,7 +9,7 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 4.0.0
 
 Package: radiod
-Version: 7.2
+Version: 7.3
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
@@ -36,6 +36,7 @@ Files:  radiod.py /usr/share/radio/
 	constants.py /usr/share/radio/
 	config_class.py /usr/share/radio/
 	web_config_class.py /usr/share/radio/
+	playlist_class.py /usr/share/radio/
 	airplay_class.py /usr/share/radio/
 	spotify_class.py /usr/share/radio/
 	volume_class.py /usr/share/radio/
@@ -46,6 +47,7 @@ Files:  radiod.py /usr/share/radio/
 	cosmic_class.py /usr/share/radio/
 	st7789tft_class.py /usr/share/radio/
 	ssd1306_class.py /usr/share/radio/
+	luma_class.py /usr/share/radio/
 	message_class.py /usr/share/radio/
 	menu_class.py /usr/share/radio/
 	event_class.py /usr/share/radio/
@@ -56,8 +58,11 @@ Files:  radiod.py /usr/share/radio/
 	display_current.py /usr/share/radio/
 	button_class.py /usr/share/radio/
 	rotary_class.py /usr/share/radio/
-	rotary_switch_class.py /usr/share/radio/
 	rotary_class_alternative.py /usr/share/radio/
+	rotary_class_rgb.py /usr/share/radio/
+	rotary_class_rgb_i2c.py /usr/share/radio/
+    rgb_set_i2c_address.py /usr/share/radio/
+	rotary_switch_class.py /usr/share/radio/
 	create_stations.py /usr/share/radio/
 	create_playlist.sh /usr/share/radio/
 	setup.sh /usr/share/radio/
@@ -67,11 +72,13 @@ Files:  radiod.py /usr/share/radio/
 	i2c_class.py /usr/share/radio/
 	lcd_i2c_adafruit.py /usr/share/radio/
 	lcd_i2c_pcf8574.py /usr/share/radio/
+	lcd_i2c_jhd1313.py /usr/share/radio/
 	lcd_adafruit_class.py /usr/share/radio/
 	lcd_piface_class.py /usr/share/radio/
 	no_display.py /usr/share/radio/
 	radio_daemon.py /usr/share/radio/
 	wiring.py /usr/share/radio/
+	test_gpios.py /usr/share/radio/
 	configure_radio.sh /usr/share/radio/
 	configure_audio.sh /usr/share/radio/
 	configure_ir_remote.sh /usr/share/radio/
@@ -100,6 +107,7 @@ Files:  radiod.py /usr/share/radio/
 	README /usr/share/radio/
 	logrotate.d/radiod /etc/logrotate.d/
 	cron.weekly/radiod /etc/cron.weekly/
+	cron.daily/radiod /etc/cron.daily/
 	asound/asound.conf.dist /usr/share/radio/asound
 	asound/asound.conf.dist.equalizer /usr/share/radio/asound
 	asound/asound.conf.dist.blue /usr/share/radio/asound
@@ -134,6 +142,9 @@ Files:  radiod.py /usr/share/radio/
 	images/arrow_left_double.png /usr/share/radio/images/
 	images/arrow_right_double.png /usr/share/radio/images/
 	images/equalizer.png /usr/share/radio/images/
+	images/icecast.png /usr/share/radio/images/
+	images/icecast_off.png /usr/share/radio/images/
+	images/shutdown.png /usr/share/radio/images/
 	images/mute.png /usr/share/radio/images/
 	images/radio.png /usr/share/radio/images/
 	images/raspberrypi.png /usr/share/radio/images/

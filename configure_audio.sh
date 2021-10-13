@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_audio.sh,v 1.24 2021/04/14 09:08:30 bob Exp $
+# $Id: configure_audio.sh,v 1.26 2021/08/27 13:12:26 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -75,6 +75,7 @@ NUMID=1
 # Pulse audio asound.conf
 USE_PULSE=0
 ASOUND_CONF_DIST=asound.conf.dist
+ASOUND_CONF_DEFAULT=asound.conf.dist
 
 # Create log directory
 sudo mkdir -p ${LOGDIR}
@@ -114,6 +115,8 @@ sudo service mpd stop
 selection=1 
 while [ $selection != 0 ]
 do
+    ASOUND_CONF_DIST=${ASOUND_CONF_DEFAULT}
+
     ans=$(whiptail --title "Select audio output" --menu "Choose your option" 18 75 12 \
     "1" "On-board audio output jack" \
     "2" "HDMI output" \
@@ -236,7 +239,6 @@ do
         NAME=${DESC}
         DTOVERLAY="hifiberry-dac"
         MIXER="software"
-        USE_PULSE=1
         ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.bonnet
         TYPE=${DAC}
 

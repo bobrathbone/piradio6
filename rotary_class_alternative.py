@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: rotary_class_alternative.py,v 1.3 2021/06/08 20:11:31 bob Exp $
+# $Id: rotary_class_alternative.py,v 1.4 2021/09/26 09:55:39 bob Exp $
 #
 # Raspberry Pi Alternative Rotary Encoder Class
 # Certain Rotary Encoders will not work with the current version of the Rotary class.
@@ -41,7 +41,11 @@ class RotaryEncoderAlternative:
 
     # Initialise rotary encoder object
     def __init__(self,pinA,pinB,button,callback):
-        threading.Thread.__init__(self)
+        t = threading.Thread(target=self._run,args=(pinA,pinB,button,callback,))
+        t.daemon = True
+        t.start()
+
+    def _run(self, pinA, pinB, button,callback):
         self.pinA = pinA
         self.pinB = pinB
         self.button = button

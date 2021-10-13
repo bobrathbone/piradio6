@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.43 2021/07/18 07:27:44 bob Exp $
+# $Id: gradio.py,v 1.59 2021/09/14 09:00:59 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -85,6 +85,7 @@ Atists = {}     # Dictionary of artists
 pidfile = "/var/run/radiod.pid"
 MpdLibDir = "/var/lib/mpd"
 MusicDirectory =  MpdLibDir + "/music"
+RadioLib =  "/var/lib/radiod"
 ArtworkFile = "/tmp/artwork.jpg"
 artwork_file = ""   # Album artwork file name
 wallpaper = ''      # Background wallpaper
@@ -160,8 +161,8 @@ def displayTimeDate(screen,myfont,radio,message):
     return
 
 
-# Display message popup
-def displayPopup(screen,radio,text):
+# Display message popup, bcolor is the border color
+def displayPopup(screen,text,bcolor=(255,255,255)):
     text = uEncode(text)
     displayPopup = TextRectangle(pygame)    # Text window
     font = pygame.font.SysFont('freesans', 30, bold=True)
@@ -171,7 +172,6 @@ def displayPopup(screen,radio,text):
     xSize = fx
     ySize = fy
     color = (50,50,50)
-    bcolor = (255,255,255)
     border = 4
     displayPopup.draw(screen,color,bcolor,xPos,yPos,xSize,ySize,border)
     line = 1        # Not used but required
@@ -180,6 +180,20 @@ def displayPopup(screen,radio,text):
     pygame.display.flip()
     return
 
+
+# Handle shutdown button click
+def handleShutdown(screen):
+    if config.shutdown:
+        msg = message.get("shutdown")
+        displayPopup(screen,msg,bcolor=(0,0,32))
+        time.sleep(3)
+        radio.shutdown()
+    else:
+        radio.stop()
+        msg = message.get("stop")
+        displayPopup(screen,msg,bcolor=(0,0,32))
+        time.sleep(3)
+        sys.exit(0)
 
 # Display source load
 def displayLoadingSource(screen,font,radio,message):
@@ -273,7 +287,6 @@ def displayCurrent(screen,font,radio,message):
     linebuf += 1
     if len(search_name) > max_columns:
         search_name = display.scroll(search_name,linebuf,max_columns)
-
 
     linebuf += 1
     if len(errorStr) > max_columns:
@@ -592,6 +605,10 @@ def handleEvent(radio,radioEvent):
                or event_type == radioEvent.LOAD_PLAYLIST:
         handleSourceChange(radioEvent,radio,message)
 
+    elif event_type == event.PLAYLIST_CHANGED:
+        log.message('PLAYLIST_CHANGED event received', log.DEBUG)
+        radio.handlePlaylistChange()
+
     radioEvent.clear()
     return
 
@@ -751,8 +768,30 @@ def drawSwitchIcon(display,screen,switchIcon):
 # Draw Equalizer Icon
 def drawEqualizerIcon(display,screen,equalizerIcon):
     xPos = 10
-    yPos = 8
+    yPos = 90
     equalizerIcon.draw(screen,xPos,yPos)
+    return 
+
+# Draw Shutdown Icon
+def drawShutdownIcon(display,screen,shutdownIcon,largeDisplay):
+    if largeDisplay:
+        xPos = 10
+        yPos = 10
+    else:
+        xPos = 5
+        yPos = 20
+    shutdownIcon.draw(screen,xPos,yPos)
+    return 
+
+# Draw Icecast Icon
+def drawIcecastIcon(display,screen,enabled,largeDisplay):
+    if largeDisplay:
+        xPos = size[0]-50
+        yPos = 90
+    else:
+        xPos = size[0]-30
+        yPos = 60
+    icecastIcon.draw(screen,xPos,yPos,enabled)
     return 
 
 # Check that the label colour is valid 
@@ -866,9 +905,19 @@ def getPlaylists():
 
     # Replace underscores with spaces
     for idx in range(len(values)):
+        name = values[idx]
+        if name[0] == '_':
+
+        # Temporary fix to display old pre version 7.3 names
+            oldname = True
+        else:
+            oldname = False
         values[idx] = values[idx].replace('_',' ')
         values[idx] = values[idx].lstrip()
+        
         plname = uEncode(values[idx])
+        if  oldname:
+            plname = '_' + plname
         plist.append(plname)
     return plist
 
@@ -1099,11 +1148,10 @@ def displayLabels(radio,ChannelUpButton,ChannelDownButton):
 
 # Open equalizer window
 def openEqualizer(radio,equalizer_cmd):
-    #dir = os.path.dirname(__file__)
-    dir = "/usr/share/radio"
-    cmd_file = open(dir + '/' + equalizer_cmd,"r")
+    cmd_file = open(RadioLib + '/' + equalizer_cmd,"r")
     for line in cmd_file: 
         if line.startswith('lxterminal'):
+            log.message(line,log.DEBUG)
             radio.execCommand(line)
             break
     return
@@ -1122,8 +1170,6 @@ def displaySearchType(screen,search_mode,yPos,xPos):
     sType = sTypes[search_mode]
     font = pygame.font.SysFont('freesans', 18)
     font.set_bold(True)
-    #lcolor = getLabelColor(display.config.getLabelsColor())
-    #color = pygame.Color(lcolor)
     color = pygame.Color('steelblue')
     fontSize = font.size(sType) 
     xPos += 35
@@ -1234,7 +1280,7 @@ if __name__ == "__main__":
 
     message = Message(radio,display,translate)
     text = message.get('loading_playlists')
-    displayPopup(screen,radio,text)
+    displayPopup(screen,text)
 
     # Set up Xauthority for root user
     radio.execCommand("sudo cp /home/pi/.Xauthority /root/")
@@ -1284,6 +1330,8 @@ if __name__ == "__main__":
     RightArrow = Image(pygame)
     switchIcon = SwitchIcon(pygame)
     equalizerIcon = EqualizerIcon(pygame)
+    shutdownIcon = ShutdownIcon(pygame)
+    icecastIcon = IcecastIcon(pygame)
     drawUpIcon(display,screen,upIcon)
     drawDownIcon(display,screen,downIcon)
     drawLeftArrow(display,screen,LeftArrow)
@@ -1293,6 +1341,15 @@ if __name__ == "__main__":
 
     if display.config.switch_programs:
         drawSwitchIcon(display,screen,switchIcon)
+
+    if config.display_shutdown_button:
+        drawShutdownIcon(display,screen,shutdownIcon,largeDisplay)
+
+    # Icecast icon
+    draw_icecast_icon = os.path.exists("/usr/bin/icecast2")
+    if draw_icecast_icon:
+        icecast_enabled = radio.getStoredStreaming()
+        drawIcecastIcon(display,screen,icecast_enabled,largeDisplay)
 
     # Option buttons
     if largeDisplay:
@@ -1410,7 +1467,7 @@ if __name__ == "__main__":
                     if searchID > srange:
                         searchID = 1
 
-                elif display.config.switch_programs and switchIcon.clicked():
+                elif display.config.switch_programs and largeDisplay and switchIcon.clicked():
                     if radio.spotify.isRunning():
                         radio.spotify.stop()
                     dir = os.path.dirname(__file__)
@@ -1428,6 +1485,15 @@ if __name__ == "__main__":
                     openEqualizer(radio,"equalizer.cmd")
                     draw_equalizer_icon = False
                     equalizerIcon.disable()
+
+                elif config.display_shutdown_button and shutdownIcon.clicked():
+                    handleShutdown(screen) 
+
+                elif draw_icecast_icon and icecastIcon.clicked():
+                    if radio.getStoredStreaming():
+                        radio.streamingOff()
+                    else:
+                        radio.streamingOn()
 
                 elif largeDisplay and RandomButton.clicked(event):
                     if RandomButton.isActive():
@@ -1598,6 +1664,13 @@ if __name__ == "__main__":
         if draw_equalizer_icon:
             drawEqualizerIcon(display,screen,equalizerIcon)
 
+        if config.display_shutdown_button:
+            drawShutdownIcon(display,screen,shutdownIcon,largeDisplay)
+
+        if draw_icecast_icon:
+            icecast_enabled = radio.getStoredStreaming()
+            drawIcecastIcon(display,screen,icecast_enabled,largeDisplay)
+
         if source_type == radio.source.RADIO or source_type == radio.source.MEDIA:
             if largeDisplay:
                 drawOptionButtons(display,screen,radio,RandomButton,RepeatButton,
@@ -1615,8 +1688,6 @@ if __name__ == "__main__":
         if screenBlank and display.config.fullscreen:
             screen.fill(Color(0,0,0))
 
-        #if not largeDisplay:
-    #       displaySearchType(screen,search_mode)
         # Update display
         pygame.display.flip()
 

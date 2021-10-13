@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.57 2021/07/25 08:53:24 bob Exp $
+# $Id: radiod.py,v 1.71 2021/09/30 08:03:28 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -52,6 +52,7 @@ rss = Rss(translate)
 _connecting = False
 newMenu = True  # Speed up initial display if new menu entered
 ignoreEvent = False # Ignore up/down button after double button menu press
+pidfile = '/var/run/radiod.pid'
 
 # Signal SEGV and ABRT handler - Try to dump core
 def signalCrash(signal,frame):
@@ -187,8 +188,15 @@ class MyDaemon(Daemon):
         nlines = display.getLines()
         displayStartup(display,radio)
 
-        # LCDs option to switch off translation
-        radio.translate.setTranslate(radio.config.translate_lcd)
+        # LCDs option to switch translation on/off. Switch off for OLEDs
+        # Unless romanize set
+        if display.isOLED():
+            if radio.config.romanize:
+                radio.translate.setTranslate(True)
+            else:
+                radio.translate.setTranslate(False)
+        else:
+            radio.translate.setTranslate(radio.config.translate_lcd)
 
         # For non-English  Romanize (Convert to Latin characters)
         romanize = radio.config.romanize
@@ -384,11 +392,11 @@ def handleEvent(event,display,radio,menu):
     elif menu_mode == menu.MENU_OPTIONS:
         handleOptionEvent(event,display,radio,menu)
 
+    elif event_type == event.MPD_CLIENT_CHANGE:
+        log.message("handleEvent Client Change",log.DEBUG)
+
     elif event_type != event.NO_EVENT:
         handleRadioEvent(event,display,radio,menu)
-
-    elif event_type == radioEvent.MPD_CLIENT_CHANGE:
-        log.message("handleEvent Client Change",log.DEBUG)
 
     # Clear event 
     event.clear()
@@ -503,6 +511,11 @@ def handleRadioEvent(event,display,radio,menu):
         if radio.muted():
             radio.unmute()
         handleMenuChange(display,radio,menu,message)
+
+    elif event_type == event.PLAYLIST_CHANGED:
+        log.message('event PLAYLIST_CHANGED', log.DEBUG)
+        print('PLAYLIST_CHANGED event recieved')
+        radio.handlePlaylistChange()
 
     elif event_type == event.SHUTDOWN:
         log.message('SHUTDOWN', log.DEBUG)
@@ -1010,7 +1023,6 @@ def displayRss(display,radio,message,rss):
 
     if nLines > 4:
         plName = radio.getSourceName()
-        plName = plName.replace('_','')
         current_id = radio.getCurrentID()
         plsize = radio.getPlayListLength()
         msg = "Station %d/%d" % (current_id,plsize)
@@ -1431,12 +1443,21 @@ def usage():
 
 ### Main routine ###
 if __name__ == "__main__":
+    from constants import __version__
+
+    if len(sys.argv) < 2:
+        usage()
+        sys.exit(1)
+
+    if 'version' == sys.argv[1]:
+        print('Version',__version__)
+        sys.exit(0)
 
     if pwd.getpwuid(os.geteuid()).pw_uid > 0:
         print ("This program must be run with sudo or root permissions!")
         sys.exit(1)
 
-    daemon = MyDaemon('/var/run/radiod.pid')
+    daemon = MyDaemon(pidfile)
     if len(sys.argv) == 2:
         if 'start' == sys.argv[1]:
             daemon.start()
@@ -1449,8 +1470,6 @@ if __name__ == "__main__":
             daemon.status()
         elif 'nodaemon' == sys.argv[1]:
             daemon.nodaemon()
-        elif 'version' == sys.argv[1]:
-            print('Version',daemon.getVersion())
         else:
             print("Unknown command: " + sys.argv[1])
             usage()

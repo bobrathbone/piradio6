@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.9 2021/10/02 10:07:38 bob Exp $
+# $Id: rotary_class_rgb.py,v 1.2 2021/09/19 15:27:13 bob Exp $
+# Version to support RGB Rotary encoders with LEDs
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -75,7 +76,6 @@ import os,sys,pwd
 import time
 import RPi.GPIO as GPIO
 import threading
-import pdb
 
 R_CCW_BEGIN   = 0x1
 R_CW_BEGIN    = 0x2
@@ -149,7 +149,7 @@ STATE_TAB = HALF_TAB if HALF_STEP else FULL_TAB
 # In such a case set resistor=GPIO.PUD_OFF in the initialisation call
 # otherwise there will be two 10K resistors paralleled across each other giving 5K
 
-class RotaryEncoder:
+class RotaryEncoderRgb:
     state = R_START
     pinA = None
     pinB = None
@@ -159,11 +159,7 @@ class RotaryEncoder:
     BUTTONUP=4
 
     def __init__(self, pinA, pinB, button,callback,pullup=GPIO.PUD_UP):
-        t = threading.Thread(target=self._run,args=(pinA,pinB,button,callback,pullup,))
-        t.daemon = True
-        t.start()
-
-    def _run(self, pinA, pinB, button,callback,pullup):
+        threading.Thread.__init__(self)
         self.pinA = pinA
         self.pinB = pinB
         self.button = button
@@ -176,24 +172,21 @@ class RotaryEncoder:
         try:
             # The following lines enable the internal pull-up resistors
             if pinA > 0 and pinB > 0:
-                gpio = self.pinA
                 GPIO.setup(self.pinA, GPIO.IN, pull_up_down=self.pullup)
                 GPIO.setup(self.pinB, GPIO.IN, pull_up_down=self.pullup)
-                
-                gpio = self.pinB
+                # Add event detection to the GPIO inputs
                 GPIO.add_event_detect(self.pinA, GPIO.BOTH, callback=self.rotary_event)
                 GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.rotary_event)
-                #pdb.set_trace()
             if button > 0:
-                gpio = self.button
-                GPIO.setup(self.button, GPIO.IN, pull_up_down=self.pullup)
+                GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
                 # Add event detection to the GPIO input
-                GPIO.add_event_detect(self.button, GPIO.FALLING, callback=self.button_event, 
+                GPIO.add_event_detect(self.button, GPIO.RISING, callback=self.button_event, 
                         bouncetime=150)
 
         except Exception as e:
-            print("Rotary Encoder initialise error GPIO %s %s" % (gpio,str(e)))
+            print("Rotary Encoder initialise error " + str(e))
             sys.exit(1)
+
 
     # Call back routine called by switch events
     def rotary_event(self, switch):
@@ -211,7 +204,7 @@ class RotaryEncoder:
     # Push button up event
     def button_event(self,button):
         # Ignore Button Up events   
-        if not GPIO.input(button): 
+        if GPIO.input(button): 
             event = self.BUTTONDOWN 
             self.callback(event)
         return
@@ -222,7 +215,7 @@ class RotaryEncoder:
 
     def buttonPressed(self,button):
         state = self.getButtonState(button) 
-        if state == 1:
+        if state == 0:
             pressed = False
         else:
             pressed = True
@@ -279,8 +272,8 @@ if __name__ == "__main__":
     print("Mute switch GPIO", mute_switch)
     print("Menu switch GPIO", menu_switch)
     
-    volumeknob = RotaryEncoder(left_switch,right_switch,mute_switch, volume_event)
-    tunerknob = RotaryEncoder(down_switch,up_switch,menu_switch, tuner_event)
+    volumeknob = RotaryEncoderRgb(left_switch,right_switch,mute_switch, volume_event)
+    tunerknob = RotaryEncoderRgb(down_switch,up_switch,menu_switch, tuner_event)
 
     try:
         while True:

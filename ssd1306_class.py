@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# $Id: ssd1306_class.py,v 1.23 2021/05/29 08:58:24 bob Exp $
+# $Id: ssd1306_class.py,v 1.24 2021/09/30 08:59:30 bob Exp $
 # This class drives the Sitronix SSD1306 controller for the 128x64 pixel TFT
 # It requirs the I2C dtoverlay to be loaded. The I2C address is normally 0x37
 #
-# $Id: ssd1306_class.py,v 1.23 2021/05/29 08:58:24 bob Exp $
+# $Id: ssd1306_class.py,v 1.24 2021/09/30 08:59:30 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -211,10 +211,6 @@ if __name__ == '__main__':
     import pwd
     from log_class import Log
     from time import strftime
-
-    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
-        print("This program must be run with sudo or root permissions!")
-        sys.exit(1)
 
     dateformat = "%H:%M %d/%m/%Y"
     log = None

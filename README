@@ -10,6 +10,36 @@ See http://www.musicpd.org/
 Use "apt-get install mpd mpc python3-mpd" to install the libraries
 This software uses the python3-mpd library. See https://packages.debian.org/sid/python3-mpd
 
+Version 7.3 release notes 
+-------------------------
+8th October 2021
+1) Add LUMA support for SSD1306, SSD1309, SSD1325, SSD1331, SH1106 and WS0010 OLEDs
+2) Support added for creating a bootable USB 3.0 Hard Disk Drive
+3) Add creation of playlist from Music directory on a USB Disk Drive.
+4) Implement flipping screen vertically fo ST7789 OLED class (Pirate Audio)
+5) Display equalizer.cmd configuration file in display_config.sh script
+6) The equalizer.cmd file moved to /var/lib/radiod
+7) Shutdown button added to gradio and vgradio (See display_shutdown_button in radiod.conf)
+8) Force language translation off (override translate_lcd setting) for OLEDs
+	- unless romanize=yes
+9) Correct Adafruit Speaker Bonnet installation failure (Do not install pulseaudio)
+10) Correct Mixer controls USB command in display_config.sh. Added display MPD playlists
+11) If icecast2 installed it now uses systemd to start/stop it instead of System V initd
+12) Icecast streaming can now be enabled and disabled in the full feature graphical version
+13) Identify playlist type by contents rather than file name 
+	(No need for '_' at beginning of file name
+14) Update playlist if changed by an external client such as OMP!D
+15) Added driver for Grove JHD1313 RGB 2x16 LCD
+16) New playlists_class.py added to allow update of MPD playlists from external MPD clients
+17) Added update_stationlist.py script to re-create stationlist file from MPD playlists 
+18) New /etc/crontab.daily/radiod script added to run update_stationlist.py and 
+    create_stations.py daily if update_playlists=yes found in /etc/radiod.conf
+19) New rotary_class_rgb.py added to support RGB Rotary encoders
+20) New rotary_class_rgb_i2c.py added to support I2C RGB Rotary encoders
+21) New utility rgb_set_i2c_address.py added for I2C RGB Rotary encoders
+22) Button class and all rotary encoder classes now run in a thread
+23) Shutdown command shutdown_parameter added (Default "sudo shutdown -h now")
+
 Version 7.2 release notes 
 -------------------------
 26th July 2021

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This class drives the Sitronix ST7789 controller and 240x240 pixel TFT
 #
-# $Id: st7789tft_class.py,v 1.7 2021/05/26 06:12:53 bob Exp $
+# $Id: st7789tft_class.py,v 1.9 2021/08/11 08:00:54 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -23,6 +23,17 @@ import pdb
 # Create ST7789 LCD display class.
 tft = ST7789.ST7789(
     port=0,
+    rotation=90,
+    cs=ST7789.BG_SPI_CS_FRONT,  # BG_SPI_CSB_BACK or BG_SPI_CS_FRONT
+    dc=9,
+    backlight=13,               
+    spi_speed_hz=80 * 1000 * 1000
+)
+
+# Flip display vertically set rotation=270
+tft_flip = ST7789.ST7789(
+    port=0,
+    rotation=270,
     cs=ST7789.BG_SPI_CS_FRONT,  # BG_SPI_CSB_BACK or BG_SPI_CS_FRONT
     dc=9,
     backlight=13,               
@@ -65,11 +76,14 @@ class ST7789:
         return
 
     # Initialisation routes
-    def init(self,callback,code_page=0):
-       self.callback = callback
-       tft.begin()
+    def init(self,callback,flip=False):
+        global tft,tft_flip
+        self.callback = callback
 
-        # Primitives called by upper layer functions
+        # Flip display if required
+        if flip:
+            tft = tft_flip   
+        tft.begin()
 
     # Update the display canvas with all of drawn images
     # Must be called to display the objects previously drawn
@@ -326,7 +340,9 @@ if __name__ == '__main__':
 
     setupButtons()
     display = ST7789()
-    display.init(None)
+
+    # Set flip=True to flip display vertically
+    display.init(callback=None,flip=False)
     dir = os.path.dirname(__file__)
     display.drawSplash(dir + "/images/raspberrypi.png",2)
     display.update

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_daemon.py,v 1.1 2020/10/10 15:00:46 bob Exp $
+# $Id: radio_daemon.py,v 1.2 2021/09/30 08:03:28 bob Exp $
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
 #
@@ -17,6 +17,7 @@
 #
 
 import sys, os, time, atexit
+import pdb
 from signal import SIGTERM 
 
 class Daemon:
@@ -74,7 +75,8 @@ class Daemon:
     
     # write pidfile
     def writepidfile(self):
-        atexit.register(self.delpid)
+        if os.path.exists(self.pidfile):
+            atexit.register(self.delpid)
         pid = str(os.getpid())
         fpid = open(self.pidfile,'w')
         fpid.write("%s\n" % pid)

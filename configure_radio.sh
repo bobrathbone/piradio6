@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.15 2021/07/24 06:57:02 bob Exp $
+# $Id: configure_radio.sh,v 1.26 2021/10/07 06:51:10 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -48,7 +48,7 @@ FLIP_OLED_DISPLAY=0 # 1 = Flip OLED idisplay upside down
 # Wiring type and schemes
 BUTTON_WIRING=0 # 0 Not used or SPI/I2C, 1=Buttons, 2=Rotary encoders, 3=PHat BEAT
 LCD_WIRING=0    # 0 not used, 1=standard LCD wiring, 
-GPIO_PINS=0 # 0 Not configured, 1=40 pin wiring, 2=26 pin 
+GPIO_PINS=0 # 0 Not configured, 1=40 pin wiring,2=26 pin,3=I2C Rotary
 PULL_UP_DOWN=0  # Pull up/down resistors 1=Up, 0=Down
 USER_INTERFACE=0    # 0 Not configured, 1=Buttons, 2=Rotary encoders, 3=HDMI/Touch-screen
             # 4=IQaudIO(I2C), 5=Pimoroni pHAT(SPI), 6=Adafruit RGB(I2C),
@@ -59,7 +59,9 @@ I2C_REQUIRED=0
 I2C_ADDRESS="0x0"
 SPI_REQUIRED=0
 PIFACE_REQUIRED=0	
-ROTARY_HAS_RESISTORS=0	# Support for KY040 or ABC Rotary encoders
+SCROLL_SPEED="0.2" 
+ROTARY_CLASS="standard"    # Standard abc Rotary Encoders
+ROTARY_HAS_RESISTORS=0	# Support for KY-040 or ABC Rotary encoders
 ADAFRUIT_SSD1306=0	# Adafruit SSD1306 libraries required
 
 # Display characteristics
@@ -231,10 +233,15 @@ if [[ ${USER_INTERFACE} == "2" ]]; then
     selection=1 
     while [ $selection != 0 ]
     do
-        ans=$(whiptail --title "Do the rotary encoders have their own pull-up resistors?" --menu "Choose your option" 15 75 9 \
+        ROTARY_CLASS="standard"
+
+        ans=$(whiptail --title "Select type of rotary encoder" --menu "Choose your option" 15 75 9 \
         "1" "Standard rotary encoders with A, B and C inputs only" \
-        "2" "Rotary encoders encoders (eg KY040) with own pull-up resistors" \
-        "3" "Not sure" 3>&1 1>&2 2>&3) 
+        "2" "Rotary encoders encoders (eg KY-040) with own pull-up resistors" \
+        "3" "Rotary encoders with RGB LEDs" \
+        "4" "I2C Rotary encoders with RGB LEDs" \
+        "5" "Standard A,B,C rotary encoders alternative driver" \
+        "6" "Not sure" 3>&1 1>&2 2>&3) 
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -245,8 +252,23 @@ if [[ ${USER_INTERFACE} == "2" ]]; then
             DESC="Configuring standard rotary encoders"
 
         elif [[ ${ans} == '2' ]]; then
-            DESC="Configuring rotary encoders (eg. KY040) with own pull-up resistors"
+            DESC="Configuring rotary encoders (eg. KY-040) with own pull-up resistors"
             ROTARY_HAS_RESISTORS=1
+
+        elif [[ ${ans} == '3' ]]; then
+            DESC="Configuring rotary encoders with RGB LEDs"
+            ROTARY_HAS_RESISTORS=1
+            ROTARY_CLASS="rgb_rotary"
+
+        elif [[ ${ans} == '4' ]]; then
+            DESC="Configuring I2C rotary encoders with RGB LEDs"
+            ROTARY_CLASS="rgb_i2c_rotary"
+            GPIO_PINS=3
+
+        elif [[ ${ans} == '5' ]]; then
+            DESC="Standard rotary encoders alternative driver"
+            ROTARY_HAS_RESISTORS=1
+            ROTARY_CLASS="alternative"
 
         else
             DESC="Standard rotary encoders"  
@@ -344,8 +366,10 @@ do
     "7" "PiFace CAD display" \
     "8" "Pimoroni Audio ST7789 TFT" \
     "9" "Sitronix SSD1306 128x64 monochrome OLED" \
-    "10" "No display used/Pimoroni Pirate radio" \
-    "11" "Do not change display type" 3>&1 1>&2 2>&3) 
+    "10" "OLEDs using LUMA driver (SSD1306,SH1106 etc)" \
+    "11" "Grove LCD RGB JHD1313 (AIP31068L controller)" \
+    "12" "No display used/Pimoroni Pirate radio" \
+    "13" "Do not change display type" 3>&1 1>&2 2>&3) 
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -421,6 +445,24 @@ do
         SPLASH="images\/raspberrypi.png"
 
     elif [[ ${ans} == '10' ]]; then
+        DISPLAY_TYPE="LUMA"
+        DESC="OLEDs using LUMA driver"
+        DLINES=4
+        DWIDTH=16
+        VOLUME_RANGE=10
+        I2C_REQUIRED=1
+        I2C_ADDRESS="0x3C"
+        SPLASH="images\/raspberrypi.png"
+
+    elif [[ ${ans} == '11' ]]; then
+        DISPLAY_TYPE="LCD_I2C_JHD1313"
+        I2C_ADDRESS="0x3e"
+        I2C_REQUIRED=1
+        DLINES=2
+        DWIDTH=16
+        DESC="Grove JHD1313LCD RGB LCD"
+
+    elif [[ ${ans} == '12' ]]; then
         DISPLAY_TYPE="NO_DISPLAY"
         DLINES=0
         DWIDTH=0
@@ -436,8 +478,62 @@ do
     selection=$?
 done 
 
+if [[ ${DISPLAY_TYPE} == "LUMA" ]]; then
+    ans=0
+    selection=1 
+    while [ $selection != 0 ]
+    do
+        ans=$(whiptail --title "Select LUMA OLED device" --menu "Choose your option" 15 75 9 \
+        "1" "SH1106 128x64 monochrome OLED" \
+        "2" "SH1106 128x32 monochrome OLED" \
+        "3" "SSD1306 128x64 monochrome OLED " \
+        "4" "SSD1309 monochrome OLED " \
+        "5" "SSD1325 monochrome OLED " \
+        "6" "SSD1331 monochrome OLED " \
+        "7" "WS0010 monochrome OLED " 3>&1 1>&2 2>&3) 
+
+        exitstatus=$?
+        if [[ $exitstatus != 0 ]]; then
+            exit 0
+        fi
+
+        if [[ ${ans} == '1' ]]; then
+            DESC="SH1106 128x64 monochrome OLED"
+            DISPLAY_TYPE="${DISPLAY_TYPE}.SH1106"
+
+        elif [[ ${ans} == '2' ]]; then
+            DESC="SH1106 128x32 monochrome OLED"
+            DISPLAY_TYPE="${DISPLAY_TYPE}.SH1106_128x32"
+
+        elif [[ ${ans} == '3' ]]; then
+            DESC="SSD1306 128x64 monochrome OLED"
+            DISPLAY_TYPE="${DISPLAY_TYPE}.SSD1306"
+
+        elif [[ ${ans} == '4' ]]; then
+            DESC="SSD1309" monochrome OLED"
+            DISPLAY_TYPE="${DISPLAY_TYPE}.SSD1309"
+
+        elif [[ ${ans} == '5' ]]; then
+            DESC="SSD1325" monochrome OLED"
+            DISPLAY_TYPE="${DISPLAY_TYPE}.SSD1325"
+
+        elif [[ ${ans} == '6' ]]; then
+            DESC="SSD1331 monochrome OLED"
+            DISPLAY_TYPE="${DISPLAY_TYPE}.SSD1331"
+
+        elif [[ ${ans} == '7' ]]; then
+            DESC="WS0010 monochrome OLED"
+            DISPLAY_TYPE="${DISPLAY_TYPE}.WS0010"
+        fi
+
+        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
+        selection=$?
+    done
+    echo ${DESC} | tee -a ${LOG}
+fi
+
 # Flip display upside down option
-if [[ ${DISPLAY_TYPE} == "OLED_128x64" ]]; then
+if [[ ${DISPLAY_TYPE} == "OLED_128x64" || ${DISPLAY_TYPE} =~ "LUMA" ]]; then
     ans=0
     selection=1 
     while [ $selection != 0 ]
@@ -515,9 +611,10 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
         "2" "Hex 0x27 (PCF8574 devices)" \
         "3" "Hex 0x37 (PCF8574 devices alternative address)" \
         "4" "Hex 0x3F (PCF8574 devices 2nd alternative address)" \
-        "5" "Hex 0x3C (Olimex Cosmic controller/Sitronix SSD1306)" \
-        "6" "Manually configure i2c_address in ${CONFIG}" \
-        "7" "Do not change configuration" 3>&1 1>&2 2>&3) 
+        "5" "Hex 0x3C (Cosmic controller/Sitronix SSD1306/LUMA devices)" \
+        "5" "Hex 0x3e (Grove RGB LCD JHD1313 with AIP31068L controller)" \
+        "7" "Manually configure i2c_address in ${CONFIG}" \
+        "8" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -545,6 +642,10 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
             I2C_ADDRESS="0x3C"
 
         elif [[ ${ans} == '6' ]]; then
+            DESC="Hex 0x3E selected"
+            I2C_ADDRESS="0x3E"
+
+        elif [[ ${ans} == '7' ]]; then
             DESC="Manually configure i2c_address in ${CONFIG} "
             echo ${DESC} | tee -a ${LOG}
 
@@ -649,7 +750,7 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
             SCREEN_SIZE="800x480"
 
         else
-            DESC="Graphical displayn type unchanged"    
+            DESC="Graphical display type unchanged"    
             echo ${DESC} | tee -a ${LOG}
             GPROG=""
         fi
@@ -805,6 +906,7 @@ if [[ ${DISPLAY_TYPE} != "" ]]; then
     sudo sed -i -e "0,/^display_lines/{s/display_lines.*/display_lines=${DLINES}/}" ${CONFIG}
     sudo sed -i -e "0,/^display_width/{s/display_width.*/display_width=${DWIDTH}/}" ${CONFIG}
     sudo sed -i -e "0,/^volume_range/{s/volume_range.*/volume_range=${VOLUME_RANGE}/}" ${CONFIG}
+    sudo sed -i -e "0,/^scroll_speed/{s/scroll_speed.*/scroll_speed=${SCROLL_SPEED}/}" ${CONFIG}
 fi
 
 if [[ $DATE_FORMAT != "" ]]; then
@@ -823,6 +925,7 @@ if [[ ${USER_INTERFACE} == "1" || ${USER_INTERFACE} == "8" ]]; then
 
 elif [[ ${USER_INTERFACE} == "2" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=rotary_encoder/}" ${CONFIG}
+    sudo sed -i -e "0,/^rotary_class/{s/rotary_class.*/rotary_class=${ROTARY_CLASS}/}" ${CONFIG}
     if [[ ${ROTARY_HAS_RESISTORS} == 1 ]]; then
         sudo sed -i -e "0,/^rotary_gpio_pullup/{s/rotary_gpio_pullup.*/rotary_gpio_pullup=none/}" ${CONFIG}
     fi
@@ -877,7 +980,8 @@ else
 fi
 
 # Configure buttons and rotary encoders
-if [[ ${BUTTON_WIRING} == "1" || ${BUTTON_WIRING} == "2" ]]; then
+#if [[ ${BUTTON_WIRING} == "1" || ${BUTTON_WIRING} == "2" ]]; then
+if [[ ${BUTTON_WIRING} != "0" ]]; then
 
     if [[ ${GPIO_PINS} == "1" ]]; then
         echo "Configuring 40 Pin wiring"  | tee -a ${LOG}
@@ -887,6 +991,15 @@ if [[ ${BUTTON_WIRING} == "1" || ${BUTTON_WIRING} == "2" ]]; then
         sudo sed -i -e "0,/^down_switch/{s/down_switch.*/down_switch=23/}" ${CONFIG}
         sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=14/}" ${CONFIG}
         sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=15/}" ${CONFIG}
+
+    elif [[ ${GPIO_PINS} == "3" ]]; then
+        echo "Configuring RGB I2C encoder Pin wiring"  | tee -a ${LOG}
+        sudo sed -i -e "0,/^menu_switch=/{s/menu_switch=.*/menu_switch=17/}" ${CONFIG}
+        sudo sed -i -e "0,/^mute_switch/{s/mute_switch.*/mute_switch=4/}" ${CONFIG}
+        sudo sed -i -e "0,/^up_switch/{s/up_switch.*/up_switch=0/}" ${CONFIG}
+        sudo sed -i -e "0,/^down_switch/{s/down_switch.*/down_switch=0/}" ${CONFIG}
+        sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=0/}" ${CONFIG}
+        sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=0/}" ${CONFIG}
     else
         echo "Configuring 26 Pin wiring"  | tee -a ${LOG}
         sudo sed -i -e "0,/^menu_switch=/{s/menu_switch=.*/menu_switch=25/}" ${CONFIG}
@@ -977,6 +1090,10 @@ echo "Changes written to ${CONFIG}" | tee -a ${LOG}
 echo "-----------------------------------" | tee -a ${LOG}
 if [[ ${USER_INTERFACE} != "0" ]]; then
     echo $(grep "^user_interface=" ${CONFIG} ) | tee -a ${LOG}
+fi
+
+if [[ ${USER_INTERFACE} == "2" ]]; then
+    echo $(grep "^rotary_class=" ${CONFIG} ) | tee -a ${LOG}
 fi
 
 if [[ $DISPLAY_TYPE != "" ]]; then
