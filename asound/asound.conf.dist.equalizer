@@ -1,4 +1,4 @@
-# Asound configuration for the alsamixer
+# Asound configuration for the alsa equalizer
 pcm.!default {
   type plug
   slave.pcm plugequal;
