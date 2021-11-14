@@ -4,7 +4,7 @@
 # This program produces a wiring diagram based on the 
 #      configuration in the /etc/radiod.conf file
 
-# $Id: wiring.py,v 1.6 2021/05/25 05:41:04 bob Exp $
+# $Id: wiring.py,v 1.7 2021/11/13 16:05:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -82,7 +82,7 @@ def displaySwitch(config,params):
     for label in switch_labels:
         pin = 0
         gpio = 0
-        if label is not 'GND_0V':
+        if label != 'GND_0V':
             gpio = config.getSwitchGpio(label)
         rotary = switch_details[label]
         try:
@@ -153,15 +153,15 @@ def displayOther(config,params):
         pin = 0
         gpio = 0
         comment = ''
-        if label is 'remote_led':
+        if label == 'remote_led':
             gpio = config.remote_led
             if not params:
                 label = label.capitalize()
-        elif label is 'I2C_Clock':
+        elif label == 'I2C_Clock':
             gpio = 2 
-        elif label is 'I2C_Data':
+        elif label == 'I2C_Data':
             gpio = 3 
-        elif label is 'IR_Remote':
+        elif label == 'IR_Remote':
             gpio = getLircGpio()
             comment = "(See " + bootconfig + ")"
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-$Id: display_model.py,v 1.8 2021/08/27 09:03:31 bob Exp $
+$Id: display_model.py,v 1.9 2021/10/30 08:48:55 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
 URL: https://github.com/metachris/raspberrypi-utils
 
 Modified by: Bob Rathbone  (bob@bobrathbone.com)
-Site   : http://www.bobrathbone.com
+Site: http://www.bobrathbone.com
 
 License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 
@@ -70,6 +70,7 @@ model_data = {
     'a22100': ('CM3+', '1.0', 1024, 'Sony', 'Quad Core 1.2MHz, Compute module DDR2 SODIMM connector '),
     '900061': ('CM', '1.1', 512, 'Embest', 'Compute module DDR2 SODIMM connector'),
     '900091': ('A+', '1.1', 512, 'Sony UK', ''),
+    '902120': ('Zero 2 W', '1.0', 512, 'Sony UK', '1GHz 64-bit quad core, Onboard WiFi and Bluetooth 4.1'),
     '9020e0': ('3A+', '1.0', 512, 'Sony UK', ''),
     '900032': ('B+', '1.2', 512, 'Sony UK', ''),
     '900092': ('Zero', '1.2', 512, 'Sony UK', ''),

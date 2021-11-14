@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.71 2021/09/30 08:03:28 bob Exp $
+# $Id: radiod.py,v 1.72 2021/10/31 10:20:21 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -910,9 +910,11 @@ def displaySearch(display,menu,message):
                 message.speak(str(index+1) + ' ' +  current_artist[0:50])
 
     elif source_type == radio.source.RADIO:
-        search_station = radio.getStationName(index)
+        ## search_station = radio.getStationName(index)
+        search_station = radio.getSearchName()
         search_station = search_station.lstrip('"')
         search_station = search_station.rstrip('"')
+        ## pdb.set_trace()
 
         if lines > 2:
             display.out(2,search_station[0:30],interrupt)

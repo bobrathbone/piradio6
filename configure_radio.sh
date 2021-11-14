@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.26 2021/10/07 06:51:10 bob Exp $
+# $Id: configure_radio.sh,v 1.27 2021/11/14 13:28:48 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1204,7 +1204,7 @@ declare -i lines=$(wc -l ${BOOTCONFIG} | awk '{print $1}')
 if [[ ${lines} -lt 10 ]]; then
     echo "ERROR: ${BOOTCONFIG} failed integrity check"
     echo "Restoring ${BOOTCONFIG} from ${BOOTCONFIG}.orig"
-    sudo cp ${BOOTCONFIG} ${BOOTCONFIG}.orig
+    sudo cp ${BOOTCONFIG}.orig ${BOOTCONFIG}
     echo "Re-run sudo ${0} "
     exit 1
 else 

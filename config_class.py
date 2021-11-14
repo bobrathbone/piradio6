@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.86 2021/10/08 07:56:59 bob Exp $
+# $Id: config_class.py,v 1.88 2021/10/17 09:54:41 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -161,6 +161,7 @@ class Configuration:
     _graphic_dateformat="%H:%M:%S %A %e %B %Y"    # Format for graphic screen
     _display_shutdown_button = True    # Shutdown button
     _shutdown_command = "sudo shutdown -h now"   # Shutdown command
+    _display_icecast_button = False # Display Icecast button 
 
     # Parameters specific to the vintage graphic radio
     _scale_labels_color = 'white'    # Vintage screen labels colour
@@ -602,7 +603,6 @@ class Configuration:
                         + section + ' in ' + ConfigFile
                     log.message(msg,log.ERROR)
 
-
         except configparser.NoSectionError:
             msg = configparser.NoSectionError(section),'in',ConfigFile
             log.message(msg,log.WARNING)
@@ -680,6 +680,14 @@ class Configuration:
 
                 elif option == 'display_shutdown_button':
                     self.display_shutdown_button = parameter
+
+                elif option == 'display_icecast_button':
+                    self.display_icecast_button = parameter
+
+                else:
+                    msg = "Invalid option " + option + ' in section ' \
+                        + section + ' in ' + ConfigFile
+                    log.message(msg,log.ERROR)
 
         except configparser.NoSectionError:
             msg = configparser.NoSectionError(section),'in',ConfigFile
@@ -1511,6 +1519,15 @@ class Configuration:
     def display_shutdown_button(self, parameter):
         self._display_shutdown_button = self.convertYesNo(parameter)
 
+    # Display the Icecast button
+    @property
+    def display_icecast_button(self):
+        return self._display_icecast_button
+
+    @display_icecast_button.setter
+    def display_icecast_button(self, parameter):
+        self._display_icecast_button = self.convertYesNo(parameter)
+
     # RGB I2C Rotary Encoder Hex addresses
     @property
     def volume_rgb_i2c(self):
@@ -1554,23 +1571,31 @@ class Configuration:
 if __name__ == '__main__':
 
     config = Configuration()
+
+    # Convert True/False to Yes/No
+    def TrueFalse2yn(param):
+        yn = "No"
+        if param: 
+            yn = "Yes"
+        return yn
+
     print ("Configuration file:", ConfigFile)
     print ("Labels in brackets (...) are the parameters found in",ConfigFile) 
     print ("\n[RADIO] section")
     print ("---------------")
 
-    print ("Truncate log file (log_creation_mode):", config.log_creation_mode)
+    print ("Truncate log file (log_creation_mode):", TrueFalse2yn(config.log_creation_mode))
     print ("User interface (user_interface):",config.user_interface, config.getUserInterfaceName())
     print ("Mpd port (mpdport):", config.mpdport)
     print ("Mpd client timeout (client_timeout):", config.client_timeout)
     print ("Date format (dateformat):", config.dateformat)
-    print ("Display playlist number(playlist_number):", config.display_playlist_number)
+    print ("Display playlist number(playlist_number):",TrueFalse2yn(config.display_playlist_number))
     print ("Source (source):", config.source, config.source_name)
     print ("Startup playlist(startup_playlist):", config.startup_playlist)
     print ("Background colour number ('bg_color'):", config.getBackColor('bg_color'))
     print ("Background colour:", config.getBackColorName(config.getBackColor('bg_color')))
     print ("Station names source(station_names):",config._stationNamesSource[config.station_names])
-    print ("Do shutdown on exit (shutdown):",config.shutdown)
+    print ("Do shutdown on exit (shutdown):",TrueFalse2yn(config.shutdown))
     print ("Comitup IP (comitup_ip):",config.comitup_ip)
     print ("Shoutcast key (shoutcast_key):", config.shoutcast_key)
 
@@ -1579,7 +1604,7 @@ if __name__ == '__main__':
     print ("Volume increment (volume_increment):", config.volume_increment)
     print ("Mute action (mute_action):",config.MuteActions[config.mute_action])
     print ("Audio out(audio_out):",config.audio_out)
-    print ("Audio Configuration locked(audio_config_locked):",config.audio_config_locked)
+    print ("Audio Configuration locked(audio_config_locked):",TrueFalse2yn(config.audio_config_locked))
     print ("Bluetooth device (bluetooth_device):", config.bluetooth_device)
 
     print('')
@@ -1589,12 +1614,11 @@ if __name__ == '__main__':
     print ("Remote LED (remote_led):", config.remote_led)
 
     print('')
-    print ("Speech (speech):", config.speech)
-    print ("Verbose speech(verbose):", config.verbose)
+    print ("Speech (speech):", TrueFalse2yn(config.speech))
+    print ("Verbose speech(verbose):", TrueFalse2yn(config.verbose))
     print ("Speech volume adjustment (speech_volume):", str(config.speech_volume) + '%')
-    print ("Verbose (verbose):", config.verbose)
-    print ("Speak info (speak_info):", config.speak_info)
-    print ("Allow playlists playlists (update_playlists):", config.update_playlists)
+    print ("Speak info (speak_info):", TrueFalse2yn(config.speak_info))
+    print ("Allow playlists playlists (update_playlists):", TrueFalse2yn(config.update_playlists))
 
     print('')
     for switch_label in config.switches:
@@ -1630,11 +1654,11 @@ if __name__ == '__main__':
     print ("Scroll speed (scroll_speed):", config.scroll_speed)
     print ("Mixer Volume Preset (config.mixer_preset):", config.mixer_preset)
     print('')
-    print ("Translate LCD characters (translate_lcd):", config.translate_lcd)
+    print ("Translate LCD characters (translate_lcd):", TrueFalse2yn(config.translate_lcd))
     print ("LCD translation code page (codepage):", config.codepage)
     print ("LCD Controller (controller):", config.controller)
     print ("Language (language):", config.language)
-    print ("Romanize Cyrillic (romanize):", config.romanize)
+    print ("Romanize Cyrillic (romanize):", TrueFalse2yn(config.romanize))
 
     # I2C parameters
     print('')
@@ -1648,7 +1672,7 @@ if __name__ == '__main__':
     print ("Internet timeout (internet_timeout): ", config.internet_timeout)
     
     # OLED
-    print ("OLED flip screen vertical (flip_display_vertically):",config.flip_display_vertically)
+    print ("OLED flip screen vertical (flip_display_vertically):",TrueFalse2yn(config.flip_display_vertically))
     print ("OLED splash screen (splash_screen):",config.splash_screen)
  
     # Shutdown command
@@ -1657,7 +1681,7 @@ if __name__ == '__main__':
     print ("\n[SCREEN] section")
     print ("----------------")
     print ("Graphic screen size (screen_size):", config.screen_size)
-    print ("Full screen (fullscreen):", config.fullscreen)
+    print ("Full screen (fullscreen):", TrueFalse2yn(config.fullscreen))
     print ("Window title (window_title):", config.window_title)
     print ("Window color (window_color):", config.window_color)
     print ("Display window color (display_window_color):", config.display_window_color)
@@ -1670,16 +1694,17 @@ if __name__ == '__main__':
             config.display_window_labels_color)
     print ("Scale labels color (scale_labels_color):", config.scale_labels_color)
     print ("Sations per page (stations_per_page):", config.stations_per_page)
-    print ("Display mouse (display_mouse):", config.display_mouse)
-    print ("Display title (display_title):", config.display_title)
-    print ("Display date (display_date):", config.display_date)
-    print ("Allow programs switch (switch_programs):", config.switch_programs)
-    print ("Display shutdown button (display_shutdown_button):", config.display_shutdown_button)
+    print ("Display mouse (display_mouse):", TrueFalse2yn(config.display_mouse))
+    print ("Display title (display_title):", TrueFalse2yn(config.display_title))
+    print ("Display date (display_date):", TrueFalse2yn(config.display_date))
+    print ("Allow programs switch (switch_programs):", TrueFalse2yn(config.switch_programs))
+    print ("Display shutdown button (display_shutdown_button):", TrueFalse2yn(config.display_shutdown_button))
+    print ("Display Icecast button (display_icecast_button):", TrueFalse2yn(config.display_icecast_button))
 
     print ("Screen saver time:", config.screen_saver)
     print ("\n[AIRPLAY] section")
     print ("----------------")
-    print ("Airplay (airplay):", config.airplay)
+    print ("Airplay (airplay):", TrueFalse2yn(config.airplay))
 # End of __main__
 
 # set tabstop=4 shiftwidth=4 expandtab

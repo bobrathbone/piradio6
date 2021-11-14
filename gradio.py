@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.59 2021/09/14 09:00:59 bob Exp $
+# $Id: gradio.py,v 1.60 2021/10/17 06:37:56 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1346,7 +1346,7 @@ if __name__ == "__main__":
         drawShutdownIcon(display,screen,shutdownIcon,largeDisplay)
 
     # Icecast icon
-    draw_icecast_icon = os.path.exists("/usr/bin/icecast2")
+    draw_icecast_icon = os.path.exists("/usr/bin/icecast2") and config.display_icecast_button
     if draw_icecast_icon:
         icecast_enabled = radio.getStoredStreaming()
         drawIcecastIcon(display,screen,icecast_enabled,largeDisplay)

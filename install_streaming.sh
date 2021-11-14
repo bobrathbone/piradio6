@@ -1,7 +1,7 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio - Install Icecast2
 # This script installs and configures Icecast2 to run with MPD 
-# $Id: install_streaming.sh,v 1.6 2021/09/03 09:10:59 bob Exp $
+# $Id: install_streaming.sh,v 1.7 2021/10/17 09:12:57 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -18,6 +18,7 @@ XMLCONF=/etc/icecast2/icecast.xml
 MPDSTREAM=${DIR}/configs/mpdstream
 RADIOLIB=/var/lib/radiod
 STREAMING=${RADIOLIB}/streaming
+CONFIG=/etc/radiod.conf
 
 RET=0   # Script return code
 
@@ -74,7 +75,6 @@ if [[ $? -ne 0 ]]; then
     fi
 fi
 
-# Start icecast
 echo "Starting service icecast2"
 sudo systemctl restart icecast2 
 if [[ $? -ne '0' ]]; then 	# Do not seperate from above
@@ -96,6 +96,10 @@ fi
 # Enable streaming
 echo "Enabling streaming on in ${STREAMING}"
 sudo echo "on" > ${STREAMING}
+# Configure display_icecast_button parameter in /etc/radiod.conf 
+sudo sed -i -e "0,/^display_icecast_button/{s/display_icecast_button.*/display_icecast_button=yes/}" ${CONFIG}
+
+# Start icecast
 
 exit ${RET} 
 

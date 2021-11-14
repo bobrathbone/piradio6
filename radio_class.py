@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.100 2021/10/08 19:06:42 bob Exp $
+# $Id: radio_class.py,v 1.105 2021/10/31 11:25:45 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -148,7 +148,7 @@ class Radio:
     internet_check_delay = 0    # Prevent too many Internet checks
     error_display_delay = 0     # Delay before clearing error messages
     playlist_size = 0           # For checking changes to the playlist
-    PL = Playlist('Radio')             # Playlist class
+    PL = None                   # Playlist class
     
     # MPD Options
     random = False  # Random tracks
@@ -172,7 +172,7 @@ class Radio:
 
     stationTitle = ''       # Radio station title
     stationName = ''        # Radio station name
-    playlistName = '_Radio'     # Initial playlist name
+    playlistName = 'Radio'     # Initial playlist name
 
     search_index = 0    # The current search index
     loadnew = False     # Load new track from search
@@ -182,7 +182,7 @@ class Radio:
     bluetooth_retry = 3 # Retry count for bluetooth connection
 
     pingTime = 0        # Reduce amount of pings
-    pingDelay = 5       # Delay between pings in seconds
+    pingDelay = 15      # Delay between pings in seconds
 
     connected = False   # Connection status
 
@@ -191,7 +191,7 @@ class Radio:
         CurrentStationFile: 1,
         CurrentTrackFile: 1,
         CurrentSourceFile: 0,
-        SourceNameFile: "_Radio",
+        SourceNameFile: "Radio",
         VolumeFile: 75,
         MixerVolumeFile: 45,
         TimerFile: 30,
@@ -210,6 +210,7 @@ class Radio:
         log = logobj
         log.message("Initialising radio", log.INFO)
         self.config = config
+        self.PL = Playlist('Radio',self.config)     # Playlist class 
         self.translate = translate
         self.airplay = AirplayReceiver(translate)
         self.spotify = SpotifyReceiver(translate)
@@ -1387,10 +1388,12 @@ class Radio:
 
     # Display streaming status
     def streamingStatus(self):
-        status = self.execCommand("mpc outputs | grep -i stream")
-        if len(status)<1:
-            status = "No Icecast streaming"
-        log.message(status, log.INFO)
+        status = self.execCommand("mpc outputs|grep -i stream|grep -i enabled")
+        if len(status)>1:
+            msg = "Icecast streaming enabled"
+        else:
+            msg = "Icecast streaming disabled"
+        log.message(msg, log.INFO)
         return
 
     # Check if icecast streaming installed
@@ -1610,6 +1613,8 @@ class Radio:
         name = ''
         try:
             name = self.getStationName(self.search_index) 
+            if len(name) > 0:
+                name = self.translate.all(name)
 
         except Exception as e:
             log.message("radio.getSearchName: " + str(e), log.DEBUG)
@@ -1914,7 +1919,6 @@ class Radio:
         msg = "Load playlist " + pname + " type " + str(source_type)
         log.message(msg, log.DEBUG)
 
-        #pdb.set_trace()
         try:
             self.PL.load(self.client,pname)
             if self.PL.size < 1:

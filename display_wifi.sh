@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display Wi-Fi details
-# $Id: display_wifi.sh,v 1.6 2021/06/05 05:52:30 bob Exp $
+# $Id: display_wifi.sh,v 1.7 2021/10/15 09:06:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -30,4 +30,9 @@ else
 #   iwgetid -a
     iwlist channel 2>&1| grep Current | sed 's/^[ \t]*//;s/[ \t]*$//'
     iwlist txpower 2>&1 | grep -i tx-power | sed 's/\s/ /g' | sed 's/^[ \t]*//;s/[ \t]*$//'
+    rfkill list
+    rfkill list | grep -i yes >/dev/null 2>&1 
+    if [[ $? == 0 ]]; then
+        echo "Use rfkill \"rfkill unblock 0\" command to enable Wifi"
+    fi
 fi

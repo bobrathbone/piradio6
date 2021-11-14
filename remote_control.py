@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 #       
 # Raspberry Pi remote control daemon
-# $Id: remote_control.py,v 1.18 2021/09/30 10:44:25 bob Exp $
+# $Id: remote_control.py,v 1.19 2021/11/13 15:25:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

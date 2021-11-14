@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: playlist_class.py,v 1.24 2021/09/18 13:47:16 bob Exp $
+# $Id: playlist_class.py,v 1.27 2021/11/01 14:15:20 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -37,14 +37,16 @@ RADIO = 0
 MEDIA = 1
 
 class Playlist:
-    ##_list = []
+    config = None
+
     _name = "Radio"  # Default playlist name
     _searchlist = []
     _size = 0   # Playlist size
     _type = 0   # Playlist type RADIO or MEDIA
     _plist = []
 
-    def __init__(self,name):
+    def __init__(self,name,config):
+        self.config = config
         self._name = name
         return
 
@@ -75,8 +77,6 @@ class Playlist:
     # program in response to a PLAYLIST_CHANGED event
     def update(self,client):
         playlist_name = self.getName(CurrentPlaylistName)
-        playlist_type = self.type
-
         if self._type == RADIO:
             newlist = self.createNewRadioPlaylist(self._plist)
         else:
@@ -84,7 +84,7 @@ class Playlist:
 
         if len(newlist) > 0:
             self.writePlaylistFile(playlist_name,newlist)
-            self._searchlist = self.createSearchList(self._plist)
+            self._searchlist = self.createSearchList()
         else:
             # Protect playlist file if something goes wrong with client playlist
             print("No records found in new playlist %s" % playlist_name)
@@ -116,7 +116,6 @@ class Playlist:
             line = line.strip('file: ')
             count += 1
             try:
-                # print(line)
                 if line.startswith("http"):
     
                     if '#' in line:
@@ -153,8 +152,8 @@ class Playlist:
             client.clear()
             client.load(name)
             self._plist = client.playlist()
-            self._searchlist = self.createSearchList(self._plist)
             self._type = self.getType(name)
+            self._searchlist = self.createSearchList(client)
             self._name = name
             #print("Name=%s Type=%s Size=%s"% (self._name, self._type, self._size))
             #self._plist = client.playlist()
@@ -163,9 +162,44 @@ class Playlist:
         return
 
     # Create search list of tracks or stations
-    def createSearchList(self,plist):
+    def createSearchList(self,client):
+        if self.config.station_names == self.config.STREAM or self._type == source.MEDIA:
+            self._plist = client.playlist()
+            searchlist = self._createStreamSearchList(self._plist)
+        else:
+            searchlist = self._createListSearch()
+
+        self._searchlist = searchlist
+        self._size = len(self._searchlist)
+        return self._searchlist
+        
+    # Create search list from stationlist file
+    _name = "Radio"
+    #def _createListSearch(self):
+    def _createListSearch(self):
         searchlist = []
-        ##plist = client.playlist()
+        try:
+            f = open(PlaylistsDirectory + '/' + self._name + '.m3u', 'r')
+            lines = f.readlines()
+            f.close()
+            for line in lines:
+                line = line.rstrip()
+                if len(line) < 1:
+                    continue
+                if not line.startswith('#EXTINF:'):
+                    continue
+                x = line.split(',')
+                line = x[1]
+                searchlist.append(line)
+
+        except Exception as e:
+            print("File read failed: " + str(e))
+
+        return searchlist
+
+    # Create search list from MPD stream
+    def _createStreamSearchList(self,plist):
+        searchlist = []
 
         for line in plist:
             line = line.strip('file: ')
@@ -189,8 +223,7 @@ class Playlist:
 
         self._size = len(plist)
 
-        self._searchlist = searchlist
-        return self._searchlist
+        return searchlist
 
     # Return searchlist
     @property
@@ -254,7 +287,7 @@ class Playlist:
         typeNames = ['RADIO','MEDIA']
 
         # Check playlist for "#EXTM3U" definition
-        count = 30  # Allow comments 30 lines max at start of file
+        count = 15  # Allow comments 15 lines max at start of file
         found = False
         try:
             f = open(playlist_file, 'r')
@@ -280,12 +313,12 @@ class Playlist:
 
 # Class test routine
 if __name__ == "__main__":
-    plist = ["Radio 1","Radio 2","Candlelight"]
-    PL = Playlist("_Radio")    
-    print (PL.name)
-    PL.name = "Top 500"
-    print (PL.name)
-    PL.list = plist
+    from config_class import Configuration
+    config = Configuration()
+
+    PL = Playlist("Radio",config)    
+    print ("Playlist", PL.name)
+    PL.createSearchList()
     print (PL.size)
     sys.exit(0)
 

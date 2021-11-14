@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio setup script
-# $Id: setup.sh,v 1.5 2021/06/27 16:29:05 bob Exp $
+# $Id: setup.sh,v 1.6 2021/11/13 15:25:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -25,7 +25,7 @@ ARCH=$(grep ^Architecture: ${PKGDEF} | awk '{print $2}')
 DEBPKG=${PKG}_${VERSION}_${ARCH}.deb
 MPD=/usr/bin/mpd
 MPD_PACKAGES="mpd mpc python3-mpd python3-rpi.gpio"
-OTHER_PACKAGES="python3-requests python-configparser"
+OTHER_PACKAGES="python3-requests python-configparser python"
 
 # Check running as sudo
 if [[ "$EUID" -eq 0 ]];then
@@ -64,6 +64,9 @@ fi
 
 # Remove redundant packages
 sudo apt -y autoremove
+
+# Update file cache
+sudo apt-file update
 
 # Build the pakage
 ./build.sh

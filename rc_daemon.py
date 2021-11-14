@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 #
 # Raspberry Pi Internet Radio Remote Control Class
-# $Id: rc_daemon.py,v 1.10 2021/10/02 11:20:27 bob Exp $
+# $Id: rc_daemon.py,v 1.11 2021/11/13 15:25:00 bob Exp $
 # 
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/

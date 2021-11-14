@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
 # Raspberry Pi Radio Character translation class
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: Russian_HD44780.py,v 1.2 2020/10/11 06:46:17 bob Exp $
+# $Id: Russian_HD44780.py,v 1.3 2021/11/13 15:25:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

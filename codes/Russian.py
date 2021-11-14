@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
 # Russian Character translation table for HD44780U controller
 # Do not use for older HD44780 controllers
 #
-# $Id: Russian.py,v 1.2 2020/10/11 06:46:17 bob Exp $
+# $Id: Russian.py,v 1.3 2021/11/13 15:25:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
