@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: status_led_class.py,v 1.1 2020/10/10 15:00:47 bob Exp $
+# $Id: status_led_class.py,v 1.2 2022/02/04 12:44:16 bob Exp $
 # Raspberry Retro Pi Internet Radio
 #
 # Author : Bob Rathbone
@@ -11,6 +11,7 @@
 
 import RPi.GPIO as GPIO
 import time
+import sys
 
 
 # Status LED class
@@ -83,13 +84,29 @@ class StatusLed:
 
 if __name__ == "__main__":
     statusLed = StatusLed()
-    statusLed.set(StatusLed.NORMAL)
-    time.sleep(3)
-    statusLed.set(StatusLed.BUSY)
-    time.sleep(3)
-    statusLed.set(StatusLed.ERROR)
-    time.sleep(3)
-    statusLed.set(StatusLed.CLEAR)
+    print("Test status LEDs, press Ctl-C to stop")
+    print("Green LED GPIO" + str(statusLed.green_led))
+    print("Blue LED GPIO" + str(statusLed.blue_led))
+    print("Red LED GPIO" + str(statusLed.red_led))
+    print("")
+    try:
+        while True:
+            print("Normal (Green)") 
+            statusLed.set(StatusLed.NORMAL)
+            time.sleep(2)
+            print("Busy (Blue)") 
+            statusLed.set(StatusLed.BUSY)
+            time.sleep(2)
+            print("Error (Red)") 
+            statusLed.set(StatusLed.ERROR)
+            time.sleep(2)
+            print("Clear (Off)") 
+            statusLed.set(StatusLed.CLEAR)
+            time.sleep(2)
+    except KeyboardInterrupt:
+        statusLed.set(StatusLed.CLEAR)
+        print("\nExit")
+        sys.exit(0)
 
 # End of class
 

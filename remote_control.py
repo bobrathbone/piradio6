@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 #       
 # Raspberry Pi remote control daemon
-# $Id: remote_control.py,v 1.19 2021/11/13 15:25:00 bob Exp $
+# $Id: remote_control.py,v 1.22 2022/01/16 08:07:38 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -25,6 +25,8 @@
 #   /etc/lirc/lircrc Program to event registration file
 #   /etc/lircd.conf  User generated remote control configuration file
 #
+# This is the original Python 2 version for use on Buster
+# For the Python3 (Bullseye) version see irradiod.py and ir_daemon.py
 
 import RPi.GPIO as GPIO
 import configparser
@@ -97,6 +99,7 @@ class RemoteDaemon(Daemon):
             import lirc
             global lirc
             
+
         # Start lirc service
         if os.path.exists(lircd_service):
             log.message("Starting lircd daemon", log.DEBUG)

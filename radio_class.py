@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.105 2021/10/31 11:25:45 bob Exp $
+# $Id: radio_class.py,v 1.108 2022/02/16 08:56:39 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -370,7 +370,6 @@ class Radio:
                 self.mountAll()
                 playlistName = self.source.loadOmpdLibrary();
                 self.client.load(playlistName)
-                #self.searchlist = self.PL.createSearchList(self.client)
                 self.searchlist = self.PL.searchlist
                 log.message("Loaded O!MPD playlist " + playlistName, log.DEBUG)
             else:
@@ -839,13 +838,6 @@ class Radio:
                 self.connectBluetoothDevice()
 
         return self.volume.get()
-
-    def getSpeechVolume(self):
-        return self.volume.getMpdVolume()
-
-    # Get speech volume
-    def getSpeechVolume(self):
-        return self.volume.getSpeechVolume()
 
     # Set volume (Called from the radio client or external mpd client via getVolume())
     # Also called from gradiod.py and vgradiod.py
@@ -1835,7 +1827,7 @@ class Radio:
     
     # Get the new source name (radio, playlist or Airplay)
     def getNewSourceName(self):
-        return self.source.getNewDisplayName()
+        return self.source.getDisplayName()
 
     # This routine reloads sources/playlists  
     def getSources(self):

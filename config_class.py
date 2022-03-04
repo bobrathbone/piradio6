@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.88 2021/10/17 09:54:41 bob Exp $
+# $Id: config_class.py,v 1.91 2022/01/14 08:07:12 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -585,7 +585,7 @@ class Configuration:
                 self.configOptions[option] = parameter
 
                 if option == 'airplay':
-                    self.parameter = parameter
+                    self.airplay = parameter
 
                 # Name has been changed from mixer_volume to mixer_preset in v6.7
                 elif option == 'mixer_volume' or option == 'mixer_preset':
@@ -621,7 +621,7 @@ class Configuration:
                 if option == 'screen_size':
                     self.screen_size = parameter
             
-                if option == 'fullscreen':
+                elif option == 'fullscreen':
                     self.fullscreen = parameter
                 
                 elif option == 'window_color':
@@ -1120,9 +1120,9 @@ class Configuration:
 
     @airplay.setter
     def airplay(self, parameter):
-        self.airplay = False
+        self._airplay = False
         if parameter == 'yes' and os.path.isfile(Airplay):
-            self.airplay = True
+            self._airplay = True
 
     # Get mixer volume preset
     @property
@@ -1550,7 +1550,9 @@ class Configuration:
     # Shutdown command
     @property
     def shutdown_command(self):
-        return self._shutdown_command
+        shutdown_command = self._shutdown_command.lstrip('"')
+        shutdown_command = shutdown_command.rstrip('"')
+        return shutdown_command
 
     @shutdown_command.setter
     def shutdown_command(self, parameter):

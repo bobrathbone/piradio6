@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: language_class.py,v 1.2 2021/09/07 08:35:59 bob Exp $
+# $Id: language_class.py,v 1.3 2022/01/06 12:37:53 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -208,7 +208,7 @@ class Language:
         # If the first character is ! then supress the message
         message = message.lstrip()
 
-        if message[0] is '!':
+        if message[0] == '!':
             supress = True
         else:
             supress = False

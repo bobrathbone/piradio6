@@ -4,7 +4,7 @@
 # Raspberry Pi Radio Character translation class
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: translate_class.py,v 1.6 2021/05/17 06:05:40 bob Exp $
+# $Id: translate_class.py,v 1.8 2021/11/23 10:40:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -29,9 +29,6 @@ import importlib
 from config_class import Configuration
 config = Configuration()
 
-HD4780U = 1 # Traditional legacy HD44780 LCD/OLED controller
-HD4780 = 2  # Midas MC0100 LCD/OLED controller
-
 class Translate:
     _translate = True
     _romanized = True
@@ -40,7 +37,7 @@ class Translate:
                         # For example after converting Cyrillic
     _codes = None       # Native code table from codes/<language>.py
     _romanized_codes = None # Romanized code table from codes/<language>.py
-    _controller = "HDD44780"    # Controller type
+    _controller = "HD44780" # Controller type
 
     code_pages = []
     English = None  # English font table set up in _import routine

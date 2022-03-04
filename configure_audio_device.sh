@@ -2,7 +2,7 @@
 # set -x
 # Raspberry Pi Internet Radio
 # Audio output configurator
-# $Id: configure_audio_device.sh,v 1.6 2021/08/10 08:32:16 bob Exp $
+# $Id: configure_audio_device.sh,v 1.7 2022/02/02 20:18:54 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -42,6 +42,7 @@ function getCard {
 		if [[ $ret -eq "0" ]]; then
 			device=$(echo ${card} | awk '{print $2}') 
 			device=${device%:}
+            break
 		fi
 	done < ${TMP}
 	rm -f ${TMP}
@@ -75,10 +76,10 @@ function getDevice {
 # and /etc/mpd.conf. 
 function configure {
 	num=$1
+    device=$2
 	echo "Configuring ${ASOUNDCONF} with card $num"
-	sudo sed -i -e "0,/card.*/s/card.*/card $num/" ${ASOUNDCONF}
-	sudo sed -i -e "0,/plughw.*/s/plughw.*/plughw:$num,0\"/" ${ASOUNDCONF}
-
+    sudo sed -i -e "0,/card.*/s/card.*/card $num/" ${ASOUNDCONF}
+    sudo sed -i -e "0,/plughw.*/s/plughw.*/plughw:$num,0\"/" ${ASOUNDCONF}
 
 	# Do not overcopy equalizer device definition 
 	grep "plug:plugequal" ${MPDCONFIG} >/dev/null 2>&1
@@ -138,6 +139,9 @@ if [[ ${device} == "" ]]; then
 else
 	echo "Configuring ${device} on card ${card}"
 fi
-configure $card
+
+if [[ ${device} != "vc4hdmi" ]]; then
+    configure ${card} ${device}
+fi
 
 # End of script

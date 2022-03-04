@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio Class
-# $Id: constants.py,v 1.5 2021/08/10 10:39:53 bob Exp $
+# $Id: constants.py,v 1.8 2022/01/09 09:31:44 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -16,7 +16,7 @@
 #             The authors shall not be liable for any loss or damage however caused.
 #
 
-__version__ = "7.3"
+__version__ = "7.4"
 
 # Up/Down constants (switch levels)
 UP = 1 

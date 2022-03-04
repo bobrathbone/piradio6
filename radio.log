@@ -1,0 +1,2 @@
+# Since version 7.3 /var/log/radio.log has moved to /var/log/radiod/radio.log
+# This has been done to allow logging to be done without needing root permissions

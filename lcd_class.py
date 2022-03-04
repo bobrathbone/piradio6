@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.5 2021/09/23 08:12:02 bob Exp $
+# $Id: lcd_class.py,v 1.6 2021/11/17 13:29:47 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -207,7 +207,7 @@ class Lcd:
     def setWidth(self,width):
         self.width = width
         # Adjust line offsets if 16 char display
-        if width is 16:
+        if width == 16:
             self.lcd_line3 = LCD_LINE_3a
             self.lcd_line4 = LCD_LINE_4a
         return

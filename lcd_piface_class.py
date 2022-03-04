@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_piface_class.py,v 1.3 2021/09/30 09:08:49 bob Exp $
+# $Id: lcd_piface_class.py,v 1.4 2022/02/24 11:39:23 bob Exp $
 # Raspberry Pi Internet Radio
 # using a Piface backlit LCD plate
 #
@@ -243,7 +243,11 @@ class Lcd_Piface_Cad:
         return False
 
 # End of Lcd class
+
 # Class test routine
+def no_interrupt():
+        return False
+
 if __name__ == "__main__":
     import pwd
 
@@ -254,9 +258,6 @@ if __name__ == "__main__":
         lcd.setWidth(16)
         lcd.out(1,"bobrathbone.com")
         lcd.out(2,"Press any button")
-        #time.sleep(4)
-        #lcd.out(4,"Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", no_interrupt)
-        #lcd.out(4,"End of test")
 
         while True:
             msg = ""
@@ -273,7 +274,7 @@ if __name__ == "__main__":
 
             if len(msg) > 0: 
                 print (msg)
-                lcd.out(2,msg)
+                lcd.out(2,msg,no_interrupt)
 
             time.sleep(0.1)
 

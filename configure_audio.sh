@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_audio.sh,v 1.26 2021/08/27 13:12:26 bob Exp $
+# $Id: configure_audio.sh,v 1.36 2022/02/19 11:01:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -41,6 +41,7 @@ I2SOVERLAY="dtoverlay=i2s-mmap"
 PULSEAUDIO=/usr/bin/pulseaudio
 SPOTIFY_CONFIG=/etc/default/raspotify
 MIXER_ID_FILE=${LIBDIR}/mixer_volume_id
+OS_RELEASE=/etc/os-release
 
 # Command for Bluetooth pipe command
 PIPE_COMMAND='aplay -D bluealsa -f cd'
@@ -84,12 +85,52 @@ sudo chown pi:pi ${LOGDIR}
 sudo rm -f ${LOG}
 echo "$0 configuration log, $(date) " | tee ${LOG}
 
-# Wheezy not supported
-cat /etc/os-release | grep -i wheezy >/dev/null 2>&1
-if [[ $? == 0 ]]; then  # Don't seperate from above
-    echo "This prograqm is not supported on Debian Wheezy!" | tee -a ${LOG}
+# Get OS release ID
+function release_id
+{
+    VERSION_ID=$(grep VERSION_ID $OS_RELEASE)
+    arr=(${VERSION_ID//=/ })
+    ID=$(echo "${arr[1]}" | tr -d '"')
+    ID=$(expr ${ID} + 0)
+    echo ${ID}
+}
+
+# Get OS release name
+function codename
+{
+    VERSION_CODENAME=$(grep VERSION_CODENAME $OS_RELEASE)
+    arr=(${VERSION_CODENAME//=/ })
+    CODENAME=$(echo "${arr[1]}" | tr -d '"')
+    echo ${CODENAME}
+}
+
+# Identify card ID from "aplay -l" command
+function card_id
+{
+    name=$1
+    # Match first line only
+    CARD_ID=$(aplay -l | grep -m1 ${name} | awk '{print $2}')
+    CARD_ID=$(echo "${CARD_ID}" | tr -d ':')
+    if [[ ${#CARD_ID} < 1 ]]; then
+        CARD_ID=0
+    fi
+    CARD_ID=$(expr ${CARD_ID} + 0)
+    echo ${CARD_ID}
+}
+
+# Releases before Buster not supported
+if [[ $(release_id) -lt 10 ]]; then
+    echo "This program is only supported on Raspbian Buster/Bullseye or later!" | tee -a ${LOG}
+    echo "This system is running $(codename) OS"
     echo "Exiting program." | tee -a ${LOG}
     exit 1
+fi
+
+# Location of raspotify configuration file has changed in Bullseye
+if [[ $(release_id) -ge 11 ]]; then
+    SPOTIFY_CONFIG=/etc/raspotify/conf
+else
+    SPOTIFY_CONFIG=/etc/default/raspotify
 fi
 
 # Stop the radio and MPD
@@ -112,6 +153,9 @@ fi
 
 sudo service mpd stop
 
+# Get the card ID using 'aplay -l'
+#CARD_ID=$(card_id)
+
 selection=1 
 while [ $selection != 0 ]
 do
@@ -126,8 +170,8 @@ do
     "6" "HiFiBerry DAC plus/Amp2" \
     "7" "HiFiBerry DAC Digi" \
     "8" "HiFiBerry Amp" \
-    "9" "IQAudio DAC/Zero DAC" \
-    "10" "IQAudio DAC plus and Digi/AMP " \
+    "9" "IQaudIO DAC/Zero DAC" \
+    "10" "IQaudIO DAC plus and Digi/AMP " \
     "11" "JustBoom DAC/Zero/Amp" \
     "12" "JustBoom Digi HAT" \
     "13" "Bluetooth device" \
@@ -145,6 +189,7 @@ do
 
     elif [[ ${ans} == '2' ]]; then
         DESC="HDMI output"
+        NAME="HDMI audio"
         TYPE=${HDMI}
         NUMID=3
 
@@ -196,15 +241,15 @@ do
         TYPE=${DAC}
 
     elif [[ ${ans} == '9' ]]; then
-        DESC="IQAudio DAC/Zero DAC"
+        DESC="IQaudIO DAC/Zero DAC"
         NAME=${DESC}
         DTOVERLAY="iqaudio-dac"
         MIXER="software"
         TYPE=${DAC}
 
     elif [[ ${ans} == '10' ]]; then
-        DESC="IQAudio DAC plus or DigiAMP"
-        NAME="IQAudio DAC+"
+        DESC="IQaudIO DAC plus or DigiAMP"
+        NAME="IQaudIO DAC+"
         TYPE=${DAC}
         DTOVERLAY="iqaudio-dacplus"
         MIXER="software"
@@ -262,6 +307,14 @@ echo "${DESC} selected" | tee -a ${LOG}
 echo "Card ${CARD}, Device ${DEVICE}, Mixer ${MIXER}" | tee -a ${LOG}
 if [[ ${DTOVERLAY} != "" ]]; then
     echo "dtoverlay=${DTOVERLAY}" | tee -a ${LOG}
+    # Load the overlay
+    cmd="sudo dtoverlay ${DTOVERLAY}"
+    echo ${cmd}; ${cmd}
+    if [[ $?  == 0 ]]; then
+        OVERLAY_LOADED=1
+    else
+        OVERLAY_LOADED=0
+    fi
 fi
 
 # Install alsa-utils if not already installed
@@ -308,14 +361,25 @@ else
     echo "Configuring ${MPDCONFIG} for ${AUDIO_INTERFACE} support" | tee -a ${LOG}
 fi
 
-# Select HDMI or audio jack/DACs Alsa output
+# Select HDMI name ether "HDMI" (Buster/Bullseye) or "vc4hdmi" (Bullseye)
 # Also setup audio_out parameter in the config file
 if [[ ${TYPE} == ${HDMI} ]]; then
     echo "Configuring HDMI as output" | tee -a ${LOG}
-    sudo touch ${LIBDIR}/hdmi 
-    sudo amixer cset numid=3 2
-    sudo alsactl store
-    SCARD="HDMI"
+    sudo touch ${LIBDIR}/hdmi
+
+    aplay -l | grep vc4hdmi
+    if [[ $? == 0 ]]; then
+        SCARD=vc4hdmi
+        DEVICE="sysdefault:vc4hdmi0"
+        ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.vc4hdmi
+    else
+        SCARD=HDMI
+        DEVICE="0:0"
+    fi
+    echo "Card ${SCARD} Device ${DEVICE}"
+
+    # Force HDMI hotplug in /boot/config.txt
+    sudo sed -i 's/^#hdmi_force_hotplug=.*$/hdmi_force_hotplug=1/g' ${BOOTCONFIG}
 
 elif [[ ${TYPE} == ${JACK} ]]; then
     echo "Configuring on-board jack as output" | tee -a ${LOG}
@@ -393,12 +457,17 @@ elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
     SCARD="bluetooth"
 fi
 
-# Configure the audio_out parameter
+# Configure the audio_out parameter in /etc/radiod.conf
 echo |  tee -a ${LOG}
 echo "Configuring audio_out parameter in ${CONFIG} with ${SCARD} " | tee -a ${LOG}
 sudo sed -i -e "0,/audio_out=/{s/^#aud/aud/}" ${CONFIG}
 sudo sed -i -e "0,/audio_out=/{s/^audio_out=.*/audio_out=\"${SCARD}\"/}" ${CONFIG}
 grep -i "audio_out="  ${CONFIG} | tee -a ${LOG}
+
+# Configure Card device using the audio_out parameter configured above in /etc/radiod.conf 
+CARD_ID=$(card_id ${SCARD})
+echo "Card ${SCARD} ID ${CARD_ID}"
+DEVICE=$(echo ${DEVICE} | sed -e 's/:0/:'"${CARD_ID}"'/')
 
 # Set up asound configuration for espeak and aplay
 echo |  tee -a ${LOG}
@@ -472,7 +541,7 @@ sudo sed -i '/dtoverlay=hifiberry/d' ${BOOTCONFIG}
 sudo sed -i '/dtoverlay=justboom/d' ${BOOTCONFIG}
 
 # Add dtoverlay for sound cards and disable on-board sound
-if [[ ${DTOVERLAY} != "" ]]; then
+if [[ ${DTOVERLAY} != "" || ${TYPE} == ${HDMI} ]]; then
     sudo sed -i "/\[all\]/a dtoverlay=${DTOVERLAY}" ${BOOTCONFIG}
 
     echo "Disable on-board audio" | tee -a ${LOG}
@@ -545,6 +614,10 @@ ${cmd}
 
 # Configure Spotify if installed  
 if [[ -f ${SPOTIFY_CONFIG} ]]; then
+    # Save original configuration
+    if [[ ! -f ${SPOTIFY_CONFIG}.orig ]]; then
+        sudo cp ${SPOTIFY_CONFIG} ${SPOTIFY_CONFIG}.orig
+    fi
     echo '' | tee -a ${LOG}
     echo "Configuring Spotify (raspotify)" | tee -a ${LOG}
     echo "-------------------------------" | tee -a ${LOG}
@@ -564,6 +637,16 @@ if [[ -f ${SPOTIFY_CONFIG} ]]; then
     sudo sed -i -e "0,/^OPTIONS.*$/{s/OPTIONS.*/${OPTIONS}/}" ${SPOTIFY_CONFIG}
 fi 
 
+echo '' | tee -a ${LOG}
+if [[ ${OVERLAY_LOADED}} != 1 && ${DTOVERLAY} != "" ]]; then
+    echo "WARNING:" | tee -a ${LOG}
+    echo "OVERLAY ${DTOVERLAY} could not be loaded, so configuration is not complete!" | tee -a ${LOG}
+    echo "It is necessary to reboot the Raspberry Pi and after reboot " | tee -a ${LOG}
+    echo "to re-boot again to complete the configuration" | tee -a ${LOG}
+    echo -n "Press enter to continue: "
+    read ans
+fi
+
 # Reboot dialogue
 echo '' | tee -a ${LOG}
 if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
@@ -577,7 +660,10 @@ if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
     fi
 fi
 
+
 echo "A log of these changes has been written to ${LOG}"
 exit 0
 # End of script
 
+# set tabstop=4 shiftwidth=4 expandtab
+# retab

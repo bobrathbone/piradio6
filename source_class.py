@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.7 2021/09/30 08:56:19 bob Exp $
+# $Id: source_class.py,v 1.9 2022/01/12 09:56:49 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -183,20 +183,20 @@ class Source:
         playlist = list(self.playlists.keys())[self.new_index]
         return playlist
 
-    # Get the name for displayng on screen 
+    # Get the source name for displayng on screen 
     def getDisplayName(self): 
-        return self._getDisplayName(self.index)
-
-    def getNewDisplayName(self): 
-        return self._getDisplayName(self.new_index)
-
-    def _getDisplayName(self,index): 
-        index = self.checkIndex(index)
+        self.index = self.checkIndex(self.index)
         playlist = list(self.playlists.keys())[self.index]
         playlist = playlist.lstrip()
         playlist = playlist.rstrip()
         playlist = "%s%s" % (playlist[0].upper(), playlist[1:])
         playlist = playlist[:1].upper() + playlist[1:]
+
+        # Convert pseudo playlist(source) names to readable
+        if playlist == '_spotify_':
+            playlist = 'Spotify'
+        elif playlist == '_airplay_':
+            playlist = 'Airplay'
         return playlist
 
     # Get playlist type. RADIO, MEDIA, AIRPLAY or SPOTIFY

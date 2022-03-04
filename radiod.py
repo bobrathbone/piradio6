@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.72 2021/10/31 10:20:21 bob Exp $
+# $Id: radiod.py,v 1.77 2022/01/11 18:06:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -189,18 +189,14 @@ class MyDaemon(Daemon):
         displayStartup(display,radio)
 
         # LCDs option to switch translation on/off. Switch off for OLEDs
-        # Unless romanize set
         if display.isOLED():
-            if radio.config.romanize:
-                radio.translate.setTranslate(True)
-            else:
-                radio.translate.setTranslate(False)
+            radio.translate.setTranslate(False)
+            radio.setRomanize(False)  # Switch Romanisation off
         else:
-            radio.translate.setTranslate(radio.config.translate_lcd)
 
-        # For non-English  Romanize (Convert to Latin characters)
-        romanize = radio.config.romanize
-        radio.setRomanize(romanize)  # Switch Romanisation on/off
+            # For non-English  Romanize (Convert to Latin characters)
+            romanize = radio.config.romanize
+            radio.setRomanize(romanize)  # Switch Romanisation on/off
 
         ipaddr = radio.waitForNetwork()
 
@@ -319,7 +315,6 @@ class MyDaemon(Daemon):
             message = "radiod running pid " + str(pid)
             log.message(message, log.INFO)
             print(message)
-        return
 
     # Version
     def getVersion(self):
@@ -401,7 +396,6 @@ def handleEvent(event,display,radio,menu):
     # Clear event 
     event.clear()
     statusLed.set(StatusLed.NORMAL)
-    return
 
 # Handle normal volume and channel change events
 def handleRadioEvent(event,display,radio,menu):
@@ -532,7 +526,6 @@ def handleRadioEvent(event,display,radio,menu):
     # Display volume
     if volume_change:
         displayVolume(display,radio)
-    return
 
 # Handle source menu selection event
 def handleSourceEvent(event,display,radio,menu):
@@ -557,8 +550,6 @@ def handleSourceEvent(event,display,radio,menu):
             handleMenuChange(display,radio,menu,message)
     else:
          handleRadioEvent(event,display,radio,menu)
-
-    return
 
 # Handle search events
 def handleSearchEvent(event,display,radio,menu):
@@ -593,7 +584,6 @@ def handleSearchEvent(event,display,radio,menu):
 
     else:
          handleRadioEvent(event,display,radio,menu)
-    return
 
 # Handle menu stepthrough
 def handleMenuChange(display,radio,menu,message):
@@ -693,7 +683,6 @@ def handleOptionEvent(event,display,radio,menu):
     else:
         handleRadioEvent(event,display,radio,menu)
 
-    return
 
 # Handler for source change events from the UDP listener
 def handleUdpEvent(event,display,radio,message):
@@ -746,7 +735,6 @@ def handleUdpEvent(event,display,radio,message):
 
     if valid_event:
         loadSource(display,radio)
-    return
 
 # Handle menu step through
 def handleSwitchChange(event,radio,menu,message):
@@ -769,7 +757,6 @@ def handleSwitchChange(event,radio,menu,message):
         sMenu = menu_name.replace('_', ',')
         sMenu = sMenu.lower()
         message.speak(sMenu)
-    return
 
 # Change the selected option
 def changeOption(event, display, radio, menu):
@@ -808,7 +795,6 @@ def changeOption(event, display, radio, menu):
     # Indicate option has changed
     radio.optionChangedTrue()
 
-    return
 
 # Handle timer event , put radio to sleep 
 def sleep(radio,menu):
@@ -816,14 +802,12 @@ def sleep(radio,menu):
     mute(radio,display)
     menu.set(menu.MENU_SLEEP)
     display.setDelay(10)
-    return
 
 # Handle alarm event , put radio to sleep 
 def wakeup(radio,menu):
     log.message("Alarm fired", log.INFO)
     radio.unmute()
     menu.set(menu.MENU_TIME)
-    return
 
 # Mute radio
 def mute(radio,display):
@@ -850,7 +834,6 @@ def displayStartup(display,radio):
         display.out(2,"Waiting for network")
 
     time.sleep(1)
-    return
 
 # Display time
 def displayTimeDate(display,radio,message):
@@ -869,7 +852,6 @@ def displayTimeDate(display,radio,message):
     display.setFont(2)
     display.out(message.getLine(),msg + streaming)
     display.setFont(1)
-    return
 
 # Display the search menu
 def displaySearch(display,menu,message):
@@ -930,7 +912,6 @@ def displaySearch(display,menu,message):
                 message.speak(str(index+1) + ' ' +  search_station[0:50])
 
     newMenu = False
-    return 
 
 # Display the source menu
 def displaySource(display,radio,menu,message):
@@ -938,6 +919,7 @@ def displaySource(display,radio,menu,message):
     index = radio.getSearchIndex()
     current_id = radio.getCurrentID()
     lines = display.getLines()  
+    ##pdb.set_trace()
     sSource = radio.getNewSourceName()
     station = radio.getSearchName()
 
@@ -954,7 +936,6 @@ def displaySource(display,radio,menu,message):
 
     message.speak(sSource)
     newMenu = False
-    return 
 
 # Display the options menu
 def displayOptions(display,radio,menu,message):
@@ -1007,7 +988,6 @@ def displayOptions(display,radio,menu,message):
 
     time.sleep(0.2) # Prevent skipping of options
     newMenu = False
-    return 
 
 # Display the RSS feed
 def displayRss(display,radio,message,rss):
@@ -1046,7 +1026,6 @@ def displayRss(display,radio,message,rss):
         time.sleep(0.5)
 
     newMenu = False
-    return
 
 # Display the information menu
 def displayInfo(display,radio,message):
@@ -1081,7 +1060,6 @@ def displayInfo(display,radio,message):
         msg = 'IP:  ' + ipaddr + socket.gethostname()
         display.out(2, msg[0:lwidth], interrupt )
     newMenu = False
-    return 
 
 
 # Display sleep 
@@ -1106,7 +1084,6 @@ def displaySleep(display,radio):
     if nlines > 2:
         display.out(3, ' ', interrupt )
         display.out(4, ' ', interrupt )
-    return
 
 # Display stop radio 
 def displayStop(display,message):
@@ -1116,7 +1093,6 @@ def displayStop(display,message):
     if display.getLines() > 2:
         display.out(3, ' ')
         display.out(4, ' ')
-    return
 
 # Load new source selected (RADIO, MEDIA, AIRPLAY or SPOTIFY)
 def loadSource(display,radio):
@@ -1168,8 +1144,6 @@ def loadSource(display,radio):
     if new_source >= 0:
         radio.loadSource()
 
-    return
-    
     
 # Display current playing selection or station
 def displayCurrent(display,radio,message):
@@ -1277,7 +1251,6 @@ def displayCurrent(display,radio,message):
         displaySpotify(display,radio)
 
     newMenu = False
-    return
 
 # Display current playing selection or station
 def speakCurrent(message,radio, speak_title=True):
@@ -1299,7 +1272,6 @@ def speakCurrent(message,radio, speak_title=True):
         sTrack = message.get('track')
         msg = sTrack + ' ' + str(id) + ',' + artist  +  ',' + title
         message.speak(msg,repeat=True)
-    return
 
 # Display Airplay info
 def displayAirplay(display,radio):
@@ -1314,7 +1286,6 @@ def displayAirplay(display,radio):
     else:
         track = artist + ': ' + title + ': ' + album
         display.out(2,track,interrupt)
-    return
 
 # Display Spotify information
 def displaySpotify(display,radio):
@@ -1345,7 +1316,6 @@ def displaySpotify(display,radio):
                 time.sleep(0.1)
             else:
                 display.out(2,info,interrupt)
-    return
 
 
 # Display volume on correct line. NB. Do not call with an interrupt
@@ -1359,7 +1329,6 @@ def displayVolume(display,radio):
             _displayOledVolume(display,radio)
         else:
             _displayVolume(display,radio)
-    return
     
 # LCD volume display routine
 def _displayVolume(display,radio):
@@ -1367,6 +1336,7 @@ def _displayVolume(display,radio):
     if radio.muted():
         display.backlight('mute_color')
         msg = message.get('muted')
+        radio.getVolume() # Check if volume changed by external client
     else:
         volume = radio.getDisplayVolume()
         msg = message.get('volume') + ' ' + str(volume)
@@ -1379,13 +1349,13 @@ def _displayVolume(display,radio):
             msg = message.volumeBlocks()
 
     display.out(message.getLine(), msg, no_interrupt)
-    return
 
 # The OLEDs have a special volume display bar on the last line
 def _displayOledVolume(display,radio):
     dtype = config.getDisplayType()
     if radio.muted():
         msg = message.get('muted')
+        radio.getVolume() # Check if volume changed by external client
         if dtype == config.ST7789TFT:
             display.out(5, msg, no_interrupt)
         else:
@@ -1399,10 +1369,9 @@ def _displayOledVolume(display,radio):
             volume = radio.getVolume() # Real volume
             display.volume(volume)
         else:
-            volume = radio.getDisplayVolume()
-            msg = message.get('volume') + ' ' + str(volume)
+            displayVolume = radio.getDisplayVolume()
+            msg = message.get('volume') + ' ' + str(displayVolume)
             display.out(display.getLines(), msg, no_interrupt)
-    return
 
 # Update media library
 def updateLibrary(display,radio,message):
@@ -1420,7 +1389,6 @@ def updateLibrary(display,radio,message):
     display.out(secondLine,message.get('update_complete'))
     time.sleep(1)
     menu.set(menu.MENU_TIME) # Return to main display
-    return
 
 # Configure RGB status LED
 def statusLedInitialise(statuLed):
@@ -1439,7 +1407,6 @@ def execCommand(cmd):
 
 def usage():
     print("usage: %s start|stop|restart|status|version|nodaemon" % sys.argv[0])
-    return
 
 # End of class
 

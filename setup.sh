@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio setup script
-# $Id: setup.sh,v 1.6 2021/11/13 15:25:00 bob Exp $
+# $Id: setup.sh,v 1.7 2022/02/18 10:10:28 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -26,6 +26,7 @@ DEBPKG=${PKG}_${VERSION}_${ARCH}.deb
 MPD=/usr/bin/mpd
 MPD_PACKAGES="mpd mpc python3-mpd python3-rpi.gpio"
 OTHER_PACKAGES="python3-requests python-configparser python"
+HOME_DIR=/home/pi
 
 # Check running as sudo
 if [[ "$EUID" -eq 0 ]];then
@@ -68,6 +69,12 @@ sudo apt -y autoremove
 # Update file cache
 sudo apt-file update
 
+# Setup .vimrc if it doesn't exist
+if [[ ! -f ${HOME_DIR}/.vimrc ]]; then
+    echo "set tabstop=4 shiftwidth=4 expandtab" > ${HOME_DIR}/.vimrc
+    echo "retab " >> ${HOME_DIR}/.vimrc
+fi
+
 # Build the pakage
 ./build.sh
 
@@ -77,3 +84,5 @@ echo "sudo dpkg -i ${DEBPKG}"
 
 # End of setup script
 
+# :set tabstop=4 shiftwidth=4 expandtab
+# :retab

@@ -7,16 +7,36 @@ Email  : bob@bobrathbone.com
 
 This program uses  Music Player Daemon 'mpd', its client 'mpc' and the python3-mpd library
 See http://www.musicpd.org/
-Use "apt-get install mpd mpc python3-mpd" to install the libraries
+Use "sudo apt-get install mpd mpc python3-mpd" to install the Music Player Daemon (MPD)
 This software uses the python3-mpd library. See https://packages.debian.org/sid/python3-mpd
+
+Version 7.4 release notes
+-------------------------
+Release 28th February 2022 - Build 1 
+
+1) Runs on either Raspberry Pi OS Bullseye or Buster. 
+2) Music Player Daemon (MPD) version 0.22.6 installed as default
+3) The web interface uses php7.4 (Buster uses php7.3)
+4) O!MPD uses version new 2.2 of the radiod web interface
+5) Corrected new playlist load failure (playlist_class.py)
+6) IR Remote control software (lirc) converted to Python3 on Bullseye
+7) Remove unused HD44780/U labels in translation class
+8) Correct error when loading new playlist
+9) Correct incorrect mute display when restoring volume with an external mpd client
+10) Display Wi-Fi power management mode in display_wifi.sh
+11) Correct source display name for Spotify and Airplay  (remove underscores)
+12) Raspotify is now only supported on Bullseye. Support for it has been  withdrawn on Buster. 
+13) DRM VC4 V3D driver (dtoverlay vc4-kms-v3d) sound configuration supported 
+14) CGI scripts for the Radio Web Interface converted to Python3
+15) Support for PiFace CAD(2) hardware re-introduced
 
 Version 7.3 release notes 
 -------------------------
-14th November 2021
+18th November 2021
 
 THIS VERSION ONLY RUNS ON ON RASPBERRY PI BUSTER OS AND NOT THE NEW BULLSEYE VERSION.
-THIS MEANS THAT YOU CANNOT USE RASPBERRY PI IMAGER SOFTWARE TO CREATE YOUR SDCARD.
-YOU HAVE TO USE WIN32 DISK IMAGER (Win32DiskImager.exe) TO CREATE THE SD CARD.
+THIS MEANS THAT YOU CANNOT USE RASPBERRY PI IMAGER SOFTWARE DOWNLOAD BUSTER
+YOU HAVE TO DOWNLOAD BUSTER FROM RASPBERRY PI ARCHIVES AND THEN USE IMAGER TO CREATE THE SDCARD 
 FULL DETAILS HOW TO DO THIS ARE SHOWN IN THE VERSION 7.3 CONSTRUCTORS GUIDE.
 VERSION 7.4 TO SUPPORT BULLSEYE IS UNDER DEVELOPMENT (RELEASE AS YET DATE UNKNOWN). 
 
@@ -48,6 +68,7 @@ VERSION 7.4 TO SUPPORT BULLSEYE IS UNDER DEVELOPMENT (RELEASE AS YET DATE UNKNOW
 23) Shutdown command shutdown_parameter added (Default "sudo shutdown -h now")
 24) Configuration display programs now display parameters as Yes/No instead of True/False
 25) Added Raspberry Pi Zero 2 W with 1GHz 64-bit Arm Cortex-A53 quad core CPU
+26) Correct display not unmuting when volume changed by external clients
 
 Version 7.2 release notes 
 -------------------------

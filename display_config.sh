@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.33 2021/09/26 07:07:30 bob Exp $
+# $Id: display_config.sh,v 1.38 2022/02/17 20:25:56 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -31,20 +31,31 @@ EMAIL=bob@bobrathbone.com
 AUTOSTART=/home/pi/.config/lxsession/LXDE-pi/autostart
 MPDLIB=/var/lib/mpd
 
+# Get OS release ID
+function release_id
+{
+    VERSION_ID=$(grep VERSION_ID $OS_RELEASE)
+    arr=(${VERSION_ID//=/ })
+    ID=$(echo "${arr[1]}" | tr -d '"')
+    ID=$(expr ${ID} + 0)
+    echo ${ID}
+}
+
 if [[ ! -d ${DIR} ]]; then
     echo "Error: Radio software not installed - Exiting."
     exit 1
 fi
 
 echo "Configuration log for $(hostname) $(date)" | tee ${LOG}
-echo "IP address: $(hostname -I)"  | tee ${LOG}
+grep ^Release ${DIR}/README | tee -a ${LOG}
+echo "IP address: $(hostname -I)"  | tee -a ${LOG}
 
 # Display OS
 echo | tee -a ${LOG}
 echo "OS Configuration" | tee -a ${LOG}
 echo "----------------" | tee -a ${LOG}
 cat ${OS_RELEASE} | tee -a ${LOG}
-echo "Debian version $(cat ${DEBIAN_VERSION})"
+echo "Debian version $(cat ${DEBIAN_VERSION})" | tee -a ${LOG}
 
 echo | tee -a ${LOG}
 echo "Kernel version " | tee -a ${LOG}
@@ -105,6 +116,10 @@ mpd -V | grep Daemon | tee -a ${LOG}
 if [[ $? -ne 0 ]];then
     mpd -V | tee -a ${LOG}
 fi
+mpc help | grep -i "version:"
+if [[ $? -ne 0 ]];then
+    "Error: mpc not found"  | tee -a ${LOG}
+fi
 echo | tee -a ${LOG}
 
 if [[ -f  ${MPD_CONFIG} ]]; then
@@ -134,7 +149,7 @@ echo ${BOOTCONFIG} | tee -a ${LOG}
 echo "----------------" | tee -a ${LOG}
 grep ^hdmi ${BOOTCONFIG} | tee -a ${LOG}
 grep ^dtparam=audio ${BOOTCONFIG} | tee -a ${LOG}
-grep ^dtparam=i2s ${BOOTCONFIG} | tee -a ${LOG}
+grep ^dtparam= ${BOOTCONFIG} | tee -a ${LOG}
 grep ^dtoverlay ${BOOTCONFIG} | tee -a ${LOG}
 grep ^gpio=..=op,dh ${BOOTCONFIG} | tee -a ${LOG}
 
@@ -194,8 +209,21 @@ echo "mixer_volume_id=$(cat ${RADIOLIB}/mixer_volume_id)" | tee -a ${LOG}
 echo | tee -a ${LOG}
 echo "Remote control daemon (irradiod.service)" | tee -a ${LOG}
 echo "----------------------------------------" | tee -a ${LOG}
-sudo ${DIR}/remote_control.py status | tee -a ${LOG}
-sudo ${DIR}/remote_control.py config | tee -a ${LOG}
+
+# Display remote control daemon configuration
+if [[ -f /lib/systemd/system/irradiod.service ]]; then
+    grep ExecStart /lib/systemd/system/irradiod.service  | tee -a ${LOG}
+else 
+    echo "irradiod.service not installed"
+fi
+
+if [[ $(release_id) -lt 10 ]]; then
+    sudo ${DIR}/remote_control.py status | tee -a ${LOG}
+    sudo ${DIR}/remote_control.py config | tee -a ${LOG}
+else
+    sudo ${DIR}/irradiod.py status | tee -a ${LOG}
+    sudo ${DIR}/irradiod.py config | tee -a ${LOG}
+fi
 
 echo | tee -a ${LOG}
 echo "${RADIOLIB} settings" | tee -a ${LOG}
@@ -231,11 +259,13 @@ ip route | tee -a ${LOG}
 
 ./display_wifi.sh | tee -a ${LOG}
 
+echo | tee -a ${LOG}
+echo "=================== End of run =====================" | tee -a ${LOG}
+echo | tee -a ${LOG}
+
 # Create tar file
 tar -zcf ${LOG}.tar.gz ${LOG} >/dev/null 2>&1
 
-echo | tee -a ${LOG}
-echo "=================== End of run =====================" | tee -a ${LOG}
 echo "This configuration has been recorded in ${LOG}" 
 echo "A compressed tar file has been saved in ${LOG}.tar.gz" | tee -a ${LOG}
 echo | tee -a ${LOG}

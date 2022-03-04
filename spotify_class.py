@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Spotify receiver Class
-# $Id: spotify_class.py,v 1.3 2020/12/23 14:57:48 bob Exp $
+# $Id: spotify_class.py,v 1.4 2022/01/14 19:59:16 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -40,14 +40,14 @@ class SpotifyReceiver:
 
     # Start Spotify
     def start(self):
-        self.execCommand("sudo systemctl start raspotify")
+        self.execCommand("sudo systemctl start raspotify.service")
         self.running = True
         self.startJournalWatch()
         return self.running
 
     # Stop Spotify
     def stop(self):
-        self.execCommand("sudo systemctl stop raspotify")
+        self.execCommand("sudo systemctl stop raspotify.service")
         self.execCommand("killall journalctl")
         self.running = False
         return self.running

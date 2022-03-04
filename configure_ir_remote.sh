@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.3 2021/02/06 10:54:00 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.9 2022/02/13 09:39:21 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,6 +16,7 @@
 # for best results
 
 SCRIPT=$0
+OS_RELEASE=/etc/os-release
 RADIO_DIR=/usr/share/radio
 LOG=${RADIO_DIR}/install_ir.log
 CONFIG=/etc/radiod.conf
@@ -23,6 +24,7 @@ BOOTCONFIG=/boot/config.txt
 LIRC_ETC=/etc/lirc
 LIRC_OPTIONS=${LIRC_ETC}/lirc_options.conf
 LIRCD_CONFIG=${LIRC_ETC}/lircd.conf
+SYSTEMD_DIR=/usr/lib/systemd/system
 CONFIG_DIR=${LIRC_ETC}/lircd.conf.d 
 CONVERT_SCRIPT="/usr/share/lirc/lirc-old2new"
 KEYMAPS_TOML=/lib/udev/rc_keymaps 
@@ -32,11 +34,37 @@ ERRORS=(0)
 STRETCH=1
 BUSTER=2
 
-OS=${STRETCH}
 IR_GPIO=9   
 IR_REMOTE_LED=0
 DT_OVERLAY=""
 REMOTE_LED=0
+
+# Get OS release ID
+function release_id
+{
+    VERSION_ID=$(grep VERSION_ID $OS_RELEASE)
+    arr=(${VERSION_ID//=/ })
+    ID=$(echo "${arr[1]}" | tr -d '"')
+    ID=$(expr ${ID} + 0)
+    echo ${ID}
+}
+
+# Get OS release name
+function osname
+{
+    VERSION_OSNAME=$(grep VERSION_CODENAME $OS_RELEASE)
+    arr=(${VERSION_OSNAME//=/ })
+    OSNAME=$(echo "${arr[1]}" | tr -d '"')
+    echo ${OSNAME}
+}
+
+OSNAME=$(osname)
+REL_ID=$(release_id)
+if [[ ${REL_ID} -lt 10 ]]; then
+    echo "Release ${REL_ID} ${OSNAME} not supported by the IR software "
+    echo "Exiting setup"
+    exit 1
+fi
 
 sudo rm -f ${LOG}
 echo "$0 configuration log, $(date) " | tee ${LOG}
@@ -54,34 +82,6 @@ if [[ -f ${CONFIG}.org ]]; then
                 exit 0
         fi
 fi
-
-# Select the Operating system
-ans=0
-selection=1
-while [ $selection != 0 ]
-do
-        ans=$(whiptail --title "Select operating system" --menu "Choose your option" 15 75 9 \
-        "1" "Rasbian Buster or later" \
-        "2" "Rasbian Stretch" \
-    3>&1 1>&2 2>&3)
-
-        exitstatus=$?
-        if [[ $exitstatus != 0 ]]; then
-                exit 0
-        fi
-
-        if [[ ${ans} == '1' ]]; then
-                DESC="Rasbian Buster or later selected"
-        OS=${BUSTER}
-
-        elif [[ ${ans} == '2' ]]; then
-                DESC="Rasbian Stretch selected"
-        OS=${STRETCH}
-    fi
-
-        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
-        selection=$?
-done
 
 # Select the IR sensor GPIO 
 ans=0
@@ -136,48 +136,9 @@ do
         selection=$?
 done
 
-if [[ ${OS} == ${STRETCH} ]]; then
-    echo "" | tee -a ${LOG}
-    echo "You have selected Stretch as the OS version you are using."  | tee -a ${LOG}
-    echo "Please note the release date of the kernel you are using from the line below:"  | tee -a ${LOG}
-    echo -n "    " | tee -a ${LOG}
-    uname -s -r -v | tee -a ${LOG}
-    echo -n "Enter to continue:"
-    read ans
-
-    ans=0
-    selection=1
-    while [ $selection != 0 ]
-    do
-        ans=$(whiptail --title "Select kernel version" --menu "Choose your option" 15 75 9 \
-        "1" "Kernel is April 2019 or later" \
-        "2" "Kernel is before April 2019" \
-        3>&1 1>&2 2>&3)
-
-        exitstatus=$?
-        if [[ $exitstatus != 0 ]]; then
-            exit 0
-        fi
-
-        if [[ ${ans} == '1' ]]; then
-            DESC="Kernel is April 2019 or later"
-            DT_OVERLAY="dtoverlay=gpio-ir,gpio_pin=${IR_GPIO}"
-            DT_COMMAND="sudo dtoverlay gpio-ir gpio_pin=${IR_GPIO}"
-
-        elif [[ ${ans} == '2' ]]; then
-            DESC="Kernel is before April 2019"
-            DT_OVERLAY="dtoverlay=lirc-rpi,gpio_in_pin=${IR_GPIO},gpio_in_pull=up"
-            DT_COMMAND="sudo dtoverlay lirc-rpi gpio_in_pin=${IR_GPIO} gpio_in_pull=up"
-        fi
-
-        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
-        selection=$?
-    done
-else
-    # OS is Raspbian Buster or later
-    DT_OVERLAY="dtoverlay=gpio-ir,gpio_pin=${IR_GPIO}"
-    DT_COMMAND="sudo dtoverlay gpio-ir gpio_pin=${IR_GPIO}"
-fi
+# OS is Raspbian Buster or later
+DT_OVERLAY="dtoverlay=gpio-ir,gpio_pin=${IR_GPIO}"
+DT_COMMAND="sudo dtoverlay gpio-ir gpio_pin=${IR_GPIO}"
 
 # Configure remote activity LED
 ans=0
@@ -254,12 +215,11 @@ echo "Configured remote_led=${REMOTE_LED} in ${CONFIG}" | tee -a ${LOG}
 
 # Install LIRC packages
 echo "" | tee -a ${LOG}
-if [[ ${OS} == ${STRETCH} ]]; then
-    packages="lirc ir-keytable python-lirc"
-    lirc_service="lirc"
-else
-    # Buster or later
-    packages="lirc ir-keytable python-pylirc lirc-compat-remotes lirc-drv-irman lirc-doc "
+
+if [[ ${REL_ID} -ge 11 ]]; then
+    # Bullseye or later
+    ##packages="lirc ir-keytable python-pylirc lirc-compat-remotes lirc-drv-irman lirc-doc "
+    packages="lirc ir-keytable lirc-compat-remotes lirc-drv-irman lirc-doc liblircclient-dev "
     lirc_service="lircd"
 fi
 
@@ -347,13 +307,31 @@ if [[ -f ${DEVINPUT} ]]; then
     fi
 fi
 
+# The following routine sets up the correct service definition for RPi OS Bullseye or Buster 
+# It uses irradiod.py and ir_daemon.py (Daemon)
+# The correct service definition is copied to /usr/lib/systemd/system/irradiod.service
+# by the configure_ir_remote.sh script if the RPi OS is Bullseye or later
+
+echo "Setting up irradiod.service for ${OSNAME}" | tee -a ${LOG}
+if [[ ${REL_ID} -ge 11 ]]; then
+    CMD="sudo cp ${RADIO_DIR}/irradiod.service.bullseye ${SYSTEMD_DIR}/irradiod.service"
+    echo ${CMD} | tee -a ${LOG}
+    ${CMD}
+else
+    CMD="sudo cp ${RADIO_DIR}/irradiod.service.buster ${SYSTEMD_DIR}/irradiod.service"
+    echo ${CMD} | tee -a ${LOG}
+    ${CMD}
+fi
+
 # Make configuration file readable to all
 sudo chmod og+r ${LIRCD_CONFIG}
-
 
 if [[ ${ERRORS} > 0 ]]; then
     echo "There were ${ERRORS} errors" | tee -a ${LOG}
 fi
+
+# Clean up unwanted packages
+sudo apt -y autoremove
 
 # Print configuration instructions
 echo "" |  tee -a ${LOG}
@@ -362,14 +340,9 @@ echo "Reboot the system and then run the following " |  tee -a ${LOG}
 echo "to configure your IR remote control" |  tee -a ${LOG}
 echo "    sudo irrecord -f -d /dev/lirc0 ~/lircd.conf " |  tee -a ${LOG}
 echo "" |  tee -a ${LOG}
-if [[ ${OS} == ${STRETCH} ]]; then
-    echo "Then copy your configuration file (myremote.conf) to  ${LIRCD_CONFIG}" |  tee -a ${LOG}
-    echo "    sudo cp myremote.conf ${LIRCD_CONFIG}" |  tee -a ${LOG}
-else
-    # OS Buster or later
-    echo "Then copy your configuration file (myremote.conf) to  ${CONFIG_DIR}" |  tee -a ${LOG}
-    echo "    sudo cp myremote.conf ${CONFIG_DIR}/." |  tee -a ${LOG}
-fi
+echo "Then copy your configuration file (myremote.conf) to  ${CONFIG_DIR}" |  tee -a ${LOG}
+echo "    sudo cp myremote.conf ${CONFIG_DIR}/." |  tee -a ${LOG}
+
 echo "" |  tee -a ${LOG}
 echo "Reboot the Raspberry Pi " |  tee -a ${LOG}
 echo "" |  tee -a ${LOG}

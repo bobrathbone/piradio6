@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: playlist_class.py,v 1.27 2021/11/01 14:15:20 bob Exp $
+# $Id: playlist_class.py,v 1.30 2021/11/29 07:09:59 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -84,7 +84,7 @@ class Playlist:
 
         if len(newlist) > 0:
             self.writePlaylistFile(playlist_name,newlist)
-            self._searchlist = self.createSearchList()
+            self._searchlist = self.createSearchList(client)
         else:
             # Protect playlist file if something goes wrong with client playlist
             print("No records found in new playlist %s" % playlist_name)
@@ -149,17 +149,16 @@ class Playlist:
     # Load playlist by name
     def load(self,client,name):
         try:
+            self._name = name
             client.clear()
             client.load(name)
             self._plist = client.playlist()
             self._type = self.getType(name)
             self._searchlist = self.createSearchList(client)
-            self._name = name
             #print("Name=%s Type=%s Size=%s"% (self._name, self._type, self._size))
-            #self._plist = client.playlist()
         except Exception as e:
             print("playlist.load",str(e))
-        return
+        return self._searchlist
 
     # Create search list of tracks or stations
     def createSearchList(self,client):
@@ -175,7 +174,6 @@ class Playlist:
         
     # Create search list from stationlist file
     _name = "Radio"
-    #def _createListSearch(self):
     def _createListSearch(self):
         searchlist = []
         try:
@@ -313,13 +311,17 @@ class Playlist:
 
 # Class test routine
 if __name__ == "__main__":
+    import mpd
     from config_class import Configuration
     config = Configuration()
+    client = mpd.MPDClient()
 
     PL = Playlist("Radio",config)    
     print ("Playlist", PL.name)
-    PL.createSearchList()
+    list = PL.createSearchList(client)
     print (PL.size)
+    print (list)
+
     sys.exit(0)
 
 # set tabstop=4 shiftwidth=4 expandtab

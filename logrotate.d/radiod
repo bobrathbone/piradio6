@@ -1,4 +1,4 @@
-/var/log/radio.log {
+/var/log/radiod/radio.log {
       weekly
       missingok
       rotate 4
