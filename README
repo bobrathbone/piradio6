@@ -12,7 +12,7 @@ This software uses the python3-mpd library. See https://packages.debian.org/sid/
 
 Version 7.4 release notes
 -------------------------
-Release 28th February 2022 - Build 1 
+Release 11th March 2022 - Build 4 
 
 1) Runs on either Raspberry Pi OS Bullseye or Buster. 
 2) Music Player Daemon (MPD) version 0.22.6 installed as default
@@ -29,6 +29,7 @@ Release 28th February 2022 - Build 1
 13) DRM VC4 V3D driver (dtoverlay vc4-kms-v3d) sound configuration supported 
 14) CGI scripts for the Radio Web Interface converted to Python3
 15) Support for PiFace CAD(2) hardware re-introduced
+16) Re-configuration of MPD and ALSA to reduce popping sound when changing channels  
 
 Version 7.3 release notes 
 -------------------------
@@ -38,7 +39,7 @@ THIS VERSION ONLY RUNS ON ON RASPBERRY PI BUSTER OS AND NOT THE NEW BULLSEYE VER
 THIS MEANS THAT YOU CANNOT USE RASPBERRY PI IMAGER SOFTWARE DOWNLOAD BUSTER
 YOU HAVE TO DOWNLOAD BUSTER FROM RASPBERRY PI ARCHIVES AND THEN USE IMAGER TO CREATE THE SDCARD 
 FULL DETAILS HOW TO DO THIS ARE SHOWN IN THE VERSION 7.3 CONSTRUCTORS GUIDE.
-VERSION 7.4 TO SUPPORT BULLSEYE IS UNDER DEVELOPMENT (RELEASE AS YET DATE UNKNOWN). 
+VERSION 7.4 TO SUPPORT BULLSEYE HAS NOW BEEN RELEASED 
 
 1) Add LUMA support for SSD1306, SSD1309, SSD1325, SSD1331, SH1106 and WS0010 OLEDs
 2) Support added for creating a bootable USB 3.0 Hard Disk Drive

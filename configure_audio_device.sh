@@ -2,7 +2,7 @@
 # set -x
 # Raspberry Pi Internet Radio
 # Audio output configurator
-# $Id: configure_audio_device.sh,v 1.7 2022/02/02 20:18:54 bob Exp $
+# $Id: configure_audio_device.sh,v 1.8 2022/03/10 07:00:18 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -82,7 +82,7 @@ function configure {
     sudo sed -i -e "0,/plughw.*/s/plughw.*/plughw:$num,0\"/" ${ASOUNDCONF}
 
 	# Do not overcopy equalizer device definition 
-	grep "plug:plugequal" ${MPDCONFIG} >/dev/null 2>&1
+	grep "plug:" ${MPDCONFIG} >/dev/null 2>&1
 	if [[ $? != 0 ]]; then	# Don't seperate from above
 		# Set up device "hw:<card>:0"
 		echo "Configuring ${MPDCONFIG} with card $num"

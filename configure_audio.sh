@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_audio.sh,v 1.36 2022/02/19 11:01:17 bob Exp $
+# $Id: configure_audio.sh,v 1.39 2022/03/11 10:25:36 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -286,6 +286,8 @@ do
         MIXER="software"
         ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.bonnet
         TYPE=${DAC}
+        DEVICE="plug:softvol"
+        USE_PULSE=0
 
     elif [[ ${ans} == '15' ]]; then
         DESC="Pimoroni Pirate Audio"
@@ -496,6 +498,11 @@ fi
 
 # Save original configuration 
 if [[ ! -f ${MPDCONFIG}.orig ]]; then
+    grep ^audio_output ${MPDCONFIG}
+    if [[ $? != 0 ]]; then
+        echo "Correcting corrupt ${MPDCONFIG} (Missing audio_out definition)" 
+        sudo cp -f -p ${DIR}/mpd.conf ${MPDCONFIG}
+    fi
     sudo cp -f -p ${MPDCONFIG} ${MPDCONFIG}.orig
 fi
 
@@ -518,6 +525,11 @@ if [[ ${TYPE} == ${BLUETOOTH} ]]; then
     #sudo sed -i -e "0,/defaults.bluealsa.device/{s/.*defaults.bluealsa.device.*/defaults.bluealsa.device  \"${BT_DEVICE}\"/}" ${ASOUNDCONF}
     sudo sed -i -e "0,/defaults.bluealsa.device <btdevice>/{s/device <btdevice>/device \"${BT_DEVICE}\"/g}" ${ASOUNDCONF}
     sudo sed -i -e "0,/device <btdevice>/{s/device <btdevice>/device \"${BT_DEVICE}\"/g}" ${ASOUNDCONF}
+fi
+
+# Set the mixer control to "DAC"
+if [[ ${DEVICE} =~ "softvol" ]]; then
+    sudo sed -i -e '0,/^#\smixer_control.*/{s/^#\smixer_control.*/\tmixer_control   \"DAC\"/}' ${MPDCONFIG}
 fi
 
 # Save all new alsa settings
