@@ -1,7 +1,7 @@
-# Software volume control for cards without hardware volume control
-pcm.sftvol {
+# Software volume control for card 0
+pcm.softvol {
     type            softvol
-    slave.pcm       "plughw:0"
+    slave.pcm       "plughw:0,0"
     control {
         name        "PCM"
         card        0
@@ -10,5 +10,5 @@ pcm.sftvol {
 
 pcm.!default {
     type             plug
-    slave.pcm       "sftvol"
+    slave.pcm       "softvol"
 }
