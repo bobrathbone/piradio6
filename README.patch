@@ -1,21 +1,15 @@
-Patch 4 for version 7.3 - 14 January 2022
+Patch 2 for version 7.4 - 20 October 2022
 
 Changes
 =======
-1) Remove unused HD44780/U labels in translation class
-2) Correct error when loading new playlist
-3) Correct incorrect mute display when restoring volume with an external mpd client
-4) Display Wi-Fi power management mode in display_wifi.sh
-5) Correct shutdown failure when menu button held in
-6) Add mpc version display to display_config.sh
-7) Correct _spotify_ and _airplay_ source names to display as 'Spotify' and 'Airplay'
-8) Correct Airplay settings in configuration class.py
+1) Correct Pimoroni Pirate Radio button settings
+2) Correct create_stations.py --delete_old not working
 
 To install the patch
 ====================
 cd /usr/share/radio
-wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.3-4.tar.gz
-tar -xvf radiod-patch-7.3-4.tar.gz
+wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.4-2.tar.gz
+tar -xvf radiod-patch-7.4-2.tar.gz
 sudo systemctl restart radiod.service
 
 This patch contains all previous patches unless patch 1
