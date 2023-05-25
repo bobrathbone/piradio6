@@ -1,0 +1,107 @@
+### Commented entries have reasonable defaults.
+### Uncomment to edit them.
+# $Id: piradiog,v 1.2 2017/12/15 10:40:05 bob Exp $
+# Source: <source package name; defaults to package name>
+Section: misc
+Priority: optional
+Homepage: http://www.bobrathbone.com
+Standards-Version: 3.9.2
+
+Package: radiod
+Version: 6.1g
+Maintainer: Bob Rathbone <bob@bobrathbone.com>
+Email-Address : bob@bobrathbone.com
+
+# Pre-Depends: <comma-separated list of packages>
+# Depends: <comma-separated list of packages>
+Depends:  python,python-mpd,mpc,mpd 
+# Recommends: <comma-separated list of packages>
+# Suggests: <comma-separated list of packages>
+# Provides: <comma-separated list of packages>
+# Replaces: <comma-separated list of packages>
+# Architecture: all
+Architecture: armhf
+
+# Copyright: <defaults to GPL2>
+# Changelog: <changelog file; defaults to a generic changelog>
+# Readme: <README.Debian file; defaults to a generic one>
+# Extra-Files: <comma-separated list of additional files for the doc directory>
+preinst: piradio.preinst
+
+Extra-Files: README
+
+# Files: <pair of space-separated paths; First is file to include, second is destination>
+Files:  radiod.py /usr/share/radio/
+	config_class.py /usr/share/radio/
+	airplay_class.py /usr/share/radio/
+	display_current.py /usr/share/radio/
+	display_model.py /usr/share/radio/
+	display_class.py /usr/share/radio/
+	message_class.py /usr/share/radio/
+	menu_class.py /usr/share/radio/
+	event_class.py /usr/share/radio/
+	log_class.py /usr/share/radio/
+	rss_class.py /usr/share/radio/
+	translate_class.py /usr/share/radio/
+	source_class.py /usr/share/radio/
+	display_current.py /usr/share/radio/
+	button_class.py /usr/share/radio/
+	rotary_class.py /usr/share/radio/
+	rotary_switch_class.py /usr/share/radio/
+	rotary_class_alternative.py /usr/share/radio/
+	create_stations.py /usr/share/radio/
+	radio_class.py /usr/share/radio/
+	lcd_class.py /usr/share/radio/
+	i2c_class.py /usr/share/radio/
+	lcd_i2c_adafruit.py /usr/share/radio/
+	lcd_i2c_pcf8574.py /usr/share/radio/
+	lcd_adafruit_class.py /usr/share/radio/
+	no_display.py /usr/share/radio/
+	radio_daemon.py /usr/share/radio/
+	configure_radio.sh /usr/share/radio/
+	configure_audio.sh /usr/share/radio/
+	station.urls /usr/share/radio/
+	voice.dist /usr/share/radio/
+	asound.conf.dist /usr/share/radio/
+	lircrc.dist  /usr/share/radio/
+	remote_control.py  /usr/share/radio/
+	rc_daemon.py  /usr/share/radio/
+	udp_server_class.py /usr/share/radio/
+	language_class.py /usr/share/radio/
+	status_led_class.py /usr/share/radio/
+	gradio.py /usr/share/radio/
+	graphic_display.py /usr/share/radio/
+	gcontrols_class.py /usr/share/radio/
+	README /usr/share/radio/
+	images/mute.png /usr/share/radio/
+	images/radio.png /usr/share/radio/
+	images/speaker.png /usr/share/radio/
+	sgc/__init__.py /usr/share/radio/
+	sgc/locals.py /usr/share/radio/
+	sgc/surface.py /usr/share/radio/
+	sgc/widgets/base_widget.py /usr/share/radio/
+	sgc/widgets/boxes.py /usr/share/radio/
+	sgc/widgets/button.py /usr/share/radio/
+	sgc/widgets/dialog.py /usr/share/radio/
+	logrotate.d/radiod /etc/
+	init.d/radiod /etc/
+	init.d/irradiod /etc/
+	init.d/shairport-sync /etc/
+	shairport-sync.service /lib/systemd/system/
+	radiod.conf /usr/share/radio/
+	radiod.service /lib/systemd/system/
+	irradiod.service /lib/systemd/system/
+	language/language.en /usr/share/radio/
+	language/language.en-2x8 /usr/share/radio/
+	language/language.hu /usr/share/radio/
+	language/language.nl /usr/share/radio/
+	rss/rss /usr/share/radio/
+
+postinst: piradio.postinst
+postrm: piradio.postrm
+#  <more pairs, if there's more than one file to include. Notice the starting space>
+Description: Raspberry PI radio
+ This package provides a radio daemon using MPD
+ .
+ It requires mpc, mpd and python-mpd to run (Install separately)
+

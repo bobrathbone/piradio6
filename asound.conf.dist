@@ -1,0 +1,16 @@
+# Set default mixer controls
+ctl.!default {
+    type hw           
+    card 0
+}
+
+# Set default PCM device
+pcm.!default {
+      type plug
+      slave {
+          pcm "plughw:0,0"
+          format S32_LE
+      }
+}
+
+
