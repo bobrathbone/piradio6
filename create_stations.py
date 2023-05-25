@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.22 2021/11/13 15:10:24 bob Exp $
+# $Id: create_stations.py,v 1.23 2022/10/20 09:57:34 bob Exp $
 #
 # Create playlist files from the following url formats
 #    iPhone stream files (.asx)
@@ -375,7 +375,7 @@ if len(sys.argv) > 1:
         if param == '--delete_old':
             deleteOld  = True
 
-        if param == '--force':
+        elif param == '--force':
             forceUpdate  = True
 
         elif param == '--no_delete':
