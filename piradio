@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.42 2022/02/19 11:01:17 bob Exp $
+# $Id: piradio,v 1.55 2023/06/23 15:23:54 bob Exp $
 # This package must be built under Raspbian Buster or Bullseye (Not Jessie or earlier)
 # For further explanation see https://www.debian.org/doc/debian-policy/ch-controlfields.html
 # Source: <source package name; defaults to package name>
@@ -10,13 +10,13 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 5.6.12.1
 
 Package: radiod
-Version: 7.4
+Version: 7.5
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
 # Pre-Depends: <comma-separated list of packages>
 # Depends: <comma-separated list of packages>
-Depends:  python2,python3,python3-mpd,python3-rpi.gpio,python-configparser,mpd,mpc 
+Depends:  python3,python3-mpd,python3-rpi.gpio,mpd,mpc 
 # Recommends: <comma-separated list of packages>
 # Suggests: <comma-separated list of packages>
 # Provides: <comma-separated list of packages>
@@ -56,13 +56,14 @@ Files:  radiod.py /usr/share/radio/
 	rss_class.py /usr/share/radio/
 	translate_class.py /usr/share/radio/
 	source_class.py /usr/share/radio/
+    pivumeter_class.py /usr/share/radio/
 	display_current.py /usr/share/radio/
 	button_class.py /usr/share/radio/
 	rotary_class.py /usr/share/radio/
 	rotary_class_alternative.py /usr/share/radio/
 	rotary_class_rgb.py /usr/share/radio/
 	rotary_class_rgb_i2c.py /usr/share/radio/
-    	rgb_set_i2c_address.py /usr/share/radio/
+    rgb_set_i2c_address.py /usr/share/radio/
 	rotary_switch_class.py /usr/share/radio/
 	create_stations.py /usr/share/radio/
 	create_playlist.sh /usr/share/radio/
@@ -93,9 +94,8 @@ Files:  radiod.py /usr/share/radio/
 	station.urls /usr/share/radio/
 	voice.dist /usr/share/radio/
 	lircrc.dist  /usr/share/radio/
-	remote_control.py  /usr/share/radio/
-	rc_daemon.py  /usr/share/radio/
 	irradiod.py  /usr/share/radio/
+	ireventd.py  /usr/share/radio/
 	ir_daemon.py  /usr/share/radio/
 	get_shoutcast.py  /usr/share/radio/
 	udp_server_class.py /usr/share/radio/
@@ -108,6 +108,7 @@ Files:  radiod.py /usr/share/radio/
 	smbus2/__init__.py /usr/share/radio/smbus2
 	smbus2/smbus2.py /usr/share/radio/smbus2
 	README /usr/share/radio/
+	myremote.toml /usr/share/radio/
 	logrotate.d/radiod /etc/logrotate.d/
 	cron.weekly/radiod /etc/cron.weekly/
 	cron.daily/radiod /etc/cron.daily/
@@ -128,12 +129,15 @@ Files:  radiod.py /usr/share/radio/
 	codes/HTMLcodes.py /usr/share/radio/codes/
 	codes/README /usr/share/radio/codes/
 	configs/mpdstream /usr/share/radio/configs/
+	phatbeat/__init__.py /usr/share/radio/phatbeat/
 	shairport-sync.service /lib/systemd/system/
 	radiod.conf /usr/share/radio/
 	mpd.conf /usr/share/radio/
 	radiod.service /lib/systemd/system/
-	irradiod.service.buster /usr/share/radio
-	irradiod.service.bullseye /usr/share/radio
+	irradiod.service /lib/systemd/system/
+	ireventd.service /lib/systemd/system/
+	irradiod.service.buster  /usr/share/radio/
+	irradiod.service.bullseye /usr/share/radio/
 	language/language.en /usr/share/radio/language/
 	language/language.en-2x8 /usr/share/radio/language/
 	language/language.hu /usr/share/radio/language/
@@ -196,7 +200,6 @@ Files:  radiod.py /usr/share/radio/
 	sgc/widgets/_interface/text.py /usr/share/radio/sgc/widgets/_interface/
 	lxsession/README /usr/share/radio/lxsession/
 	lxsession/autostart /usr/share/radio/lxsession/
-    radio.log /var/log/
 
 postinst: piradio.postinst
 postrm: piradio.postrm

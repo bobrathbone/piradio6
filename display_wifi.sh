@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display Wi-Fi details
-# $Id: display_wifi.sh,v 1.8 2021/12/08 10:49:25 bob Exp $
+# $Id: display_wifi.sh,v 1.9 2022/04/21 11:09:44 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -29,6 +29,8 @@ else
     iwgetid -ap | sed 's/  */ /g'
     iwlist channel 2>&1| grep Current | sed 's/^[ \t]*//;s/[ \t]*$//'
     iwlist txpower 2>&1 | grep -i tx-power | sed 's/\s/ /g' | sed 's/^[ \t]*//;s/[ \t]*$//'
+    iwconfig wlan0 | grep -i 'bit rate' | sed 's/\s/ /g' | sed 's/^[ \t]*//;s/[ \t]*$//'
+    iwconfig wlan0 | grep -i 'signal' | sed 's/\s/ /g' | sed 's/^[ \t]*//;s/[ \t]*$//'
     sudo iw dev wlan0 get power_save
     rfkill list
     rfkill list | grep -i yes >/dev/null 2>&1 

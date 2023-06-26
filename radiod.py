@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.77 2022/01/11 18:06:17 bob Exp $
+# $Id: radiod.py,v 1.82 2023/06/20 13:08:46 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -41,6 +41,7 @@ from status_led_class import StatusLed
 
 config = Configuration()
 translate = Translate()
+
 radio = None
 event = None
 message = None
@@ -286,6 +287,8 @@ class MyDaemon(Daemon):
                 # If an event was detected go handle it
                 if event.detected():
                     handleEvent(event,display,radio,menu)
+            
+                radio.displayVuMeter()
 
                 # This delay must be >= to any GPIO bounce times
                 time.sleep(0.2)
@@ -389,6 +392,11 @@ def handleEvent(event,display,radio,menu):
 
     elif event_type == event.MPD_CLIENT_CHANGE:
         log.message("handleEvent Client Change",log.DEBUG)
+
+    elif event_type == event.PLAY:
+        play_number = event.getPlayNumber() 
+        log.message("handleEvent Play " + str(play_number),log.DEBUG)
+        radio.play(play_number)
 
     elif event_type != event.NO_EVENT:
         handleRadioEvent(event,display,radio,menu)
@@ -824,12 +832,14 @@ def displayStartup(display,radio):
     pid = os.getpid()
     ipaddr = radio.execCommand('hostname -I')
     version = radio.getVersion()
+    msg = message.get('radio_version')
 
-    display.out(1,"Radio version " + version)
+    display.out(1,msg + " " + version)
     if nlines > 2:
         display.out(2,"Radio PID " + str(pid))
         display.out(3,"Waiting for network")
-        display.out(4,"MPD Version " + radio.getMpdVersion())
+        msg = message.get('mpd_version')
+        display.out(4, msg + " " + radio.getMpdVersion())
     else:
         display.out(2,"Waiting for network")
 
@@ -843,6 +853,8 @@ def displayTimeDate(display,radio,message):
     # Small displays drop day of the week
     if width < 16:
         msg = msg[0:5] 
+    else:
+        msg = msg[0:width]
 
     # If streaming add the streaming indicator
     if radio.getStreaming() and width > 16:
@@ -896,7 +908,6 @@ def displaySearch(display,menu,message):
         search_station = radio.getSearchName()
         search_station = search_station.lstrip('"')
         search_station = search_station.rstrip('"')
-        ## pdb.set_trace()
 
         if lines > 2:
             display.out(2,search_station[0:30],interrupt)
@@ -919,7 +930,6 @@ def displaySource(display,radio,menu,message):
     index = radio.getSearchIndex()
     current_id = radio.getCurrentID()
     lines = display.getLines()  
-    ##pdb.set_trace()
     sSource = radio.getNewSourceName()
     station = radio.getSearchName()
 
@@ -1158,7 +1168,6 @@ def displayCurrent(display,radio,message):
     sourceType = radio.getSourceType()
     plsize = radio.getPlayListLength()
 
-    #pdb.set_trace()
     display.backlight('bg_color') 
     errorString = ''
     if radio.gotError():

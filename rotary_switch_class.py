@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: rotary_switch_class.py,v 1.1 2020/10/10 15:00:47 bob Exp $
+# $Id: rotary_switch_class.py,v 1.2 2023/01/22 09:51:05 bob Exp $
 # Raspberry Retro Pi Internet Radio
 # Retro radio rotary menu switch
 # This class allows a rotary switch (not encoder) to operate a simple menu for
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         return
 
     # Change the following line to match the menu_switch_value_x settings in radiod.conf
-    rotary_switch = RotarySwitch(25,8,7,rotary_switch_event)
+    rotary_switch = RotarySwitch(24,8,7,rotary_switch_event)
     switch_value = rotary_switch.get()
 
     while True:

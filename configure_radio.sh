@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.27 2021/11/14 13:28:48 bob Exp $
+# $Id: configure_radio.sh,v 1.33 2023/06/09 11:20:34 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -30,6 +30,10 @@ if [[ ! -d ${DIR} ]];then
     echo "Fatal error: radiod package not installed!"
     exit 1
 fi
+
+# Version 7.5 onwards allows any user with sudo permissions to install the software
+USR=$(logname)
+GRP=$(id -g -n ${USR})
 
 LOGDIR=${DIR}/logs
 CONFIG=/etc/radiod.conf
@@ -80,7 +84,7 @@ DATE_FORMAT=""
 
 # Create log directory
 sudo mkdir -p ${LOGDIR}
-sudo chown pi:pi ${LOGDIR}
+sudo chown ${USR}:${GRP} ${LOGDIR}
 
 sudo rm -f ${LOG}
 echo "$0 configuration log, $(date) " | tee ${LOG}
@@ -510,11 +514,11 @@ if [[ ${DISPLAY_TYPE} == "LUMA" ]]; then
             DISPLAY_TYPE="${DISPLAY_TYPE}.SSD1306"
 
         elif [[ ${ans} == '4' ]]; then
-            DESC="SSD1309" monochrome OLED"
+            DESC="SSD1309 monochrome OLED"
             DISPLAY_TYPE="${DISPLAY_TYPE}.SSD1309"
 
         elif [[ ${ans} == '5' ]]; then
-            DESC="SSD1325" monochrome OLED"
+            DESC="SSD1325 monochrome OLED"
             DISPLAY_TYPE="${DISPLAY_TYPE}.SSD1325"
 
         elif [[ ${ans} == '6' ]]; then
@@ -864,21 +868,21 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
 fi
 
 # Correct missing autostart file
-LXDE=/home/pi/.config/lxsession/LXDE-pi
+LXDE=/home/${USR}/.config/lxsession/LXDE-pi
 AUTOSTART="${LXDE}/autostart"
 if [[ ! -d ${LXDE} ]]; then
     mkdir -p ${LXDE}
     cp ${DIR}/lxsession/autostart ${AUTOSTART} 
-    chown -R pi:pi /home/pi/.config/lxsession
+    chown -R ${USR}:${GRP} /home/${USR}/.config/lxsession
 fi
 
 # Configure desktop autostart if X-Windows installed
-cmd="@sudo /usr/share/radio/${GPROG}.py"
 if [[ -f ${AUTOSTART} ]]; then
     if [[ ${LXSESSION} == "yes" ]]; then
         # Delete old entry if it exists
         sudo sed -i -e "/radio/d" ${AUTOSTART}
         echo "Configuring ${AUTOSTART} for automatic start" | tee -a ${LOG}
+	cmd="@sudo /usr/share/radio/${GPROG}.py"
         sudo echo ${cmd} | sudo tee -a  ${AUTOSTART}
     else
         sudo sed -i -e "/radio/d" ${AUTOSTART}
@@ -980,8 +984,7 @@ else
 fi
 
 # Configure buttons and rotary encoders
-#if [[ ${BUTTON_WIRING} == "1" || ${BUTTON_WIRING} == "2" ]]; then
-if [[ ${BUTTON_WIRING} != "0" ]]; then
+if [[ ${BUTTON_WIRING} == "1" || ${BUTTON_WIRING} == "2" ]]; then
 
     if [[ ${GPIO_PINS} == "1" ]]; then
         echo "Configuring 40 Pin wiring"  | tee -a ${LOG}
@@ -1139,10 +1142,10 @@ echo | tee -a ${LOG}
 if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
 
     # Set up desktop radio execution icon
-    sudo cp ${DIR}/Desktop/gradio.desktop /home/pi/Desktop/.
-    sudo cp ${DIR}/Desktop/vgradio.desktop /home/pi/Desktop/.
-    sudo chmod +x /home/pi/Desktop/gradio.desktop
-    sudo chmod +x /home/pi/Desktop/vgradio.desktop
+    sudo cp ${DIR}/Desktop/gradio.desktop /home/${USR}/Desktop/.
+    sudo cp ${DIR}/Desktop/vgradio.desktop /home/${USR}/Desktop/.
+    sudo chmod +x /home/${USR}/Desktop/gradio.desktop
+    sudo chmod +x /home/${USR}/Desktop/vgradio.desktop
 
     # Add [SCREEN] section to the configuration file
     grep "\[SCREEN\]" ${CONFIG} >/dev/null 2>&1

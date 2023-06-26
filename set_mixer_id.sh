@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: set_mixer_id.sh,v 1.16 2021/09/03 07:22:59 bob Exp $
+# $Id: set_mixer_id.sh,v 1.18 2023/06/05 22:10:05 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -17,6 +17,10 @@
 
 # This script requires an English locale(C)
 export LC_ALL=C
+
+# Version 7.5 onwards allows any user with sudo permissions to install the software
+USR=$(logname)
+GRP=$(id -g -n ${USR})
 
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/config.txt
@@ -66,7 +70,7 @@ function getCard {
 ##### Start of main script ######
 # Create log directory
 sudo mkdir -p ${LOGDIR}
-sudo chown pi:pi ${LOGDIR}
+sudo chown ${USR}:${GRP} ${LOGDIR}
 
 echo | tee ${LOG}
 echo $0 $(date) | tee -a ${LOG}
@@ -119,7 +123,7 @@ echo "mixer_volume_id=${MIXERID}" | tee -a ${LOG}
 if [[ ${MIXERID} > 0 ]]; then
     sudo rm -f ${LIB_MIXERID}
     sudo echo ${MIXERID} > ${LIB_MIXERID} 
-    sudo chown pi:pi ${LIB_MIXERID}
+    sudo chown ${USR}:${GRP} ${LIB_MIXERID}
     sudo chmod +x ${LIB_MIXERID}
     echo "Mixer numid ${MIXERID} written to ${LIB_MIXERID}" | tee -a ${LOG}
 else

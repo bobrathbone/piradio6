@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.38 2022/02/17 20:25:56 bob Exp $
+# $Id: display_config.sh,v 1.46 2023/06/07 13:13:46 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,6 +16,10 @@
 # This script requires an English locale(C)
 export LC_ALL=C
 
+# Version 7.5 onwards allows any user with sudo permissions to install the software
+USR=$(logname)
+GRP=$(id -g -n ${USR})
+
 DIR=/usr/share/radio
 LOG=${DIR}/config.log
 BOOTCONFIG=/boot/config.txt
@@ -28,7 +32,7 @@ ASOUND=/etc/asound.conf
 SOUND_CARD=0
 EQUALIZER_CMD=${DIR}/equalizer.cmd
 EMAIL=bob@bobrathbone.com
-AUTOSTART=/home/pi/.config/lxsession/LXDE-pi/autostart
+AUTOSTART=/home/${USR}/.config/lxsession/LXDE-pi/autostart
 MPDLIB=/var/lib/mpd
 
 # Get OS release ID
@@ -61,6 +65,13 @@ echo | tee -a ${LOG}
 echo "Kernel version " | tee -a ${LOG}
 echo "--------------" | tee -a ${LOG}
 uname -a  | tee -a ${LOG}
+echo | tee -a ${LOG}
+
+echo "User $(id -u -n)" | tee -a ${LOG}
+echo "-----------" | tee -a ${LOG}
+id | tee -a ${LOG}
+echo | tee -a ${LOG}
+
 
 # Check for X-Windows graphic radio installation
 echo | tee -a ${LOG}
@@ -72,16 +83,16 @@ if [[ -f /usr/bin/startx ]]; then
         entry=$(grep -i "radio" ${AUTOSTART})
         if [[ $? == 0 ]]; then
             if [[ ${entry:0:1} == "#" ]]; then
-                echo "Graphic version of the radio is disabled in ${AUTOSTART}"
+                echo "Graphic version of the radio is disabled in ${AUTOSTART}" | tee -a ${LOG}
             else
-                echo "Graphic version of the radio configured in ${AUTOSTART}"
+                echo "Graphic version of the radio configured in ${AUTOSTART}" | tee -a ${LOG}
             fi
-            echo ${entry}
+            echo ${entry} | tee -a ${LOG}
         else
-            echo "Graphic versions of the radio not configured in ${AUTOSTART}"
+            echo "Graphic versions of the radio not configured in ${AUTOSTART}" | tee -a ${LOG}
         fi
     else
-        echo "Error - No ${AUTOSTART} file found" 
+        echo "Error - No ${AUTOSTART} file found"  | tee -a ${LOG}
     fi
 else
 	echo "X-Windows is not installed" | tee -a ${LOG}
@@ -125,7 +136,7 @@ echo | tee -a ${LOG}
 if [[ -f  ${MPD_CONFIG} ]]; then
 	grep -A 8 ^audio_output  ${MPD_CONFIG} | tee -a ${LOG}
 else
-	echo "FATAL ERROR!"
+	echo "FATAL ERROR!" | tee -a ${LOG}
 	echo "MPD (Music Player Daemon) has not been installed" | tee -a ${LOG}
 	echo "Install packages mpd,mpc and python3-mpd" | tee -a ${LOG}
 	echo "and rerun configure_radio.sh to set-up the radio software" | tee -a ${LOG}
@@ -163,7 +174,7 @@ ${DIR}/wiring.py | tee -a  ${LOG}
 echo "---------------------------------------" | tee -a ${LOG}
 
 # Display sound devices
-AUDIO_OUT=$(grep "audio_out=" ${CONFIG})
+AUDIO_OUT=$(grep "audio_out=" ${CONFIG}) | tee -a ${LOG}
 echo | tee -a ${LOG}
 echo "========= Audio Configuration =========" | tee -a ${LOG}
 if [[ ${AUDIO_OUT} =~ bluetooth  ]]; then
@@ -171,6 +182,7 @@ if [[ ${AUDIO_OUT} =~ bluetooth  ]]; then
 else
     /usr/bin/aplay -l | tee -a ${LOG}
 fi
+aplay -L | grep -i pulse | tee -a ${LOG}
 
 echo | tee -a ${LOG}
 echo "Mixer controls" | tee -a ${LOG}
@@ -179,9 +191,9 @@ if [[ ${AUDIO_OUT} =~ bluetooth  ]]; then
     cmd="amixer -D bluealsa controls"
 elif [[ ${AUDIO_OUT} =~ USB  ]]; then
     SOUND_CARD=1
-    cmd="amixer -c ${SOUND_CARD} controls"
+    cmd="amixer -c ${SOUND_CARD} controls 2>$1" | tee -a ${LOG}
 else
-    cmd="amixer -c ${SOUND_CARD} controls"
+    cmd="amixer -c ${SOUND_CARD} controls 2>$1" | tee -a ${LOG}
 fi
 echo "audio_out=${AUDIO_OUT}"
 echo ${cmd} | tee -a ${LOG}
@@ -212,18 +224,18 @@ echo "----------------------------------------" | tee -a ${LOG}
 
 # Display remote control daemon configuration
 if [[ -f /lib/systemd/system/irradiod.service ]]; then
-    grep ExecStart /lib/systemd/system/irradiod.service  | tee -a ${LOG}
+    grep ExecStart /lib/systemd/system/irradiod.service | tee -a ${LOG}
+    if [[ $(release_id) -lt 10 ]]; then
+        sudo ${DIR}/remote_control.py status | tee -a ${LOG}
+        sudo ${DIR}/remote_control.py config | tee -a ${LOG}
+    else
+        sudo ${DIR}/irradiod.py status | tee -a ${LOG}
+        sudo ${DIR}/irradiod.py config | tee -a ${LOG}
+    fi
 else 
-    echo "irradiod.service not installed"
+    echo "irradiod.service not installed" | tee -a ${LOG}
 fi
 
-if [[ $(release_id) -lt 10 ]]; then
-    sudo ${DIR}/remote_control.py status | tee -a ${LOG}
-    sudo ${DIR}/remote_control.py config | tee -a ${LOG}
-else
-    sudo ${DIR}/irradiod.py status | tee -a ${LOG}
-    sudo ${DIR}/irradiod.py config | tee -a ${LOG}
-fi
 
 echo | tee -a ${LOG}
 echo "${RADIOLIB} settings" | tee -a ${LOG}
@@ -251,6 +263,11 @@ echo "--------------------" | tee -a ${LOG}
 sudo ${DIR}/display_model.py version | tee -a ${LOG}
 
 echo | tee -a ${LOG}
+echo "CPU temperature" | tee -a ${LOG}
+echo "-------------" | tee -a ${LOG}
+vcgencmd measure_temp | tee -a ${LOG}
+
+echo | tee -a ${LOG}
 echo "Network information" | tee -a ${LOG}
 echo "-------------------" | tee -a ${LOG}
 echo "IP address: $(hostname -I)" | tee -a ${LOG}
@@ -258,6 +275,11 @@ echo "IP route:" | tee -a ${LOG}
 ip route | tee -a ${LOG}
 
 ./display_wifi.sh | tee -a ${LOG}
+
+echo | tee -a ${LOG}
+echo "Network Time information" | tee -a ${LOG}
+echo "------------------------" | tee -a ${LOG}
+timedatectl timesync-status | tee -a ${LOG}
 
 echo | tee -a ${LOG}
 echo "=================== End of run =====================" | tee -a ${LOG}

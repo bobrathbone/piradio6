@@ -1,13 +1,19 @@
 # Radio remote control systemd script
-# $Id: irradiod.service,v 1.2 2021/10/02 08:59:31 bob Exp $
+# $Id: irradiod.service,v 1.4 2023/02/15 16:48:35 bob Exp $
+
+# This service is for Raspberry OS Bullseye. See irradiod.service.buster for Buster version
+# It uses irradiod.py and ir_daemon.py (Daemon) 
+# This file is copied to /usr/lib/systemd/system/irradiod.service 
+# by the configure_ir_remote.sh script if the RPi OS is Bullseye or later
+
 [Unit]
 Description=Radio remote control daemon
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/share/radio/remote_control.py nodaemon
-ExecStop=/usr/share/radio/remote_control.py stop
+ExecStart=/usr/share/radio/irradiod.py nodaemon
+ExecStop=/usr/share/radio/irradiod.py stop
 
 [Install]
 WantedBy=multi-user.target

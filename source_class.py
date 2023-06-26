@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.9 2022/01/12 09:56:49 bob Exp $
+# $Id: source_class.py,v 1.10 2023/06/09 11:16:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -264,7 +264,7 @@ class Source:
             
         return type
 
-    # Identify playlist type RADIO or MEDIA by file contacts
+    # Identify playlist type RADIO or MEDIA by file contents
     def _getPlaylistType(self,playlist_name):
         playlist_type = self.MEDIA
         playlist_file = PlaylistsDir + '/' + playlist_name + '.m3u'

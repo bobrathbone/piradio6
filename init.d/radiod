@@ -1,7 +1,10 @@
 #!/bin/sh
 #
 # Raspberry Pi Internet Radio Init script
-# $Id: radiod,v 1.2 2018/05/21 10:13:51 bob Exp $
+# Obsolete system V script but retained for some backward compatability.
+# The new startup script is in /lib/systemd/system/radiod.service (Systemd script)
+
+# $Id: radiod,v 1.1 2020/10/10 15:18:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -28,17 +31,13 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
-# Change NAME parameter this next line to the version of the daemon you are using
-# Choices are radiod.py, radio4.py, rradiod.py, rradio4.py or ada_radio.py
-# No spaces around the = character
-
 if [ -d /usr/share/radio ]; then
    DIR=/usr/share/radio
 else
    DIR=/home/pi/radio
 fi
 
-NAME=rradio4.py
+NAME=radiod.py
 DESC="PI Radio Daemon"
 DAEMON=${DIR}/${NAME}
 PIDFILE=/var/run/radiod.pid

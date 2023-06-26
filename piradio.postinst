@@ -1,8 +1,12 @@
 #!/bin/bash 
 #set -e
 # Radio daemon post install script
-# $Id: piradio.postinst,v 1.11 2021/11/17 17:32:11 bob Exp $
+# $Id: piradio.postinst,v 1.13 2023/06/05 22:10:04 bob Exp $
 # Support for Pulseaudio added
+
+# Version 7.5 onwards allows any user with sudo permissions to install the software
+USR=$(logname)
+GRP=$(id -g -n ${USR})
 
 # File locations
 DIR=/usr/share/radio
@@ -42,8 +46,8 @@ if [[ $? != 0 ]]; then
 	echo "Error: Failed to enable radiod.service"
 fi
 
-# Ensure owner is pi
-sudo chown -R pi:pi ${DIR}
+# Ensure owner is current sudo user
+sudo chown -R ${USR}:${GRP} ${DIR}
 sudo chmod +x ${DIR}/*.py
 sudo chmod +x ${DIR}/*.sh
 
@@ -174,13 +178,13 @@ echo ${SUDO_ENTRY} | sudo tee /etc/sudoers.d/www-data
 if [[ ! -d ${LOGDIR} ]]; then
     echo "Moving logging to new directory ${LOGDIR}"
     sudo mkdir -p ${LOGDIR}
-    sudo chown pi:pi ${LOGDIR}
+    sudo chown ${USR}:${GRP} ${LOGDIR}
     if [[ -f /var/log/radio.log ]]; then
         sudo mv /var/log/radio.log ${LOGDIR}/.
     fi
 fi
 sudo touch ${LOGDIR}/radio.log
-sudo chown pi:pi  ${LOGDIR}/radio.log
+sudo chown ${USR}:${GRP} ${LOGDIR}/radio.log
 
 echo
 echo "PI Radio software successfully installed"

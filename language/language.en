@@ -26,6 +26,7 @@ on: on
 options_menu:  Options menu
 radio_stations: Radio stations
 radio_version: Radio version
+mpd_version: MPD version
 random: Random
 reload: Reload
 repeat: Repeat

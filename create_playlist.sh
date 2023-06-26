@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.5 2021/08/10 08:50:43 bob Exp $
+# $Id: create_playlist.sh,v 1.6 2023/06/09 11:16:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -312,6 +312,7 @@ if [[ ${size} -eq 0 ]];then
     exit 1
 fi
 
+# Split up playlists that are ver the maximum size (5000)
 if [[ ${size} -gt ${MAX_SIZE} ]];then
     CMD="cd /tmp/"
     echo  ${CMD}; ${CMD}

@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.9 2022/02/13 09:39:21 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.17 2023/06/23 16:37:19 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -26,13 +26,10 @@ LIRC_OPTIONS=${LIRC_ETC}/lirc_options.conf
 LIRCD_CONFIG=${LIRC_ETC}/lircd.conf
 SYSTEMD_DIR=/usr/lib/systemd/system
 CONFIG_DIR=${LIRC_ETC}/lircd.conf.d 
-CONVERT_SCRIPT="/usr/share/lirc/lirc-old2new"
+RC_MAPS=/etc/rc_keymaps
 KEYMAPS_TOML=/lib/udev/rc_keymaps 
 KEYMAPS=/etc/rc_keymaps
 ERRORS=(0)
-
-STRETCH=1
-BUSTER=2
 
 IR_GPIO=9   
 IR_REMOTE_LED=0
@@ -145,42 +142,77 @@ ans=0
 selection=1
 while [ $selection != 0 ]
 do
-        ans=$(whiptail --title "Configure remote activity LED" --menu "Choose your option" 15 75 9 \
-        "1" "Default GPIO 11 (pin 23)" \
-        "2" "All designs using DAC sound card GPIO 16 (pin 36)" \
-        "3" "Adafruit plate  GPIO 13 (pin 33)" \
-        "4" "IQaudIO Cosmic Controller GPIO 14 (pin 8)" \
+    ans=$(whiptail --title "Configure remote activity LED" --menu "Choose your option" 15 75 9 \
+    "1" "Default GPIO 11 (pin 23) or 26-pin GPIO header" \
+    "2" "All 40-pin designs using DAC sound card GPIO 16 (pin 36)" \
+    "3" "Adafruit plate  GPIO 13 (pin 33)" \
+    "4" "IQaudIO Cosmic Controller GPIO 14 (pin 8)" \
     "5" "No remote activity LED or manually configure" \
     3>&1 1>&2 2>&3)
 
-        exitstatus=$?
-        if [[ $exitstatus != 0 ]]; then
-                exit 0
-        fi
+    exitstatus=$?
+    if [[ $exitstatus != 0 ]]; then
+            exit 0
+    fi
 
-        if [[ ${ans} == '1' ]]; then
-                DESC="Default GPIO 11 selected"
+    if [[ ${ans} == '1' ]]; then
+        DESC="Default GPIO 11 selected"
         REMOTE_LED=11   
 
-        elif [[ ${ans} == '2' ]]; then
-                DESC="All designs using DAC sound cards, GPIO 16 (pin 36)"
+    elif [[ ${ans} == '2' ]]; then
+        DESC="All designs using DAC sound cards, GPIO 16 (pin 36)"
         REMOTE_LED=16   
 
-        elif [[ ${ans} == '3' ]]; then
-                DESC="Adafruit plate/PiFace CAD, GPIO 13 (pin 33)"
+    elif [[ ${ans} == '3' ]]; then
+        DESC="Adafruit plate/PiFace CAD, GPIO 13 (pin 33)"
         REMOTE_LED=13   
 
-        elif [[ ${ans} == '4' ]]; then
-                DESC="IQaudIO Cosmic controller, GPIO 14 (pin 8)"
+    elif [[ ${ans} == '4' ]]; then
+        DESC="IQaudIO Cosmic controller, GPIO 14 (pin 8)"
         REMOTE_LED=14   
 
-        elif [[ ${ans} == '4' ]]; then
-                DESC="No remote activity LED"
+    elif [[ ${ans} == '4' ]]; then
+        DESC="No remote activity LED"
         REMOTE_LED=0    
     fi
 
-        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
-        selection=$?
+    whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
+    selection=$?
+done
+
+# Interface type LIRC or Kernel Event
+KERNEL_EVENT=1
+LIRC=2
+INTERFACE=${KERNEL_EVENT}
+selection=1
+while [ $selection != 0 ]
+do
+    ans=$(whiptail --title "Select Intface type LIRC or Kernel Event " --menu "Choose your option" 15 75 9 \
+    "1" "Kernel event configured with ir-keytable (Default)" \
+    "2" "LIRC daemon configured using irrecord (Legacy only)" \
+    "3" "Unsure? - Let system use defaults" \
+    3>&1 1>&2 2>&3)
+
+    exitstatus=$?
+    if [[ $exitstatus != 0 ]]; then
+            exit 0
+    fi
+
+    if [[ ${ans} == '1' ]]; then
+        DESC="Default GPIO 11 selected"
+        INTERFACE=${KERNEL_EVENT}
+
+    elif [[ ${ans} == '2' ]]; then
+        DESC="All designs using DAC sound cards, GPIO 16 (pin 36)"
+        INTERFACE=${LIRC}
+
+    elif [[ ${ans} == '3' ]]; then
+        DESC="IQaudIO Cosmic controller, GPIO 14 (pin 8)"
+        INTERFACE=${KERNEL_EVENT}
+    fi
+
+    whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
+    selection=$?
 done
 
 # Display configuration changes
@@ -214,46 +246,32 @@ sudo sed -i -e "0,/^remote_led/{s/remote_led.*/remote_led=${REMOTE_LED}/}" ${CON
 echo "Configured remote_led=${REMOTE_LED} in ${CONFIG}" | tee -a ${LOG}
 
 # Install LIRC packages
-echo "" | tee -a ${LOG}
 
-if [[ ${REL_ID} -ge 11 ]]; then
-    # Bullseye or later
-    ##packages="lirc ir-keytable python-pylirc lirc-compat-remotes lirc-drv-irman lirc-doc "
-    packages="lirc ir-keytable lirc-compat-remotes lirc-drv-irman lirc-doc liblircclient-dev "
-    lirc_service="lircd"
-fi
+packages="lirc ir-keytable lirc-compat-remotes python3-evdev "
+# evtest ?
 
 for package in ${packages}
 do
     echo "Installing ${package}"  | tee -a ${LOG}
-    sudo apt-get -y install ${package}
+    sudo apt -y install ${package}
     if [[ $? -ne '0' ]]; then       # Do not seperate from above
         if [[  ${package} == "lirc" || ${package} == "lircd" ]]; then
-            # Set up lirc(d) package
             echo "Setting up ${package}" | tee -a ${LOG}
             
-            # Set-up remotes config directory
-            if [[ -f ${LIRCD_CONFIG}  &&  ${OS} == ${BUSTER} ]]; then
-                CMD="sudo cp ${LIRCD_CONFIG}.dist ${LIRCD_CONFIG}"
-                echo ${CMD};${CMD} | tee -a ${LOG}
-            fi
-
-            # Run the configuration conversion script
-            CMD="sudo ${CONVERT_SCRIPT}"
-            echo ${CMD};${CMD}  | tee -a ${LOG}
-
-            # Start LIRC
-            CMD="sudo systemctl start ${lirc_service}"
-            echo ${CMD};${CMD}
-            if [[ $? -ne '0' ]]; then       # Do not seperate from above
-                echo "Warning: Failed to start ${lirc_service}" | tee -a ${LOG}
-            fi
         else
             echo "Failed to install ${package}" | tee -a ${LOG}
             ERRORS=$(($ERRORS+1))
         fi
     fi
 done
+
+# Start LIRC daemon
+CMD="sudo systemctl start lircd"
+echo ${CMD};${CMD}
+if [[ $? -ne '0' ]]; then       # Do not seperate from above
+    echo "Warning: Failed to start ${lirc_service}" | tee -a ${LOG}
+    ERRORS=$(($ERRORS+1))
+fi
 
 # Copy options file 
 if [[ -f  ${LIRC_OPTIONS}.dist ]]; then
@@ -307,21 +325,16 @@ if [[ -f ${DEVINPUT} ]]; then
     fi
 fi
 
-# The following routine sets up the correct service definition for RPi OS Bullseye or Buster 
-# It uses irradiod.py and ir_daemon.py (Daemon)
-# The correct service definition is copied to /usr/lib/systemd/system/irradiod.service
-# by the configure_ir_remote.sh script if the RPi OS is Bullseye or later
+# The service definition is copied to /usr/lib/systemd/system/irradiod.service
 
 echo "Setting up irradiod.service for ${OSNAME}" | tee -a ${LOG}
-if [[ ${REL_ID} -ge 11 ]]; then
-    CMD="sudo cp ${RADIO_DIR}/irradiod.service.bullseye ${SYSTEMD_DIR}/irradiod.service"
-    echo ${CMD} | tee -a ${LOG}
-    ${CMD}
-else
+if [[ ${REL_ID} < 11 ]]; then 
     CMD="sudo cp ${RADIO_DIR}/irradiod.service.buster ${SYSTEMD_DIR}/irradiod.service"
-    echo ${CMD} | tee -a ${LOG}
-    ${CMD}
+else
+    CMD="sudo cp ${RADIO_DIR}/irradiod.service.bullseye ${SYSTEMD_DIR}/irradiod.service"
 fi
+echo ${CMD} | tee -a ${LOG}
+${CMD}
 
 # Make configuration file readable to all
 sudo chmod og+r ${LIRCD_CONFIG}
@@ -330,18 +343,40 @@ if [[ ${ERRORS} > 0 ]]; then
     echo "There were ${ERRORS} errors" | tee -a ${LOG}
 fi
 
-# Clean up unwanted packages
-sudo apt -y autoremove
+# Enable correct service
+if [[ ${INTERFACE} == ${KERNEL_EVENT} ]]; then
+    echo "Enabling Kernel Events ireventd.service" |  tee -a ${LOG}
+    CMD="sudo systemctl enable ireventd.service" 
+    echo ${CMD} | tee -a ${LOG}
+    CMD="sudo systemctl disable irradiod.service" 
+    echo ${CMD} | tee -a ${LOG}
+else
+    echo "Enabling LIRC irradiod.service" |  tee -a ${LOG}
+    CMD="sudo systemctl enable irradiod.service" 
+    echo ${CMD} | tee -a ${LOG}
+    CMD="sudo systemctl disable ireventd.service" 
+    echo ${CMD} | tee -a ${LOG}
+fi
 
-# Print configuration instructions
+# Print configuration instructions for either Kernel events or LIRC interface
 echo "" |  tee -a ${LOG}
-echo "Configuration of LIRC completed OK" |  tee -a ${LOG}
-echo "Reboot the system and then run the following " |  tee -a ${LOG}
-echo "to configure your IR remote control" |  tee -a ${LOG}
-echo "    sudo irrecord -f -d /dev/lirc0 ~/lircd.conf " |  tee -a ${LOG}
-echo "" |  tee -a ${LOG}
-echo "Then copy your configuration file (myremote.conf) to  ${CONFIG_DIR}" |  tee -a ${LOG}
-echo "    sudo cp myremote.conf ${CONFIG_DIR}/." |  tee -a ${LOG}
+if [[ ${INTERFACE} == ${KERNEL_EVENT} ]]; then
+    echo "Configuration of Kernel Event completed OK" |  tee -a ${LOG}
+    echo "Reboot the system and then run the following " |  tee -a ${LOG}
+    echo "to configure your IR remote control" |  tee -a ${LOG}
+    echo "    sudo ir-keytable -v -t -p  rc-5,rc-5-sz,jvc,sony,nec,sanyo,mce_kbd,rc-6,sharp,xmpir-keytable" |  tee -a ${LOG}
+    echo "" |  tee -a ${LOG}
+    echo "Then copy your configuration file (myremote.toml) to  ${RC_MAPS}" |  tee -a ${LOG}
+    echo "    sudo cp myremote.toml ${RC_MAPS}/." |  tee -a ${LOG}
+else
+    echo "Configuration of LIRC completed OK" |  tee -a ${LOG}
+    echo "Reboot the system and then run the following " |  tee -a ${LOG}
+    echo "to configure your IR remote control" |  tee -a ${LOG}
+    echo "    sudo irrecord -f -d /dev/lirc0 ~/lircd.conf " |  tee -a ${LOG}
+    echo "" |  tee -a ${LOG}
+    echo "Then copy your configuration file (myremote.conf) to  ${CONFIG_DIR}" |  tee -a ${LOG}
+    echo "    sudo cp myremote.conf ${CONFIG_DIR}/." |  tee -a ${LOG}
+fi
 
 echo "" |  tee -a ${LOG}
 echo "Reboot the Raspberry Pi " |  tee -a ${LOG}
@@ -349,4 +384,8 @@ echo "" |  tee -a ${LOG}
 echo "A log of this run will be found in ${LOG}"
 
 exit 0
+
+# End of script
+# set tabstop=4 shiftwidth=4 expandtab
+# retab
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.4 2021/02/18 10:09:30 bob Exp $
+# $Id: build.sh,v 1.6 2023/06/05 22:10:04 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -9,6 +9,10 @@
 # Compatability rules
 # Edit the compat file and change 9 to 10
 # sudo vi /usr/share/equivs/template/debian/compat (Replace 9 with 10)
+
+# Version 7.5 onwards allows any user with sudo permissions to install the software
+USR=$(logname)
+GRP=$(id -g -n ${USR})
 
 PKGDEF=piradio
 PKG=radiod
@@ -39,7 +43,7 @@ IFS=${SAVEIFS}
 
 echo "Building package ${PKG} version ${VERSION}" | tee ${BUILDLOG}
 echo "from input file ${PKGDEF}" | tee -a ${BUILDLOG}
-sudo chown pi:pi *.py *.cmd *.sh
+sudo chown ${USR}:${GRP} *.py *.cmd *.sh
 sudo chmod +x *.py *.cmd *.sh
 sudo chmod -x language/* voice.dist
 

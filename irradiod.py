@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: irradiod.py,v 1.5 2022/02/11 14:27:38 bob Exp $
+# $Id: irradiod.py,v 1.7 2023/02/17 11:51:55 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
-#
-# This program uses LIRC (Linux Infra Red Control) and python-lirc
-#
-# For Raspbian Bullseye and possibly later run:
-#   apt install lirc python-lirc
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
@@ -20,8 +15,8 @@
 #   /etc/lirc/lircrc Program to event registration file
 #   /etc/lircd.conf  User generated remote control configuration file
 #
-# This program  is the Python 3 version for Bullseye or later
-# For the Python2 (Buster) version see remote_control.py and rc_daemon.py
+# This is the Python 3 version for use on Bullseye
+#
 
 import RPi.GPIO as GPIO
 import configparser
@@ -34,12 +29,12 @@ import socket
 import errno
 import re
 import pdb
-import pylirc
 
 # Radio project imports
 from config_class import Configuration
 from ir_daemon import Daemon
 from log_class import Log
+from lirc import RawConnection
 
 log = Log()
 IR_LED=11   # GPIO 11 pin 23
@@ -76,20 +71,19 @@ class RemoteDaemon(Daemon):
         log.message('Remote control running pid ' + str(os.getpid()), log.INFO)
         signal.signal(signal.SIGHUP,signalHandler)
 
-        # Start lirc service
-        if os.path.exists(lircd_service):
-            log.message("Starting lircd daemon", log.DEBUG)
-            execCommand('sudo systemctl start lircd')   # For Stretch       
-            time.sleep(1)
-            # Load all IR protocols if ir-keytable installed
-            if os.path.exists("/usr/bin/ir-keytable"):
-                execCommand('sudo ir-keytable -p all')
-            
-        else:
-            # Earlier Jessie and Stretch OS
-            log.message("Starting lirc daemon", log.DEBUG)
-            execCommand('sudo service lirc start')  # For Jessie
+        msg = "Using lirc module"
+        print(msg)
+        log.message(msg, log.DEBUG)
 
+        # Start lirc service
+        
+        log.message("Starting lircd daemon", log.DEBUG)
+        execCommand('sudo systemctl start lircd')   # For Stretch       
+        time.sleep(1)
+        # Load all IR protocols if ir-keytable installed
+        if os.path.exists("/usr/bin/ir-keytable"):
+            execCommand('sudo ir-keytable -p all')
+            
         remote_led = config.remote_led
         if remote_led > 0:
             print("Flashing LED on GPIO", remote_led)
@@ -99,6 +93,7 @@ class RemoteDaemon(Daemon):
             flash_led(remote_led)
         else:
             log.message("Remote control LED disabled", log.DEBUG)
+
         udphost = config.remote_control_host
         udpport = config.remote_control_port
         log.message("UDP connect host " + udphost + " port " + str(udpport), log.DEBUG)
@@ -145,23 +140,32 @@ class RemoteDaemon(Daemon):
 # The main Remote control listen routine
 def listener():
     try:
-        sockid = pylirc.init("piradio", lircrc, blocking)
 
-        log.message("Listener on socket " + str(socket) + " established", log.DEBUG)
-
-        # Main Listen loop
+        conn = RawConnection()
         print("Listening for input on IR sensor")
+        #pdb.set_trace()
+        # Main Listen loop
         while True:
-            #pdb.set_trace()
 
-            nextcode =  pylirc.nextcode()
-
-            # For Jessie amend pylirc.nextcode to lirc.nextcode
+            nextcode = None
+            try:
+                #nextcode = conn.readline(.0001)
+                nextcode = conn.readline(0)
+            except:
+                pass
 
             if nextcode != None and len(nextcode) > 0:
                 if remote_led > 0:
                     GPIO.output(remote_led, True)
-                button = nextcode[0]
+                
+                data = nextcode.split()
+                sequence = data[1]
+
+                # Un-comment next two lines if you wish to ignore repeat keys
+                #if (sequence != "00"):
+                #    continue
+
+                button = data[2]
                 log.message(button, log.DEBUG)
                 print(button)
                 udpSend(button) # Send to radiod program
@@ -171,11 +175,8 @@ def listener():
                 time.sleep(0.2)
 
     except Exception as e:
-        log.message(str(e), log.ERROR)
         print(str(e))
-        mesg = "Possible configuration error, check /etc/lirc/lircd.conf"
-        log.message(mesg, log.ERROR)
-        print(mesg)
+        log.message(str(e), log.ERROR)
         mesg = "Activation IR Remote Control failed - Exiting"
         log.message(mesg, log.ERROR)
         print(mesg)
@@ -303,5 +304,3 @@ if __name__ == "__main__":
 
 # End of script
 
-# set tabstop=4 shiftwidth=4 expandtab
-# retab

@@ -3,7 +3,7 @@
 # OLED/LCD Western European languages character translation table
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: European_HD44780.py,v 1.2 2020/10/11 06:46:17 bob Exp $
+# $Id: European_HD44780.py,v 1.5 2023/01/24 09:52:05 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

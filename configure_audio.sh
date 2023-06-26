@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_audio.sh,v 1.39 2022/03/11 10:25:36 bob Exp $
+# $Id: configure_audio.sh,v 1.53 2023/06/05 22:10:04 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -26,6 +26,10 @@ export LC_ALL=C
 SKIP_PKG_CHANGE=$1
 SCRIPT=$0
 
+# Version 7.5 onwards allows any user with sudo permissions to install the software
+USR=$(logname)
+GRP=$(id -g -n ${USR})
+
 BOOTCONFIG=/boot/config.txt
 MPDCONFIG=/etc/mpd.conf
 ASOUNDCONF=/etc/asound.conf
@@ -41,11 +45,8 @@ I2SOVERLAY="dtoverlay=i2s-mmap"
 PULSEAUDIO=/usr/bin/pulseaudio
 SPOTIFY_CONFIG=/etc/default/raspotify
 MIXER_ID_FILE=${LIBDIR}/mixer_volume_id
+PULSE_PA=/etc/pulse/default.pa
 OS_RELEASE=/etc/os-release
-
-# Command for Bluetooth pipe command
-PIPE_COMMAND='aplay -D bluealsa -f cd'
-
 LOGDIR=${DIR}/logs
 LOG=${LOGDIR}/audio.log
 
@@ -60,6 +61,7 @@ USB=5   # USB PnP DAC
 TYPE=${JACK}
 SCARD="headphones"  # aplay -l string. Set to headphones, HDMI, DAC or bluetooth
             # to configure the audio_out parameter in the configuration file
+PIVUMETER=0 # PVumeter using alsa
 
 # dtoverlay parameter in /etc/config.txt
 DTOVERLAY=""
@@ -72,6 +74,9 @@ MIXER="software"
 # Format is Frequency 44100 Hz: 16 bits: 2 channels
 FORMAT="44100:16:2"
 NUMID=1
+# Lock /etc/radio.conf from being updated 
+# (HDMI plug in/out changes audio card order) 0=no 1=yes
+LOCK_CONFIG=0   
 
 # Pulse audio asound.conf
 USE_PULSE=0
@@ -80,7 +85,7 @@ ASOUND_CONF_DEFAULT=asound.conf.dist
 
 # Create log directory
 sudo mkdir -p ${LOGDIR}
-sudo chown pi:pi ${LOGDIR}
+sudo chown ${USR}:${GRP} ${LOGDIR}
 
 sudo rm -f ${LOG}
 echo "$0 configuration log, $(date) " | tee ${LOG}
@@ -153,9 +158,6 @@ fi
 
 sudo service mpd stop
 
-# Get the card ID using 'aplay -l'
-#CARD_ID=$(card_id)
-
 selection=1 
 while [ $selection != 0 ]
 do
@@ -206,10 +208,12 @@ do
         DESC="Pimoroni pHat with PiVumeter"
         NAME=${DESC}
         DTOVERLAY="hifiberry-dac"
-        MIXER="software"
-        USE_PULSE=1
+        MIXER="hardware"
         ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.pivumeter
         TYPE=${DAC}
+        PIVUMETER=1  # PVumeter using pulse
+        LOCK_CONFIG=1   
+
 
     elif [[ ${ans} == '5' ]]; then
         DESC="HiFiBerry DAC/Mini-amp"
@@ -273,10 +277,12 @@ do
         DESC="Bluetooth device"
         # NAME is set up later
         MIXER="software"
-        USE_PULSE=0
-        AUDIO_INTERFACE="pipe"
+        USE_PULSE=1
+        AUDIO_INTERFACE="pulse"
         TYPE=${BLUETOOTH}
-        ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.pipe
+        # Copy asound.conf but it isn't used 
+        ASOUND_CONF_DIST=${ASOUND_CONF_DIST}
+        LOCK_CONFIG=1   
         CARD=-1     # No cards displayed (aplay -l) 
 
     elif [[ ${ans} == '14' ]]; then
@@ -307,17 +313,6 @@ done
 # Summarise selection
 echo "${DESC} selected" | tee -a ${LOG}
 echo "Card ${CARD}, Device ${DEVICE}, Mixer ${MIXER}" | tee -a ${LOG}
-if [[ ${DTOVERLAY} != "" ]]; then
-    echo "dtoverlay=${DTOVERLAY}" | tee -a ${LOG}
-    # Load the overlay
-    cmd="sudo dtoverlay ${DTOVERLAY}"
-    echo ${cmd}; ${cmd}
-    if [[ $?  == 0 ]]; then
-        OVERLAY_LOADED=1
-    else
-        OVERLAY_LOADED=0
-    fi
-fi
 
 # Install alsa-utils if not already installed
 PKG="alsa-utils"
@@ -338,18 +333,41 @@ if [[ ${USE_PULSE} == 1 ]]; then
             PKG="pulseaudio"
             echo "Installing ${PKG} package" | tee -a ${LOG}
             sudo apt-get --yes install ${PKG}
+
+            # Set up /etc/pulse/default.pa
+            if [[ ! -f ${PULSE_PA}.orig ]]; then
+                cmd="sudo cp ${PULSE_PA} ${PULSE_PA}.orig"
+                echo $cmd | tee -a ${LOG}
+                $cmd | tee -a ${LOG}
+            fi
+            
         fi
     fi
-else
-    if [[ ${SKIP_PKG_CHANGE} == "-s" && -f ${PULSEAUDIO} ]]; then
-        echo "${DESC} requires pulseaudio to be removed" | tee -a ${LOG}
-        echo "Run: sudo apt-get remove pulseaudio" | tee -a ${LOG}
-        echo "and re-run ${SCRIPT}" | tee -a ${LOG}
-        echo "" | tee -a ${LOG}
-    else
-        echo "Un-installng pulseaudio" | tee -a ${LOG}
-        sudo apt-get --yes remove pulseaudio | tee -a ${LOG}
+    grep "^load-module module-native-protocol-tcp" ${PULSE_PA}
+    if [[ $? != 0 ]]; then  # Do not seperate from above
+        cmd="sudo cp ${PULSE_PA}.orig ${PULSE_PA}"
+        echo $cmd | tee -a ${LOG}
+        $cmd | tee -a ${LOG}
+        sudo sed -i -e "0,/^load-module module-native-protocol-unix/{s/load-module module-native-protocol-unix/load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1/}" ${PULSE_PA}
     fi
+else
+    if [[ -f ${PULSEAUDIO} ]]; then
+        if [[ ${SKIP_PKG_CHANGE} == '-s' ]]; then
+            echo "${DESC} requires pulseaudio to be removed" | tee -a ${LOG}
+            echo "Run: sudo apt-get remove pulseaudio" | tee -a ${LOG}
+            echo "and re-run ${SCRIPT}" | tee -a ${LOG}
+            echo "" | tee -a ${LOG}
+        else
+            echo "Un-installng pulseaudio" | tee -a ${LOG}
+            sudo apt --yes remove pulseaudio | tee -a ${LOG}
+        fi
+    fi
+
+fi
+
+if [[ ${LOCK_CONFIG} == 1 ]]; then
+    # Lock configuration in /etc/radiod.conf
+    sudo sed -i -e "0,/^audio_config_locked=/{s/audio_config_locked=.*/audio_config_locked=yes/}" ${CONFIG}
 fi
 
 # Check if audio_out parameter in configuration file
@@ -400,11 +418,10 @@ elif [[ ${TYPE} == ${USB} ]]; then
 # Configure bluetooth device
 elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
  
-    # Install Bluetooth packages    
+    # Install Bluetooth packages 
     if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
-        echo "Checking Bluetooth packages have been installed" | tee -a ${LOG}
-        sudo apt-get --yes install bluez bluez-firmware pi-bluetooth bluealsa
-        sudo apt --yes autoremove
+        echo "Installing Bluetooth packages" | tee -a ${LOG}
+        sudo apt --yes install pulseaudio-module-bluetooth 
     fi
 
     echo "Configuring Blutooth device as output" | tee -a ${LOG}
@@ -422,14 +439,13 @@ elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
     grep "noplugin=sap" ${BLUETOOTH_SERVICE}
     if [[ $? != 0 ]]; then  # Do not seperate from above
         echo "Disabling Sap driver in  ${BLUETOOTH_SERVICE}" | tee -a ${LOG}
-        sudo sed -i -e 's/^ExecStart.*/& --noplugin=sap/' ${BLUETOOTH_SERVICE} | tee -a ${LOG}
+        sudo sed -i -e 's/^ExecStart.*/& --plugin=a2dp --noplugin=sap/' ${BLUETOOTH_SERVICE} | tee -a ${LOG}
     fi
 
     # Connect the Bluetooth device
     if [[  ${BT_DEVICE} != '' ]];then
         echo "Bluetooth device ${BT_NAME} ${BT_DEVICE} found"  |  tee -a ${LOG}
         NAME=${BT_NAME}
-        #DEVICE="bluealsa:DEV=${BT_DEVICE},PROFILE=a2dp"
         DEVICE="bluetooth"
         cmd="bluetoothctl trust ${BT_DEVICE}" 
         echo $cmd | tee -a ${LOG}
@@ -467,16 +483,18 @@ sudo sed -i -e "0,/audio_out=/{s/^audio_out=.*/audio_out=\"${SCARD}\"/}" ${CONFI
 grep -i "audio_out="  ${CONFIG} | tee -a ${LOG}
 
 # Configure Card device using the audio_out parameter configured above in /etc/radiod.conf 
-CARD_ID=$(card_id ${SCARD})
-echo "Card ${SCARD} ID ${CARD_ID}"
-DEVICE=$(echo ${DEVICE} | sed -e 's/:0/:'"${CARD_ID}"'/')
+if [[ ${TYPE} != ${BLUETOOTH} ]]; then
+    CARD_ID=$(card_id ${SCARD})
+    echo "Card ${SCARD} ID ${CARD_ID}"
+    DEVICE=$(echo ${DEVICE} | sed -e 's/:0/:'"${CARD_ID}"'/')
+fi
 
 # Set up asound configuration for espeak and aplay
 echo |  tee -a ${LOG}
 if [[ ${CARD} -ge 0 ]]; then
     echo "Configuring ${ASOUNDCONF} with card ${CARD} " | tee -a ${LOG}
 else
-    echo "Configuring ${ASOUNDCONF} with Bluetooth pipe" | tee -a ${LOG}
+    echo "${ASOUNDCONF} not required with pulseaudio and Bluetooth" | tee -a ${LOG}
 fi
 
 if [[ ! -f ${ASOUNDCONF}.org && -f ${ASOUNDCONF} ]]; then
@@ -484,9 +502,13 @@ if [[ ! -f ${ASOUNDCONF}.org && -f ${ASOUNDCONF} ]]; then
     sudo cp -f ${ASOUNDCONF} ${ASOUNDCONF}.org
 fi
 
-# Set up /etc/asound.conf
-echo "Copying ${ASOUND_CONF_DIST} to ${ASOUNDCONF}" | tee -a ${LOG}
-sudo cp -f ${ASOUND_DIR}/${ASOUND_CONF_DIST} ${ASOUNDCONF}
+# Set up /etc/asound.conf except if using pulseaudio and bluetooth
+if [[ ${TYPE} != ${BLUETOOTH} ]]; then
+    echo "Copying ${ASOUND_CONF_DIST} to ${ASOUNDCONF}" | tee -a ${LOG}
+    sudo cp -f ${ASOUND_DIR}/${ASOUND_CONF_DIST} ${ASOUNDCONF}
+else
+    sudo rm -f ${ASOUNDCONF}
+fi
 
 if [[ ${CARD} == 0 ]]; then
         sudo sed -i -e "0,/card/s/1/0/" ${ASOUNDCONF}
@@ -502,6 +524,7 @@ if [[ ! -f ${MPDCONFIG}.orig ]]; then
     if [[ $? != 0 ]]; then
         echo "Correcting corrupt ${MPDCONFIG} (Missing audio_out definition)" 
         sudo cp -f -p ${DIR}/mpd.conf ${MPDCONFIG}
+        sudo cp -f -p ${DIR}/mpd.conf ${MPDCONFIG}.orig
     fi
     sudo cp -f -p ${MPDCONFIG} ${MPDCONFIG}.orig
 fi
@@ -512,19 +535,30 @@ echo ${NAME}
 echo "Device ${DEVICE}"
 NAME=$(echo ${NAME} | sed 's/\//\\\//')
 DEVICE=$(echo ${DEVICE} | sed 's/\//\\\//')
-sudo sed -i -e "0,/^\stype/{s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
-sudo sed -i -e "0,/^\sname/{s/\sname.*/\tname\t\t\"${NAME}\"/}" ${MPDCONFIG}
-sudo sed -i -e "0,/device/{s/.*device.*/\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
-sudo sed -i -e "0,/mixer_type/{s/.*mixer_type.*/\tmixer_type\t\"${MIXER}\"/}" ${MPDCONFIG}
-sudo sed -i -e "/^#/ ! {s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
 
 if [[ ${TYPE} == ${BLUETOOTH} ]]; then
-    sudo sed -i -e '/^\smixer_type/a \\tformat\t\t\"44100:16:2\"'  ${MPDCONFIG}
-    sudo sed -i -e '/^\smixer_type/a \\tcommand\t\t\"aplay -D bluealsa -f cd\"'  ${MPDCONFIG}
-    sudo sed -i -e "0,/device/{s/.*device.*/#\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
-    #sudo sed -i -e "0,/defaults.bluealsa.device/{s/.*defaults.bluealsa.device.*/defaults.bluealsa.device  \"${BT_DEVICE}\"/}" ${ASOUNDCONF}
-    sudo sed -i -e "0,/defaults.bluealsa.device <btdevice>/{s/device <btdevice>/device \"${BT_DEVICE}\"/g}" ${ASOUNDCONF}
+    sudo sed -i -e "0,/^\sname/{s/\sname.*/\tname\t\t\"${NAME}\"/}" ${MPDCONFIG}
+    sudo sed -i -e "0,/^\stype/{s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
+    sudo sed -i -e "0,/device/{s/.*device.*/\tserver\t\t\"127.0.0.1\"/}" ${MPDCONFIG}
     sudo sed -i -e "0,/device <btdevice>/{s/device <btdevice>/device \"${BT_DEVICE}\"/g}" ${ASOUNDCONF}
+    sudo sed -i -e "0,/defaults.bluealsa.device <btdevice>/{s/device <btdevice>/device \"${BT_DEVICE}\"/g}" ${ASOUNDCONF}
+else
+    sudo sed -i -e "0,/^\stype/{s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
+    sudo sed -i -e "0,/^\sname/{s/\sname.*/\tname\t\t\"${NAME}\"/}" ${MPDCONFIG}
+    sudo sed -i -e "0,/mixer_type/{s/.*mixer_type.*/\tmixer_type\t\"${MIXER}\"/}" ${MPDCONFIG}
+    sudo sed -i -e "/^#/ ! {s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
+    if [[ ${PIVUMETER} == 1 ]]; then
+        sudo sed -i -e "0,/device/{s/.*device.*/\#\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
+    else
+        sudo sed -i -e "0,/device/{s/.*device.*/\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
+    fi
+fi
+
+# Set up mpd.conf for Pirate radio with pHat Beat (pivumeter)
+if [[ ${PIVUMETER} == 1 ]]; then
+    sudo sed -i -e "0,/pivumeter=/{s/^pivumeter=.*/pivumeter=yes/}" ${CONFIG}
+else
+    sudo sed -i -e "0,/pivumeter=/{s/^pivumeter=.*/pivumeter=no/}" ${CONFIG}
 fi
 
 # Set the mixer control to "DAC"
@@ -538,8 +572,8 @@ if [[ $? != 0 ]]; then  # Don't seperate from above
     echo "Failed to alsa settings"
 fi
 
-# Bind address  to any
-sudo sed -i -e "0,/bind_to_address/{s/.*bind_to_address.*/bind_to_address\t\t\"any\"/}" ${MPDCONFIG}
+# Bind address to localhost (Prevent binding to IPV6 ::1)
+sudo sed -i -e "0,/bind_to_address/{s/.*bind_to_address.*/bind_to_address\t\t\"127.0.0.1\"/}" ${MPDCONFIG}
 
 # Save original boot config
 if [[ ! -f ${BOOTCONFIG}.orig ]]; then
@@ -554,12 +588,25 @@ sudo sed -i '/dtoverlay=justboom/d' ${BOOTCONFIG}
 
 # Add dtoverlay for sound cards and disable on-board sound
 if [[ ${DTOVERLAY} != "" || ${TYPE} == ${HDMI} ]]; then
-    sudo sed -i "/\[all\]/a dtoverlay=${DTOVERLAY}" ${BOOTCONFIG}
+    grep "^dtoverlay=${DTOVERLAY}" ${BOOTCONFIG} >/dev/null 2>&1
+    if [[ $? != 0 ]]; then
+        echo "dtoverlay=${DTOVERLAY} added"
+        #sudo sed -i "/\[all\]/a dtoverlay=${DTOVERLAY}" ${BOOTCONFIG}
+        sudo  bash -c "echo dtoverlay=${DTOVERLAY} >> ${BOOTCONFIG}"
+    fi
 
     echo "Disable on-board audio" | tee -a ${LOG}
     sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
     sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 
+    # Load the overlay
+    cmd="sudo dtoverlay ${DTOVERLAY}"
+    echo ${cmd}; ${cmd}
+    if [[ $?  == 0 ]]; then
+        OVERLAY_LOADED=1
+    else
+        OVERLAY_LOADED=0
+    fi
 else
     if [[ ${TYPE} == ${BLUETOOTH} || ${TYPE} == ${USB} ]]; then
         # Switch off onboard devices (headphones and HDMI) if bluetooth or USB
@@ -571,19 +618,18 @@ else
     fi
 fi
 
+# Switch on I2S audio for PCM5102A devices
+sudo sed -i 's/^#dtparam=i2s=.*$/dtparam=i2s=on/g'  ${BOOTCONFIG}
+
 # Configure I2S overlay
 grep "^#${I2SOVERLAY}" ${BOOTCONFIG} >/dev/null 2>&1
 if [[ $?  == 0 ]]; then
         sudo sed -i 's/^#dtoverlay=i2s-mmap/dtoverlay=i2s-mmap/g'  ${BOOTCONFIG}
-fi
-
-# Switch on I2S audio for PCM5102A devices
-sudo sed -i 's/^#dtparam=i2s=.*$/dtparam=i2s=on/g'  ${BOOTCONFIG}
-
-sudo sed -i 's/^#dtoverlay=i2s-mmap/dtoverlay=i2s-mmap/g'  ${BOOTCONFIG}
-grep "^${I2SOVERLAY}" ${BOOTCONFIG} >/dev/null 2>&1
-if [[ $?  == 1 ]]; then
-    sudo  bash -c "echo ${I2SOVERLAY} >> ${BOOTCONFIG}"
+else
+    grep "^${I2SOVERLAY}" ${BOOTCONFIG} >/dev/null 2>&1
+    if [[ $?  != 0 ]]; then
+        sudo  bash -c "echo ${I2SOVERLAY} >> ${BOOTCONFIG}"
+    fi
 fi
 
 # Load the audio card overlay

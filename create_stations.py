@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.23 2022/10/20 09:57:34 bob Exp $
+# $Id: create_stations.py,v 1.27 2023/06/09 11:49:25 bob Exp $
 #
 # Create playlist files from the following url formats
 #    iPhone stream files (.asx)
@@ -32,6 +32,7 @@ import socket
 from time import strftime
 from xml.dom.minidom import parseString
 from config_class import Configuration
+from source_class import Source
 
 # Output errors to STDERR
 stderr = sys.stderr.write;
@@ -51,6 +52,10 @@ duplicateCount = 0
 TimeOut=20    # Socket time out
 errorCount = 0
 
+# Source types (There are 2 source types: Radio and Media)
+RADIO = 0   # Radio usually has one playlist but can have more
+MEDIA = 1   # Media can have one or more playlists with any name
+
 # Execute system command
 def execCommand(cmd):
     p = os.popen(cmd)
@@ -67,14 +72,15 @@ def createList():
     return
 
 # Create M3U output from the title and URL
-def createM3uOutput(title,url,filenumber):
+def createM3uOutput(title,url):
     lines = []    
     title = title.rstrip()
     url = url.rstrip()
-    url = url.split('#')[0] # Remove #<station name> 
+    #url = url.split('#')[0] # Remove #<station name> 
     lines.append('#EXTM3U')
     lines.append('#EXTINF:-1,%s' % title)
-    lines.append(url + '#' + title)
+    #lines.append(url + '#' + title) # No longer required
+    lines.append(url)
     return lines
 
 # Create M3U  playlist file
@@ -190,7 +196,7 @@ def parseAsx(title,url,data,filenumber):
 
             if checkStream(plsurl,lineCount):
                 m3ufile = title.replace(' ','_')
-                output = createM3uOutput(title,url,filenumber)
+                output = createM3uOutput(title,url)
             else:
                 output = ""
         except IndexError as e:
@@ -244,8 +250,35 @@ def parseDirect(title,url,filenumber):
     if len(title) < 1:
         title = createTitle(url)
     print("Title: " + title)
-    output = createM3uOutput(title,url,filenumber)
+    output = createM3uOutput(title,url)
     return output
+
+# Identify playlist type RADIO or MEDIA by file contents
+def getPlaylistType(playlist_name):
+    playlist_type = MEDIA
+    playlist_file = PlsDirectory + '/' + playlist_name 
+    typeNames = ['RADIO','MEDIA']
+
+    # Check playlist for "#EXTM3U" definition
+    count = 10  # Allow comments 10 lines max at start of file
+    found = False
+    try:
+        f = open(playlist_file, 'r')
+        while count > 0 and not found:
+            line = f.readline()
+            line = line.rstrip()
+            if line.startswith("#EXTM3U"):
+                found = True
+                playlist_type = RADIO
+            count -= 1
+        f.close()
+
+    except Exception as e:
+        msg = "getPlaylistType:" + str(e)
+        print(msg)
+
+    #print("Processing",playlist_file,typeNames[playlist_type])
+    return playlist_type
 
 # Create M3U file from PLS in the temporary directory
 def parsePls(title,url,lines,filenumber):
@@ -272,7 +305,7 @@ def parsePls(title,url,lines,filenumber):
     print("Title: " + title)
     if checkStream(plsurl,lineCount):
         m3ufile = title.replace(' ','_')
-        output = createM3uOutput(title,plsurl,filenumber)
+        output = createM3uOutput(title,plsurl)
     else:
         output = ""
     return output
@@ -627,30 +660,39 @@ if len(filename) > 0 and len(m3u_output) > 0:
 print("Processed %s station URLs from %s" % (processedCount,StationList))
 
 # Copy files from temporary directory to playlist directory
-oldfiles = glob.glob(PlsDirectory + '/_*')
+oldfiles = glob.glob(PlsDirectory + '/*.m3u')
 nOld = len(oldfiles)
 if nOld > 0:
     if not deleteOld and not noDelete:
         stderr("There are %s old radio playlist files in the %s directory.\n" \
              % (nOld,PlsDirectory))
-        answer = input("Do you wish to remove the old files y/n: ")
+        answer = input("Do you wish to remove the old radio playlists y/n: ")
         if answer == 'y':
             deleteOld = True
 
     if deleteOld:
         stderr ("\nRemoving %s old Radio playlists from directory %s\n"\
              % (nOld,PlsDirectory))
-        execCommand ("rm -f " + PlsDirectory + "_*.m3u" )
+
+        for filename in os.listdir(PlsDirectory):
+            playlist = os.path.join(PlsDirectory, filename)
+            # checking if it is a file
+            if os.path.isfile(playlist):
+                type = getPlaylistType(filename)
+                if type is RADIO:
+                    cmd = "rm -f " + playlist
+                    execCommand (cmd)
+                    print("Removed playlist", playlist)
     else:
         print ("Old playlist files not removed")
 
 # Copy new playlist(s) to MPD playlists directory
 copiedCount = len(os.listdir(TempDir))
-print("Copying %s new playlist file(s) to directory %s" % (copiedCount,PlsDirectory))
+print("\nCopying %s new playlist file(s) to directory %s" % (copiedCount,PlsDirectory))
 
 # List new playlists
 for file in os.listdir(TempDir):
-    print (file)
+    print (file, "copied")
 execCommand ("cp -f " + TempDir + '* ' + PlsDirectory )
 
 # Create summary report

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.91 2022/01/14 08:07:12 bob Exp $
+# $Id: config_class.py,v 1.93 2023/06/14 09:56:47 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -117,6 +117,7 @@ class Configuration:
     _remote_control_host = 'localhost'   # Remote control to radio communication host
     _remote_control_port = 5100          # Remote control to radio communication port
     _remote_listen_host = 'localhost'    # Address (locahost) or IP adress of remote UDP server
+    _keytable = 'myremote.toml'          # IR event daemon keytable name
 
     _i2c_address = 0x00  # Use defaults or use setting in radiod.conf 
     _i2c_bus = 1         # The I2C bus is normally 1
@@ -127,6 +128,7 @@ class Configuration:
     _logfile_truncate = False   # Truncate logfile otherwise tail the file
     _shutdown = True            # Shutdown when exiting radio
     _comitup_ip = "10.41.0.1"   # Comitup initial IP address.
+    _pivumeter = False          # Pimoroni Pivumeter
 
     # Shoutcast ID
     _shoutcast_key = "anCLSEDQODrElkxl"
@@ -320,6 +322,9 @@ class Configuration:
 
                 elif option == 'dateformat':
                     self.dateformat = parameter
+
+                elif option == 'keytable':
+                    self.keytable = parameter
 
                 elif option == 'display_playlist_number':
                     self.display_playlist_number = self.convertYesNo(parameter)
@@ -561,6 +566,9 @@ class Configuration:
 
                 elif option == 'shutdown_command':
                     self.shutdown_command = parameter
+
+                elif option == 'pivumeter':
+                    self.pivumeter = parameter
 
                 else:
                     msg = "Invalid option " + option + ' in section ' \
@@ -870,6 +878,15 @@ class Configuration:
         elif value > 15:
             value = 15
         self._client_timeout = value
+
+    # IR event daemon keytable name
+    @property
+    def keytable(self):
+        return self._keytable
+
+    @keytable.setter
+    def keytable(self, keytable):
+        self._keytable = keytable
 
     # Get the date format
     @property
@@ -1387,6 +1404,14 @@ class Configuration:
     def flip_display_vertically(self, parameter):
         self._flip_display_vertically = self.convertYesNo(parameter)
 
+    @property
+    def pivumeter(self):
+        return self._pivumeter
+
+    @pivumeter.setter
+    def pivumeter(self, parameter):
+        self._pivumeter = self.convertYesNo(parameter)
+
     # Get screen splash image
     @property
     def splash_screen(self):
@@ -1614,6 +1639,7 @@ if __name__ == '__main__':
     print ("Remote control port (remote_control_port):", config.remote_control_port)
     print ("UDP server listen host (remote_listen_host):", config.remote_listen_host)
     print ("Remote LED (remote_led):", config.remote_led)
+    print ("IR remote event daemon (keytable):", config.keytable)
 
     print('')
     print ("Speech (speech):", TrueFalse2yn(config.speech))
@@ -1661,6 +1687,7 @@ if __name__ == '__main__':
     print ("LCD Controller (controller):", config.controller)
     print ("Language (language):", config.language)
     print ("Romanize Cyrillic (romanize):", TrueFalse2yn(config.romanize))
+    print ("Pimoroni phatbeat (pivumeter):", TrueFalse2yn(config.pivumeter))
 
     # I2C parameters
     print('')

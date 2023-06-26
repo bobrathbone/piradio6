@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_pcf8574.py,v 1.6 2021/09/30 09:08:49 bob Exp $
+# $Id: lcd_i2c_pcf8574.py,v 1.7 2022/05/05 19:05:46 bob Exp $
 #
 # PCF8574 I2C LCD Backpack LCD class
 # Use this program to test I2C Backpack LCD wiring
@@ -269,7 +269,7 @@ class Lcd_i2c_pcf8574:
     def setWidth(self,width):
         self.width = width
         # Adjust line offsets if 16 char display
-        if width is 16:
+        if width == 16:
             self.lcd_line3 = self.LCD_LINE_3a 
             self.lcd_line4 = self.LCD_LINE_4a
         return

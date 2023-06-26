@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Remote Control Class
-# $Id: rc_daemon.py,v 1.13 2022/01/16 08:03:34 bob Exp $
+# $Id: rc_daemon.py,v 1.17 2023/06/21 05:54:50 bob Exp $
 # 
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
@@ -10,13 +10,14 @@
 # Site   : http://www.bobrathbone.com
 #
 # This is the daemon class for the IR remote control
-# It is called frome remote_control.py
+# It is called frome remote_control.py .py
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 #             The authors shall not be liable for any loss or damage however caused.
 #
+# THIS CODE IS REDUNDANT AND HAS BEEN REPLACED BY ir_daemon.py (Python3)
 
 import sys, os, time, atexit
 from signal import SIGKILL 
@@ -98,10 +99,14 @@ class Daemon:
 
         try:
             self.begin(False)
+
         except KeyboardInterrupt:
             pid = os.getpid()
             print("\nStopping remote control pid",pid)
-            os.kill(pid, SIGKILL)
+            # Remove pid file
+            if os.path.exists(self.pidfile):
+                os.remove(self.pidfile)
+            sys.exit(0)
  
     def begin(self,daemonize):
         """

@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: buildweb.sh,v 1.2 2020/10/12 18:31:25 bob Exp $
+# $Id: buildweb.sh,v 1.4 2023/06/05 22:10:04 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -8,6 +8,10 @@ VERSION=$(grep ^Version: ${PKG} | awk '{print $2}')
 ARCH=$(grep ^Architecture: ${PKG} | awk '{print $2}')
 DEBPKG=${PKG}_${VERSION}_${ARCH}.deb
 OS_RELEASE=/etc/os-release
+
+# Version 7.5 onwards allows any user with sudo permissions to install the software
+USR=$(logname)
+GRP=$(id -g -n ${USR})
 
 # Check we are not running as sudo
 if [[ "$EUID" -eq 0 ]];then
@@ -42,7 +46,7 @@ fi
 
 echo "Building package ${PKG} version ${VERSION}"
 echo "from input file ${PKG}"
-sudo chown pi:pi *.py
+sudo chown ${USR}:${GRP} *.py
 sudo chmod +x *.py
 equivs-build ${PKG}
 

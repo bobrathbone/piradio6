@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: remote_control.py,v 1.22 2022/01/16 08:07:38 bob Exp $
+# $Id: remote_control.py,v 1.24 2023/02/08 19:59:27 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -27,6 +27,7 @@
 #
 # This is the original Python 2 version for use on Buster
 # For the Python3 (Bullseye) version see irradiod.py and ir_daemon.py
+# # THIS CODE IS REDUNDANT AND HAS BEEN REPLACED BY irradiod.py (Python3)
 
 import RPi.GPIO as GPIO
 import configparser
@@ -334,3 +335,5 @@ if __name__ == "__main__":
 
 # End of script
 
+# set tabstop=4 shiftwidth=4 expandtab
+# retab

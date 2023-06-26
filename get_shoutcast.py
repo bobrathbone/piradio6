@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 #
 # Raspberry Pi Internet Radio Menu Class
-# $Id: get_shoutcast.py,v 1.12 2021/09/06 15:51:23 bob Exp $
+# $Id: get_shoutcast.py,v 1.13 2023/01/04 11:09:01 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -137,7 +137,8 @@ def getStationUrl(pls_url,m3u_playlist):
                 title = parseTitle(title)
                 m3u.append('#EXTM3U')
                 m3u.append('#EXTINF:-1,' + title)
-                m3u.append(url + '#' + title)
+                ## m3u.append(url + '#' + title) # Redundant - no need for #<title>
+                m3u.append(url)
                 appendPlaylist(m3u_playlist,m3u)
                 station_count += 1
                 break

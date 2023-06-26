@@ -3,7 +3,7 @@
 # West European languages character translation table for HD44780U controller
 # Do not use for HD44780 controllers
 #
-# $Id: European.py,v 1.2 2020/10/11 06:46:17 bob Exp $
+# $Id: European.py,v 1.3 2023/01/24 12:25:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -18,7 +18,7 @@
 #       http://www.utf8-chartable.de/
 #       http://www.codetable.net/
 #       http://www.ascii-code.com/
-#   https://en.wikipedia.org/wiki/Western_Latin_character_sets_(computing)
+#       https://en.wikipedia.org/wiki/Western_Latin_character_sets_(computing)
 
 # The following codes are best effort to translate European characters to the
 # available LCD fonts. The tables are not perfect nor complete so amend if necessary
@@ -71,7 +71,7 @@ codes = {
     '\\xc3\\x85' : chr(0x98),   # Å
     '\\xc3\\x93' : chr(0x89),   # Ó
     '\\xc3\\x94' : chr(0x87),   # Ô
-    '\\xc3\\x95' : 'O',     # Õ
+    '\\xc3\\x95' : 'O',         # Õ
     '\\xc3\\x98' : chr(0xc9),   # Ø
     '\\xc3\\x99' : chr(0x81),   # Ù
     '\\xc3\\x9a' : chr(0x82),   # Ú
@@ -83,12 +83,12 @@ codes = {
     '\\xc3\\xb0' : chr(0xcf),   # ð
     '\\xc3\\xb2' : chr(0x8c),   # ò
     '\\xc3\\xb3' : chr(0x8d),   # ó
-    '\\xc3\\xb4' : chr(0x8b),       # ô
-    '\\xc3\\xb8' : chr(0xc0),       # ø
+    '\\xc3\\xb4' : chr(0x8b),   # ô
+    '\\xc3\\xb8' : chr(0xc0),   # ø
 
     # Spanish (Not included above)
-    '\\xc3\\xb1' : chr(0xa7),       # ñ
-    '\\xc3\\xbf' : chr(0x88),       # ¿
+    '\\xc3\\xb1' : chr(0xa7),   # ñ
+    '\\xc3\\xbf' : chr(0x88),   # ¿
 
     # Languages where only a few characters can be translated
 
@@ -116,6 +116,29 @@ romanized = {
     '\\xc3\\x88' : 'E',     # E grave
     '\\xc3\\x89' : 'E',     # E acute
     '\\xc3\\x8a' : 'E',     # E circumflex
+
+    '\\xc3\\x8b' : 'E',     # E diaeresis
+    '\\xc3\\x8c' : 'I',     # I grave
+    '\\xc3\\x8d' : 'I',     # I acute
+    '\\xc3\\x8e' : 'I',     # I circumflex
+    '\\xc3\\x8f' : 'I',     # I diaeresis
+    '\\xc3\\x90' : 'D',     # ETH
+    '\\xc3\\x91' : 'N',     # N tilde
+    '\\xc3\\x92' : 'O',     # O grave
+    '\\xc3\\x93' : 'O',     # O acute
+    '\\xc3\\x94' : 'O',     # O circumflex
+    '\\xc3\\x95' : 'O',     # O tilde
+    '\\xc3\\x96' : 'O',     # O diaeresis
+    '\\xc3\\x97' : 'x',     # multiplication
+    '\\xc3\\x98' : 'O',     # O stroke
+    '\\xc3\\x99' : 'U',     # U grave
+
+    '\\xc3\\x9a' : 'U',     # U acute
+    '\\xc3\\x9b' : 'U',     # U circumflex
+    '\\xc3\\x9c' : 'U',     # U diaeresis
+    '\\xc3\\x9d' : 'Y',     # Y acute
+    '\\xc3\\x9e' : 'TH',    # THORN
+
     '\\xc3\\xa0' : 'a',     # a grave
     '\\xc3\\xa1' : 'a',     # a acute
     '\\xc3\\xa2' : 'a',     # a circumflex
@@ -126,17 +149,19 @@ romanized = {
     '\\xc3\\xab' : 'e',     # e diaeresis
     '\\xc3\\xae' : 'i',     # i circumflex
     '\\xc3\\xaf' : 'i',     # i diaeresis
-    '\\xc3\\xb7' : "/",     # Division sign
     '\\xc5\\x93' : 'oe',    # oe joined
+
+    '\\xc3\\xb8' : "o",     # o stroke
+    '\\xc3\\xb9' : "u",     # u grave
 
     # German unicode escape sequences not previously defined
     '\\xe1\\xba\\x9e' : 'ss', # ẞ
-    '\\xc3\\x9f' : 'ss',    # ẞ
-    '\\xc3\\xa4' : 'a', # ä
-    '\\xc3\\xb6' : 'o', # ö
-    '\\xc3\\xbc' : 'u', # ü
-    '\\xc3\\x96' : 'O', # Ö 
-    '\\xc3\\x9c' : 'U', # Ü 
+    '\\xc3\\x9f' : 'ss',      # ẞ
+    '\\xc3\\xa4' : 'a',       # ä
+    '\\xc3\\xb6' : 'o',       # ö
+    '\\xc3\\xbc' : 'u',       # ü
+    '\\xc3\\x96' : 'O',       # Ö 
+    '\\xc3\\x9c' : 'U',       # Ü 
 
     # Scandanavian unicode escape sequences
     '\\xc2\\x88' : 'A',   # aelig

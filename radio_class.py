@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.108 2022/02/16 08:56:39 bob Exp $
+# $Id: radio_class.py,v 1.118 2023/06/20 13:08:46 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -18,13 +18,15 @@
 #
 
 import os
-import sys,pwd
+import sys
 import string
 import time,datetime
 import re
 import socket
 import socketserver
 from time import strftime
+from os import stat
+from pwd import *
 import pdb
 
 from constants import __version__
@@ -39,7 +41,6 @@ from language_class import Language
 from source_class import Source
 from volume_class import Volume
 from playlist_class import Playlist
-#from mpd import MPDClient
 import mpd
 
 # MPD files
@@ -84,6 +85,7 @@ INTERNET_ERROR = 4
 ON = True
 OFF = False
 
+
 class Radio:
     translate = None    # Translate object
     spotify = None      # Spotify object
@@ -110,6 +112,7 @@ class Radio:
     ONEDAYMINS = 1440   # Day in minutes
 
     config = None
+    pivumeter = None
 
     source = None   # Source (radio,media,spotify and airplay)
     audio_error = False     # No sound device
@@ -210,12 +213,26 @@ class Radio:
         log = logobj
         log.message("Initialising radio", log.INFO)
         self.config = config
+
+        # Get user installation name from a well known installed file or direct
+        self.usr = getpwuid(stat("/usr/share/radio").st_uid).pw_name
+        log.message("Login name %s" % self.usr, log.INFO)
+        self.grp = self.usr  # Temporary only
+        self.uid = getpwnam(self.usr).pw_uid
+        self.gid = getpwnam(self.usr).pw_gid
+        msg = "User:%s(%s)  Group:%s(%s)" % (self.usr,self.uid,self.grp,self.gid)
+        log.message(msg, log.INFO)
+
+        if self.config.pivumeter:
+            from pivumeter_class import PiVumeter
+            self.pivumeter = PiVumeter()
+
         self.PL = Playlist('Radio',self.config)     # Playlist class 
         self.translate = translate
         self.airplay = AirplayReceiver(translate)
         self.spotify = SpotifyReceiver(translate)
 
-        if pwd.getpwuid(os.geteuid()).pw_uid > 0:
+        if getpwuid(os.geteuid()).pw_uid > 0:
             print("This program must be run with sudo or root permissions!")
             sys.exit(1)
 
@@ -254,17 +271,17 @@ class Radio:
         if not os.path.isfile("/media"):
             self.execCommand("mkdir -p /media")
             if not os.path.ismount("/media"):
-                self.execCommand("chown pi:pi /media")
+                os.chown('/media', self.uid, self.gid)
             self.execCommand("sudo ln -f -s /media /var/lib/mpd/music")
 
         # Create mount point for networked music library (NAS)
         if not os.path.isfile("/share"):
             self.execCommand("mkdir -p /share")
             if not os.path.ismount("/share"):
-                self.execCommand("chown pi:pi /share")
+                os.chown('/share', self.uid, self.gid)
             self.execCommand("sudo ln -f -s /share /var/lib/mpd/music")
 
-        self.execCommand("chown -R pi:pi " + RadioLibDir)
+        self.execCommand("chown -R " + self.usr + ":" + self.grp + " " + RadioLibDir)
         self.execCommand("chmod -R 764 " + RadioLibDir)
         self.current_file = CurrentStationFile
         self.current_id = self.getStoredID(self.current_file)
@@ -346,7 +363,8 @@ class Radio:
         elif key == 'KEY_INFO':
             self.event.set(self.event.KEY_INFO)
 
-        elif key == 'KEY_EXIT':
+        elif key == 'KEY_EXIT' or key == 'KEY_POWER':
+            print ("KEY_POWER DEBUG")
             self.event.set(self.event.SHUTDOWN)
 
         # These messages come from the Web CGI script
@@ -358,6 +376,14 @@ class Radio:
 
         elif key == 'RELOAD_PLAYLISTS':
             self.getSources()
+
+        elif 'PLAY_' in key:    
+            x = key.split('_')
+            play_number = int(x[1])
+            self.event.set(self.event.play(play_number))
+            self.event.set(self.event.PLAY)
+            if self.volume.muted():
+                self.volume.unmute()
 
         elif 'PLAYLIST:' in key:    # This event comes from the Web interface
             key_array = key.split(':')
@@ -2433,6 +2459,12 @@ class Radio:
     def setRomanize(self,true_false):
         log.message("Romanize " + str(true_false), log.INFO)
         self.translate.setRomanize(true_false)
+
+    # Display Pimoroni pivumeter (PHat Beat) if configured
+    def displayVuMeter(self):
+        if self.config.pivumeter:
+            vol = self.pivumeter.getVolume()
+            self.pivumeter.display(vol)
 
     # Return option value indexed by menu class options
     def getOptionValue(self,option_index):

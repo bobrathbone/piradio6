@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.7 2021/10/02 13:14:03 bob Exp $
+# $Id: button_class.py,v 1.8 2023/01/20 13:42:05 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-                time.sleep(0.2)
+            time.sleep(0.2)
 
     except KeyboardInterrupt:
         print(" Stopped")

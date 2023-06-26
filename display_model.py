@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-$Id: display_model.py,v 1.9 2021/10/30 08:48:55 bob Exp $
+$Id: display_model.py,v 1.10 2022/12/07 10:10:55 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -87,10 +87,15 @@ model_data = {
     'a020d3': ('3B+', '1.3', '1GB', 'Sony UK', '1.4GHz quad core, Blutooth 4.2, POE support'),
     'a03111': ('4B', '1.1', '1GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'b03111': ('4B', '1.1', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'b03111': ('4B', '1.2', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'b03114': ('4B', '1.4', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'b03115': ('4B', '1.5', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03111': ('4B', '1.1', '4GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03112': ('4B', '1.2', '4GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03114': ('4B', '1.4','8GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03130': ('400', '1.0','4GB', 'Sony UK', '64 bit 1.8GHz quad core, Bluetooth 5, USB 2/3'),
+    'd03115': ('4B', '1.5','8GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5.0, USB 2/3'),
+    '902120': ('Zero 2W', '1.0','512MB', 'Sony UK', '64 bit 1.0GHz quad core, Bluetooth 4.2, USB 2.0'),
 }
 
 

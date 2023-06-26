@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.17 2021/09/30 08:53:37 bob Exp $
+# $Id: event_class.py,v 1.19 2023/06/13 14:53:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -86,8 +86,10 @@ class Event():
     # Playlist events
     PLAYLIST_CHANGED = 20
 
+    PLAY = 21
+
     # Shutdown radio
-    SHUTDOWN = 21
+    SHUTDOWN = 22
 
     # Alternate event names (easier to understand code )
     VOLUME_UP = RIGHT_SWITCH
@@ -103,7 +105,7 @@ class Event():
               'MENU_BUTTON_UP', 'ALARM_FIRED', 'TIMER_FIRED', 'KEY_LANGUAGE',
               'KEY_INFO', 'ROTARY_SWITCH_CHANGE', 'MPD_CLIENT_CHANGE', 
               'LOAD_RADIO', 'LOAD_MEDIA', 'LOAD_PLAYLIST', 'LOAD_AIRPLAY', 
-              'LOAD_SPOTIFY','PLAYLIST_CHANGED','SHUTDOWN',
+              'LOAD_SPOTIFY','PLAYLIST_CHANGED','PLAY','SHUTDOWN',
              ]
 
     encoderEventNames = [ 'NONE', 'CLOCKWISE', 'ANTICLOCKWISE',
@@ -122,6 +124,8 @@ class Event():
     # Configuration 
     user_interface = 0
     display_type = 0
+
+    play_number = 0     # Play number (from remote control)
 
     # Initialisation routine
     def __init__(self,config):
@@ -251,6 +255,16 @@ class Event():
         self.event_triggered = True
         self.event_type = event
         return self.event_type
+
+    # Play station/track number
+    def play(self,play_number):
+        self.play_number = play_number
+
+    # Get play number (called by PLAY event in radiod)
+    def getPlayNumber(self):
+        play_number = self.play_number
+        self.play_number = 0
+        return play_number
 
     # Check for event True or False
     def detected(self):

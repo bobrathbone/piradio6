@@ -10,10 +10,28 @@ See http://www.musicpd.org/
 Use "sudo apt-get install mpd mpc python3-mpd" to install the Music Player Daemon (MPD)
 This software uses the python3-mpd library. See https://packages.debian.org/sid/python3-mpd
 
+Version 7.5 release notes
+-------------------------
+Release 20th June 2023 - Build 6 
+
+1) Corrected Pimoroni Pirate Radio button settings
+2) Corrected create_stations.py --delete_old not working 
+3) Corrected corrupt /etc/mpd.conf.orig
+4) Prevent i2s-mmap being configured twice in /boot/config.txt
+5) Use language file for radiod and MPD versions text
+6) Added additional RPi models to the display_model.py utility
+7) Added timedatectl timesync-status
+8) /etc/mpd.conf bind_to_address="127.0.0.1" (Prevent binding to IPv6 ::1)
+9) Support for bluetooth devices added to Bullseye (pulseaudio-module-bluetooth)
+10) No longer need #<station name> at the end of the station URL in the stationlist file
+11) Added code to display volume on pHat Beat (pivumeter_class.py)
+12) Allow any user with sudo permissions to install the software
+13) Use ir-keytable to set up IR Remote Control
+14) Numeric keys on IR Remote Control can be used to select station or track
+15) Old /var/log/radio.log removed . See /var/log/radiod/radio.log
+
 Version 7.4 release notes
 -------------------------
-Release 11th March 2022 - Build 4 
-
 1) Runs on either Raspberry Pi OS Bullseye or Buster. 
 2) Music Player Daemon (MPD) version 0.22.6 installed as default
 3) The web interface uses php7.4 (Buster uses php7.3)
@@ -30,6 +48,7 @@ Release 11th March 2022 - Build 4
 14) CGI scripts for the Radio Web Interface converted to Python3
 15) Support for PiFace CAD(2) hardware re-introduced
 16) Re-configuration of MPD and ALSA to reduce popping sound when changing channels  
+17) Link Quality added to display_wifi.sh script
 
 Version 7.3 release notes 
 -------------------------
