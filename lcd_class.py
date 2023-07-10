@@ -153,7 +153,7 @@ class Lcd:
         self.clear()
         return
      
-    # Output byte to Led  mode = Command or Data
+    # Output byte to LCD  mode = Command or Data
     def _byte_out(self,bits, mode):
         # Send byte to data pins
         # bits = data
