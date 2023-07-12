@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This class drives the Sitronix ST7789 controller and 240x240 pixel TFT
 #
-# $Id: st7789tft_class.py,v 1.9 2021/08/11 08:00:54 bob Exp $
+# $Id: st7789tft_class.py,v 1.10 2023/07/06 11:11:37 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -275,6 +275,8 @@ if __name__ == '__main__':
 
     dateformat = "%H:%M %d/%m/%Y"
     log = None
+    if len(log.getName()) < 1:
+        log.init("radio")
     UP=1
     log = Log()
     eventStr = "No event"

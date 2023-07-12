@@ -12,7 +12,7 @@ This software uses the python3-mpd library. See https://packages.debian.org/sid/
 
 Version 7.5 release notes
 -------------------------
-Release 20th June 2023 - Build 6 
+Release 7th July 2023 - Build 9 
 
 1) Corrected Pimoroni Pirate Radio button settings
 2) Corrected create_stations.py --delete_old not working 
@@ -29,6 +29,8 @@ Release 20th June 2023 - Build 6
 13) Use ir-keytable to set up IR Remote Control
 14) Numeric keys on IR Remote Control can be used to select station or track
 15) Old /var/log/radio.log removed . See /var/log/radiod/radio.log
+16) configure_ir_remote.sh now logs to /usr/share/radio/logs/install_ir.log
+17) New 64 bit version radiod_7.5_arm64.deb (Beta) 
 
 Version 7.4 release notes
 -------------------------
@@ -152,10 +154,6 @@ https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio.pdf
 Vintage radio
 https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Vintage%20Radio.pdf
 https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Vintage%20Radio%20Operating%20Instructions.pdf
-
-Version 6.x (For PiFace CAD support only)
-https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio%206.x.pdf
-
 
 GitHub
 ------

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio IR Remote Control Class
-# $Id: ir_daemon.py,v 1.3 2023/06/21 05:54:50 bob Exp $
+# $Id: ir_daemon.py,v 1.4 2023/07/04 19:29:51 bob Exp $
 # 
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
@@ -72,7 +72,7 @@ class Daemon:
         sys.stderr.flush()
         si = open(self.stdin, 'r')
         so = open(self.stdout, 'a+')
-        se = open(self.stderr, 'a+', 0)
+        se = open(self.stderr, 'a+')
         os.dup2(si.fileno(), sys.stdin.fileno())
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: no_display.py,v 1.2 2020/10/13 05:39:44 bob Exp $
+# $Id: no_display.py,v 1.3 2023/07/06 11:14:49 bob Exp $
 # Raspberry Pi display routines
 # Null screen routines used by retro radio 
 #
@@ -47,18 +47,18 @@ class No_Display:
     def out(self,line_number=1,text="",interrupt=no_interrupt):
         return
 
-        # Set Scroll line speed - Best values are 0.2 and 0.3
-        # Limit to between 0.05 and 1.0
-        def setScrollSpeed(self,speed):
-                return
+    # Set Scroll line speed - Best values are 0.2 and 0.3
+    # Limit to between 0.05 and 1.0
+    def setScrollSpeed(self,speed):
+            return
 
     # Clear display
     def clear(self):
-                return
+        return
 
     # Return colour False
     def hasColor(self):
-                return False
+        return False
 
 # End of No Screen class
 

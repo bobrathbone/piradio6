@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.46 2023/06/07 13:13:46 bob Exp $
+# $Id: display_config.sh,v 1.48 2023/06/28 08:00:11 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -65,6 +65,7 @@ echo | tee -a ${LOG}
 echo "Kernel version " | tee -a ${LOG}
 echo "--------------" | tee -a ${LOG}
 uname -a  | tee -a ${LOG}
+echo "Architecture $(getconf LONG_BIT)-bit" | tee -a ${LOG}
 echo | tee -a ${LOG}
 
 echo "User $(id -u -n)" | tee -a ${LOG}
@@ -223,19 +224,11 @@ echo "Remote control daemon (irradiod.service)" | tee -a ${LOG}
 echo "----------------------------------------" | tee -a ${LOG}
 
 # Display remote control daemon configuration
-if [[ -f /lib/systemd/system/irradiod.service ]]; then
+if [[ -f /lib/systemd/system/ireventd.service ]]; then
+    grep ExecStart /lib/systemd/system/ireventd.service | tee -a ${LOG}
+else
     grep ExecStart /lib/systemd/system/irradiod.service | tee -a ${LOG}
-    if [[ $(release_id) -lt 10 ]]; then
-        sudo ${DIR}/remote_control.py status | tee -a ${LOG}
-        sudo ${DIR}/remote_control.py config | tee -a ${LOG}
-    else
-        sudo ${DIR}/irradiod.py status | tee -a ${LOG}
-        sudo ${DIR}/irradiod.py config | tee -a ${LOG}
-    fi
-else 
-    echo "irradiod.service not installed" | tee -a ${LOG}
 fi
-
 
 echo | tee -a ${LOG}
 echo "${RADIOLIB} settings" | tee -a ${LOG}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: log_class.py,v 1.4 2021/09/30 08:03:28 bob Exp $
+# $Id: log_class.py,v 1.5 2023/07/06 08:44:19 bob Exp $
 # Raspberry Pi Internet Radio Logging class
 #
 # Author : Bob Rathbone
@@ -46,10 +46,15 @@ class Log:
     def __init__(self):
         return 
 
+    # Initialise log and set module name (usually "radio")
     def init(self,module):
         self.module = module
         self.loglevel = self.getConfig()
         return 
+
+    # Get module name (usually "radio") to check if initialised
+    def getName(self):
+        return self.module
 
     def message(self,message,level):
         # Set up logging, level 

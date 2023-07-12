@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: irradiod.py,v 1.7 2023/02/17 11:51:55 bob Exp $
+# $Id: irradiod.py,v 1.8 2023/07/04 19:27:21 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -244,8 +244,9 @@ def usage():
 def usageSend():
     print(("Usage: %s send <KEY>" % sys.argv[0]))
     print ("Where <KEY> is a valid IR_KEY")
-    print ("   KEY_VOLUMEUP,KEY_VOLUMEDOWN,KEY_CHANNELUP,KEY_CHANNELDOWN,")
-    print ("   KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK,KEY_INFO,KEY_MUTE")
+    print ("   KEY_VOLUMEUP,KEY_VOLUMEDOWN,KEY_CHANNELUP,KEY_CHANNELDOWN,KEY_MENU")
+    print ("   KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK,KEY_INFO,KEY_MUTE,KEY_EXIT")
+    print ("   PLAY_<n> Where <n> is 1 to 999, play station/track n")
     sys.exit(2)
 
 def getBootConfig(str):

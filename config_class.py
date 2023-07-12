@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.93 2023/06/14 09:56:47 bob Exp $
+# $Id: config_class.py,v 1.94 2023/06/28 07:56:01 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1722,7 +1722,7 @@ if __name__ == '__main__':
     print ("Display window labels color (display_window_labels_color):", 
             config.display_window_labels_color)
     print ("Scale labels color (scale_labels_color):", config.scale_labels_color)
-    print ("Sations per page (stations_per_page):", config.stations_per_page)
+    print ("Stations per page (stations_per_page):", config.stations_per_page)
     print ("Display mouse (display_mouse):", TrueFalse2yn(config.display_mouse))
     print ("Display title (display_title):", TrueFalse2yn(config.display_title))
     print ("Display date (display_date):", TrueFalse2yn(config.display_date))

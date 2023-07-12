@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: luma_class.py,v 1.24 2021/10/07 06:36:42 bob Exp $
+# $Id: luma_class.py,v 1.25 2023/07/05 08:52:02 bob Exp $
 # This class drives the SH1106 controller for the 128x64 pixel TFT
 # It requirs the I2C dtoverlay to be loaded. The I2C address is normally 0x37
 #
@@ -83,7 +83,7 @@ class LUMA:
 
         # Work out number of characters will fit in the screen
         i = len(sText)
-        while self.font.getsize(sText[:i])[0] > oled.width:
+        while self.font.getlength(sText[:i]) > float(oled.width):
             i = i-1
         self.nchars = i
 
@@ -104,8 +104,8 @@ class LUMA:
             self.nchars = 10
             self.font_name = "DejaVuSans.ttf"
             self.font = ImageFont.truetype(self.font_name, 18)
-            self.Lines = [0,20,40,60]
-            #self.Lines = [0,16,32,48]
+            #self.Lines = [0,20,40,60]
+            self.Lines = [0,16,32,48]
         else:
             oled = sh1106(serial,rotate=rotation)
         return oled
@@ -206,8 +206,8 @@ class LUMA:
                 self._out(line,text[i:])
                 self.update()
         
-                fsize = self.font.getsize(text[i:])
-                if fsize[0] <=  oled.width:
+                fsize = self.font.getlength(text[i:])
+                if fsize <=  float(oled.width):
                     break
 
                 if interrupt():

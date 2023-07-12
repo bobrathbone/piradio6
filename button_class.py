@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.8 2023/01/20 13:42:05 bob Exp $
+# $Id: button_class.py,v 1.9 2023/07/06 11:11:37 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -93,6 +93,8 @@ if __name__ == "__main__":
     from log_class import Log
     config = Configuration()
     log = Log()
+    if len(log.getName()) < 1:
+        log.init("radio")
 
     pullupdown = ['DOWN','UP'] 
 

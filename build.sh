@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.6 2023/06/05 22:10:04 bob Exp $
+# $Id: build.sh,v 1.7 2023/06/28 06:47:05 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -24,8 +24,16 @@ OS_RELEASE=/etc/os-release
 
 # Check we are not running as sudo
 if [[ "$EUID" -eq 0 ]];then
-        echo "Run this script as user pi and not sudo/root"
-        exit 1
+    echo "Run this script as user pi and not sudo/root"
+    exit 1
+fi
+
+# Check if this machine is 32-bit
+BIT=$(getconf LONG_BIT)
+if [[ ${BIT} != "32" ]]; then
+    echo "This build will only run on a 32-bit system."
+    echo "This is a ${BIT}-bit system. Use build64.sh script."
+    exit 1
 fi
 
 # We need Rasbian Buster (Release 10) or later
@@ -34,10 +42,10 @@ SAVEIFS=${IFS}; IFS='='
 ID=$(echo ${VERSION_ID} | awk '{print $2}' | sed 's/"//g')
 if [[ ${ID} -lt 10 ]]; then
 	VERSION=$(grep VERSION= ${OS_RELEASE})
-        echo "Raspbian Buster (Release 10) or later is required to run this build"
+    echo "Raspbian Buster (Release 10) or later is required to run this build"
 	RELEASE=$(echo ${VERSION} | awk '{print $2 $3}' | sed 's/"//g')
 	echo "This is Raspbian ${RELEASE}"
-        exit 1
+    exit 1
 fi
 IFS=${SAVEIFS}
 

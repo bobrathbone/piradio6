@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.17 2023/06/23 16:37:19 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.21 2023/07/07 08:01:27 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -18,7 +18,8 @@
 SCRIPT=$0
 OS_RELEASE=/etc/os-release
 RADIO_DIR=/usr/share/radio
-LOG=${RADIO_DIR}/install_ir.log
+LOGDIR=${RADIO_DIR}/logs
+LOG=${LOGDIR}/install_ir.log
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/config.txt
 LIRC_ETC=/etc/lirc
@@ -32,7 +33,6 @@ KEYMAPS=/etc/rc_keymaps
 ERRORS=(0)
 
 IR_GPIO=9   
-IR_REMOTE_LED=0
 DT_OVERLAY=""
 REMOTE_LED=0
 
@@ -64,6 +64,7 @@ if [[ ${REL_ID} -lt 10 ]]; then
 fi
 
 sudo rm -f ${LOG}
+mkdir -p ${LOGDIR}
 echo "$0 configuration log, $(date) " | tee ${LOG}
 
 # Check if user wants to configure IR remote control 
@@ -187,7 +188,7 @@ INTERFACE=${KERNEL_EVENT}
 selection=1
 while [ $selection != 0 ]
 do
-    ans=$(whiptail --title "Select Intface type LIRC or Kernel Event " --menu "Choose your option" 15 75 9 \
+    ans=$(whiptail --title "Select Interface type LIRC or Kernel Event " --menu "Choose your option" 15 75 9 \
     "1" "Kernel event configured with ir-keytable (Default)" \
     "2" "LIRC daemon configured using irrecord (Legacy only)" \
     "3" "Unsure? - Let system use defaults" \
@@ -203,11 +204,11 @@ do
         INTERFACE=${KERNEL_EVENT}
 
     elif [[ ${ans} == '2' ]]; then
-        DESC="All designs using DAC sound cards, GPIO 16 (pin 36)"
+        DESC="Use LIRC daemon to detect IR events"
         INTERFACE=${LIRC}
 
     elif [[ ${ans} == '3' ]]; then
-        DESC="IQaudIO Cosmic controller, GPIO 14 (pin 8)"
+        DESC="Use Kernel Events (ev_dev) for IR detection"
         INTERFACE=${KERNEL_EVENT}
     fi
 
@@ -265,14 +266,6 @@ do
     fi
 done
 
-# Start LIRC daemon
-CMD="sudo systemctl start lircd"
-echo ${CMD};${CMD}
-if [[ $? -ne '0' ]]; then       # Do not seperate from above
-    echo "Warning: Failed to start ${lirc_service}" | tee -a ${LOG}
-    ERRORS=$(($ERRORS+1))
-fi
-
 # Copy options file 
 if [[ -f  ${LIRC_OPTIONS}.dist ]]; then
     CMD="sudo cp ${LIRC_OPTIONS}.dist ${LIRC_OPTIONS}"  
@@ -287,10 +280,6 @@ fi
 # Configure driver and device in lirc_options.conf
 sudo sed -i -e '/^driver/s/devinput/default/' ${LIRC_OPTIONS}
 sudo sed -i -e '/^device/s/auto/\/dev\/lirc0/' ${LIRC_OPTIONS}
-
-# Re-install default configuration file if lirc previously
-# installed using an old procedure
-#${CMD} >/dev/null 2>&1
 
 # Copy keymaps
 echo "" | tee -a ${LOG}
@@ -348,14 +337,18 @@ if [[ ${INTERFACE} == ${KERNEL_EVENT} ]]; then
     echo "Enabling Kernel Events ireventd.service" |  tee -a ${LOG}
     CMD="sudo systemctl enable ireventd.service" 
     echo ${CMD} | tee -a ${LOG}
+    ${CMD}
     CMD="sudo systemctl disable irradiod.service" 
     echo ${CMD} | tee -a ${LOG}
+    ${CMD}
 else
     echo "Enabling LIRC irradiod.service" |  tee -a ${LOG}
     CMD="sudo systemctl enable irradiod.service" 
     echo ${CMD} | tee -a ${LOG}
+    ${CMD}
     CMD="sudo systemctl disable ireventd.service" 
     echo ${CMD} | tee -a ${LOG}
+    ${CMD}
 fi
 
 # Print configuration instructions for either Kernel events or LIRC interface
@@ -366,6 +359,8 @@ if [[ ${INTERFACE} == ${KERNEL_EVENT} ]]; then
     echo "to configure your IR remote control" |  tee -a ${LOG}
     echo "    sudo ir-keytable -v -t -p  rc-5,rc-5-sz,jvc,sony,nec,sanyo,mce_kbd,rc-6,sharp,xmpir-keytable" |  tee -a ${LOG}
     echo "" |  tee -a ${LOG}
+    echo "Create myremote.toml using the scan codes from the ir-keytable program output" |  tee -a ${LOG}
+    echo "See the example in ${RADIO_DIR}/myremote.mytoml"  |  tee -a ${LOG}
     echo "Then copy your configuration file (myremote.toml) to  ${RC_MAPS}" |  tee -a ${LOG}
     echo "    sudo cp myremote.toml ${RC_MAPS}/." |  tee -a ${LOG}
 else

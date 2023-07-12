@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.13 2023/06/22 16:43:14 bob Exp $
+# $Id: ireventd.py,v 1.14 2023/07/06 20:25:57 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -150,7 +150,8 @@ class RemoteDaemon(Daemon):
             # data.scancode - Key code
             # See https://python-evdev.readthedocs.io/en/latest/apidoc.html#evdev.events.InputEvent
             if event.type == ecodes.EV_KEY:
-                GPIO.output(remote_led, True)
+                if remote_led > 0:
+                    GPIO.output(remote_led, True)
 
                 # Or use categorize. This is more useful if we want to write a function to
                 # return a text representation of the button press on a key down
@@ -183,7 +184,8 @@ class RemoteDaemon(Daemon):
                         reply = self.udpSend(keycode)
                         print(reply)
 
-                GPIO.output(remote_led, False)
+                if remote_led > 0:
+                    GPIO.output(remote_led, False)
 
     # Listener  routine
     def listener(self,irin):

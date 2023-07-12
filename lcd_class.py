@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.6 2021/11/17 13:29:47 bob Exp $
+# $Id: lcd_class.py,v 1.7 2023/07/12 06:39:19 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -153,7 +153,7 @@ class Lcd:
         self.clear()
         return
      
-    # Output byte to Led  mode = Command or Data
+    # Output byte to LCD  mode = Command or Data
     def _byte_out(self,bits, mode):
         # Send byte to data pins
         # bits = data

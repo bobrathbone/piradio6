@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Cosmic Controller (IQAudio) Class
-# $Id: cosmic_class.py,v 1.4 2021/09/30 09:03:15 bob Exp $
+# $Id: cosmic_class.py,v 1.5 2023/07/06 11:11:37 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -125,6 +125,8 @@ if __name__ == "__main__":
 
     config = Configuration()
     log = Log()
+    if len(log.getName()) < 1:
+        log.init("radio")
 
     print("Test Cosmic Controller Class")
     getConfig = False
