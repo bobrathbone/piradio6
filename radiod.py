@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.82 2023/06/20 13:08:46 bob Exp $
+# $Id: radiod.py,v 1.92 2023/10/03 14:07:13 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -19,6 +19,7 @@ import time
 import signal
 import socket
 import datetime
+import subprocess
 from time import strftime
 
 import pdb
@@ -231,7 +232,6 @@ class MyDaemon(Daemon):
         log.message('Radio running pid ' + str(os.getpid()), log.INFO)
 
         statusLed.set(StatusLed.NORMAL)
-        display.clear() # Clear 
 
         # Main processing loop
         while True:
@@ -489,7 +489,7 @@ def handleRadioEvent(event,display,radio,menu):
         time.sleep(0.5) # Prevent unmute
         displayVolume(display,radio)
 
-    if event_type == event.CHANNEL_UP:
+    elif event_type == event.CHANNEL_UP:
         log.message('Channel UP', log.DEBUG)
         radio.channelUp()
         display.setDelay(0) # Cancel delayed display of volume
@@ -514,22 +514,58 @@ def handleRadioEvent(event,display,radio,menu):
             radio.unmute()
         handleMenuChange(display,radio,menu,message)
 
+    elif event_type == event.AUX_SWITCH1:
+        log.message('AUX switch 1 DOWN', log.DEBUG)
+
+    elif event_type == event.AUX_SWITCH2:
+        log.message('AUX switch 2 DOWN', log.DEBUG)
+
+    elif event_type == event.AUX_SWITCH3:
+        log.message('AUX switch 3 DOWN', log.DEBUG)
+
     elif event_type == event.PLAYLIST_CHANGED:
         log.message('event PLAYLIST_CHANGED', log.DEBUG)
         print('PLAYLIST_CHANGED event recieved')
         radio.handlePlaylistChange()
 
     elif event_type == event.SHUTDOWN:
-        log.message('SHUTDOWN', log.DEBUG)
+        log.message('event SHUTDOWN', log.DEBUG)
         displayStop(display,message)
-        radio.stop()
-
+        radio.stopMpdDaemon()
         if radio.config.shutdown: 
             display.out(1, message.get('shutdown'))
             radio.shutdown() # Shutdown the system
         else:
             display.out(1, message.get('stopped'))
-            sys.exit(0)
+            cmd = radio.config.execute
+            if len(cmd) > 3:
+                msg = "Executing %s" % cmd
+                log.message(msg, log.INFO)
+
+                # Stop UDP server thread
+                radio.server.stop()
+                pid = os.fork()
+
+                # Execute command from forked process
+                if pid > 0:
+                    try:
+                        subprocess.Popen(args=[cmd, ' &'] ,shell=False,
+                            stdin=None, stdout=None, stderr=None, close_fds=True)
+                        #execCommand(cmd + ' &')
+                    except Exception as e:
+                        print(str(e))
+
+                    msg = "Exiting child process %s" % os.getpid()
+                    log.message(msg, log.DEBUG)
+                    sys.exit(0)
+        #try:
+        #    os.wait()
+        #except:
+        #    pass
+        msg = "Exiting! process %s" % os.getpid()
+        print(msg)
+        log.message(msg, log.INFO)
+        sys.exit(0)
 
     # Display volume
     if volume_change:

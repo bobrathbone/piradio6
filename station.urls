@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.31 2023/06/22 08:45:57 bob Exp $
+# $Id: station.urls,v 1.32 2023/09/09 09:00:02 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -46,6 +46,7 @@
 
 # UK stations
 [Caroline Pirate] http://sc3.radiocaroline.net:8030/listen.m3u8
+[Thornbury Radio] https://s42.myradiostream.com/29400/listen.mp3
 
 # Dutch stations
 [NPO Radio 1] http://icecast.omroep.nl/radio1-bb-mp3

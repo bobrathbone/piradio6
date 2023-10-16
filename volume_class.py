@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.22 2021/07/12 06:38:25 bob Exp $
+# $Id: volume_class.py,v 1.23 2023/10/16 07:32:04 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -169,6 +169,12 @@ class Volume:
                                   + " " + str(volume) + "%"
             log.message(cmd, log.DEBUG)
             self.execCommand(cmd)
+
+            # Restore alsamixer settings
+            cmd = "sudo /usr/sbin/alsactl restore"
+            log.message(cmd, log.DEBUG)
+            self.execCommand(cmd)
+
             self.mixer_volume = volume
             
             if store:

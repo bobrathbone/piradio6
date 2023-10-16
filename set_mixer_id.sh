@@ -1,13 +1,13 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: set_mixer_id.sh,v 1.18 2023/06/05 22:10:05 bob Exp $
+# $Id: set_mixer_id.sh,v 1.19 2023/08/01 09:15:07 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
 # This program is used during installation to set up the mixer volume ID 
-# parameter mixer_volume_id in /etc/radiod.conf
+# parameter mixer_volume_id in /var/lib/radiod
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #

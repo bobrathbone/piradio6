@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.33 2023/06/09 11:20:34 bob Exp $
+# $Id: configure_radio.sh,v 1.37 2023/09/13 09:44:25 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -35,6 +35,7 @@ fi
 USR=$(logname)
 GRP=$(id -g -n ${USR})
 
+OS_RELEASE=/etc/os-release
 LOGDIR=${DIR}/logs
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/config.txt
@@ -56,7 +57,7 @@ GPIO_PINS=0 # 0 Not configured, 1=40 pin wiring,2=26 pin,3=I2C Rotary
 PULL_UP_DOWN=0  # Pull up/down resistors 1=Up, 0=Down
 USER_INTERFACE=0    # 0 Not configured, 1=Buttons, 2=Rotary encoders, 3=HDMI/Touch-screen
             # 4=IQaudIO(I2C), 5=Pimoroni pHAT(SPI), 6=Adafruit RGB(I2C),
-            # 7=PiFace CAD, 8=Pirate Audio
+            # 7=PiFace CAD, 8=Pirate Audio, 9=pHat with 3 buttons and joystick 
 # Display type
 DISPLAY_TYPE=""
 I2C_REQUIRED=0
@@ -81,6 +82,25 @@ VOLUME_RANGE=20
 
 # Date format (Use default in radiod.conf)
 DATE_FORMAT=""  
+
+# Get OS release ID
+function release_id
+{
+    VERSION_ID=$(grep VERSION_ID $OS_RELEASE)
+    arr=(${VERSION_ID//=/ })
+    ID=$(echo "${arr[1]}" | tr -d '"')
+    ID=$(expr ${ID} + 0)
+    echo ${ID}
+}
+
+# Get OS release name
+function codename
+{
+    VERSION_CODENAME=$(grep VERSION_CODENAME $OS_RELEASE)
+    arr=(${VERSION_CODENAME//=/ })
+    CODENAME=$(echo "${arr[1]}" | tr -d '"')
+    echo ${CODENAME}
+}
 
 # Create log directory
 sudo mkdir -p ${LOGDIR}
@@ -134,7 +154,8 @@ do
     "6" "Adafruit RGB plate with own push buttons" \
     "7" "PiFace CAD with own push buttons" \
     "8" "Pimoroni Audio with four push buttons" \
-    "9" "Do not change configuration" 3>&1 1>&2 2>&3) 
+    "9" "Hat with 1.3\" OLED 3 x push buttons and joystick" \
+    "10" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -186,6 +207,13 @@ do
         USER_INTERFACE=8
         GPIO_PINS=1
         BUTTON_WIRING=5
+        PULL_UP_DOWN=1
+
+    elif [[ ${ans} == '9' ]]; then
+        DESC="1.3\" OLED with joystick and 3 buttons"
+        USER_INTERFACE=9
+        GPIO_PINS=1
+        BUTTON_WIRING=6
         PULL_UP_DOWN=1
     else
         DESC="User interface in ${CONFIG} unchanged"    
@@ -372,8 +400,9 @@ do
     "9" "Sitronix SSD1306 128x64 monochrome OLED" \
     "10" "OLEDs using LUMA driver (SSD1306,SH1106 etc)" \
     "11" "Grove LCD RGB JHD1313 (AIP31068L controller)" \
-    "12" "No display used/Pimoroni Pirate radio" \
-    "13" "Do not change display type" 3>&1 1>&2 2>&3) 
+    "12" "OLEDs using SH1106 SPI interface, buttons & joystick" \
+    "13" "No display used/Pimoroni Pirate radio" \
+    "14" "Do not change display type" 3>&1 1>&2 2>&3) 
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -439,13 +468,11 @@ do
 
     elif [[ ${ans} == '9' ]]; then
         DISPLAY_TYPE="SSD1306"
-        DESC="Sitronix SSD1306 128x64 OLED"
+        DESC="128x64 OLED with SSD1306 SPI interface"
         DLINES=4
         DWIDTH=16
         VOLUME_RANGE=10
-        I2C_REQUIRED=1
-        I2C_ADDRESS="0x3C"
-        ADAFRUIT_SSD1306=1
+        SPI_REQUIRED=1
         SPLASH="images\/raspberrypi.png"
 
     elif [[ ${ans} == '10' ]]; then
@@ -467,6 +494,15 @@ do
         DESC="Grove JHD1313LCD RGB LCD"
 
     elif [[ ${ans} == '12' ]]; then
+        DISPLAY_TYPE="SH1106_SPI"
+        DESC="OLED using SH1106 SPI interface"
+        DLINES=4
+        DWIDTH=16
+        VOLUME_RANGE=20
+        SPI_REQUIRED=1
+        SPLASH="bitmaps\/raspberry-pi-logo.bmp" 
+
+    elif [[ ${ans} == '13' ]]; then
         DISPLAY_TYPE="NO_DISPLAY"
         DLINES=0
         DWIDTH=0
@@ -602,6 +638,12 @@ if [[ ${SPI_REQUIRED} != 0 ]]; then
         echo; echo -n "Press enter to continue: "
         read ans
     fi
+fi
+
+
+if [[ ${SPI_REQUIRED} != 0 ]]; then
+    echo "$DESC requires the SPI interface"
+    echo "Use sudo raspi-config to enable SPI"
 fi
 
 if [[ ${I2C_REQUIRED} != 0 ]]; then
@@ -867,12 +909,20 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     echo "Desktop program ${GPROG}.py configured" | tee -a ${LOG}
 fi
 
+echo "Configuring radio for $(codename) OS " 
+
 # Correct missing autostart file
-LXDE=/home/${USR}/.config/lxsession/LXDE-pi
-AUTOSTART="${LXDE}/autostart"
-if [[ ! -d ${LXDE} ]]; then
-    mkdir -p ${LXDE}
-    cp ${DIR}/lxsession/autostart ${AUTOSTART} 
+if [[ $(release_id) -ge 12 ]]; then
+    LXDE="LXDE"
+else 
+    LXDE="LXDE-pi"
+fi
+
+LXDE_DIR=/home/${USR}/.config/lxsession/${LXDE}
+AUTOSTART="${LXDE_DIR}/autostart"
+if [[ ! -d ${LXDE_DIR} ]]; then
+    mkdir -p ${LXDE_DIR}
+    cp ${DIR}/lxsession/${LXDE}.autostart ${AUTOSTART} 
     chown -R ${USR}:${GRP} /home/${USR}/.config/lxsession
 fi
 
@@ -924,7 +974,7 @@ if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
 fi
 
 # Configure user interface
-if [[ ${USER_INTERFACE} == "1" || ${USER_INTERFACE} == "8" ]]; then
+if [[ ${USER_INTERFACE} == "1" || ${USER_INTERFACE} == "8" || ${USER_INTERFACE} == "9" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=buttons/}" ${CONFIG}
 
 elif [[ ${USER_INTERFACE} == "2" ]]; then
@@ -1053,6 +1103,17 @@ elif [[ ${BUTTON_WIRING} == "5" ]]; then
     # Some versions of the Pimoroni Audio use GPIO 24 for the right switch
     #sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=24/}" ${CONFIG}
     sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=20/}" ${CONFIG}
+
+# Configure 1.3" OLED with 5-button joystick and 3 push buttons
+elif [[ ${BUTTON_WIRING} == "6" ]]; then
+    echo "Configuring Pimoroni Audio with ST7789 controller"  | tee -a ${LOG}
+    # Switches
+    sudo sed -i -e "0,/^menu_switch=/{s/menu_switch=.*/menu_switch=13/}" ${CONFIG}
+    sudo sed -i -e "0,/^mute_switch/{s/mute_switch.*/mute_switch=21/}" ${CONFIG}
+    sudo sed -i -e "0,/^up_switch/{s/up_switch.*/up_switch=6/}" ${CONFIG}
+    sudo sed -i -e "0,/^down_switch/{s/down_switch.*/down_switch=19/}" ${CONFIG}
+    sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=5/}" ${CONFIG}
+    sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=26/}" ${CONFIG}
 
 # Disable switch GPIOs if using SPI or I2C interface
 else 

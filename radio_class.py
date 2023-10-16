@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.118 2023/06/20 13:08:46 bob Exp $
+# $Id: radio_class.py,v 1.123 2023/10/03 14:07:13 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -70,7 +70,6 @@ StreamFile = RadioLibDir + "/streaming"
 
 log = None
 language = None
-server = None
 
 Mpd = "/usr/bin/mpd"    # Music Player Daemon
 Mpc = "/usr/bin/mpc"    # Music Player Client
@@ -89,6 +88,7 @@ OFF = False
 class Radio:
     translate = None    # Translate object
     spotify = None      # Spotify object
+    server = None
 
     client = mpd.MPDClient()    
     volume = 0
@@ -211,7 +211,8 @@ class Radio:
     def __init__(self, menu, event, translate, config, logobj):
         global log
         log = logobj
-        log.message("Initialising radio", log.INFO)
+        pid = os.getpid()
+        log.message("Initialising radio pid %d" % pid, log.INFO)
         self.config = config
 
         # Get user installation name from a well known installed file or direct
@@ -313,6 +314,20 @@ class Radio:
         log.message("radio.setMixerId " + str(update), log.DEBUG)
         return update
 
+    # Get IP address 
+    def get_ip(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0)
+        try:
+            # doesn't even have to be reachable
+            s.connect(('10.254.254.254', 1))
+            IP = s.getsockname()[0]
+        except Exception:
+            IP = ''
+        finally:
+            s.close()
+        return IP
+
     # Wait for the network
     # If using comitup ignore address
     def waitForNetwork(self):
@@ -320,10 +335,10 @@ class Radio:
         waiting4network = True
         count = 30
         while waiting4network:
-            ipaddr = self.execCommand('hostname -I')
+            ipaddr = self.get_ip()
             log.message("IP: " + str(ipaddr) +  " " + str(count), log.DEBUG)
             count -= 1
-            if (count < 0) or (len(ipaddr) > 1):
+            if (count < 0) or (len(ipaddr) > 3):
                 # Don't use Comitup web address
                 if not self.config.comitup_ip in ipaddr:
                     waiting4network = False
@@ -332,8 +347,7 @@ class Radio:
 
     # Call back routine for the IR remote and Web Interface
     def remoteCallback(self):
-        global server
-        key = server.getData()
+        key = self.server.getData()
         set_interrupt = True
 
         log.message("IR remoteCallback " + key, log.DEBUG)
@@ -364,7 +378,6 @@ class Radio:
             self.event.set(self.event.KEY_INFO)
 
         elif key == 'KEY_EXIT' or key == 'KEY_POWER':
-            print ("KEY_POWER DEBUG")
             self.event.set(self.event.SHUTDOWN)
 
         # These messages come from the Web CGI script
@@ -432,7 +445,6 @@ class Radio:
 
     # Set up radio configuration and start the MPD daemon
     def start(self):
-        global server
         global language
 
         self.config.display()
@@ -531,11 +543,11 @@ class Radio:
 
         # Start the IR remote control listener
         try:
-            server = UDPServer((self.udphost,self.udpport),RequestHandler)
+            self.server = UDPServer((self.udphost,self.udpport),RequestHandler)
             msg = "UDP Server listening on " + self.udphost + " port " \
                 + str(self.udpport)
             log.message(msg, log.INFO)
-            server.listen(server,self.remoteCallback)
+            self.server.listen(self.server,self.remoteCallback)
         except Exception as e:
             log.message(str(e), log.ERROR)
             log.message("UDP server could not bind to " + self.udphost
@@ -615,14 +627,11 @@ class Radio:
                     + bluetooth_device, log.DEBUG)
                 cmd = "bluetoothctl remove " + bluetooth_device
                 os.system(cmd)
-
-                # Scan for 10 seconds
-                cmd = "bluetoothctl --timeout 10 scan on &"
+                cmd = "bluetoothctl power on "
                 os.system(cmd)
-
-                # Allow scan to finish
-                time.sleep(11)
-
+                # Scan for 10 seconds
+                cmd = "bluetoothctl --timeout 10 scan on"
+                os.system(cmd)
                 # Re-pair the device
                 cmd = "bluetoothctl pair " + bluetooth_device
                 os.system(cmd)
@@ -649,6 +658,7 @@ class Radio:
         self.execCommand("sudo systemctl stop mpd.socket")
         self.execCommand("sudo systemctl stop mpd.service")
 
+        """ 
         # Wait until MPD stopped
         count = 10
         while pid != 0:
@@ -667,6 +677,7 @@ class Radio:
             log.message('radio.stopMpdDaemon: Failed to stop MPD', log.ERROR)
             if pid > 1:
                 self.execCommand("sudo kill -9 " + str(pid))
+        """ 
         return pid
 
     # Scroll up and down between stations/tracks

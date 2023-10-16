@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: playlist_class.py,v 1.30 2021/11/29 07:09:59 bob Exp $
+# $Id: playlist_class.py,v 1.31 2023/08/28 09:35:33 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -269,7 +269,8 @@ class Playlist:
                     playlist_callback()
         except Exception as e:
             print("playlist._check error", str(e))
-            sys.exit(1)
+            #sys.exit(1)
+            pass
 
     # Callback for playlist size change
     def callback(self,playlist_callback,client):

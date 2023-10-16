@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.48 2023/06/28 08:00:11 bob Exp $
+# $Id: display_config.sh,v 1.50 2023/08/05 09:26:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -21,7 +21,8 @@ USR=$(logname)
 GRP=$(id -g -n ${USR})
 
 DIR=/usr/share/radio
-LOG=${DIR}/config.log
+LOGDIR=${DIR}/logs
+LOG=${LOGDIR}/config.log
 BOOTCONFIG=/boot/config.txt
 MPD_CONFIG=/etc/mpd.conf
 OS_RELEASE=/etc/os-release
@@ -32,8 +33,9 @@ ASOUND=/etc/asound.conf
 SOUND_CARD=0
 EQUALIZER_CMD=${DIR}/equalizer.cmd
 EMAIL=bob@bobrathbone.com
-AUTOSTART=/home/${USR}/.config/lxsession/LXDE-pi/autostart
+LXSESSION=/home/${USR}/.config/lxsession
 MPDLIB=/var/lib/mpd
+BLUETOOTHCTL=/usr/bin/bluetoothctl
 
 # Get OS release ID
 function release_id
@@ -45,10 +47,31 @@ function release_id
     echo ${ID}
 }
 
+# Get OS release name
+function codename
+{
+    VERSION_CODENAME=$(grep VERSION_CODENAME $OS_RELEASE)
+    arr=(${VERSION_CODENAME//=/ })
+    CODENAME=$(echo "${arr[1]}" | tr -d '"')
+    echo ${CODENAME}
+}
+
 if [[ ! -d ${DIR} ]]; then
     echo "Error: Radio software not installed - Exiting."
     exit 1
 fi
+
+# Create run log directory
+mkdir -p ${LOGDIR}
+sudo chown ${USR}:${GRP} ${LOGDIR}
+
+# Select correct LXDE autostart directory
+if [[ $(release_id) -ge 12 ]]; then
+    LXDE="LXDE"
+else
+    LXDE="LXDE-pi"
+fi
+AUTOSTART=/home/${USR}/.config/lxsession/${LXDE}/autostart
 
 echo "Configuration log for $(hostname) $(date)" | tee ${LOG}
 grep ^Release ${DIR}/README | tee -a ${LOG}
@@ -193,8 +216,6 @@ if [[ ${AUDIO_OUT} =~ bluetooth  ]]; then
 elif [[ ${AUDIO_OUT} =~ USB  ]]; then
     SOUND_CARD=1
     cmd="amixer -c ${SOUND_CARD} controls 2>$1" | tee -a ${LOG}
-else
-    cmd="amixer -c ${SOUND_CARD} controls 2>$1" | tee -a ${LOG}
 fi
 echo "audio_out=${AUDIO_OUT}"
 echo ${cmd} | tee -a ${LOG}
@@ -220,14 +241,14 @@ echo "-------------------------------------------------------" | tee -a ${LOG}
 echo "mixer_volume_id=$(cat ${RADIOLIB}/mixer_volume_id)" | tee -a ${LOG}
 
 echo | tee -a ${LOG}
-echo "Remote control daemon (irradiod.service)" | tee -a ${LOG}
+echo "Remote control daemon (ireventd.service)" | tee -a ${LOG}
 echo "----------------------------------------" | tee -a ${LOG}
 
 # Display remote control daemon configuration
 if [[ -f /lib/systemd/system/ireventd.service ]]; then
     grep ExecStart /lib/systemd/system/ireventd.service | tee -a ${LOG}
 else
-    grep ExecStart /lib/systemd/system/irradiod.service | tee -a ${LOG}
+    echo "IR remote control event daemon not installed (ireventd)" | tee -a ${LOG} 
 fi
 
 echo | tee -a ${LOG}

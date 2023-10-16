@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Raspberry Pi test all available GPIOs
 #
-# $Id: test_gpios.py,v 1.11 2021/10/03 09:52:24 bob Exp $
+# $Id: test_gpios.py,v 1.13 2023/09/14 20:04:10 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -19,7 +19,7 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 #pins = (4,)
-pins = (2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20,21,22,23,24,25,26,27)
+pins = (2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27)
 
 def gpio_event(gpio):
     state = GPIO.input(gpio)
@@ -67,7 +67,12 @@ for pin in range (0,len(pins)):
         GPIO.add_event_detect(gpio_pin, GPIO.BOTH,callback=gpio_event, bouncetime=100)
     except Exception as e:
         print("Error: GPIO",gpio_pin, e)     
-        print("Check conflict with GPIO %s in other programs or in /boot/config.txt" % gpio_pin)
+        if gpio_pin == 7 or gpio_pin == 8:  
+            print("       GPIO %s probably in use by the SPI interface" % gpio_pin)
+        elif gpio_pin == 2 or gpio_pin == 3:  
+            print("       GPIO %s probably in use by the I2C interface" % gpio_pin)
+        else:
+            print("Check conflict with GPIO %s in other programs or in /boot/config.txt" % gpio_pin)
         with open('/boot/config.txt', 'r') as f:
             x = '=' + str(gpio_pin)
             for line in f.readlines():

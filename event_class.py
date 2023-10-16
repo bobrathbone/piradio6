@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.19 2023/06/13 14:53:17 bob Exp $
+# $Id: event_class.py,v 1.21 2023/09/26 11:49:52 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -39,6 +39,9 @@ mute_button = None
 up_button = None
 down_button = None
 menu_button = None
+aux_button1 = None
+aux_button2 = None
+aux_button3 = None
 
 # If no interrupt required
 def no_interrupt():
@@ -86,10 +89,15 @@ class Event():
     # Playlist events
     PLAYLIST_CHANGED = 20
 
+    # PLAY COMMAND
     PLAY = 21
 
+    AUX_SWITCH1 = 22
+    AUX_SWITCH2 = 23
+    AUX_SWITCH3 = 24
+
     # Shutdown radio
-    SHUTDOWN = 22
+    SHUTDOWN = 25
 
     # Alternate event names (easier to understand code )
     VOLUME_UP = RIGHT_SWITCH
@@ -105,7 +113,8 @@ class Event():
               'MENU_BUTTON_UP', 'ALARM_FIRED', 'TIMER_FIRED', 'KEY_LANGUAGE',
               'KEY_INFO', 'ROTARY_SWITCH_CHANGE', 'MPD_CLIENT_CHANGE', 
               'LOAD_RADIO', 'LOAD_MEDIA', 'LOAD_PLAYLIST', 'LOAD_AIRPLAY', 
-              'LOAD_SPOTIFY','PLAYLIST_CHANGED','PLAY','SHUTDOWN',
+              'LOAD_SPOTIFY','PLAYLIST_CHANGED','PLAY','AUX_BUTTON1',
+              'AUX_BUTTON2','AUX_BUTTON3','SHUTDOWN',
              ]
 
     encoderEventNames = [ 'NONE', 'CLOCKWISE', 'ANTICLOCKWISE',
@@ -118,6 +127,9 @@ class Event():
     up_switch = 24
     down_switch = 23
     menu_switch = 17
+    aux_switch1 = 0
+    aux_switch2 = 0
+    aux_switch3 = 0
 
     rotary_switch_value = 0
 
@@ -233,6 +245,16 @@ class Event():
                     self.event_type = self.SHUTDOWN
                     self.event_triggered = True
                     break
+
+        elif event == self.aux_switch1:
+            self.event_type = self.AUX_SWITCH1
+
+        elif event == self.aux_switch2:
+            self.event_type = self.AUX_SWITCH2
+
+        elif event == self.aux_switch3:
+            self.event_type = self.AUX_SWITCH3
+
         else:
             self.event_triggered = False
         return
@@ -356,6 +378,9 @@ class Event():
         self.down_switch = self.config.getSwitchGpio("down_switch")
         self.up_switch = self.config.getSwitchGpio("up_switch")
         self.menu_switch = self.config.getSwitchGpio("menu_switch")
+        self.aux_switch1 = self.config.getSwitchGpio("aux_switch1")
+        self.aux_switch2 = self.config.getSwitchGpio("aux_switch2")
+        self.aux_switch3 = self.config.getSwitchGpio("aux_switch3")
         return
 
     # Configure rotary switch (not rotary encoders!)
@@ -466,6 +491,12 @@ class Event():
         up_button = Button(self.up_switch,self.button_event,log,pull_up_down=up_down)
         mute_button = Button(self.mute_switch,self.button_event,log,pull_up_down=up_down)
         menu_button = Button(self.menu_switch,self.button_event,log,pull_up_down=up_down)
+        if self.aux_switch1 > 0:
+            aux_button1 = Button(self.aux_switch1,self.button_event,log,pull_up_down=up_down)
+        if self.aux_switch2 > 0:
+            aux_button2 = Button(self.aux_switch2,self.button_event,log,pull_up_down=up_down)
+        if self.aux_switch3 > 0:
+            aux_button3 = Button(self.aux_switch3,self.button_event,log,pull_up_down=up_down)
         return
 
     # Set up IQAudio cosmic controller interface
@@ -503,17 +534,21 @@ class Event():
 # End of Event class
 
 ### Main routine ###
-# Only creates the event object but does nothing further 
+# Creates the event object and prints event number and name
 if __name__ == "__main__":
 
     from config_class import Configuration
     config = Configuration() 
 
     event = Event(config)
+    print ("Waiting for events:")
 
     try: 
         while True:
             if event.detected():
+                type = event.getType()
+                name = event.eventNames[int(type)]
+                print("Event %d %s" % (type,name))
                 event.clear()
             else:
                 # This delay must be >= any GPIO bounce times

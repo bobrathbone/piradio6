@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.9 2023/07/06 11:11:37 bob Exp $
+# $Id: button_class.py,v 1.11 2023/09/27 13:11:59 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,7 +16,10 @@ import os,sys
 import time
 import RPi.GPIO as GPIO
 import threading
+import pdb
 from constants import *
+
+GPIO.setmode(GPIO.BCM)
 
 class Button:
 
@@ -32,7 +35,6 @@ class Button:
         self.log = log
 
         if self.button > 0:
-            GPIO.setmode(GPIO.BCM)
             GPIO.setwarnings(False)
 
             if pull_up_down == DOWN:
@@ -45,7 +47,7 @@ class Button:
                 sEdge = 'Falling'
 
             try:
-                msg = "Creating button for GPIO " +  str(self.button) \
+                msg = "Creating button object for GPIO " +  str(self.button) \
                      + " edge=" +  sEdge
                 log.message(msg, log.DEBUG)
                 # The following lines enable the internal pull-up resistor
@@ -100,20 +102,26 @@ if __name__ == "__main__":
 
     print("Test Button Class")
 
-    # Get configuration
+    # Get switch configuration
     left_switch = config.getSwitchGpio("left_switch")
     right_switch = config.getSwitchGpio("right_switch")
     mute_switch = config.getSwitchGpio("mute_switch")
     down_switch = config.getSwitchGpio("down_switch")
     up_switch = config.getSwitchGpio("up_switch")
     menu_switch = config.getSwitchGpio("menu_switch")
+    aux_switch1 = config.getSwitchGpio("aux_switch1")
+    aux_switch2 = config.getSwitchGpio("aux_switch2")
+    aux_switch3 = config.getSwitchGpio("aux_switch3")
 
     print("Left switch GPIO", left_switch)
     print("Right switch GPIO", right_switch)
+    print("Mute switch GPIO", mute_switch)
     print("Up switch GPIO", up_switch)
     print("Down switch GPIO", down_switch)
-    print("Mute switch GPIO", mute_switch)
     print("Menu switch GPIO", menu_switch)
+    print("Aux switch 1 GPIO", aux_switch1)
+    print("Aux switch 2 GPIO", aux_switch2)
+    print("Aux switch 3 GPIO", aux_switch3)
     print("Pull Up/Down resistors", pullupdown[config.pull_up_down])
 
     Button(left_switch, interrupt, log, config.pull_up_down)
@@ -122,6 +130,9 @@ if __name__ == "__main__":
     Button(down_switch, interrupt, log, config.pull_up_down)
     Button(up_switch, interrupt, log, config.pull_up_down)
     Button(menu_switch, interrupt, log, config.pull_up_down)
+    Button(aux_switch1, interrupt, log, config.pull_up_down)
+    Button(aux_switch2, interrupt, log, config.pull_up_down)
+    Button(aux_switch3, interrupt, log, config.pull_up_down)
 
     try:
         while True:
@@ -129,6 +140,7 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print(" Stopped")
+        GPIO.cleanup()
         sys.exit(0)
 
 # End of script

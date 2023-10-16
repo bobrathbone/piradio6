@@ -10,6 +10,26 @@ See http://www.musicpd.org/
 Use "sudo apt-get install mpd mpc python3-mpd" to install the Music Player Daemon (MPD)
 This software uses the python3-mpd library. See https://packages.debian.org/sid/python3-mpd
 
+Version 7.6 release notes
+-------------------------
+Release 16th October 2023 - Build 4 
+
+1) New version for bookworm OS
+2) Prevent gradio.py from crashing if missing background wallpaper
+3) Remove all LIRC components and configuration. Only ir-keytable supported. 
+4) Bookworm uses .config/lxsession/LXDE/autostart for starting Graphic radio
+5) Add HiFiberry DAC 400 (berrydac400.dbto) to configure_audio.sh
+6) display_config.sh now logs to /usr/share/radio/logs/config.log
+6) piradio.postinst now logs playlist creation to /usr/share/radio/logs/playlists.log
+7) Test routine in event_class.py now prints event number and name
+8) New SH1106 SPI OLED driver added (Used by 1.3" OLED Display HAT for RPi)
+9) Faulty logging corrected in the UDP server class (udp_server_class.py)
+10) Correct un-encoded "NOTOK" message in udp_server_class.py
+11) Added support for three auxilary switches
+12) Prevent display from flashing during startup
+13) Support for the WM8960 DAC
+14) alsamixer settings restored on startup (volume_class.py)
+
 Version 7.5 release notes
 -------------------------
 Release 7th July 2023 - Build 9 

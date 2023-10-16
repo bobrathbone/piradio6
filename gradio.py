@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.60 2021/10/17 06:37:56 bob Exp $
+# $Id: gradio.py,v 1.61 2023/07/22 13:40:50 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1270,7 +1270,7 @@ if __name__ == "__main__":
         picWallpaper=pygame.image.load(wallpaper)
         screen.blit(pygame.transform.scale(picWallpaper,size),(0,0))
     else:
-        wcolor = display.config.getWindowColor()
+        wcolor = display.config.window_color
         try:
             screen.fill(Color(wcolor))
         except:

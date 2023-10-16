@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio setup script
-# $Id: setup.sh,v 1.7 2022/02/18 10:10:28 bob Exp $
+# $Id: setup.sh,v 1.10 2023/07/26 16:35:03 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -25,7 +25,7 @@ ARCH=$(grep ^Architecture: ${PKGDEF} | awk '{print $2}')
 DEBPKG=${PKG}_${VERSION}_${ARCH}.deb
 MPD=/usr/bin/mpd
 MPD_PACKAGES="mpd mpc python3-mpd python3-rpi.gpio"
-OTHER_PACKAGES="python3-requests python-configparser python"
+OTHER_PACKAGES="python3-requests python-configparser"
 HOME_DIR=/home/pi
 
 # Check running as sudo

@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.57 2023/07/07 08:16:17 bob Exp $
+# $Id: piradio,v 1.65 2023/10/05 14:35:51 bob Exp $
 # This package must be built under Raspbian Buster or Bullseye (Not Jessie or earlier)
 # For further explanation see https://www.debian.org/doc/debian-policy/ch-controlfields.html
 # Source: <source package name; defaults to package name>
@@ -10,7 +10,7 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 5.6.12.1
 
 Package: radiod
-Version: 7.5
+Version: 7.6
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
@@ -48,6 +48,9 @@ Files:  radiod.py /usr/share/radio/
 	cosmic_class.py /usr/share/radio/
 	st7789tft_class.py /usr/share/radio/
 	ssd1306_class.py /usr/share/radio/
+    sh1106_class.py /usr/share/radio/ 
+    sh1106_config.py /usr/share/radio/
+    sh1106_key_test.py /usr/share/radio/
 	luma_class.py /usr/share/radio/
 	message_class.py /usr/share/radio/
 	menu_class.py /usr/share/radio/
@@ -93,13 +96,15 @@ Files:  radiod.py /usr/share/radio/
 	install_ssd1306.sh /usr/share/radio/
 	station.urls /usr/share/radio/
 	voice.dist /usr/share/radio/
-	lircrc.dist  /usr/share/radio/
-	irradiod.py  /usr/share/radio/
 	ireventd.py  /usr/share/radio/
 	ir_daemon.py  /usr/share/radio/
 	get_shoutcast.py  /usr/share/radio/
 	udp_server_class.py /usr/share/radio/
 	language_class.py /usr/share/radio/
+	weather.py /usr/share/radio/
+	weather_class.py /usr/share/radio/
+	wxconfig_class.py /usr/share/radio/
+	weather.conf /usr/share/radio/
 	status_led_class.py /usr/share/radio/
 	oled/__init__.py /usr/share/radio/oled/
 	oled/Font.py /usr/share/radio/oled/
@@ -123,6 +128,7 @@ Files:  radiod.py /usr/share/radio/
 	asound/asound.conf.dist.pipe /usr/share/radio/asound
 	asound/asound.conf.dist.softvol /usr/share/radio/asound
 	asound/asound.conf.dist.vc4hdmi /usr/share/radio/asound
+	asound/asound.conf.dist.wm8960 /usr/share/radio/asound
 	codes/__init__.py /usr/share/radio/codes/
 	codes/English.py /usr/share/radio/codes/
 	codes/Russian.py /usr/share/radio/codes/
@@ -202,7 +208,8 @@ Files:  radiod.py /usr/share/radio/
 	sgc/widgets/_interface/__init__.py /usr/share/radio/sgc/widgets/_interface/
 	sgc/widgets/_interface/text.py /usr/share/radio/sgc/widgets/_interface/
 	lxsession/README /usr/share/radio/lxsession/
-	lxsession/autostart /usr/share/radio/lxsession/
+	lxsession/LXDE.autostart /usr/share/radio/lxsession/
+	lxsession/LXDE-pi.autostart /usr/share/radio/lxsession/
 
 postinst: piradio.postinst
 postrm: piradio.postrm

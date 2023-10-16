@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.6 2023/06/09 11:16:37 bob Exp $
+# $Id: create_playlist.sh,v 1.7 2023/09/17 06:26:55 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -90,7 +90,7 @@ do
      ans=$(whiptail --title "Create playlist" --menu "Choose your option" 15 75 9 \
      "1" "From USB stick" \
      "2" "From network share" \
-     "3" "From SD card" \
+     "3" "From SD card or hard disk" \
      "4" "From USB Disk Drive" 3>&1 1>&2 2>&3)
 
      exitstatus=$?
@@ -140,7 +140,7 @@ do
         fi
 
      elif [[ ${ans} == '3' ]]; then
-        DESC="SD card selected"
+        DESC="SD card or Hard disk selected"
         PLAYLIST="SD_Card"
         SUBDIR=${SDCARD}
 

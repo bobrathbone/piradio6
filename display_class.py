@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.37 2021/09/30 08:59:30 bob Exp $
+# $Id: display_class.py,v 1.42 2023/10/01 14:24:16 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -61,14 +61,12 @@ class Display:
     def __init__(self,translate):
         threading.Thread.__init__(self)
         self.translate = translate
-        return
 
     # Initialise 
     def init(self,callback=None):
         self.callback = callback
         log.init('radio')
         self.setupDisplay()
-        return
     
     # Set up configured screen class
     def setupDisplay(self):
@@ -187,6 +185,15 @@ class Display:
             self.has_buttons = False # Use standard button interface
             self._isOLED = True
             self._mute_line = 4
+
+        elif dtype == config.SH1106_SPI:
+            from sh1106_class import SH1106
+            screen = SH1106()
+            screen.init(callback=self.callback)
+            self.has_buttons = False # Use standard button interface
+            self._isOLED = True
+            self._mute_line = 4
+            screen.setScrollSpeed(scroll_speed)
 
         elif dtype == config.LUMA:
             from luma_class import LUMA
@@ -314,12 +321,11 @@ class Display:
 
     # Clear display and line buffer
     def clear(self):
-        if self.isOLED(): 
-            screen.clear()
-            self.lineBuffer = []        # Line buffer 
-            for i in range(0, self.lines):
-                self.lineBuffer.insert(i,'')    
-            self.saved_volume = 0
+        screen.clear()
+        self.lineBuffer = []        # Line buffer 
+        for i in range(0, self.lines):
+            self.lineBuffer.insert(i,'')    
+        self.saved_volume = 0
         return
 
     # Set get delay cycles ( Used for temporary message displays)
@@ -378,7 +384,8 @@ class Display:
     def volume(self,volume):
         if self.saved_volume != volume or self.checkRefreshVolumeBar():
             self.saved_volume = volume
-            if config.getDisplayType() != config.SSD1306:
+            dType = config.getDisplayType()
+            if dType != config.SSD1306 and dType != config.SH1106_SPI:
                 self.out(self._mute_line," ") # Clear mute message
             screen.volume(volume)
             self.update()

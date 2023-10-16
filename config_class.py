@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.94 2023/06/28 07:56:01 bob Exp $
+# $Id: config_class.py,v 1.98 2023/09/27 08:42:43 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -54,14 +54,15 @@ class Configuration:
     PIFACE_CAD = 7      # Piface CAD 
     ST7789TFT = 8       # Pirate audio TFT with ST7789 controller
     SSD1306 = 9         # Sitronix SSD1306 controller for the 128x64 tft
-    LUMA = 10           # Luma driver for 
-    LCD_I2C_JHD1313 = 11    # Grove 2x16 I2C LCD RGB 
+    SH1106_SPI = 10     # SH1106_SPI controller for Waveshare 1.3" 128x64 tft
+    LUMA = 11           # Luma driver for  most OLEDs
+    LCD_I2C_JHD1313 = 12    # Grove 2x16 I2C LCD RGB 
 
     display_type = LCD
     DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574', 
              'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 
              'GRAPHICAL_DISPLAY', 'OLED_128x64', 
-             'PIFACE_CAD','ST7789TFT','SSD1306','LUMA','LCD_I2C_JHD1313' ]
+             'PIFACE_CAD','ST7789TFT','SSD1306','SH1106_SPI','LUMA','LCD_I2C_JHD1313' ]
 
     # User interface ROTARY or BUTTONS
     ROTARY_ENCODER = 0
@@ -127,6 +128,7 @@ class Configuration:
     _verbose = False         # Extra speech verbosity
     _logfile_truncate = False   # Truncate logfile otherwise tail the file
     _shutdown = True            # Shutdown when exiting radio
+    _execute = ''               # Execute this parameter when exiting radio
     _comitup_ip = "10.41.0.1"   # Comitup initial IP address.
     _pivumeter = False          # Pimoroni Pivumeter
 
@@ -214,6 +216,9 @@ class Configuration:
              "right_switch": 15,
              "up_switch": 24,
              "down_switch": 23,
+             "aux_switch1": 0,
+             "aux_switch2": 0,
+             "aux_switch3": 0,
            }
 
     # Pull up/down resistors (For button class only)
@@ -473,6 +478,9 @@ class Configuration:
 
                     elif parameter == 'SSD1306':
                         self.display_type = self.SSD1306
+
+                    elif parameter == 'SH1106_SPI':
+                        self.display_type = self.SH1106_SPI
 
                     elif parameter == 'LCD_I2C_JHD1313':
                         self.display_type = self.LCD_I2C_JHD1313
@@ -1182,8 +1190,22 @@ class Configuration:
     def shutdown(self, parameter):
         if parameter == 'stop_radio':
             self._shutdown = False
-        else:
+        elif parameter == 'shutdown':
             self._shutdown = True
+        else:
+            self._execute = parameter
+            self._shutdown = False
+
+    # Execute action (Calls another program)
+    @property
+    def execute(self):
+        return self._execute
+
+    """
+    @shutdown.setter
+    def execute(self, parameter):
+        self._execute = parameter
+    """
 
     # Pull Up/Down resistors (Button interface only)
     @property
@@ -1706,6 +1728,9 @@ if __name__ == '__main__':
  
     # Shutdown command
     print ("Shutdown command (shutdown_command):",config.shutdown_command)
+
+    # Execute command
+    print ("Execute on exit command (execute):",config.execute)
 
     print ("\n[SCREEN] section")
     print ("----------------")

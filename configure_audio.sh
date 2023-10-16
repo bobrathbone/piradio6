@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
-# Raspberry Pi Internet Radio
-# $Id: configure_audio.sh,v 1.53 2023/06/05 22:10:04 bob Exp $
+# Raspberry Pi Internet Radio Audio configuration script 
+# $Id: configure_audio.sh,v 1.58 2023/10/09 11:09:55 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -58,7 +58,11 @@ HDMI=2  # HDMI
 DAC=3   # DAC card
 BLUETOOTH=4 # Bluetooth speakers
 USB=5   # USB PnP DAC
+TLVDAC=6 # tlvaudioCODEC
+WM8960=7 # Waveshare WM8960 DAC
+
 TYPE=${JACK}
+
 SCARD="headphones"  # aplay -l string. Set to headphones, HDMI, DAC or bluetooth
             # to configure the audio_out parameter in the configuration file
 PIVUMETER=0 # PVumeter using alsa
@@ -71,6 +75,7 @@ DEVICE="hw:0,0"
 CARD=0
 NAME="Onboard jack"
 MIXER="software"
+COMMAND=""
 # Format is Frequency 44100 Hz: 16 bits: 2 channels
 FORMAT="44100:16:2"
 NUMID=1
@@ -179,7 +184,9 @@ do
     "13" "Bluetooth device" \
     "14" "Adafruit speaker bonnet" \
     "15" "Pimoroni Pirate Audio" \
-    "16" "Manually configure" 3>&1 1>&2 2>&3)
+    "16" "HiFiBerry DAC 400" \
+    "17" "Waveshare WM8960 DAC" \
+    "18" "Manually configure" 3>&1 1>&2 2>&3)
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -303,6 +310,24 @@ do
         TYPE=${DAC}
 
     elif [[ ${ans} == '16' ]]; then
+        DESC="HiFiBerry DAC 400" 
+        NAME=${DESC}
+        DTOVERLAY="dacberry400"
+        MIXER="software"
+        TYPE=${TVDAC}
+
+    elif [[ ${ans} == '17' ]]; then
+        DESC="Waveshare WM8960 DAC" 
+        NAME=${DESC}
+        DTOVERLAY="wm8960-soundcard"
+        MIXER="software"
+        # MPD uses a pipe via aplay for this device
+        COMMAND="aplay -f cd 2>\/dev\/null"
+        TYPE=${WM8960}
+        LOCK_CONFIG=1   
+        ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.wm8960
+
+    elif [[ ${ans} == '18' ]]; then
         DESC="Manual configuration"
     fi
 
@@ -414,6 +439,14 @@ elif [[ ${TYPE} == ${DAC} ]]; then
 elif [[ ${TYPE} == ${USB} ]]; then
     echo "Configuring USB PnP as output" | tee -a ${LOG}
     SCARD="USB"
+
+elif [[ ${TYPE} == ${TLVDAC} ]]; then
+    echo "Configuring tlvaudioCODEC as output" | tee -a ${LOG}
+    SCARD="tlvaudioCODEC"
+
+elif [[ ${TYPE} == ${WM8960} ]]; then
+    echo "Configuring Waveshare WM8960 as output" | tee -a ${LOG}
+    SCARD="DAC"
 
 # Configure bluetooth device
 elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
@@ -553,6 +586,11 @@ else
         sudo sed -i -e "0,/device/{s/.*device.*/\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
     fi
 fi
+if [[ ${TYPE} == ${WM8960} ]]; then
+    # Set up aplay pipe
+    sudo sed -i -e "0,/device/{s/.*device.*/\tcommand\t\t\"${COMMAND}\"/}" ${MPDCONFIG}
+    sudo sed -i -e "0,/device/{s/.*device.*/\#\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
+fi
 
 # Set up mpd.conf for Pirate radio with pHat Beat (pivumeter)
 if [[ ${PIVUMETER} == 1 ]]; then
@@ -585,6 +623,7 @@ echo "Delete old audio overlays" | tee -a ${LOG}
 sudo sed -i '/dtoverlay=iqaudio/d' ${BOOTCONFIG}
 sudo sed -i '/dtoverlay=hifiberry/d' ${BOOTCONFIG}
 sudo sed -i '/dtoverlay=justboom/d' ${BOOTCONFIG}
+sudo sed -i '/dtoverlay=wm8960-soundcard/d' ${BOOTCONFIG}
 
 # Add dtoverlay for sound cards and disable on-board sound
 if [[ ${DTOVERLAY} != "" || ${TYPE} == ${HDMI} ]]; then
@@ -718,6 +757,22 @@ if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
     fi
 fi
 
+# Integrity check of /boot/config.txt
+declare -i lines=$(wc -l ${BOOTCONFIG} | awk '{print $1}')
+if [[ ${lines} -lt 10 ]]; then
+    echo "ERROR: ${BOOTCONFIG} failed integrity check"
+    echo "Restoring ${BOOTCONFIG} from ${BOOTCONFIG}.orig"
+    sudo cp ${BOOTCONFIG}.orig ${BOOTCONFIG}
+    echo "Re-run sudo ${0} "
+    exit 1
+else
+    echo
+    echo "${BOOTCONFIG} has ${lines} lines"
+    echo
+fi
+
+# Sync changes to disk
+sync;sync
 
 echo "A log of these changes has been written to ${LOG}"
 exit 0

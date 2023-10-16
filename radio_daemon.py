@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_daemon.py,v 1.2 2021/09/30 08:03:28 bob Exp $
+# $Id: radio_daemon.py,v 1.6 2023/10/03 13:27:11 bob Exp $
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
 #
@@ -82,7 +82,10 @@ class Daemon:
         fpid.write("%s\n" % pid)
     
     def delpid(self):
-        os.remove(self.pidfile)
+        try:
+            os.remove(self.pidfile)
+        except:
+            pass
 
     def start(self):
         """

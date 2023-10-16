@@ -1,7 +1,7 @@
 #!/bin/bash 
 #set -e
 # Radio daemon post install script
-# $Id: piradio.postinst,v 1.13 2023/06/05 22:10:04 bob Exp $
+# $Id: piradio.postinst,v 1.14 2023/08/05 10:13:04 bob Exp $
 # Support for Pulseaudio added
 
 # Version 7.5 onwards allows any user with sudo permissions to install the software
@@ -21,8 +21,13 @@ CONFIGFILE=/etc/radiod.conf
 DEFAULTRCS=/etc/default/rcS
 EQUALIZERCMD=equalizer.cmd
 LOGDIR=/var/log/radiod
+RUNLOGDIR=${DIR}/logs
+PLAYLIST_LOG=${DIR}/logs
 PIDDIR=/var/run/radiod
 MPD_PLAYLISTS=/var/lib/mpd/playlists
+
+USR=$(logname)
+GRP=$(id -g -n ${USR})
 
 # Configure radio but skip any other package installation or removal
 # with the -s flag
@@ -126,10 +131,12 @@ fi
 
 # Create playlists if no station list present
 if [[ ! -f "${RADIOLIB}/stationlist" ]]; then
+    sudo mkdir -p ${RUNLOGDIR}
+    sudo chown ${USR}:${GRP} ${RUNLOGDIR}
 	echo "Creating playlists:"
 	echo "This will take a few minutes"
-	${DIR}/create_stations.py --no_delete 2>&1 > ${DIR}/playlists.log
-	echo "Done: See ${DIR}/playlists.log for information about playlists created"
+	${DIR}/create_stations.py --no_delete 2>&1 > ${RUNLOGDIR}/playlists.log
+	echo "Done: See ${RUNLOGDIR}/playlists.log for information about playlists created"
 	echo
 fi
 

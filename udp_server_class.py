@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi TCPIP server class
-# $Id: udp_server_class.py,v 1.3 2021/03/25 07:47:16 bob Exp $
+# $Id: udp_server_class.py,v 1.6 2023/10/03 14:07:13 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -23,6 +23,7 @@
 
 import socket
 import sys
+import os
 import time
 import threading
 import socketserver
@@ -38,10 +39,7 @@ client_data = ""
 
 # Class to handle the data requests
 class RequestHandler(socketserver.BaseRequestHandler):
-    # Client connection event
-    def setup(self):
-        log.message("UDP server client connect", log.DEBUG)
-    
+
     # Handle the data request
     def handle(self):
         global  callback
@@ -57,7 +55,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
             socket.sendto(reply, self.client_address)
         except Exception as e:
             log.message("UDP RequestHandler " + str(e), Log.ERROR)
-            socket.sendto('NOTOK', self.client_address)
+            reply = "NOTOK".encode()
+            socket.sendto(reply, self.client_address)
         return
 
     # Handle client disconnect
@@ -73,13 +72,15 @@ class UDPServer(socketserver.ThreadingMixIn, socketserver.UDPServer):
     port = PORT
     host = HOST
 
+    log.init('radio')
+    pid = os.getpid()
+    log.message("Initialising UDP server, pid %d" % pid, log.INFO)
+
     # Listen for incomming connections
     def listen(self,server, mycallback):
-        global log
         global  callback
-
-        log.init('radio')
         callback = mycallback  # Set up the callback
+
         # Start a thread with the server
         server_thread = threading.Thread(target=server.serve_forever)
         # Exit the server thread when the main thread terminates
@@ -87,10 +88,13 @@ class UDPServer(socketserver.ThreadingMixIn, socketserver.UDPServer):
         server_thread.name = 'remote'
         server_thread.timeout = 2 
         server_thread.start()
+        self._stop_event = threading.Event()
         msg = "UDP listen:" + server_thread.name + " " + str(self.host) \
                  + " port " + str(self.port)
         log.message(msg, Log.INFO)
-        return
+
+    def stop(self):
+        self._stop_event.set() 
 
     def getServerAddress(self):
         return (self.host,self.port)

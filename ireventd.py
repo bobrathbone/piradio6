@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.14 2023/07/06 20:25:57 bob Exp $
+# $Id: ireventd.py,v 1.16 2023/09/23 11:29:24 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -78,7 +78,7 @@ class RemoteDaemon(Daemon):
         log.message('Remote control running pid ' + str(os.getpid()), log.INFO)
         signal.signal(signal.SIGHUP,signalHandler)
 
-        msg = "Using IR events architecture"
+        msg = "Using IR kernel events architecture"
         print(msg)
         log.message(msg, log.DEBUG)
 
@@ -177,9 +177,6 @@ class RemoteDaemon(Daemon):
                             self.timer.start()
                             self.timer_running = True
                     else:
-                        if keycode == 'KEY_EXIT': 
-                            self.execCommand("sudo systemctl start radiod")
-                        
                         print(keycode)
                         reply = self.udpSend(keycode)
                         print(reply)
