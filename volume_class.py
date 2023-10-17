@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.23 2023/10/16 07:32:04 bob Exp $
+# $Id: volume_class.py,v 1.24 2023/10/17 15:18:54 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -162,16 +162,15 @@ class Volume:
     # Set the Mixer volume level
     def _setMixerVolume(self,volume,store):
         
-        #if self.mixer_volume_id > 0 and volume != self.mixer_volume: 
+        # Restore alsamixer settings (Restore Waveshare DAC headphone mixer setting)
+        cmd = "sudo /usr/sbin/alsactl restore"
+        log.message(cmd, log.DEBUG)
+        self.execCommand(cmd)
+
         if self.mixer_volume_id > 0: 
             log.message("volume._setMixerVolume " + str(volume), log.DEBUG) 
             cmd = "sudo amixer " + self.mixer_device + " cset numid=" + str(self.mixer_volume_id) \
                                   + " " + str(volume) + "%"
-            log.message(cmd, log.DEBUG)
-            self.execCommand(cmd)
-
-            # Restore alsamixer settings
-            cmd = "sudo /usr/sbin/alsactl restore"
             log.message(cmd, log.DEBUG)
             self.execCommand(cmd)
 
