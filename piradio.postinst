@@ -1,7 +1,7 @@
 #!/bin/bash 
 #set -e
 # Radio daemon post install script
-# $Id: piradio.postinst,v 1.14 2023/08/05 10:13:04 bob Exp $
+# $Id: piradio.postinst,v 1.16 2023/11/23 09:27:49 bob Exp $
 # Support for Pulseaudio added
 
 # Version 7.5 onwards allows any user with sudo permissions to install the software
@@ -82,6 +82,20 @@ fi
 OLDENTRY="console=serial0,115200"
 sudo sed -i "s/${OLDENTRY}//g" ${BOOTCMD}
 REBOOT=1
+
+# Replace /etc/mpd.conf if corrupt
+grep ^audio_out /etc/mpd.conf >/dev/null 2>&1
+if [[ $? != 0 ]]; then
+    echo "Replacing corrupt ${MPDCONF} with ${DIR}/mpd.conf"
+    sudo cp ${DIR}/mpd.conf ${MPDCONF}
+fi
+
+# Replace /etc/mpd.conf.orig if corrupt
+grep ^audio_out /etc/mpd.conf.orig >/dev/null 2>&1
+if [[ $? != 0 ]]; then
+    echo "Replacing corrupt ${MPDCONF}.orig with ${DIR}/mpd.conf"
+    sudo cp ${DIR}/mpd.conf ${MPDCONF}.orig
+fi
 
 # Configure the MPD daemon
 if [[ ! -f ${MPDCONF}.orig ]]; then

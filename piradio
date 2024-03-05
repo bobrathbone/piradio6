@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.65 2023/10/05 14:35:51 bob Exp $
+# $Id: piradio,v 1.73 2024/02/22 12:35:13 bob Exp $
 # This package must be built under Raspbian Buster or Bullseye (Not Jessie or earlier)
 # For further explanation see https://www.debian.org/doc/debian-policy/ch-controlfields.html
 # Source: <source package name; defaults to package name>
@@ -10,7 +10,7 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 5.6.12.1
 
 Package: radiod
-Version: 7.6
+Version: 7.7
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
@@ -72,6 +72,7 @@ Files:  radiod.py /usr/share/radio/
 	create_playlist.sh /usr/share/radio/
 	setup.sh /usr/share/radio/
 	configure_audio_device.sh /usr/share/radio/
+    install_wm8960.sh /usr/share/radio/
 	radio_class.py /usr/share/radio/
 	lcd_class.py /usr/share/radio/
 	i2c_class.py /usr/share/radio/
@@ -105,6 +106,9 @@ Files:  radiod.py /usr/share/radio/
 	weather_class.py /usr/share/radio/
 	wxconfig_class.py /usr/share/radio/
 	weather.conf /usr/share/radio/
+    RPi/GPIO.py /usr/share/radio/RPi/
+    RPi/test_pwm.py /usr/share/radio/RPi/
+    RPi/README /usr/share/radio/RPi/
 	status_led_class.py /usr/share/radio/
 	oled/__init__.py /usr/share/radio/oled/
 	oled/Font.py /usr/share/radio/oled/

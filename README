@@ -10,9 +10,20 @@ See http://www.musicpd.org/
 Use "sudo apt-get install mpd mpc python3-mpd" to install the Music Player Daemon (MPD)
 This software uses the python3-mpd library. See https://packages.debian.org/sid/python3-mpd
 
+Version 7.7 release notes
+-------------------------
+Release 3 January 2024 - Build 1 
+
+1) Support for Raspberry Pi model 5 (RPi/GPIO.py GPIO calls conversion to LGPIO calls)
+2) GPIO interface to LGPIO libraries added in sub-directory RPi/
+3) Added Raspberry Pi Model selectiom to Configure Radio script to enable/disable GPIO converter 
+4) Playlist now sorted before use so that media tracks are stepped through alphabetically.
+5) ssd1306_class.py Correct indent error and add instructions for Adafruit-ssd1306 module
+6) Improved installation procedure for the Waveshare WM8960 DAC sound card
+
 Version 7.6 release notes
 -------------------------
-Release 16th October 2023 - Build 4 
+Release 28 November 2023 
 
 1) New version for bookworm OS
 2) Prevent gradio.py from crashing if missing background wallpaper
@@ -29,10 +40,17 @@ Release 16th October 2023 - Build 4
 12) Prevent display from flashing during startup
 13) Support for the WM8960 DAC
 14) alsamixer settings restored on startup (volume_class.py)
+15) Convert setup.sh for 64-bit configuration
+16) Replace corrupt /etc/mpd.conf with /usr/share/radio/mpd.conf
+17) Prevent LCD routines from being accessed if LCD not configured
+18) Added Waveshare WM8960 DAC install script (install_wm8960.sh)
+19) Restore alsa mixer settings (alsa-state/alsa-store not working in Bookworm)
+20) display_config.sh displays X-Windows protocol (wayland or X11)
+21) radiod build - New instruction to display build number. For example 7.6.9
 
 Version 7.5 release notes
 -------------------------
-Release 7th July 2023 - Build 9 
+Release 7th July 2023 
 
 1) Corrected Pimoroni Pirate Radio button settings
 2) Corrected create_stations.py --delete_old not working 

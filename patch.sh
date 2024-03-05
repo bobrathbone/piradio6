@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: patch.sh,v 1.37 2023/06/05 22:10:04 bob Exp $
+# $Id: patch.sh,v 1.40 2024/03/04 16:22:58 bob Exp $
 # Patching script for the Raspberry PI radio
 export LC_ALL=C
 
@@ -11,7 +11,7 @@ PKGDEF=piradio
 VERSION=$(grep ^Version: ${PKGDEF} | awk '{print $2}')
 ARCH=$(grep ^Architecture: ${PKGDEF} | awk '{print $2}')
 PATCHLOG=patch.log
-PATCHFILES="configure_radio.sh create_stations.py configure_audio.sh radiod.py language/language.en language_class.py"
+PATCHFILES="station.urls configure_ir_remote.sh install_wm8960.sh"
 
 sudo chown ${USR}:${GRP} *.py
 sudo chmod +x *.py
@@ -19,7 +19,7 @@ sudo chown ${USR}:${GRP} *.sh
 sudo chmod +x *.sh
 sudo chmod -x language/* voice.dist 
 
-VERSION=7.4
+VERSION=7.6
 NUM=3
 # Tar build files
 PATCHTAR="radiod-patch-${VERSION}-${NUM}.tar.gz" 

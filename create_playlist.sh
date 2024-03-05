@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.7 2023/09/17 06:26:55 bob Exp $
+# $Id: create_playlist.sh,v 1.10 2023/12/02 12:40:06 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -30,6 +30,7 @@ SUBDIR="media"
 EXT="m3u"
 MPD_MUSIC="/var/lib/mpd/music"
 MPD_PLAYLISTS="/var/lib/mpd/playlists"
+RADIO_DIR="/usr/share/radio"
 SHARE="/var/lib/radiod/share"
 TEMPFILE="/tmp/list$$"
 USBDEV=""
@@ -39,6 +40,37 @@ USBDRIVE="usbdrive"
 LOCATION="/home/pi/Music"
 CONFIG=/etc/radiod.conf
 CODECS="mp3 ogg flac wav"
+USR=$(logname)
+
+# Find device name of USB stick (Assumes that dev=/dev/sdX)
+find_usb_device(){
+    # Find which device is in use (Must be the last one plugged in)
+    # Warning /dev/sda is used by the bootable USB drive
+    if [[ -b /dev/sdd1 ]]; then
+        usbdev="/dev/sdd1"
+    elif [[ -b /dev/sdc1 ]]; then
+        usbdev="/dev/sdc1"
+    elif [[ -b /dev/sdb1 ]]; then
+        usbdev="/dev/sdb1"
+    elif [[ -b /dev/sda1 ]]; then
+        usbdev="/dev/sda1"
+    else
+        usbdev=""
+    fi
+    echo ${usbdev}
+}
+
+# Find mount point USB Stick is mounted on
+find_mount(){
+    usbdev=${1}
+    mnt=$(findmnt -b ${usbdev} | awk '{ print $1; }' | grep '/')
+    echo ${mnt}
+}
+
+# Get owner of a directory or file
+get_owner(){
+    stat -c "%U" $1
+}
 
 # Make a playlist name from the filter
 make_name(){
@@ -72,17 +104,6 @@ rpid=$(cat /var/run/radiod.pid >/dev/null 2>&1)
 if [[ $? == 0 ]]; then  # Don't seperate from above
         sudo kill -TERM ${rpid}
 fi
-
-# Find which device is in use
-# Warning /dev/sda is used by the bootable USB drive
-if [[ -b /dev/sdb1 ]]; then
-    USBDEV="/dev/sdb1"
-elif [[ -b /dev/sda2 ]]; then
-     USBDEV="/dev/sda2"
-elif [[ -b /dev/sda1 ]]; then
-     USBDEV="/dev/sda1"
-fi 
-
 ans=0
 selection=1
 while [ $selection != 0 ]
@@ -90,7 +111,7 @@ do
      ans=$(whiptail --title "Create playlist" --menu "Choose your option" 15 75 9 \
      "1" "From USB stick" \
      "2" "From network share" \
-     "3" "From SD card or hard disk" \
+     "3" "From SD card" \
      "4" "From USB Disk Drive" 3>&1 1>&2 2>&3)
 
      exitstatus=$?
@@ -102,16 +123,33 @@ do
         DESC="USB stick selected"
         PLAYLIST="USB_Stick"
         SUBDIR="media"
+        USBDEV=$(find_usb_device)
+        USR=$(get_owner ${RADIO_DIR})
         # Mount the USB stick
         if [[ ${USBDEV} != "" ]]; then
-            sudo umount /media
-            sudo mount ${USBDEV} /media >/dev/null 2>&1
+            # Force remount onto /media/<user>
+            MNT=$(find_mount ${USBDEV})
+            if [[ ${MNT} != "" ]]; then
+                umount ${MNT} >/dev/null 2>&1
+            fi
+            MNT="/media/${USR}"
+            mkdir -p ${MNT} >/dev/null 2>&1
+            mount ${USBDEV} /media/${USR}  2>&1
             if [[ $? != 0 ]]; then
-                echo "Failed to mount USB stick"
+                echo "Failed to mount USB stick ${USBDEV} on /media/${USR}"
                 exit 1
             fi
-            echo "Mounted  ${USBDEV} on /media"
-        else
+            echo "Mounted USB ${USBDEV} on /media/${USR}"
+
+            # Relink mount point to MPD music directory
+            rm -f  ${MPD_MUSIC}/${SUBDIR}  >/dev/null 2>&1 
+            ln -s ${MNT} ${MPD_MUSIC}/${SUBDIR}  >/dev/null 2>&1
+            if [[ $? != 0 ]]; then
+                echo "Failed to link ${MNT} to ${MPD_MUSIC}/${SUBDIR}"
+                exit 1
+            fi
+            echo "Linked ${MPD_MUSIC}/${SUBDIR} ${MNT}"
+        else 
             echo
             echo "USB stick not found!"
             echo "Insert USB stick and re-run program"
@@ -140,7 +178,7 @@ do
         fi
 
      elif [[ ${ans} == '3' ]]; then
-        DESC="SD card or Hard disk selected"
+        DESC="SD card selected"
         PLAYLIST="SD_Card"
         SUBDIR=${SDCARD}
 
@@ -237,7 +275,7 @@ PLAYLIST=$(make_name "${PLAYLIST}")
 
 # Change directory to MPD music directory
 CMD="cd ${MPD_MUSIC}/"
-${CMD}
+echo ${CMD};${CMD}
 
 # Create codec search list
 OR=""
@@ -263,6 +301,7 @@ done
 
 # Build the create command 
 echo "Processing directory ${SUBDIR}. Please wait."
+pwd
 CMD="sudo find -L ${SUBDIR} -type f ${SEARCH}"
 echo ${CMD}
 ${CMD} > ${TEMPFILE}
@@ -312,7 +351,6 @@ if [[ ${size} -eq 0 ]];then
     exit 1
 fi
 
-# Split up playlists that are ver the maximum size (5000)
 if [[ ${size} -gt ${MAX_SIZE} ]];then
     CMD="cd /tmp/"
     echo  ${CMD}; ${CMD}

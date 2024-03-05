@@ -1,1 +1,30 @@
-There are no patches for version 7.6
+Patch 3 for version 7.6 - 4 March 2024
+
+Changes
+=======
+1) Implement new URLs for BBC radio stations in /usr/share/radio/station.urls 
+2) Correct location of examples in configure_ir_remote.sh
+3) Improvements to install_wm8960.sh 
+
+To install the patch
+====================
+cd /usr/share/radio
+wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.6-1.tar.gz
+tar -xvf radiod-patch-7.6-2.tar.gz
+
+This patch contains all previous patches unless patch 1.
+
+New BBC station urls
+====================
+For change 1) either copy station.urls to /var/lib/radiod/stationlist or merge new
+BBC station URLs into your own stationlist file.
+
+cd /usr/share/radio
+sudo cp /var/lib/radiod/stationlist  /var/lib/radiod/stationlist.save
+sudo cp station.urls /var/lib/radiod/stationlist
+
+Warning: If you carry out the above command without saving your stationlist file
+         it will destroy any changes you made to your own /var/lib/radiod/stationlist file
+
+End of README.patch
+

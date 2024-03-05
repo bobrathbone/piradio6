@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.7 2023/06/28 06:47:05 bob Exp $
+# $Id: build.sh,v 1.8 2023/11/17 17:11:07 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -73,5 +73,9 @@ if [[ ${ans} == 'y' ]]; then
 	    echo "Package ${DEBPKG} has errors" | tee -a ${BUILDLOG}
 	fi
 fi
+
+echo
+echo "Now install the ${DEBPKG} package with the following command:"
+echo "sudo dpkg -i ${DEBPKG}"
 
 # End of build script

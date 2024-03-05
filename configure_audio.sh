@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.58 2023/10/09 11:09:55 bob Exp $
+# $Id: configure_audio.sh,v 1.63 2024/03/05 11:53:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -31,6 +31,7 @@ USR=$(logname)
 GRP=$(id -g -n ${USR})
 
 BOOTCONFIG=/boot/config.txt
+BOOTCONFIG_2=/boot/firmware/config.txt
 MPDCONFIG=/etc/mpd.conf
 ASOUNDCONF=/etc/asound.conf
 MODPROBE=/etc/modprobe.d/alsa-base.conf
@@ -128,13 +129,21 @@ function card_id
     echo ${CARD_ID}
 }
 
-# Releases before Buster not supported
-if [[ $(release_id) -lt 10 ]]; then
-    echo "This program is only supported on Raspbian Buster/Bullseye or later!" | tee -a ${LOG}
+# Releases before Bullseye not supported
+if [[ $(release_id) -lt 11 ]]; then
+    echo "This program is only supported on Raspbian Bullseye/Bookworm or later!" | tee -a ${LOG}
     echo "This system is running $(codename) OS"
     echo "Exiting program." | tee -a ${LOG}
     exit 1
 fi
+
+
+# In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
+if [[ $(release_id) -ge 12 ]]; then
+    BOOTCONFIG=${BOOTCONFIG_2}
+fi
+
+echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
 
 # Location of raspotify configuration file has changed in Bullseye
 if [[ $(release_id) -ge 11 ]]; then
@@ -322,7 +331,7 @@ do
         DTOVERLAY="wm8960-soundcard"
         MIXER="software"
         # MPD uses a pipe via aplay for this device
-        COMMAND="aplay -f cd 2>\/dev\/null"
+        #COMMAND="aplay -f cd 2>\/dev\/null"
         TYPE=${WM8960}
         LOCK_CONFIG=1   
         ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.wm8960
@@ -446,7 +455,7 @@ elif [[ ${TYPE} == ${TLVDAC} ]]; then
 
 elif [[ ${TYPE} == ${WM8960} ]]; then
     echo "Configuring Waveshare WM8960 as output" | tee -a ${LOG}
-    SCARD="DAC"
+    SCARD="wm8960soundcard"
 
 # Configure bluetooth device
 elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
@@ -463,7 +472,11 @@ elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
     echo |  tee -a ${LOG}
     echo "Bluetooth device configuration"  |  tee -a ${LOG}
     echo "------------------------------"  |  tee -a ${LOG}
-    PAIRED=$(bluetoothctl paired-devices)
+    if [[ $(release_id) -lt 12 ]]; then
+        PAIRED=$(bluetoothctl paired-devices)
+    else
+        PAIRED=$(bluetoothctl devices)
+    fi
     echo ${PAIRED} |  tee -a ${LOG}
     BT_NAME=$(echo ${PAIRED} | awk '{print $3}')
     BT_DEVICE=$( echo ${PAIRED} | awk '{print $2}')
@@ -588,7 +601,7 @@ else
 fi
 if [[ ${TYPE} == ${WM8960} ]]; then
     # Set up aplay pipe
-    sudo sed -i -e "0,/device/{s/.*device.*/\tcommand\t\t\"${COMMAND}\"/}" ${MPDCONFIG}
+    #sudo sed -i -e "0,/device/{s/.*device.*/\tcommand\t\t\"${COMMAND}\"/}" ${MPDCONFIG}
     sudo sed -i -e "0,/device/{s/.*device.*/\#\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
 fi
 
@@ -647,7 +660,7 @@ if [[ ${DTOVERLAY} != "" || ${TYPE} == ${HDMI} ]]; then
         OVERLAY_LOADED=0
     fi
 else
-    if [[ ${TYPE} == ${BLUETOOTH} || ${TYPE} == ${USB} ]]; then
+    if [[ ${TYPE} == ${BLUETOOTH} || ${TYPE} == ${USB} || ${TYPE} == ${WM8960} ]]; then
         # Switch off onboard devices (headphones and HDMI) if bluetooth or USB
         sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
         sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}

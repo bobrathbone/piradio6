@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.123 2023/10/03 14:07:13 bob Exp $
+# $Id: radio_class.py,v 1.130 2023/12/03 12:06:23 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -80,6 +80,7 @@ MPD_STREAM_ERROR = 1
 MPD_NO_CONNECTION = 2
 MPD_ERROR = 3
 INTERNET_ERROR = 4
+MPD_EMPTY_PLAYLIST = 5
 
 ON = True
 OFF = False
@@ -196,7 +197,7 @@ class Radio:
         CurrentSourceFile: 0,
         SourceNameFile: "Radio",
         VolumeFile: 75,
-        MixerVolumeFile: 45,
+        MixerVolumeFile: 90,
         TimerFile: 30,
         AlarmFile: "0:07:00", 
         StreamFile: "off", 
@@ -205,7 +206,7 @@ class Radio:
 
     # Error strings 
     errorStrings = ['No error','MPD stream error','MPD connection error',
-                    'MPD error','No Internet']
+                    'MPD error','No Internet','Empty playlist']
 
     # Initialisation routine
     def __init__(self, menu, event, translate, config, logobj):
@@ -256,6 +257,10 @@ class Radio:
         log.message("Starting service mpd.socket", log.DEBUG)
         self.execCommand("sudo systemctl start mpd.socket")
 
+    def restartMpd(self):
+        log.message("Restarting service mpd.service", log.DEBUG)
+        self.execCommand("sudo systemctl restart mpd.service")
+
     # Set up configuration files
     def setupConfiguration(self):
         # Create directory 
@@ -268,12 +273,11 @@ class Radio:
             if not os.path.isfile(file) or os.path.getsize(file) == 0:
                 self.execCommand ("echo " + str(value) + " > " + file)
 
-        # Create mount point for USB stick and link it to the music directory
-        if not os.path.isfile("/media"):
-            self.execCommand("mkdir -p /media")
-            if not os.path.ismount("/media"):
-                os.chown('/media', self.uid, self.gid)
-            self.execCommand("sudo ln -f -s /media /var/lib/mpd/music")
+        # Link /var/lib/mpd/music/media to /media/<user>
+        cmd = "rm -f /var/lib/mpd/music/media"
+        self.execCommand(cmd)
+        cmd = "sudo ln -s /media/" + self.usr + " /var/lib/mpd/music/media"
+        self.execCommand(cmd)
 
         # Create mount point for networked music library (NAS)
         if not os.path.isfile("/share"):
@@ -525,6 +529,13 @@ class Radio:
         log.message("radio.start current ID " + str(self.current_id), log.DEBUG)
 
         self.volume.set(self.volume.getStoredVolume())
+
+        # Restore alsamixer settings (alsa-state/alsa-store services 
+        # not working in Bookworm)
+        # Temporary workaround until above services fixed
+        cmd = "/usr/sbin/alsactl restore"
+        log.message(cmd, log.DEBUG)
+        self.execCommand(cmd)   
 
         # Alarm and timer settings
         self.timeTimer = int(time.time())
@@ -1472,8 +1483,10 @@ class Radio:
             pos = currentsong.get("pos")
             if pos == None:
                 currentid = self.current_id
-                log.message("radio.getCurrentID error id: " + str(pos),log.ERROR)
-                self.setError(MPD_NO_CONNECTION)
+                if self.errorCode == 0:
+                    log.message("radio.getCurrentID error id: " + str(pos),log.ERROR)
+                msg = "Empty playlist %s" % self.source.getNewName()
+                self.setError(MPD_EMPTY_PLAYLIST,text=msg)
                 self.setInterrupt()
                 
             else:
@@ -1878,7 +1891,7 @@ class Radio:
     # Load source. Either radio, media or airplay
     def loadSource(self):
         # Get the source type radio,media or airplay
-        self.getSources()
+        sources = self.getSources()
         source_type = self.source.getNewType()
         type_name = self.source.getNewTypeName()
         source_name = self.source.getNewName()
@@ -1943,9 +1956,10 @@ class Radio:
 
     def loadPlaylist(self):
         source_type = self.source.getNewType()
+        type_name  = self.source.getNewTypeName()
         pname = self.source.getNewName()
 
-        msg = "Load playlist " + pname + " type " + str(source_type)
+        msg = "Load playlist " + pname + " type " + str(source_type) + " " + type_name
         log.message(msg, log.DEBUG)
 
         try:
@@ -2258,6 +2272,10 @@ class Radio:
     def getVersion(self):
         return __version__
 
+    # Build number
+    def getBuild(self):
+        return __build__
+
     # Set an interrupt received
     def setInterrupt(self):
         self.interrupt = True
@@ -2308,25 +2326,25 @@ class Radio:
     def getSpotifyInfo(self):
         return self.spotify.getInfo()
 
-    # Mount the USB stick
+    # Mount the USB stick, Note if using a bootable USB drive sda1/2 are alread mounted
     def mountUsb(self):
         usbok = False
-        if os.path.exists("/dev/sda1"):
-            device = "/dev/sda1"
-            usbok = True
-
-        elif os.path.exists("/dev/sdb1"):
+        if os.path.exists("/dev/sdb1"):
             device = "/dev/sdb1"
             usbok = True
 
+        elif os.path.exists("/dev/sda1"):
+            device = "/dev/sda1"
+            usbok = True
+
         if usbok:
-            if not os.path.ismount('/media'):
-                log.message("Mounting " + device, log.DEBUG)
+            mountpoint = '/media/' + self.usr 
+            if not os.path.ismount(mountpoint):
                 self.execCommand("/bin/mount -o rw,uid=1000,gid=1000 " \
-                    + device + " /media")
-                log.message(device + " mounted on /media", log.DEBUG)
+                    + device + " " + mountpoint)
+                log.message("Mounted " + device + " on " +  mountpoint, log.DEBUG)
             else:
-                log.message("Media already mounted", log.DEBUG)
+                log.message("Media already mounted on " + mountpoint, log.DEBUG)
         else:
             msg = "No USB stick found!"
             log.message(msg, log.WARNING)
@@ -2351,11 +2369,12 @@ class Radio:
         self.mountShare()
         return
 
-    # Unmount all drives
+    # Unmount mount points /media/<user> and /share
     def unmountAll(self):
-        if os.path.ismount('/media'):
+        mountpoint = "/media/" + self.usr
+        if os.path.ismount(mountpoint):
             # Un-mount USB stick
-            self.execCommand("sudo /bin/umount /media 2>&1 >/dev/null")
+            self.execCommand("sudo /bin/umount " + mountpoint + " 2>&1 >/dev/null")
         if os.path.ismount('/share'):
             self.execCommand("sudo /bin/umount /share 2>&1 >/dev/null")
         return

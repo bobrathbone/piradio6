@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.7 2023/07/12 06:39:19 bob Exp $
+# $Id: lcd_class.py,v 1.9 2023/11/17 10:07:08 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -26,6 +26,7 @@ import os,sys,pdb
 import time,pwd
 import RPi.GPIO as GPIO
 from config_class import Configuration
+import gpiozero
 
 # The wiring for the LCD is as follows:
 # 1 : GND
@@ -63,6 +64,19 @@ E_PULSE = 0.0005    # Pulse width of enable (Was 0.0005)
 E_DELAY = 0.0005    # Delay between writes
 E_POSTCLEAR = 0.3   # Delay after clearing display
 
+# Define GPIO to LCD mapping
+gpios = {
+        'lcd_select':0,
+        'lcd_enable':0,
+        'lcd_data4':0,
+        'lcd_data5':0,
+        'lcd_data6':0,
+        'lcd_data7':0
+}
+
+LCD_D4_21 = 21    # Rev 1 Board
+LCD_D4_27 = 27    # Rev 2 Board
+
 config = Configuration()
 
 # No interrupt routine if none supplied
@@ -72,15 +86,15 @@ def no_interrupt():
 # Lcd Class 
 class Lcd:
 
-    # Define GPIO to LCD mapping
-    lcd_select = 7
-    lcd_enable  = 8
-    LCD_D4_21 = 21    # Rev 1 Board
-    LCD_D4_27 = 27    # Rev 2 Board
-    lcd_data4 = LCD_D4_27
-    lcd_data5 = 22
-    lcd_data6 = 23
-    lcd_data7 = 24
+    # The gpios dict is only used during the init stage to check that
+    # all gpios have been set to a non-zero value otherwise access
+    # to the routines is blocked
+    gpios['lcd_select'] = 7
+    gpios['lcd_enable']  = 8
+    gpios['lcd_data4'] = LCD_D4_27
+    gpios['lcd_data5'] = 22
+    gpios['lcd_data6'] = 23
+    gpios['lcd_data7'] = 24
 
     lcd_line1 = LCD_LINE_1
     lcd_line2 = LCD_LINE_2
@@ -101,33 +115,59 @@ class Lcd:
         self.code_page = code_page
 
         if revision == 1:
-            self.lcd_data4 = LCD_D4_21
+            self.lcd_data4 = LCD_D4_21  #REMOVE
+            gpios['lcd_data4'] = LCD_D4_21
         
+
         # Get LCD configuration connects including self.lcd_data4
-        self.lcd_select = config.getLcdGpio("lcd_select")
-        self.lcd_enable  = config.getLcdGpio("lcd_enable")
+        gpios['lcd_select'] = config.getLcdGpio("lcd_select")
+        gpios['lcd_enable']  = config.getLcdGpio("lcd_enable")
 
         if revision != 1:
-            self.lcd_data4 = config.getLcdGpio("lcd_data4")
+            gpios['lcd_data4'] = config.getLcdGpio("lcd_data4")
 
-        self.lcd_data5 = config.getLcdGpio("lcd_data5")
-        self.lcd_data6 = config.getLcdGpio("lcd_data6")
-        self.lcd_data7 = config.getLcdGpio("lcd_data7")
+        gpios['lcd_data5'] = config.getLcdGpio("lcd_data5")
+        gpios['lcd_data6'] = config.getLcdGpio("lcd_data6")
+        gpios['lcd_data7'] = config.getLcdGpio("lcd_data7")
 
         # LCD outputs
         GPIO.setwarnings(False)      # Disable warnings
         GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
-        GPIO.setup(self.lcd_enable, GPIO.OUT)  # E
-        GPIO.setup(self.lcd_select, GPIO.OUT) # RS
-        GPIO.setup(self.lcd_data4, GPIO.OUT) # DB4
-        GPIO.setup(self.lcd_data5, GPIO.OUT) # DB5
-        GPIO.setup(self.lcd_data6, GPIO.OUT) # DB6
-        GPIO.setup(self.lcd_data7, GPIO.OUT) # DB7
-        self.lcd_init()
 
-        self.scroll_speed = config.scroll_speed
-        self.setScrollSpeed(self.scroll_speed)
+        # Check that every LCD pin has been assigned a non-zero value
+        self.lcd_configured = True 
+        for key in gpios.keys():
+            gpio = gpios[key]
+            gpios[key] = gpio
+            print(key,'GPIO',gpio)
+            if gpio < 1:
+                # Block 
+                self.lcd_configured = False 
+                print("GPIO %s invalid value %d, must be non-zero" % (key,gpio))
 
+        if not self.lcd_configured:
+            print("Check value(s) in /etc/radiod.conf configuration file")
+
+        # Assign checked values to GPIO outputs
+        self.lcd_enable = gpios['lcd_enable']
+        self.lcd_select = gpios['lcd_select']
+        self.lcd_data4 = gpios['lcd_data4']
+        self.lcd_data5 = gpios['lcd_data5']
+        self.lcd_data6 = gpios['lcd_data6']
+        self.lcd_data7 = gpios['lcd_data7']
+
+        if self.lcd_configured: 
+            # Configure GPIO pins as output
+            GPIO.setup(self.lcd_enable, GPIO.OUT)  # E
+            GPIO.setup(self.lcd_select, GPIO.OUT) # RS
+            GPIO.setup(self.lcd_data4, GPIO.OUT) # DB4
+            GPIO.setup(self.lcd_data5, GPIO.OUT) # DB5
+            GPIO.setup(self.lcd_data6, GPIO.OUT) # DB6
+            GPIO.setup(self.lcd_data7, GPIO.OUT) # DB7
+
+            self.lcd_init()
+            self.scroll_speed = config.scroll_speed
+            self.setScrollSpeed(self.scroll_speed)
         return
 
     # Initialise the display
@@ -218,6 +258,8 @@ class Lcd:
 
     # Display Line on LCD
     def out(self,line_number=1,text="",interrupt=no_interrupt):
+        if not self.lcd_configured:
+            return
         if line_number == 1:
             line_address = self.lcd_line1
         elif line_number == 2:
@@ -294,8 +336,9 @@ class Lcd:
 
     # Clear display
     def clear(self):
-        self._byte_out(0x01,LCD_CMD) # 000001 Clear display
-        time.sleep(E_POSTCLEAR)
+        if self.lcd_configured:
+            self._byte_out(0x01,LCD_CMD) # 000001 Clear display
+            time.sleep(E_POSTCLEAR)
         return
 
     # Does this screen support color

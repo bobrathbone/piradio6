@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio64,v 1.15 2023/10/05 14:35:51 bob Exp $
+# $Id: piradio64,v 1.23 2024/02/22 12:35:13 bob Exp $
 # This package must be built under Raspbian Buster (Not Jessie or earlier)
 # This is the 64 bit version
 # Source: <source package name; defaults to package name>
@@ -10,7 +10,7 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 4.0.0
 
 Package: radiod
-Version: 7.6
+Version: 7.7
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
@@ -69,6 +69,7 @@ Files:  radiod.py /usr/share/radio/
     create_stations.py /usr/share/radio/
     create_playlist.sh /usr/share/radio/
     configure_audio_device.sh /usr/share/radio/
+    install_wm8960.sh /usr/share/radio/
     radio_class.py /usr/share/radio/
     lcd_class.py /usr/share/radio/
     i2c_class.py /usr/share/radio/
@@ -101,6 +102,9 @@ Files:  radiod.py /usr/share/radio/
     weather_class.py /usr/share/radio/
     wxconfig_class.py /usr/share/radio/
     weather.conf /usr/share/radio/
+    RPi/GPIO.py /usr/share/radio/RPi/
+    RPi/test_pwm.py /usr/share/radio/RPi/
+    RPi/README /usr/share/radio/RPi/
     oled/__init__.py /usr/share/radio/oled/
     oled/Font.py /usr/share/radio/oled/
     oled/Graphics.py /usr/share/radio/oled/
@@ -134,12 +138,14 @@ Files:  radiod.py /usr/share/radio/
     configs/mpdstream /usr/share/radio/configs/
     shairport-sync.service /lib/systemd/system/
     radiod.conf /usr/share/radio/
+    mpd.conf /usr/share/radio/
     radiod.service /lib/systemd/system/
     irradiod.service /lib/systemd/system/
     ireventd.service /lib/systemd/system/
     irradiod.py /usr/share/radio/
     ireventd.py  /usr/share/radio/
     ir_daemon.py  /usr/share/radio/
+    GPIO.py /usr/share/radio/
     language/language.en /usr/share/radio/language/
     language/language.en-2x8 /usr/share/radio/language/
     language/language.hu /usr/share/radio/language/

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.24 2023/10/17 15:18:54 bob Exp $
+# $Id: volume_class.py,v 1.26 2023/11/19 12:49:31 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -63,6 +63,7 @@ class Volume:
         vol = self._getStoredVolume()
         self.speech_volume = vol
         self.audio_device = self.config.audio_out
+
 
         # Are we using bluetooth?
         if self.audio_device == "bluetooth":
@@ -163,9 +164,6 @@ class Volume:
     def _setMixerVolume(self,volume,store):
         
         # Restore alsamixer settings (Restore Waveshare DAC headphone mixer setting)
-        cmd = "sudo /usr/sbin/alsactl restore"
-        log.message(cmd, log.DEBUG)
-        self.execCommand(cmd)
 
         if self.mixer_volume_id > 0: 
             log.message("volume._setMixerVolume " + str(volume), log.DEBUG) 

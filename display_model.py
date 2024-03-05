@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-$Id: display_model.py,v 1.10 2022/12/07 10:10:55 bob Exp $
+$Id: display_model.py,v 1.12 2023/11/19 10:41:24 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -84,7 +84,7 @@ model_data = {
     'a22082': ('3B', '1.2', '1GB', 'Embest', 'Onboard WiFi and Bluetooth 4.1'),
     'a32082': ('3B', '1.2', '1GB', 'Sony UK', 'Onboard WiFi and Bluetooth 4.1'),
     'a52082': ('3B', '1.2', '1GB', 'Stadium', 'Onboard WiFi and Bluetooth 4.1'),
-    'a020d3': ('3B+', '1.3', '1GB', 'Sony UK', '1.4GHz quad core, Blutooth 4.2, POE support'),
+    'a020d3': ('3B+', '1.3', '1GB', 'Sony UK', '1.4GHz quad core, Bluetooth 4.2, POE support'),
     'a03111': ('4B', '1.1', '1GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'b03111': ('4B', '1.1', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'b03111': ('4B', '1.2', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
@@ -93,7 +93,10 @@ model_data = {
     'c03111': ('4B', '1.1', '4GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03112': ('4B', '1.2', '4GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03114': ('4B', '1.4','8GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
-    'c03130': ('400', '1.0','4GB', 'Sony UK', '64 bit 1.8GHz quad core, Bluetooth 5, USB 2/3'),
+    'c03115': ('4B', '1.4','4GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'c03130': ('400', '1.0','4GB', 'Sony UK', '64-bit 1.8GHz quad core, Bluetooth 5, USB 2/3'),
+    'c04170': ('5', '1.0','4GB', 'Sony UK', '64-bit 2.4GHz quad core + VideoCore VII GPU, Bluetooth 5, USB 2/3'),
+    'd04170': ('5', '1.0','8GB', 'Sony UK', '64-bit 2.4GHz quad core + VideoCore VII GPU, Bluetooth 5, USB 2/3'),
     'd03115': ('4B', '1.5','8GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5.0, USB 2/3'),
     '902120': ('Zero 2W', '1.0','512MB', 'Sony UK', '64 bit 1.0GHz quad core, Bluetooth 4.2, USB 2.0'),
 }

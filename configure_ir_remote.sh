@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.22 2023/07/22 15:01:48 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.24 2023/11/27 16:43:26 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -22,6 +22,7 @@ LOGDIR=${RADIO_DIR}/logs
 LOG=${LOGDIR}/install_ir.log
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/config.txt
+BOOTCONFIG_2=/boot/firmware/config.txt
 SYSTEMD_DIR=/usr/lib/systemd/system
 RC_MAPS=/etc/rc_keymaps
 KEYMAPS_TOML=/lib/udev/rc_keymaps 
@@ -62,6 +63,13 @@ fi
 sudo rm -f ${LOG}
 mkdir -p ${LOGDIR}
 echo "$0 configuration log, $(date) " | tee ${LOG}
+
+# In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
+if [[ $(release_id) -ge 12 ]]; then
+    BOOTCONFIG=${BOOTCONFIG_2}
+fi
+
+echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
 
 # Check if user wants to configure IR remote control 
 if [[ -f ${CONFIG}.org ]]; then
@@ -251,7 +259,7 @@ echo "to configure your IR remote control" |  tee -a ${LOG}
 echo "    sudo ir-keytable -v -t -p  rc-5,rc-5-sz,jvc,sony,nec,sanyo,mce_kbd,rc-6,sharp,xmpir-keytable" |  tee -a ${LOG}
 echo "" |  tee -a ${LOG}
 echo "Create myremote.toml using the scan codes from the ir-keytable program output" |  tee -a ${LOG}
-echo "See the example in ${RADIO_DIR}/myremote.mytoml"  |  tee -a ${LOG}
+echo "See the examples in directory ${RADIO_DIR}/remotes/"  |  tee -a ${LOG}
 echo "Then copy your configuration file (myremote.toml) to  ${RC_MAPS}" |  tee -a ${LOG}
 echo "    sudo cp myremote.toml ${RC_MAPS}/." |  tee -a ${LOG}
 

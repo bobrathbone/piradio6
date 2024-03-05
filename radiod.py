@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.92 2023/10/03 14:07:13 bob Exp $
+# $Id: radiod.py,v 1.93 2023/11/27 10:22:34 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1451,13 +1451,13 @@ def execCommand(cmd):
     return result
 
 def usage():
-    print("usage: %s start|stop|restart|status|version|nodaemon" % sys.argv[0])
+    print("usage: %s start|stop|restart|status|version|build|nodaemon" % sys.argv[0])
 
 # End of class
 
 ### Main routine ###
 if __name__ == "__main__":
-    from constants import __version__
+    from constants import __version__, __build__
 
     if len(sys.argv) < 2:
         usage()
@@ -1465,6 +1465,10 @@ if __name__ == "__main__":
 
     if 'version' == sys.argv[1]:
         print('Version',__version__)
+        sys.exit(0)
+
+    if 'build' == sys.argv[1]:
+        print('Build',__build__)
         sys.exit(0)
 
     if pwd.getpwuid(os.geteuid()).pw_uid > 0:
@@ -1482,6 +1486,8 @@ if __name__ == "__main__":
             daemon.restart()
         elif 'status' == sys.argv[1]:
             daemon.status()
+        elif 'build' == sys.argv[1]:
+            daemon.build()
         elif 'nodaemon' == sys.argv[1]:
             daemon.nodaemon()
         else:

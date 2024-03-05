@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.9 2021/10/02 10:07:38 bob Exp $
+# $Id: rotary_class.py,v 1.12 2024/01/01 10:39:01 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -135,7 +135,7 @@ FULL_TAB = (
 # Enable this to emit codes twice per step.
 # HALF_STEP == True: emits a code at 00 and 11
 # HALF_STEP == False: emits a code at 00 only
-HALF_STEP     = False
+HALF_STEP     = True
 STATE_TAB = HALF_TAB if HALF_STEP else FULL_TAB
 
 # State table has, for each state (row), the new state
@@ -211,9 +211,10 @@ class RotaryEncoder:
     # Push button up event
     def button_event(self,button):
         # Ignore Button Up events   
-        if not GPIO.input(button): 
-            event = self.BUTTONDOWN 
-            self.callback(event)
+        print("button_event",button)
+        #if not GPIO.input(button): 
+        event = self.BUTTONDOWN 
+        self.callback(event)
         return
 
     # Get a button state - returns 1 or 0
