@@ -1,10 +1,11 @@
-Patch 3 for version 7.6 - 4 March 2024
+Patch 4 for version 7.6 - 4 March 2024
 
 Changes
 =======
 1) Implement new URLs for BBC radio stations in /usr/share/radio/station.urls 
 2) Correct location of examples in configure_ir_remote.sh
 3) Improvements to install_wm8960.sh 
+4) Correct ireventd.py config display key_tables error
 
 To install the patch
 ====================

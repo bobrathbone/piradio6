@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.63 2024/03/05 11:53:08 bob Exp $
+# $Id: configure_audio.sh,v 1.66 2024/04/26 14:28:12 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -61,11 +61,12 @@ BLUETOOTH=4 # Bluetooth speakers
 USB=5   # USB PnP DAC
 TLVDAC=6 # tlvaudioCODEC
 WM8960=7 # Waveshare WM8960 DAC
+RPI=8    # RPi Sound Cards
 
 TYPE=${JACK}
 
-SCARD="headphones"  # aplay -l string. Set to headphones, HDMI, DAC or bluetooth
-            # to configure the audio_out parameter in the configuration file
+SCARD="headphones"  # aplay -l string. Set to headphones, HDMI, DAC ,bluetooth or other 
+            # description to configure the audio_out parameter in the configuration file
 PIVUMETER=0 # PVumeter using alsa
 
 # dtoverlay parameter in /etc/config.txt
@@ -195,7 +196,8 @@ do
     "15" "Pimoroni Pirate Audio" \
     "16" "HiFiBerry DAC 400" \
     "17" "Waveshare WM8960 DAC" \
-    "18" "Manually configure" 3>&1 1>&2 2>&3)
+    "18" "RPi (Raspberry Pi) Audio Cards" \
+    "19" "Manually configure" 3>&1 1>&2 2>&3)
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -330,19 +332,73 @@ do
         NAME=${DESC}
         DTOVERLAY="wm8960-soundcard"
         MIXER="software"
-        # MPD uses a pipe via aplay for this device
-        #COMMAND="aplay -f cd 2>\/dev\/null"
         TYPE=${WM8960}
         LOCK_CONFIG=1   
         ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.wm8960
 
     elif [[ ${ans} == '18' ]]; then
+        DESC="RPi (Raspberry Pi) Audio Cards" 
+        NAME=${DESC}
+        TYPE=${RPI}
+
+    elif [[ ${ans} == '19' ]]; then
         DESC="Manual configuration"
     fi
 
     whiptail --title "$DESC selected" --yesno "Is this correct?" 10 60
     selection=$?
 done 
+
+# Handle RPi Display cards
+if [[ ${TYPE} == ${RPI} ]]; then
+    SCARD="Unknown"
+    selection=1 
+    while [ $selection != 0 ]
+    do
+        ans=$(whiptail --title "Select audio output" --menu "Choose your option" 18 75 12 \
+        "1" "RPi DAC Pro" \
+        "2" "RPi DigiAmp Plus" \
+        "3" "RPi DAC Plus" \
+        "4" "RPi Codec Zero" 3>&1 1>&2 2>&3)
+
+        exitstatus=$?
+        if [[ $exitstatus != 0 ]]; then
+            exit 0
+        fi
+
+        if [[ ${ans} == '1' ]]; then
+            DESC="RPi DAC Pro"
+            NAME=${DESC}
+            DTOVERLAY="rpi-dacpro"
+            MIXER="software"
+            SCARD="DAC"
+
+        elif [[ ${ans} == '2' ]]; then
+            DESC="RPi DigiAmp Plus"
+            NAME=${DESC}
+            DTOVERLAY="rpi-digiampplus"
+            MIXER="software"
+            SCARD="DigiAmp+"
+
+        elif [[ ${ans} == '3' ]]; then
+            DESC="RPi DAC Plus"
+            NAME=${DESC}
+            DTOVERLAY="rpi-dacplus"
+            MIXER="software"
+            SCARD="DAC+"
+
+        elif [[ ${ans} == '4' ]]; then
+            DESC="RPi Codec Zero"
+            NAME=${DESC}
+            DTOVERLAY="rpi-codeczero"
+            MIXER="software"
+            SCARD="Codec Zero"
+        fi
+
+        whiptail --title "$DESC selected" --yesno "Is this correct?" 10 60
+        selection=$?
+    done
+fi
 
 # Summarise selection
 echo "${DESC} selected" | tee -a ${LOG}
@@ -417,6 +473,8 @@ fi
 
 # Select HDMI name ether "HDMI" (Buster/Bullseye) or "vc4hdmi" (Bullseye)
 # Also setup audio_out parameter in the config file
+echo "Configuring ${NAME} as output" | tee -a ${LOG}
+
 if [[ ${TYPE} == ${HDMI} ]]; then
     echo "Configuring HDMI as output" | tee -a ${LOG}
     sudo touch ${LIBDIR}/hdmi
@@ -456,6 +514,7 @@ elif [[ ${TYPE} == ${TLVDAC} ]]; then
 elif [[ ${TYPE} == ${WM8960} ]]; then
     echo "Configuring Waveshare WM8960 as output" | tee -a ${LOG}
     SCARD="wm8960soundcard"
+
 
 # Configure bluetooth device
 elif [[ ${TYPE} == ${BLUETOOTH} ]]; then

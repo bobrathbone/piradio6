@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.24 2023/11/27 16:43:26 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.25 2024/05/03 17:12:32 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -27,6 +27,7 @@ SYSTEMD_DIR=/usr/lib/systemd/system
 RC_MAPS=/etc/rc_keymaps
 KEYMAPS_TOML=/lib/udev/rc_keymaps 
 KEYMAPS=/etc/rc_keymaps
+SYS_RC=/sys/class/rc
 ERRORS=(0)
 
 IR_GPIO=9   
@@ -52,6 +53,22 @@ function osname
     echo ${OSNAME}
 }
 
+# Returns the device name for the "gpio_ir_recv" overlay (rc0...rc6)
+function find_device()
+{
+    sname=$1
+    for x in 0 1 2 3 5 6
+    do
+        if [[ -f ${SYS_RC}/rc${x}/input${x}/name ]]; then
+            name=$(cat ${SYS_RC}/rc${x}/input${x}/name)
+            if [[ ${name} == ${sname} ]]; then
+                echo "rc${x}"
+                break
+            fi
+        fi
+    done
+}
+
 OSNAME=$(osname)
 REL_ID=$(release_id)
 if [[ ${REL_ID} -lt 10 ]]; then
@@ -59,6 +76,7 @@ if [[ ${REL_ID} -lt 10 ]]; then
     echo "Exiting setup"
     exit 1
 fi
+
 
 sudo rm -f ${LOG}
 mkdir -p ${LOGDIR}
@@ -201,18 +219,14 @@ sudo sed -i -e "$ a ${DT_OVERLAY}" ${BOOTCONFIG}
 echo "Added following line to ${BOOTCONFIG}:" | tee -a ${LOG}
 echo ${DT_OVERLAY} | tee -a ${LOG}
 
-# Load Device Tree overlay
-echo ${DT_COMMAND} | tee -a ${LOG}
-${DT_COMMAND}
-if [[ $? -ne '0' ]]; then       # Do not seperate from above
-    # The overlay may be already loaded
-    echo "Warning: Failed to run ${DT_COMMAND}" | tee -a ${LOG}
-fi
-echo "" | tee -a ${LOG}
-
 # Configure the remote LED
 sudo sed -i -e "0,/^remote_led/{s/remote_led.*/remote_led=${REMOTE_LED}/}" ${CONFIG}
 echo "Configured remote_led=${REMOTE_LED} in ${CONFIG}" | tee -a ${LOG}
+
+# Find device name for the "gpio_ir_recv" overlay
+IR_DEV=$(find_device "gpio_ir_recv")
+sudo sed -i -e "0,/^event_device/{s/event_device.*/event_device=${IR_DEV}/}" ${CONFIG}
+echo "Configured event_device=${IR_DEV} in ${CONFIG}" | tee -a ${LOG}
 
 # Copy keymaps
 echo "" | tee -a ${LOG}

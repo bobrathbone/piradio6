@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.133 2024/04/05 13:01:19 bob Exp $
+# $Id: radio_class.py,v 1.134 2024/05/04 09:03:26 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -2047,6 +2047,7 @@ class Radio:
                     log.message("Tried " + host + " port " + str(port) , log.ERROR)
                     self.setError(INTERNET_ERROR)
                     self.setInterrupt()
+                    self.ip_addr = ''
                 time.sleep(1)
         else:
             success = True

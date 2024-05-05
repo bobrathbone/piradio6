@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.99 2024/04/02 09:04:29 bob Exp $
+# $Id: config_class.py,v 1.100 2024/05/05 09:35:29 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -119,7 +119,6 @@ class Configuration:
     _remote_control_port = 5100          # Remote control to radio communication port
     _remote_listen_host = 'localhost'    # Address (locahost) or IP adress of remote UDP server
     _keytable = 'myremote.toml'          # IR event daemon keytable name
-    _event_device = 'rc0' 		 # Event device name - Usually rc0, rc1 or rc2
 
     _i2c_address = 0x00  # Use defaults or use setting in radiod.conf 
     _i2c_bus = 1         # The I2C bus is normally 1
@@ -316,9 +315,6 @@ class Configuration:
 
                 elif option == 'keytable':
                     self.keytable = parameter
-
-                elif option == 'event_device':
-                    self.event_device = parameter
 
                 elif option == 'mpdport':
                     try:
@@ -902,15 +898,6 @@ class Configuration:
     @keytable.setter
     def keytable(self, keytable):
         self._keytable = keytable
-
-    # IR event device name
-    @property
-    def event_device(self):
-        return self._event_device
-
-    @event_device.setter
-    def event_device(self, event_device):
-        self._event_device = event_device
 
     # Get the date format
     @property
@@ -1735,7 +1722,6 @@ if __name__ == '__main__':
     # IR remote control parametere
     print('')
     print ("IR key table (keytable):", config.keytable)
-    print ("IR event name (event_device):", config.event_device)
 
     # Internet check
     print('')

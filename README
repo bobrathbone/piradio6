@@ -12,7 +12,7 @@ This software uses the python3-mpd library. See https://packages.debian.org/sid/
 
 Version 7.7 release notes
 -------------------------
-Release 5 April 2024 - Build 4 
+Release 3 May 2024 - Build 6 
 
 1) Support for Raspberry Pi model 5 (RPi/GPIO.py GPIO calls conversion to LGPIO calls)
 2) GPIO interface to LGPIO libraries added in sub-directory RPi/
@@ -20,8 +20,10 @@ Release 5 April 2024 - Build 4
 4) Playlist now sorted before use so that media tracks are stepped through alphabetically.
 5) ssd1306_class.py Correct indent error and add instructions for Adafruit-ssd1306 module
 6) Improved installation procedure for the Waveshare WM8960 DAC sound card
-7) Correct problem of MPD being denied access to /usr/share/Music. ACL implemented.
+7) Correct problem of MPD being denied access to /home/pi/Music. ACL implemented.
 8) Made IR event device name for gpio-ir configurable in /etc/radiod.conf (event_device)
+9) Added support for RPi Audio output cards (RPi DigiAmp+, Rpi DacPro etc). 
+10) Change to airplay_class.py to display meta information in Airplay module
 
 
 Version 7.6 release notes
