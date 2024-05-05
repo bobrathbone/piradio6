@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.93 2023/11/27 10:22:34 bob Exp $
+# $Id: radiod.py,v 1.95 2024/04/05 10:38:25 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -558,10 +558,7 @@ def handleRadioEvent(event,display,radio,menu):
                     msg = "Exiting child process %s" % os.getpid()
                     log.message(msg, log.DEBUG)
                     sys.exit(0)
-        #try:
-        #    os.wait()
-        #except:
-        #    pass
+
         msg = "Exiting! process %s" % os.getpid()
         print(msg)
         log.message(msg, log.INFO)
@@ -638,7 +635,7 @@ def handleMenuChange(display,radio,menu,message):
 
     log.message('Menu mode ' + str(menu_mode) + ' ' + str(menu_name), log.DEBUG)
     hostname = socket.gethostname()
-    ip_addr = radio.execCommand('hostname -I')
+    ip_addr = radio.get_ip()
 
     source_type = radio.getSourceType()
 
@@ -866,7 +863,7 @@ def mute(radio,display):
 def displayStartup(display,radio):
     nlines = display.getLines()
     pid = os.getpid()
-    ipaddr = radio.execCommand('hostname -I')
+    ipaddr = radio.get_ip()
     version = radio.getVersion()
     msg = message.get('radio_version')
 
@@ -1082,7 +1079,8 @@ def displayInfo(display,radio,message):
         lwidth = display.getWidth()
     ipaddr = message.getIpAddress()
     if len(ipaddr) < 1:
-        ipaddr = message.storeIpAddress(radio.execCommand('hostname -I'))
+        ipaddr = radio.get_ip()
+        ipaddr = message.storeIpAddress(ipaddr)
     version = radio.getVersion()
     nlines = display.getLines()
     display.backlight('info_color')

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio - Install Waveshare WM8960 DAC driver
-# $Id: install_wm8960.sh,v 1.9 2024/03/05 11:53:08 bob Exp $
+# $Id: install_wm8960.sh,v 1.10 2024/03/13 15:58:21 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -122,8 +122,8 @@ cp *.state /etc/wm8960-soundcard
 # Only copy it and disable wm8960-soundcard.service. Not working in Bookworm
 cp wm8960-soundcard /usr/bin/
 cp wm8960-soundcard.service /lib/systemd/system/
-echo "Disabling wm8960-soundcard.service" | tee -a ${LOG}
-sudo systemctl disable wm8960-soundcard.service
+echo "Enabling wm8960-soundcard.service" | tee -a ${LOG}
+sudo systemctl enable wm8960-soundcard.service
 
 echo "----------------------------------------------------------------------------------"
 echo "A log of this installation will be found in ${LOG} "

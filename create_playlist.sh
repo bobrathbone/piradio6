@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.10 2023/12/02 12:40:06 bob Exp $
+# $Id: create_playlist.sh,v 1.12 2024/04/05 10:53:38 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -37,10 +37,10 @@ USBDEV=""
 MAX_SIZE=5000
 SDCARD="sdcard"
 USBDRIVE="usbdrive"
-LOCATION="/home/pi/Music"
 CONFIG=/etc/radiod.conf
 CODECS="mp3 ogg flac wav"
 USR=$(logname)
+LOCATION="/home/${USR}/Music"
 
 # Find device name of USB stick (Assumes that dev=/dev/sdX)
 find_usb_device(){
@@ -233,6 +233,9 @@ if [[ ${SUBDIR} == ${SDCARD} || ${SUBDIR} == ${USBDRIVE} ]]; then
         fi
     done
 fi
+
+# Allow MPD access to the music directory using ACL 
+sudo setfacl -m u:mpd:rx,g:audio:rx /home/${USR}
 
 # Set up a filter (This becomes the playlist name)
 ans=0

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.16 2023/09/23 11:29:24 bob Exp $
+# $Id: ireventd.py,v 1.18 2024/04/02 09:28:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -48,7 +48,6 @@ udpport = 5100      # IR Listener UDP port number default 5100
 
 config = Configuration()
 pidfile = '/var/run/ireventd.pid'
-key_maps = '/etc/rc_keymaps'
 
 
 # Signal SIGTERM handler
@@ -63,6 +62,7 @@ class RemoteDaemon(Daemon):
 
     keytable = 'myremote.toml'
     keymaps = '/etc/rc_keymaps'
+    ev_device = 'rc0'	# Can be rc0, rc1, rc2 - Run ir-keytable 
     play_number = 0
     timer_running = False
     timer = None
@@ -81,6 +81,8 @@ class RemoteDaemon(Daemon):
         msg = "Using IR kernel events architecture"
         print(msg)
         log.message(msg, log.DEBUG)
+
+        self.ev_device = config.event_device
 
         remote_led = config.remote_led
         if remote_led > 0:
@@ -131,7 +133,8 @@ class RemoteDaemon(Daemon):
     # Load the specified key table into /etc/rc_keymaps/
     def loadKeyTable(self,keytable):
         log.message("Loading " + self.keytable, log.DEBUG)
-        execCommand("sudo /usr/bin/ir-keytable -c -w " + self.keymaps + "/" + keytable)
+        execCommand("sudo /usr/bin/ir-keytable -c -w " + self.keymaps + "/" + keytable
+		    + " -s " + self.ev_device)
 
     # Handle the IR input event
     def readInputEvent(self,device):
@@ -163,7 +166,7 @@ class RemoteDaemon(Daemon):
                     else:
                         keycode = data.keycode
 
-                    #print(keycode,hex(data.scancode),data.keystate)
+                    print(keycode,hex(data.scancode),data.keystate)
     
                     if 'KEY_NUMERIC_' in keycode :
                         playnum = int(keycode.split('_')[2])
@@ -310,9 +313,9 @@ def displayConfiguration():
     if line != None:
         print(line.rstrip())
 
-    for file in os.listdir(key_maps):
+    for file in os.listdir(self.key_maps):
         if file.endswith(".toml"):
-            print("Key map: " + os.path.join(key_maps, file))
+            print("Key map: " + os.path.join(self.key_maps, file))
 
 ### Main routine ###
 if __name__ == "__main__":

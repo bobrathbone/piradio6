@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Radio
-# $Id: shoutcast.cgi,v 1.1 2022/02/16 15:51:27 bob Exp $
+# $Id: shoutcast.cgi,v 1.3 2023/01/02 17:57:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     type = str(form.getvalue('type')).lower()
     limit = str(form.getvalue('limit'))
     value = str(form.getvalue('value')).lower()
-        value = value.replace(' ','+')
+    value = value.replace(' ','+')
 
     if type == "stationsearch":
         searchcmd = " search=" + value
@@ -58,6 +58,7 @@ if __name__ == '__main__':
 
     # Call the program
     result = exec_cmd(cmd)
+    result = result.decode("utf-8")
     lines = result.split('\n')
 
     leng = len(lines)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.130 2023/12/03 12:06:23 bob Exp $
+# $Id: radio_class.py,v 1.133 2024/04/05 13:01:19 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -153,6 +153,7 @@ class Radio:
     error_display_delay = 0     # Delay before clearing error messages
     playlist_size = 0           # For checking changes to the playlist
     PL = None                   # Playlist class
+    ip_addr = ''                # Local IP address
     
     # MPD Options
     random = False  # Random tracks
@@ -320,17 +321,18 @@ class Radio:
 
     # Get IP address 
     def get_ip(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(0)
-        try:
-            # doesn't even have to be reachable
-            s.connect(('10.254.254.254', 1))
-            IP = s.getsockname()[0]
-        except Exception:
-            IP = ''
-        finally:
-            s.close()
-        return IP
+        if len(self.ip_addr) < 7:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(0)
+            try:
+                # Google DNS
+                s.connect(('8.8.8.8', 1))
+                self.ip_addr = s.getsockname()[0]
+            except Exception:
+                IP = ''
+            finally:
+                s.close()
+        return self.ip_addr
 
     # Wait for the network
     # If using comitup ignore address
@@ -346,7 +348,8 @@ class Radio:
                 # Don't use Comitup web address
                 if not self.config.comitup_ip in ipaddr:
                     waiting4network = False
-            time.sleep(0.5)
+            else:
+                time.sleep(0.5)
         return ipaddr
 
     # Call back routine for the IR remote and Web Interface

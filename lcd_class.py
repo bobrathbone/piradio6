@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.9 2023/11/17 10:07:08 bob Exp $
+# $Id: lcd_class.py,v 1.10 2024/04/05 13:01:19 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -139,7 +139,6 @@ class Lcd:
         for key in gpios.keys():
             gpio = gpios[key]
             gpios[key] = gpio
-            print(key,'GPIO',gpio)
             if gpio < 1:
                 # Block 
                 self.lcd_configured = False 
@@ -369,6 +368,14 @@ if __name__ == "__main__":
             lcd.init(code_page=page)
         else:
             lcd.init()
+
+        # Print pin assignments
+        print("lcd_enable",lcd.lcd_enable)
+        print("lcd_select",lcd.lcd_select)
+        print("lcd_data4",lcd.lcd_data4)
+        print("lcd_data5",lcd.lcd_data5)
+        print("lcd_data6",lcd.lcd_data6)
+        print("lcd_data7",lcd.lcd_data7)
 
         lcd.clear()
 
