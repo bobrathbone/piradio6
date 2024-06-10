@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.134 2024/05/04 09:03:26 bob Exp $
+# $Id: radio_class.py,v 1.137 2024/05/19 12:50:46 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -633,6 +633,8 @@ class Radio:
 
         if os.path.isfile("/usr/bin/bluetoothctl") and connectBT:
             log.message("Connecting Bluetooth device " + bluetooth_device, log.DEBUG)
+            cmd = "bluetoothctl power on"
+            os.system(cmd)
             cmd = "bluetoothctl info " + bluetooth_device + " >/dev/null 2>&1"
 
             # Re-pair Bluetooth device if no info for device
@@ -656,13 +658,18 @@ class Radio:
                 if os.system(cmd) == 0:
                     connected = True
             else:
+                retry = 4
                 cmd = "bluetoothctl connect " + bluetooth_device
-                if os.system(cmd) == 0:
-                    log.message("Connectd Bluetooth device " + bluetooth_device,                             log.DEBUG)
-                    connected = True
-                else:
-                    log.message("Failed to connect Bluetooth device ",                           log.DEBUG)
-                    connected = False
+                while retry > 0:
+                    if os.system(cmd) == 0:
+                        log.message("Connected Bluetooth device " + bluetooth_device,log.DEBUG) 
+                        connected = True
+                        retry = 0
+                    else:
+                        log.message("Failed to connect Bluetooth device "+bluetooth_device,log.DEBUG)
+                        connected = False
+                        time.sleep(2)
+                        retry -= 1
         return  connected
 
     # Restart MPD
@@ -2047,7 +2054,6 @@ class Radio:
                     log.message("Tried " + host + " port " + str(port) , log.ERROR)
                     self.setError(INTERNET_ERROR)
                     self.setInterrupt()
-                    self.ip_addr = ''
                 time.sleep(1)
         else:
             success = True

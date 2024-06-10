@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.66 2024/04/26 14:28:12 bob Exp $
+# $Id: configure_audio.sh,v 1.69 2024/05/13 10:07:53 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -298,8 +298,7 @@ do
         USE_PULSE=1
         AUDIO_INTERFACE="pulse"
         TYPE=${BLUETOOTH}
-        # Copy asound.conf but it isn't used 
-        ASOUND_CONF_DIST=${ASOUND_CONF_DIST}
+        ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.blue
         LOCK_CONFIG=1   
         CARD=-1     # No cards displayed (aplay -l) 
 
@@ -434,7 +433,7 @@ if [[ ${USE_PULSE} == 1 ]]; then
         fi
     fi
     grep "^load-module module-native-protocol-tcp" ${PULSE_PA}
-    if [[ $? != 0 ]]; then  # Do not seperate from above
+    if [[ $? != 0 ]]; then  # Do not separate from above
         cmd="sudo cp ${PULSE_PA}.orig ${PULSE_PA}"
         echo $cmd | tee -a ${LOG}
         $cmd | tee -a ${LOG}
@@ -455,9 +454,13 @@ else
 
 fi
 
+# Lock audio configuration if required (radiod won't dynamically configure Card number)
+# See audio_config_lock parameter in /etc/radiod.conf
 if [[ ${LOCK_CONFIG} == 1 ]]; then
     # Lock configuration in /etc/radiod.conf
     sudo sed -i -e "0,/^audio_config_locked=/{s/audio_config_locked=.*/audio_config_locked=yes/}" ${CONFIG}
+else
+    sudo sed -i -e "0,/^audio_config_locked=/{s/audio_config_locked=.*/audio_config_locked=no/}" ${CONFIG}
 fi
 
 # Check if audio_out parameter in configuration file
@@ -598,8 +601,6 @@ fi
 echo |  tee -a ${LOG}
 if [[ ${CARD} -ge 0 ]]; then
     echo "Configuring ${ASOUNDCONF} with card ${CARD} " | tee -a ${LOG}
-else
-    echo "${ASOUNDCONF} not required with pulseaudio and Bluetooth" | tee -a ${LOG}
 fi
 
 if [[ ! -f ${ASOUNDCONF}.org && -f ${ASOUNDCONF} ]]; then
@@ -608,12 +609,8 @@ if [[ ! -f ${ASOUNDCONF}.org && -f ${ASOUNDCONF} ]]; then
 fi
 
 # Set up /etc/asound.conf except if using pulseaudio and bluetooth
-if [[ ${TYPE} != ${BLUETOOTH} ]]; then
-    echo "Copying ${ASOUND_CONF_DIST} to ${ASOUNDCONF}" | tee -a ${LOG}
-    sudo cp -f ${ASOUND_DIR}/${ASOUND_CONF_DIST} ${ASOUNDCONF}
-else
-    sudo rm -f ${ASOUNDCONF}
-fi
+echo "Copying ${ASOUND_CONF_DIST} to ${ASOUNDCONF}" | tee -a ${LOG}
+sudo cp -f ${ASOUND_DIR}/${ASOUND_CONF_DIST} ${ASOUNDCONF}
 
 if [[ ${CARD} == 0 ]]; then
         sudo sed -i -e "0,/card/s/1/0/" ${ASOUNDCONF}

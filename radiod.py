@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.95 2024/04/05 10:38:25 bob Exp $
+# $Id: radiod.py,v 1.97 2024/06/08 14:10:50 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -289,6 +289,9 @@ class MyDaemon(Daemon):
                     handleEvent(event,display,radio,menu)
             
                 radio.displayVuMeter()
+
+                # Keep MPD connection alive
+                radio.ping()
 
                 # This delay must be >= to any GPIO bounce times
                 time.sleep(0.2)

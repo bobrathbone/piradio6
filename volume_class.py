@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.26 2023/11/19 12:49:31 bob Exp $
+# $Id: volume_class.py,v 1.27 2024/05/31 08:39:01 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -284,6 +284,7 @@ class Volume:
     # Mute the volume (Do not store volume setting in /var/lib/radio)
     def mute(self):
         source_type = self.source.getType()
+        mute_action = self.config.mute_action
 
         self.set(0,store=False)
         if source_type == self.source.RADIO or source_type == self.source.MEDIA:

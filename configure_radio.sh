@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.41 2024/01/02 14:55:01 bob Exp $
+# $Id: configure_radio.sh,v 1.42 2024/05/24 08:56:59 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1007,17 +1007,16 @@ fi
 # Commit changes to radio config file #
 #######################################
 
-# Enable RPi converter module if model is a Raspberry Pi 5 or later
-if [[ ${PI_MODEL} > 0 ]]; then
-    if [[ ${PI_MODEL} -ge 5 ]]; then
-        # Enable GPIO converter in ${DIR}/RPi
-        touch ${DIR}/RPi/__init__.py | tee -a ${LOG}
-        echo "GPIO conversion enabled" | tee -a ${LOG}
-    else
-        # Disable GPIO converter
-        rm -f  ${DIR}/RPi/__init__.py | tee -a ${LOG}
-        echo "GPIO conversion disabled" | tee -a ${LOG}
-    fi 
+# Enable GPIO converter module if model is a Raspberry Pi 5 or later or Bookworm OS or later
+echo "VERSION_ID"  $(release_id)
+if [[ ${PI_MODEL} -ge 5 || $(release_id) -ge 12 ]]; then
+    # Enable GPIO converter in ${DIR}/RPi
+    touch ${DIR}/RPi/__init__.py | tee -a ${LOG}
+    echo "GPIO conversion enabled" | tee -a ${LOG}
+else
+    # Disable GPIO converter
+    rm -f  ${DIR}/RPi/__init__.py | tee -a ${LOG}
+    echo "GPIO conversion disabled" | tee -a ${LOG}
 fi 
 
 # Save original configuration file

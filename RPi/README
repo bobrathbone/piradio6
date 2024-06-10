@@ -24,7 +24,7 @@ Note: The radiod package installation script has already done this
 
 Enabling GPIO.py
 ================
-For a Raspberry Pi model 5 only. Example:
+For a Raspberry Pi model 5 or running if Bookworm only. Example:
 touch /usr/share/radio/RPi/__init__.py
 The instruction above will cause the code using the GPIO calls to see directory RPi as a pacckage.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-$Id: display_model.py,v 1.12 2023/11/19 10:41:24 bob Exp $
+$Id: display_model.py,v 1.13 2024/05/28 11:29:11 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -31,9 +31,9 @@ You can instantiate the ModelInfo class either with a parameter `rev_hex`
         maker = ''     # manufacturer (eg. 'Qisda')
         info = ''      # additional info (eg. 'D14' removed)
 
-
 """
 import re
+import os
 
 
 # From http://elinux.org/RPi_HardwareHistory
@@ -115,6 +115,9 @@ class ModelInfo(object):
     maker = ''
     info = ''
 
+    # Model description from device tree
+    dt_model = '/sys/firmware/devicetree/base/model'
+
     def __init__(self, rev_hex=None):
         if not rev_hex:
             with open("/proc/cpuinfo") as f:
@@ -124,21 +127,25 @@ class ModelInfo(object):
 
         self.revision_hex = rev_hex[-4:] if rev_hex[:4] == "1000" else rev_hex
         try:
-                self.model, self.revision, self.ram_mb, self.maker, self.info = \
+            self.model, self.revision, self.ram_mb, self.maker, self.info = \
                         model_data[rev_hex.lstrip("0")]
         except:
+    
+            if os.path.exists(self.dt_model):
+                with open(self.dt_model) as f:
+                    print(f.read())
+            else:
                 print ("Unknown model", rev_hex.lstrip("0"))
 
     def __repr__(self):
         s = "%s: Model %s, Revision %s, RAM: %s MB, Maker: %s%s" % ( \
-                self.revision_hex, self.model, self.revision, self.ram_mb, \
-                self.maker, ", %s" % self.info if self.info else "")
+            self.revision_hex, self.model, self.revision, self.ram_mb, \
+            self.maker, ", %s" % self.info if self.info else "")
         return s
-
-
-
 
 if __name__ == "__main__":
     m = ModelInfo()
     print(m)
 
+# set tabstop=4 shiftwidth=4 expandtab
+# retab

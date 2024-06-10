@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.25 2024/05/03 17:12:32 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.27 2024/05/24 11:15:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -57,14 +57,22 @@ function osname
 function find_device()
 {
     sname=$1
-    for x in 0 1 2 3 5 6
+    found=0
+    for x in 0 1 2 3 4 6
     do
-        if [[ -f ${SYS_RC}/rc${x}/input${x}/name ]]; then
-            name=$(cat ${SYS_RC}/rc${x}/input${x}/name)
-            if [[ ${name} == ${sname} ]]; then
-                echo "rc${x}"
-                break
+        for y in 0 1 2 3 4 5 6
+        do
+            if [[ -f ${SYS_RC}/rc${x}/input${y}/name ]]; then
+                name=$(cat ${SYS_RC}/rc${x}/input${y}/name)
+                if [[ ${name} == ${sname} ]]; then
+                    echo "rc${x}"
+                    found=1
+                    break
+                fi
             fi
+        done
+        if [[ ${found} == 1 ]]; then
+            break
         fi
     done
 }
@@ -225,8 +233,13 @@ echo "Configured remote_led=${REMOTE_LED} in ${CONFIG}" | tee -a ${LOG}
 
 # Find device name for the "gpio_ir_recv" overlay
 IR_DEV=$(find_device "gpio_ir_recv")
-sudo sed -i -e "0,/^event_device/{s/event_device.*/event_device=${IR_DEV}/}" ${CONFIG}
-echo "Configured event_device=${IR_DEV} in ${CONFIG}" | tee -a ${LOG}
+echo "DEBUG IR_DEV ${IR_DEV}"
+
+# We no longer configure the /sys/class/rc/rc0....6 in /etc/radiod.conf
+# This is determined in the ireventd.py daemon at run time
+# sudo sed -i -e "0,/^event_device/{s/event_device.*/event_device=${IR_DEV}/}" ${CONFIG}
+# echo "Configured event_device=${IR_DEV} in ${CONFIG}" | tee -a ${LOG}
+echo "Using event_device=${IR_DEV}" | tee -a ${LOG}
 
 # Copy keymaps
 echo "" | tee -a ${LOG}

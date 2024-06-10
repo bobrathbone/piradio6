@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi RPi.GPIO interception package
-# $Id: GPIO.py,v 1.6 2024/02/28 10:16:57 bob Exp $
+# $Id: GPIO.py,v 1.10 2024/06/09 10:37:31 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -18,6 +18,7 @@
 
 import lgpio
 import time
+import re
 import pdb
 
 # RPi.GPIO definitions (Note: they are different to LGPIO variables)
@@ -54,11 +55,17 @@ LGPIO_PULL_OFF = 128
 callbacks = {}
 edges = ['NONE','RISING_EDGE','FALLING_EDGE','BOTH_EDGES']
 
-# This program only works on a Raspberry Pi Model or later
+# The Raspberry Pi Model 5 uses the RP1 chip (4). Try to open first
 try:
     chip = lgpio.gpiochip_open(4)
 except Exception as e:
-    print ("Fatal error: %s %s" % (str(e), "Only works on a Raspberry Pi Model 5" ))
+    pass
+
+# Earlier Raspberry Pi 4b,3B etc uses SOC chip  for I/O (0). 
+try:
+    chip = lgpio.gpiochip_open(0)
+except Exception as e:
+    print ("Fatal error: %s" % (str(e)))
     exit(1) 
 
 # Set mode BCM (GPIO numbering) or BOARD (Pin numbering)
@@ -107,11 +114,10 @@ def setup(gpio,mode=OUT,pull_up_down=PUD_OFF):
 # 2: no level change (a watchdog timeout)
 def _gpio_event(chip,gpio,level,flags):
     gpio = _get_gpio(gpio)
-    if level < 2:   # Ignore no level change (2)
-        try:
-            callbacks[gpio](gpio)
-        except Exception as e:
-            print(str(e)) 
+    try:
+        callbacks[gpio](gpio)
+    except Exception as e:
+        print(str(e)) 
 
 # Add event detection - Converts GPIO add_event_detect call to LGPIO 
 def add_event_detect(gpio,edge,callback=None,bouncetime=0):
@@ -157,6 +163,18 @@ def get_info():
 def cleanup():
     lgpio.gpiochip_close(chip)
 
+# Get the Raspberry pi board version from /proc/cpuinfo
+def getBoardRevision():
+    revision = 1
+    with open("/proc/cpuinfo") as f:
+        cpuinfo = f.read()
+    rev_hex = re.search(r"(?<=\nRevision)[ |:|\t]*(\w+)", cpuinfo).group(1)
+    rev_int = int(rev_hex,16)
+    if rev_int > 3:
+        revision = 2
+    return revision
+
+RPI_REVISION = getBoardRevision()
 
 # Create PWM object
 def PWM(gpio, frequency):  
@@ -180,7 +198,6 @@ class PWMInstance:
     def stop(self):
         lgpio.tx_pwm(chip, self.gpio, 0, 0)
 
-
 # LGPIO information 
 if __name__ == '__main__':
     gpio=4
@@ -196,7 +213,6 @@ if __name__ == '__main__':
     setmode(BOARD)
     gpio = _get_gpio(7)
     print(BOARD,7,gpio)
-     
 
 # set tabstop=4 shiftwidth=4 expandtab
 # retab

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.10 2024/04/05 13:01:19 bob Exp $
+# $Id: lcd_class.py,v 1.11 2024/05/10 10:21:18 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -26,7 +26,6 @@ import os,sys,pdb
 import time,pwd
 import RPi.GPIO as GPIO
 from config_class import Configuration
-import gpiozero
 
 # The wiring for the LCD is as follows:
 # 1 : GND

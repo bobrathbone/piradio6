@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: rotary_class_alternative.py,v 1.4 2021/09/26 09:55:39 bob Exp $
+# $Id: rotary_class_alternative.py,v 1.5 2024/05/23 16:13:36 bob Exp $
 #
 # Raspberry Pi Alternative Rotary Encoder Class
 # Certain Rotary Encoders will not work with the current version of the Rotary class.
@@ -105,9 +105,9 @@ class RotaryEncoderAlternative:
     # Push button up event
     def button_event(self,button):
         # Ignore Button Up events
-        if not GPIO.input(button):
-            event = self.BUTTONDOWN
-            self.callback(event)
+        ##if not GPIO.input(button):
+        event = self.BUTTONDOWN
+        self.callback(event)
         return
 
 
