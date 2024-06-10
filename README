@@ -12,7 +12,7 @@ This software uses the python3-mpd library. See https://packages.debian.org/sid/
 
 Version 7.7 release notes
 -------------------------
-Release 8 June 2024 - Build 11 
+Release 9 June 2024 - Build 12 
 
 1) Support for Raspberry Pi model 5 (RPi/GPIO.py GPIO calls conversion to LGPIO calls)
 2) GPIO interface to LGPIO libraries added in sub-directory RPi/
@@ -28,6 +28,7 @@ Release 8 June 2024 - Build 11
 12) Correct detection of IR event class /sys/class/rc/rc0....6 in the IR event daemon
 13) Correct mute button not doing an MPD client PAUSE in volume_class.py
 14) Corrected Alarm function not restoring volume setting. MPD client ping implemented
+15) Implemented RPI_REVISION in GPIOconverter (RPi/GPIO.py)
 
 
 Version 7.6 release notes

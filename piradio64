@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio64,v 1.24 2024/03/11 12:51:30 bob Exp $
+# $Id: piradio64,v 1.25 2024/06/09 09:26:39 bob Exp $
 # This package must be built under Raspbian Buster (Not Jessie or earlier)
 # This is the 64 bit version
 # Source: <source package name; defaults to package name>
@@ -102,7 +102,7 @@ Files:  radiod.py /usr/share/radio/
     weather_class.py /usr/share/radio/
     wxconfig_class.py /usr/share/radio/
     weather.conf /usr/share/radio/
-    RPi/GPIO.py /usr/share/radio/
+    RPi/GPIO.py /usr/share/radio/RPi/
     RPi/test_pwm.py /usr/share/radio/RPi/
     RPi/README /usr/share/radio/RPi/
     oled/__init__.py /usr/share/radio/oled/
