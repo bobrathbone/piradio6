@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.11 2024/05/10 10:21:18 bob Exp $
+# $Id: lcd_class.py,v 1.12 2024/06/19 15:16:16 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -401,6 +401,7 @@ if __name__ == "__main__":
             text2 = "Line 2 123456789"
             text3 = "Line 3 123456789"
             text4 = "Line 4 123456789"
+            #text2 = "äöüßÄÖÜ"  # Test German umlauts
 
         lcd.out(2,text2)
         lcd.out(3,text3)

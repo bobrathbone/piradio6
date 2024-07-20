@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.8 2023/11/17 17:11:07 bob Exp $
+# $Id: build.sh,v 1.9 2024/06/21 08:36:57 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -51,6 +51,7 @@ IFS=${SAVEIFS}
 
 echo "Building package ${PKG} version ${VERSION}" | tee ${BUILDLOG}
 echo "from input file ${PKGDEF}" | tee -a ${BUILDLOG}
+echo "Update version and build number in constants.py as required"
 sudo chown ${USR}:${GRP} *.py *.cmd *.sh
 sudo chmod +x *.py *.cmd *.sh
 sudo chmod -x language/* voice.dist

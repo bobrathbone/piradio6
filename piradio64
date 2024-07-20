@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio64,v 1.25 2024/06/09 09:26:39 bob Exp $
+# $Id: piradio64,v 1.29 2024/07/14 06:16:05 bob Exp $
 # This package must be built under Raspbian Buster (Not Jessie or earlier)
 # This is the 64 bit version
 # Source: <source package name; defaults to package name>
@@ -77,6 +77,8 @@ Files:  radiod.py /usr/share/radio/
     lcd_i2c_pcf8574.py /usr/share/radio/
     lcd_adafruit_class.py /usr/share/radio/
     lcd_piface_class.py /usr/share/radio/
+    lcd_i2c_jhd1313.py /usr/share/radio/
+    lcd_i2c_jhd1313_sgm31323.py /usr/share/radio/
     no_display.py /usr/share/radio/
     radio_daemon.py /usr/share/radio/
     wiring.py /usr/share/radio/

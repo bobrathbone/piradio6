@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.73 2024/02/22 12:35:13 bob Exp $
+# $Id: piradio,v 1.76 2024/07/14 06:16:05 bob Exp $
 # This package must be built under Raspbian Buster or Bullseye (Not Jessie or earlier)
 # For further explanation see https://www.debian.org/doc/debian-policy/ch-controlfields.html
 # Source: <source package name; defaults to package name>
@@ -79,6 +79,7 @@ Files:  radiod.py /usr/share/radio/
 	lcd_i2c_adafruit.py /usr/share/radio/
 	lcd_i2c_pcf8574.py /usr/share/radio/
 	lcd_i2c_jhd1313.py /usr/share/radio/
+    lcd_i2c_jhd1313_sgm31323.py /usr/share/radio/
 	lcd_adafruit_class.py /usr/share/radio/
 	lcd_piface_class.py /usr/share/radio/
 	no_display.py /usr/share/radio/
@@ -114,11 +115,14 @@ Files:  radiod.py /usr/share/radio/
 	oled/Font.py /usr/share/radio/oled/
 	oled/Graphics.py /usr/share/radio/oled/
 	oled/OLED.py /usr/share/radio/oled/
-	smbus2/__init__.py /usr/share/radio/smbus2
-	smbus2/smbus2.py /usr/share/radio/smbus2
 	README /usr/share/radio/
     build.sh /usr/share/radio/
+    piradio /usr/share/radio/
+    piradio.postinst /usr/share/radio/
+    piradio.postrm /usr/share/radio/
+    piradio.preinst /usr/share/radio/
     build64.sh /usr/share/radio/
+    piradio64 /usr/share/radio/
     remotes/myremote.toml /usr/share/radio/remotes
     remotes/mini.toml /usr/share/radio/remotes
 	logrotate.d/radiod /etc/logrotate.d/

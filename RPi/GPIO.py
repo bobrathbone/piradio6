@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Raspberry Pi RPi.GPIO interception package
-# $Id: GPIO.py,v 1.10 2024/06/09 10:37:31 bob Exp $
+# $Id: GPIO.py,v 1.11 2024/06/20 13:55:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -127,13 +127,11 @@ def add_event_detect(gpio,edge,callback=None,bouncetime=0):
         detect = lgpio.RISING_EDGE
     elif edge ==  FALLING:
         detect = lgpio.FALLING_EDGE
-    elif edge ==  BOTH:
-        detect = lgpio.BOTH_EDGES
     else:
         detect = lgpio.BOTH_EDGES
     try:
         lgpio.callback(chip, gpio, detect,_gpio_event)
-        lgpio.gpio_claim_alert(chip, gpio, 1, lFlags=0, notify_handle=None)
+        lgpio.gpio_claim_alert(chip, gpio, 1, lFlags=detect, notify_handle=None)
         lgpio.gpio_set_debounce_micros(chip, gpio, bouncetime)
 
     except Exception as e:
@@ -213,6 +211,7 @@ if __name__ == '__main__':
     setmode(BOARD)
     gpio = _get_gpio(7)
     print(BOARD,7,gpio)
+    lgpio.gpiochip_close(chip)
 
 # set tabstop=4 shiftwidth=4 expandtab
 # retab

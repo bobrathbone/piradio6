@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.97 2024/06/08 14:10:50 bob Exp $
+# $Id: radiod.py,v 1.100 2024/07/13 19:33:59 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -21,6 +21,7 @@ import socket
 import datetime
 import subprocess
 from time import strftime
+import RPi.GPIO as GPIO
 
 import pdb
 # To set break-point: pdb.set_trace()
@@ -515,6 +516,7 @@ def handleRadioEvent(event,display,radio,menu):
     elif event_type == event.MENU_BUTTON_DOWN:
         if radio.muted():
             radio.unmute()
+            
         handleMenuChange(display,radio,menu,message)
 
     elif event_type == event.AUX_SWITCH1:
@@ -542,25 +544,18 @@ def handleRadioEvent(event,display,radio,menu):
             display.out(1, message.get('stopped'))
             cmd = radio.config.execute
             if len(cmd) > 3:
+                GPIO.cleanup()
                 msg = "Executing %s" % cmd
                 log.message(msg, log.INFO)
 
                 # Stop UDP server thread
                 radio.server.stop()
-                pid = os.fork()
+                try:
+                    execCommand(cmd + ' &')
+                except Exception as e:
+                    print(str(e))
 
-                # Execute command from forked process
-                if pid > 0:
-                    try:
-                        subprocess.Popen(args=[cmd, ' &'] ,shell=False,
-                            stdin=None, stdout=None, stderr=None, close_fds=True)
-                        #execCommand(cmd + ' &')
-                    except Exception as e:
-                        print(str(e))
-
-                    msg = "Exiting child process %s" % os.getpid()
-                    log.message(msg, log.DEBUG)
-                    sys.exit(0)
+                sys.exit(0)
 
         msg = "Exiting! process %s" % os.getpid()
         print(msg)
@@ -633,6 +628,7 @@ def handleSearchEvent(event,display,radio,menu):
 def handleMenuChange(display,radio,menu,message):
     global newMenu
     newMenu = True
+    current_menu = menu.get() # Needed for alarm check 
     menu_mode = menu.cycle()
     menu_name = menu.getName()
 
@@ -643,7 +639,7 @@ def handleMenuChange(display,radio,menu,message):
     source_type = radio.getSourceType()
 
     # Was the previous option to activate the alarm?
-    if menu.getOption() == menu.OPTION_ALARM:
+    if menu.getOption() == menu.OPTION_ALARM and current_menu == menu.MENU_OPTIONS:
         if radio.getAlarmType() != 0:
             sleep(radio,menu)
 
@@ -852,6 +848,7 @@ def wakeup(radio,menu):
     log.message("Alarm fired", log.INFO)
     radio.unmute()
     menu.set(menu.MENU_TIME)
+    menu.setOption(menu.OPTION_RANDOM)
 
 # Mute radio
 def mute(radio,display):

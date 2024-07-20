@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.137 2024/05/19 12:50:46 bob Exp $
+# $Id: radio_class.py,v 1.138 2024/07/13 19:33:59 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -1321,10 +1321,11 @@ class Radio:
 
             if t1.hour == t2.hour and t1.minute == t2.minute and not self.alarmTriggered:
                 # Is this a weekday
-                if type == self.ALARM_WEEKDAYS and weekday < 5: 
-                    fireAlarm = True
-                elif type < self.ALARM_WEEKDAYS:    
-                    fireAlarm = True
+                if int(t1.second) < 5:  # Only trigger alarm once 
+                    if type == self.ALARM_WEEKDAYS and weekday < 5: 
+                        fireAlarm = True
+                    elif type < self.ALARM_WEEKDAYS:    
+                        fireAlarm = True
 
                 if fireAlarm:
                     self.alarmTriggered = fireAlarm 

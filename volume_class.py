@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.27 2024/05/31 08:39:01 bob Exp $
+# $Id: volume_class.py,v 1.28 2024/06/21 16:00:53 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -195,7 +195,9 @@ class Volume:
                 volume = 0
 
         try:
-                self.execCommand("echo " + str(volume) + " > " + VolumeFile)
+                with open(VolumeFile, 'w') as f:
+                    f.write(str(volume))
+                    f.close()
         except:
                 log.message("Error writing " + VolumeFile, log.ERROR)
 

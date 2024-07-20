@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.42 2024/05/24 08:56:59 bob Exp $
+# $Id: configure_radio.sh,v 1.43 2024/06/22 08:36:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -42,6 +42,7 @@ BOOTCONFIG=/boot/config.txt
 BOOTCONFIG_2=/boot/firmware/config.txt
 ETCMODULES=/etc/modules
 MPDCONF=/etc/mpd.conf
+WXCONFIG=/etc/weather.conf
 LOG=${LOGDIR}/install.log
 SPLASH="bitmaps\/raspberry-pi-logo.bmp" # Used for sed so \ needed
 
@@ -119,6 +120,11 @@ if [[ $(release_id) -ge 12 ]]; then
 fi
 
 echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
+
+# Copy weather configuration file to /etc
+if [[ ! -f   ${WXCONFIG} ]]; then
+    sudo cp -f ${DIR}/weather.conf ${WXCONFIG}
+fi
 
 # Replace /etc/mpd.conf if corrupt
 grep ^audio_out /etc/mpd.conf >/dev/null 2>&1

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Weather station class
-# $Id: weather_class.py,v 1.14 2023/10/04 09:06:27 bob Exp $
+# $Id: weather_class.py,v 1.16 2024/06/21 12:47:04 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : https://www.bobrathbone.com/
@@ -97,7 +97,6 @@ class Weather:
             temperature = round(temperature, 1)
             weather["temperature"] = temperature
             
-
             x = curr[0].find("humidity")
             weather["humidity"] = (x.attrs['value'] + '%')
 
@@ -125,13 +124,15 @@ class Weather:
             weather["clouds"] = (x.attrs['value'])
 
             #x = curr[0].find("wind")
-            #pdb.set_trace()
-            #weather["wind"] = (x.attrs['value'])
-
+            #weather["wind"] = (x.attrs['speed'])
+                
             return weather
+        elif res.status_code == 401:
+            msg = "Invalid API key. See https://openweathermap.org/faq#error401 for more info."
+            return msg
         else:
-            print("Status code %s" % res.status_code)
-            return weather
+            msg = "Status code %s" % res.status_code
+            return msg 
 
     # Convert a city name and country code to latitude and longitude
     def get_coords(self,location):

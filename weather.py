@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Weather station class
-# $Id: weather.py,v 1.24 2023/10/04 11:04:50 bob Exp $
+# $Id: weather.py,v 1.29 2024/06/23 08:09:05 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : https://www.bobrathbone.com/
@@ -23,6 +23,8 @@ import os
 import time
 import pdb
 import signal
+import subprocess
+import RPi.GPIO as GPIO
 
 from time import strftime
 from display_class import Display
@@ -55,19 +57,24 @@ def displayWeather(getnew):
         wx = weather.get()
         print(wx)
         print('\n')
-    location = wx['location']
-    temperature = wx['temperature']
-    units = wx['units']
-    temp_units = wx['temp_units']
-    humidity = wx['humidity']
-    pressure = wx['pressure']
-    pressure_units = wx['pressure_units']
-    summary = wx['summary']
-    clouds = wx['clouds']
-    if int(clouds) > 0:
-        clouds = clouds + '%'
-    else:
-        clouds = ''
+
+    try:
+        location = wx['location']
+        temperature = wx['temperature']
+        units = wx['units']
+        temp_units = wx['temp_units']
+        humidity = wx['humidity']
+        pressure = wx['pressure']
+        pressure_units = wx['pressure_units']
+        summary = wx['summary']
+        clouds = wx['clouds']
+        if int(clouds) > 0:
+            clouds = clouds + '%'
+        else:
+            clouds = ''
+    except:
+        display.out(2,wx)
+        sys.exit(1)
 
     if lines > 2:
         display.out(2,location)
@@ -91,11 +98,11 @@ def execCommand(cmd):
 def exitProgram():
     display.clear()
     display.out(1,"Program finished")
+    GPIO.cleanup()
     cmd = wxconfig.exit_command 
-    server.stop()
     if len(cmd) > 3:
         print(cmd)
-        execCommand(cmd)
+        execCommand(cmd + '&')
     sys.exit(0)
 
 # Call back routine for the IR remote and Web Interface
