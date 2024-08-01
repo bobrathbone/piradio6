@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.22 2023/07/22 15:01:48 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.27 2024/05/24 11:15:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -22,10 +22,12 @@ LOGDIR=${RADIO_DIR}/logs
 LOG=${LOGDIR}/install_ir.log
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/config.txt
+BOOTCONFIG_2=/boot/firmware/config.txt
 SYSTEMD_DIR=/usr/lib/systemd/system
 RC_MAPS=/etc/rc_keymaps
 KEYMAPS_TOML=/lib/udev/rc_keymaps 
 KEYMAPS=/etc/rc_keymaps
+SYS_RC=/sys/class/rc
 ERRORS=(0)
 
 IR_GPIO=9   
@@ -51,6 +53,30 @@ function osname
     echo ${OSNAME}
 }
 
+# Returns the device name for the "gpio_ir_recv" overlay (rc0...rc6)
+function find_device()
+{
+    sname=$1
+    found=0
+    for x in 0 1 2 3 4 6
+    do
+        for y in 0 1 2 3 4 5 6
+        do
+            if [[ -f ${SYS_RC}/rc${x}/input${y}/name ]]; then
+                name=$(cat ${SYS_RC}/rc${x}/input${y}/name)
+                if [[ ${name} == ${sname} ]]; then
+                    echo "rc${x}"
+                    found=1
+                    break
+                fi
+            fi
+        done
+        if [[ ${found} == 1 ]]; then
+            break
+        fi
+    done
+}
+
 OSNAME=$(osname)
 REL_ID=$(release_id)
 if [[ ${REL_ID} -lt 10 ]]; then
@@ -59,9 +85,17 @@ if [[ ${REL_ID} -lt 10 ]]; then
     exit 1
 fi
 
+
 sudo rm -f ${LOG}
 mkdir -p ${LOGDIR}
 echo "$0 configuration log, $(date) " | tee ${LOG}
+
+# In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
+if [[ $(release_id) -ge 12 ]]; then
+    BOOTCONFIG=${BOOTCONFIG_2}
+fi
+
+echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
 
 # Check if user wants to configure IR remote control 
 if [[ -f ${CONFIG}.org ]]; then
@@ -193,18 +227,19 @@ sudo sed -i -e "$ a ${DT_OVERLAY}" ${BOOTCONFIG}
 echo "Added following line to ${BOOTCONFIG}:" | tee -a ${LOG}
 echo ${DT_OVERLAY} | tee -a ${LOG}
 
-# Load Device Tree overlay
-echo ${DT_COMMAND} | tee -a ${LOG}
-${DT_COMMAND}
-if [[ $? -ne '0' ]]; then       # Do not seperate from above
-    # The overlay may be already loaded
-    echo "Warning: Failed to run ${DT_COMMAND}" | tee -a ${LOG}
-fi
-echo "" | tee -a ${LOG}
-
 # Configure the remote LED
 sudo sed -i -e "0,/^remote_led/{s/remote_led.*/remote_led=${REMOTE_LED}/}" ${CONFIG}
 echo "Configured remote_led=${REMOTE_LED} in ${CONFIG}" | tee -a ${LOG}
+
+# Find device name for the "gpio_ir_recv" overlay
+IR_DEV=$(find_device "gpio_ir_recv")
+echo "DEBUG IR_DEV ${IR_DEV}"
+
+# We no longer configure the /sys/class/rc/rc0....6 in /etc/radiod.conf
+# This is determined in the ireventd.py daemon at run time
+# sudo sed -i -e "0,/^event_device/{s/event_device.*/event_device=${IR_DEV}/}" ${CONFIG}
+# echo "Configured event_device=${IR_DEV} in ${CONFIG}" | tee -a ${LOG}
+echo "Using event_device=${IR_DEV}" | tee -a ${LOG}
 
 # Copy keymaps
 echo "" | tee -a ${LOG}
@@ -251,7 +286,7 @@ echo "to configure your IR remote control" |  tee -a ${LOG}
 echo "    sudo ir-keytable -v -t -p  rc-5,rc-5-sz,jvc,sony,nec,sanyo,mce_kbd,rc-6,sharp,xmpir-keytable" |  tee -a ${LOG}
 echo "" |  tee -a ${LOG}
 echo "Create myremote.toml using the scan codes from the ir-keytable program output" |  tee -a ${LOG}
-echo "See the example in ${RADIO_DIR}/myremote.mytoml"  |  tee -a ${LOG}
+echo "See the examples in directory ${RADIO_DIR}/remotes/"  |  tee -a ${LOG}
 echo "Then copy your configuration file (myremote.toml) to  ${RC_MAPS}" |  tee -a ${LOG}
 echo "    sudo cp myremote.toml ${RC_MAPS}/." |  tee -a ${LOG}
 

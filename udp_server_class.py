@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi TCPIP server class
-# $Id: udp_server_class.py,v 1.5 2023/09/25 08:00:52 bob Exp $
+# $Id: udp_server_class.py,v 1.6 2023/10/03 14:07:13 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -88,9 +88,13 @@ class UDPServer(socketserver.ThreadingMixIn, socketserver.UDPServer):
         server_thread.name = 'remote'
         server_thread.timeout = 2 
         server_thread.start()
+        self._stop_event = threading.Event()
         msg = "UDP listen:" + server_thread.name + " " + str(self.host) \
                  + " port " + str(self.port)
         log.message(msg, Log.INFO)
+
+    def stop(self):
+        self._stop_event.set() 
 
     def getServerAddress(self):
         return (self.host,self.port)

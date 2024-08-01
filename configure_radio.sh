@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.37 2023/09/13 09:44:25 bob Exp $
+# $Id: configure_radio.sh,v 1.45 2024/07/20 12:54:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -39,7 +39,10 @@ OS_RELEASE=/etc/os-release
 LOGDIR=${DIR}/logs
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/config.txt
+BOOTCONFIG_2=/boot/firmware/config.txt
 ETCMODULES=/etc/modules
+MPDCONF=/etc/mpd.conf
+WXCONFIG=/etc/weather.conf
 LOG=${LOGDIR}/install.log
 SPLASH="bitmaps\/raspberry-pi-logo.bmp" # Used for sed so \ needed
 
@@ -49,6 +52,8 @@ SCREEN_SIZE="800x480"   # Screen size 800x480, 720x480 or 480x320
 PROGRAM="Daemon radiod configured"
 GPROG=""    # Which graphical radio (gradio or vgradio)
 FLIP_OLED_DISPLAY=0 # 1 = Flip OLED idisplay upside down
+
+declare -i PI_MODEL=0  # 0=Undefined 5=Model 5 4=Model 4 or less
 
 # Wiring type and schemes
 BUTTON_WIRING=0 # 0 Not used or SPI/I2C, 1=Buttons, 2=Rotary encoders, 3=PHat BEAT
@@ -70,7 +75,8 @@ ROTARY_HAS_RESISTORS=0	# Support for KY-040 or ABC Rotary encoders
 ADAFRUIT_SSD1306=0	# Adafruit SSD1306 libraries required
 
 # Display characteristics
-I2C_ADDRESS=0x00    # I2C device address
+I2C_ADDRESS=0x00        # I2C device address
+I2C_RGB_ADDRESS=0x00    # I2C RGB device address
 DLINES=4            # Number of display lines
 DWIDTH=20       # Display character width
 
@@ -109,6 +115,32 @@ sudo chown ${USR}:${GRP} ${LOGDIR}
 sudo rm -f ${LOG}
 echo "$0 configuration log, $(date) " | tee ${LOG}
 
+# In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
+if [[ $(release_id) -ge 12 ]]; then
+    BOOTCONFIG=${BOOTCONFIG_2}
+fi
+
+echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
+
+# Copy weather configuration file to /etc
+if [[ ! -f   ${WXCONFIG} ]]; then
+    sudo cp -f ${DIR}/weather.conf ${WXCONFIG}
+fi
+
+# Replace /etc/mpd.conf if corrupt
+grep ^audio_out /etc/mpd.conf >/dev/null 2>&1
+if [[ $? != 0 ]]; then
+    echo "Replacing corrupt ${MPDCONF} with ${DIR}/mpd.conf"
+    sudo cp ${DIR}/mpd.conf ${MPDCONF}
+fi
+
+# Replace /etc/mpd.conf.orig if corrupt
+grep ^audio_out /etc/mpd.conf.orig >/dev/null 2>&1
+if [[ $? != 0 ]]; then
+    echo "Replacing corrupt ${MPDCONF}.orig with ${DIR}/mpd.conf"
+    sudo cp ${DIR}/mpd.conf ${MPDCONF}.orig
+fi
+
 # Check if user wants to configure radio if upgrading
 if [[ -f ${CONFIG}.org ]]; then
     ans=0
@@ -139,6 +171,40 @@ elif [[ ${ans} == '1' ]]; then
     sudo cp ${DIR}/radiod.conf ${CONFIG}
     echo "Current configuration ${CONFIG} replaced with distribution" | tee -a ${LOG}
 fi
+
+# Select Raspberry Pi model  
+ans=0
+selection=1 
+while [ $selection != 0 ]
+do
+    ans=$(whiptail --title "Select Raspberry Pi Model" --menu "Choose your option" 15 75 9 \
+    "1" "Raspberry Pi Model 5" \
+    "2" "Raspberry Pi Model 4 or earlier" \
+    "3" "Do not change configuration" 3>&1 1>&2 2>&3) 
+
+    exitstatus=$?
+    if [[ $exitstatus != 0 ]]; then
+        exit 0
+    fi
+
+    if [[ ${ans} == '1' ]]; then
+        DESC="Raspberry Pi Model 5 selected"
+        PI_MODEL=5
+
+    elif [[ ${ans} == '2' ]]; then
+        DESC="Raspberry Pi Model 4 or earlier"
+        PI_MODEL=4
+
+    else
+        DESC="Raspberry Pi model unchanged"  
+        echo ${DESC} | tee -a ${LOG}
+    fi
+
+    whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
+    selection=$?
+done
+echo ${DESC} | tee -a ${LOG}
+
 
 # Select the user interface (Buttons or Rotary encoders)
 ans=0
@@ -400,9 +466,10 @@ do
     "9" "Sitronix SSD1306 128x64 monochrome OLED" \
     "10" "OLEDs using LUMA driver (SSD1306,SH1106 etc)" \
     "11" "Grove LCD RGB JHD1313 (AIP31068L controller)" \
-    "12" "OLEDs using SH1106 SPI interface, buttons & joystick" \
-    "13" "No display used/Pimoroni Pirate radio" \
-    "14" "Do not change display type" 3>&1 1>&2 2>&3) 
+    "12" "Grove LCD RGB JHD1313 (SGM31323 controller)" \
+    "13" "OLEDs using SH1106 SPI interface, buttons & joystick" \
+    "14" "No display used/Pimoroni Pirate radio" \
+    "15" "Do not change display type" 3>&1 1>&2 2>&3) 
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -488,12 +555,22 @@ do
     elif [[ ${ans} == '11' ]]; then
         DISPLAY_TYPE="LCD_I2C_JHD1313"
         I2C_ADDRESS="0x3e"
+        I2C_RGB_ADDRESS="0x30"
         I2C_REQUIRED=1
         DLINES=2
         DWIDTH=16
         DESC="Grove JHD1313LCD RGB LCD"
 
     elif [[ ${ans} == '12' ]]; then
+        DISPLAY_TYPE="LCD_I2C_JHD1313_SGM31323"
+        I2C_ADDRESS="0x3e"
+        I2C_RGB_ADDRESS="0x30"
+        I2C_REQUIRED=1
+        DLINES=2
+        DWIDTH=16
+        DESC="Grove JHD1313 SGM31323 RGB LCD"
+
+    elif [[ ${ans} == '13' ]]; then
         DISPLAY_TYPE="SH1106_SPI"
         DESC="OLED using SH1106 SPI interface"
         DLINES=4
@@ -502,7 +579,7 @@ do
         SPI_REQUIRED=1
         SPLASH="bitmaps\/raspberry-pi-logo.bmp" 
 
-    elif [[ ${ans} == '13' ]]; then
+    elif [[ ${ans} == '14' ]]; then
         DISPLAY_TYPE="NO_DISPLAY"
         DLINES=0
         DWIDTH=0
@@ -658,7 +735,7 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
         "3" "Hex 0x37 (PCF8574 devices alternative address)" \
         "4" "Hex 0x3F (PCF8574 devices 2nd alternative address)" \
         "5" "Hex 0x3C (Cosmic controller/Sitronix SSD1306/LUMA devices)" \
-        "5" "Hex 0x3e (Grove RGB LCD JHD1313 with AIP31068L controller)" \
+        "6" "Hex 0x3e (Grove JHD1313 LCD with RGB AIP31068L/SGM31323 controller)" \
         "7" "Manually configure i2c_address in ${CONFIG}" \
         "8" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
@@ -948,6 +1025,18 @@ fi
 # Commit changes to radio config file #
 #######################################
 
+# Enable GPIO converter module if model is a Raspberry Pi 5 or later or Bookworm OS or later
+echo "VERSION_ID"  $(release_id)
+if [[ ${PI_MODEL} -ge 5 || $(release_id) -ge 12 ]]; then
+    # Enable GPIO converter in ${DIR}/RPi
+    touch ${DIR}/RPi/__init__.py | tee -a ${LOG}
+    echo "GPIO conversion enabled" | tee -a ${LOG}
+else
+    # Disable GPIO converter
+    rm -f  ${DIR}/RPi/__init__.py | tee -a ${LOG}
+    echo "GPIO conversion disabled" | tee -a ${LOG}
+fi 
+
 # Save original configuration file
 if [[ ! -f ${CONFIG}.org ]]; then
     sudo cp ${CONFIG} ${CONFIG}.org
@@ -997,9 +1086,16 @@ elif [[ ${USER_INTERFACE} == "7" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=pifacecad/}" ${CONFIG}
 fi
 
-# Configure user interface (Buttons or Rotary encoders)
+# Configure I2C address
 if [[ ${I2C_ADDRESS} != "0x00" ]]; then
+    echo "Configuring I2C address to ${I2C_ADDRESS} (i2c_address)" 
     sudo sed -i -e "0,/^i2c_address/{s/i2c_address.*/i2c_address=${I2C_ADDRESS}/}" ${CONFIG}
+fi
+
+# Configure I2C address for RGB LEDs with coulor backlight
+if [[ ${I2C_RGB_ADDRESS} != "0x00" ]]; then
+    echo "Configuring I2C RGB address to ${I2C_RGB_ADDRESS} (i2c_rgb_address)" 
+    sudo sed -i -e "0,/^i2c_rgb_address/{s/i2c_rbb_address.*/i2c_address=${I2C_RGB_ADDRESS}/}" ${CONFIG}
 fi
 
 # Configure wiring for directly connected LCD displays

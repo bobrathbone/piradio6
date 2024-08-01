@@ -10,9 +10,49 @@ See http://www.musicpd.org/
 Use "sudo apt-get install mpd mpc python3-mpd" to install the Music Player Daemon (MPD)
 This software uses the python3-mpd library. See https://packages.debian.org/sid/python3-mpd
 
+Version 7.8 release notes
+-------------------------
+Release 1 August 2024 - Build 4 
+
+1) Grove v5 RGB I2C LCD added (lcd_i2c_jhd1313_sgm31323.py) integrated into configurator
+2) Amend display_class to use colour definitions in /etc/radiod.conf for jhd1313_sgm31323 LCD
+3) RGB I2C Rotary encoders now use the interrupt pin on the encoders themselves 
+4) New parameter news_color added for RSS menu display (News feeds etc)
+5) New weather2.py program added which uses a secondary display instead of the radio display 
+
+Version 7.7 release notes
+-------------------------
+Release 13 July 2024 - Build 16 
+
+1) Support for Raspberry Pi model 5 (RPi/GPIO.py GPIO calls conversion to LGPIO calls)
+2) GPIO interface to LGPIO libraries added in sub-directory RPi/
+3) Added Raspberry Pi Model selectiom to Configure Radio script to enable/disable GPIO converter 
+4) Playlist now sorted before use so that media tracks are stepped through alphabetically.
+5) ssd1306_class.py Correct indent error and add instructions for Adafruit-ssd1306 module
+6) Improved installation procedure for the Waveshare WM8960 DAC sound card
+7) Correct problem of MPD being denied access to /home/pi/Music. ACL implemented.
+8) Made IR event device name for gpio-ir configurable in /etc/radiod.conf (event_device)
+9) Added support for RPi Audio output cards (RPi DigiAmp+, Rpi DacPro etc). 
+10) Change to airplay_class.py to display meta information in Airplay module
+11) Amend RPi/GPIO.py to correct GPIO initialisation error on latest version of Bookworm
+12) Correct detection of IR event class /sys/class/rc/rc0....6 in the IR event daemon
+13) Correct mute button not doing an MPD client PAUSE in volume_class.py
+14) Corrected Alarm function not restoring volume setting. MPD client ping implemented
+15) Implemented RPI_REVISION in GPIOconverter (RPi/GPIO.py)
+16) Remove /usr/share/Music directory creation - Now uses /home/$USER/Music
+17) Include Debian package definition files for the build.sh and build64.sh scripts
+18) Remove smbus2 sub-directory - No longer required
+19) Correct calling weather.py program example (Working on Bullseye only)
+20) Rotary encoder step size now configurable in /etc/radiod.conf rotary_step_size=full/half
+21) Correct threading error in Display class (display_class.py)
+22) Ignore button UP events in the STANDARD and ALTERNATIVE rotary classes
+23) Correct menu step through not working if alarm feature set 
+24) Driver for the Grove v5 RGB I2C LCD added (lcd_i2c_jhd1313_sgm31323.py)
+25) Removed change 8) above. IR event device name now dynamically determined by software
+
 Version 7.6 release notes
 -------------------------
-Release 24th September 2023 - Build 3 
+28 November 2023 
 
 1) New version for bookworm OS
 2) Prevent gradio.py from crashing if missing background wallpaper
@@ -27,10 +67,19 @@ Release 24th September 2023 - Build 3
 10) Correct un-encoded "NOTOK" message in udp_server_class.py
 11) Added support for three auxilary switches
 12) Prevent display from flashing during startup
+13) Support for the WM8960 DAC
+14) alsamixer settings restored on startup (volume_class.py)
+15) Convert setup.sh for 64-bit configuration
+16) Replace corrupt /etc/mpd.conf with /usr/share/radio/mpd.conf
+17) Prevent LCD routines from being accessed if LCD not configured
+18) Added Waveshare WM8960 DAC install script (install_wm8960.sh)
+19) Restore alsa mixer settings (alsa-state/alsa-store not working in Bookworm)
+20) display_config.sh displays X-Windows protocol (wayland or X11)
+21) radiod build - New instruction to display build number. For example 7.6.9
 
 Version 7.5 release notes
 -------------------------
-Release 7th July 2023 - Build 9 
+Release 7th July 2023 
 
 1) Corrected Pimoroni Pirate Radio button settings
 2) Corrected create_stations.py --delete_old not working 
@@ -168,6 +217,7 @@ Manuals
 -------
 Version 7.x
 https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio.pdf
+https://bobrathbone.com/raspberrypi/documents/RPi%20Radio%20beginners%20guide.pdf
 
 Vintage radio
 https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Vintage%20Radio.pdf

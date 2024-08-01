@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: lcd_i2c_jhd1313_sgm31323.py,v 1.1 2024/07/14 06:07:14 bob Exp $
+# $Id: lcd_i2c_jhd1313_sgm31323.py,v 1.6 2024/07/21 07:56:40 bob Exp $
 #
 # Driver class for the Grove JHD1313 I2C LCD RGB display, version 5
 # This introduced the SGM31323 backlight driver and altered the I2C addresses
@@ -9,7 +9,10 @@
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
-# Adapted from code at http://www.dexterindustries.com/GrovePi
+# Originally adapted from code at http://www.dexterindustries.com/GrovePi
+#
+# Converted from lcd_i2c_jhd1313 by Dave Jesse (UK) to support Grove V5 LCD
+# using the SGM31323 controller chip for RGB backlight control 
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
@@ -53,7 +56,6 @@ config = Configuration()
 
 class Lcd_i2c_jhd1313_sgm31323:
 
-    i2c_address = DISPLAY_TEXT_ADDR
     scroll_speed = 0.1
     lines = 2   # LCD number of lines
     width = 16  # LCD number of characters
@@ -65,8 +67,13 @@ class Lcd_i2c_jhd1313_sgm31323:
         return
 
     # Initialisation routine
-    def init(self,address=DISPLAY_TEXT_ADDR,code_page=0):
+    def init(self,i2c_address=DISPLAY_TEXT_ADDR,code_page=0,
+            i2c_rgb_address=DISPLAY_RGB_ADDR):
         self.code_page = code_page  # Future use. LCD only has one codepage
+        self.i2c_address = i2c_address
+        self.i2c_rgb_address = i2c_rgb_address
+        #print("i2c_address",hex(self.i2c_address))
+        #print("i2c_rgb_address",hex(self.i2c_rgb_address))
         self.backlight((0,128,64))
         self.clear()
 
@@ -94,12 +101,12 @@ class Lcd_i2c_jhd1313_sgm31323:
     def setRGB(self,r,g,b):
         # I2C control for SGM31323
         # Register 0 set to keep display always ON
-        bus.write_byte_data(DISPLAY_RGB_ADDR, 0x00, 0x18)
+        bus.write_byte_data(self.i2c_rgb_address, 0x00, 0x18)
         # Register 4 set to keep each colour always ON
-        bus.write_byte_data(DISPLAY_RGB_ADDR, 0x04, 0x15)
-        bus.write_byte_data(DISPLAY_RGB_ADDR, 0x06, r)
-        bus.write_byte_data(DISPLAY_RGB_ADDR, 0x07, g)
-        bus.write_byte_data(DISPLAY_RGB_ADDR, 0x08, b)
+        bus.write_byte_data(self.i2c_rgb_address, 0x04, 0x15)
+        bus.write_byte_data(self.i2c_rgb_address, 0x06, r)
+        bus.write_byte_data(self.i2c_rgb_address, 0x07, g)
+        bus.write_byte_data(self.i2c_rgb_address, 0x08, b)
 
     # Set display text \n for second line(or auto wrap)
     def _out(self,text,interrupt=None):
@@ -202,7 +209,7 @@ if __name__ == "__main__":
     try:
         print("Test I2C Grove V5.0 JHD1313L with SGM31323 backlight class")
         lcd = Lcd_i2c_jhd1313_sgm31323()
-        lcd.init(address=DISPLAY_TEXT_ADDR)
+        lcd.init(i2c_address=DISPLAY_TEXT_ADDR)
         lcd.clear()
         lcd.backlight((255,255,255))
         lcd.out(1,"bobrathbone.com")

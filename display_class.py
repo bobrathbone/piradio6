@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.41 2023/09/22 12:10:34 bob Exp $
+# $Id: display_class.py,v 1.51 2024/07/27 13:27:50 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -16,7 +16,6 @@
 import pdb
 import os,sys
 import time,pwd
-import threading
 from config_class import Configuration
 from log_class import Log
 
@@ -59,24 +58,33 @@ class Display:
     ImageColor = None
 
     def __init__(self,translate):
-        threading.Thread.__init__(self)
         self.translate = translate
 
     # Initialise 
-    def init(self,callback=None):
+    def init(self,callback=None,display2_type=0,display2_i2c=0,luma_name=""):
         self.callback = callback
         log.init('radio')
-        self.setupDisplay()
+        self.setupDisplay(display2_type,display2_i2c,luma_name)
     
     # Set up configured screen class
-    def setupDisplay(self):
+    # If display2_type or display2_i2c are set they override the settings
+    # in /etc/radiod.conf to support a two screen system
+    def setupDisplay(self,display2_type,display2_i2c,luma_name):
         global screen
-        dtype = config.getDisplayType()
-        scroll_speed = config.scroll_speed
+        if display2_type > 0:
+            dtype = display2_type
+        else:
+            dtype = config.getDisplayType()
         i2c_address = 0x0
-        configured_i2c = config.i2c_address
+
+        if display2_i2c > 0:
+            configured_i2c = display2_i2c
+        else:
+            configured_i2c = config.i2c_address
+
         self.i2c_bus = config.i2c_bus
-        i2c_interface = False
+        scroll_speed = config.scroll_speed
+        #i2c_interface = False
 
         # Set up font code page. If 0 use codepage in font file
                 # If > 1 override with the codepage parameter in configuration file
@@ -121,6 +129,22 @@ class Display:
                 i2c_address = 0x3e
 
             screen.init(address = i2c_address,code_page=self.code_page)
+            screen.setScrollSpeed(scroll_speed)
+            i2c_interface = True
+
+        elif dtype == config.LCD_I2C_JHD1313_SGM31323:
+            from PIL import ImageColor
+            self.ImageColor = ImageColor
+            from lcd_i2c_jhd1313_sgm31323 import Lcd_i2c_jhd1313_sgm31323
+            screen = Lcd_i2c_jhd1313_sgm31323()
+
+            if configured_i2c != 0:
+                i2c_address = configured_i2c
+            else:
+                i2c_address = 0x3e
+
+            screen.init(i2c_address=i2c_address,code_page=self.code_page,
+                        i2c_rgb_address=config.i2c_rgb_address)
             screen.setScrollSpeed(scroll_speed)
             i2c_interface = True
 
@@ -193,11 +217,15 @@ class Display:
             self.has_buttons = False # Use standard button interface
             self._isOLED = True
             self._mute_line = 4
+            screen.setScrollSpeed(scroll_speed)
 
         elif dtype == config.LUMA:
             from luma_class import LUMA
             screen = LUMA()
-            luma_device = config.luma_device
+            if len(luma_name) > 0:
+                luma_device = luma_name
+            else:
+                luma_device = config.luma_device
             rotation = 0
             if config.flip_display_vertically:
                 rotation = 2
@@ -224,6 +252,7 @@ class Display:
 
         # Set up screen width (if 0 use default)
         self.width = config.display_width  
+
         self.lines = self.getLines()
 
         if self.width != 0:
@@ -360,15 +389,18 @@ class Display:
     def backlight(self, label):
         if self.hasColor():
             dtype = config.getDisplayType()
-            if dtype == config.LCD_ADAFRUIT_RGB:
-                # For Adafruit screen with RGB colour
-                color = self.getBackColor(label)
-                screen.backlight(color)
-            elif dtype == config.LCD_I2C_JHD1313:
-                # For Grove JHD1313 RGB display
-                rgbcolor = config.getRgbColor(label)
-                rgb = self.ImageColor.getrgb(rgbcolor)
-                screen.backlight(rgb)
+            try:
+                if dtype == config.LCD_ADAFRUIT_RGB:
+                    # For Adafruit screen with RGB colour
+                    color = self.getBackColor(label)
+                    screen.backlight(color)
+                elif dtype == config.LCD_I2C_JHD1313 or dtype == config.LCD_I2C_JHD1313_SGM31323:
+                    # For Grove JHD1313 RGB display
+                    rgbcolor = config.getRgbColor(label)
+                    rgb = self.ImageColor.getrgb(rgbcolor)
+                    screen.backlight(rgb)
+            except Exception as e:  
+                log.message("Error display.backlight " + str(e),log.ERROR)
         return
     
     # Get background colour by name label. Returns an integer

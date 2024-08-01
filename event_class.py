@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.21 2023/09/26 11:49:52 bob Exp $
+# $Id: event_class.py,v 1.25 2024/07/22 14:09:32 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -437,10 +437,12 @@ class Event():
             log.message("event.setInterface RotaryEncoder STANDARD", log.DEBUG)
 
             volumeknob = RotaryEncoder(self.left_switch, self.right_switch,
-                    self.mute_switch,self.volume_event,pullup=self.config.rotary_gpio_pullup)
+                    self.mute_switch,self.volume_event,
+                    rotary_step_size=self.config.rotary_step_size)
 
             tunerknob = RotaryEncoder(self.down_switch, self.up_switch,
-                    self.menu_switch,self.tuner_event,pullup=self.config.rotary_gpio_pullup)
+                    self.menu_switch,self.tuner_event, 
+                    rotary_step_size=self.config.rotary_step_size)
     
         elif self.config.rotary_class == self.config.RGB_ROTARY:
             log.message("event.setInterface RotaryEncoder RGB_ROTARY", log.DEBUG)
@@ -452,20 +454,26 @@ class Event():
                     self.menu_switch,self.tuner_event,pullup=self.config.rotary_gpio_pullup)
     
         elif self.config.rotary_class == self.config.RGB_I2C_ROTARY:
+            volume_i2c = self.config.volume_rgb_i2c
+            tuner_i2c = self.config.channel_rgb_i2c
+            volume_interrupt_pin = 22
+            tuner_interrupt_pin = 23
             from rotary_class_rgb_i2c import RGB_I2C_RotaryEncoder
-            log.message("event.setInterface RotaryEncoder RGB_I2C_ROTARY", log.DEBUG)
-            volume_i2c = 0x0F
-            tuner_i2c = 0x1F
 
-            volumeknob = RGB_I2C_RotaryEncoder(volume_i2c,self.mute_switch,self.volume_event)
-            tunerknob = RGB_I2C_RotaryEncoder(tuner_i2c,self.menu_switch,self.tuner_event)
+            volumeknob = RGB_I2C_RotaryEncoder(volume_i2c,self.mute_switch,
+                            self.volume_event,volume_interrupt_pin)
+            tunerknob = RGB_I2C_RotaryEncoder(tuner_i2c,self.menu_switch,
+                        self.tuner_event,tuner_interrupt_pin)
+
             volumeknob.run(True)
             tunerknob.run(True)
     
         if self.config.rotary_class == self.config.RGB_I2C_ROTARY:
-            msg = "Volume knob i2c address %s, mute switch %s" % (hex(volume_i2c),self.mute_switch)
+            msg = "Volume knob i2c address %s, mute switch %s interrupt_pin %d" \
+                    % (hex(volume_i2c),self.mute_switch,volume_interrupt_pin)
             log.message(msg, log.DEBUG)
-            msg = "Tuner knob i2c address %s, mute switch %s" % (hex(tuner_i2c),self.menu_switch)
+            msg = "Tuner knob i2c address %s, mute switch %s interrupt_pin %d" % \
+                    (hex(tuner_i2c),self.menu_switch,tuner_interrupt_pin)
             log.message(msg, log.DEBUG)
         else:
             msg = "Volume knob", self.left_switch, self.right_switch, self.mute_switch

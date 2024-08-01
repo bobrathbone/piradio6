@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Weather Program Configuration Class
-# $Id: wxconfig_class.py,v 1.5 2023/10/04 09:44:44 bob Exp $
+# $Id: wxconfig_class.py,v 1.7 2024/07/31 08:54:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -17,6 +17,7 @@ import sys
 import configparser
 import pdb
 
+
 # System files
 ConfigFile = "/etc/weather.conf"
 
@@ -26,6 +27,30 @@ class Configuration:
     _city = "London"
     _countrycode = "GB"
     _language = "EN"
+
+    # Display types
+    NO_DISPLAY = 0      # No screen attached
+    LCD = 1         # Directly connected LCD
+    LCD_I2C_PCF8574 = 2 # LCD PCF8574 I2C backpack
+    LCD_I2C_ADAFRUIT = 3    # Adafruit I2C LCD backpack
+    LCD_ADAFRUIT_RGB = 4    # Adafruit RGB plate
+    GRAPHICAL_DISPLAY = 5   # Graphical or touchscreen  display
+    OLED_128x64 = 6     # OLED 128 by 64 pixels
+    PIFACE_CAD = 7      # Piface CAD
+    ST7789TFT = 8       # Pirate audio TFT with ST7789 controller
+    SSD1306 = 9         # Sitronix SSD1306 controller for the 128x64 tft
+    SH1106_SPI = 10     # SH1106_SPI controller for Waveshare 1.3" 128x64 tft
+    LUMA = 11           # Luma driver for  most OLEDs
+    LCD_I2C_JHD1313 = 12        # Grove 2x16 I2C LCD RGB
+    LCD_I2C_JHD1313_SGM31323 = 13   # Grove 2x16 I2C RGB LCD & SGM31323 controllor
+                                    # for colour backlight
+
+    display_type = LCD
+    DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574',
+             'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB',
+             'GRAPHICAL_DISPLAY', 'OLED_128x64',
+             'PIFACE_CAD','ST7789TFT','SSD1306','SH1106_SPI','LUMA',
+             'LCD_I2C_JHD1313','LCD_I2C_JHD1313_SGM31323' ]
 
     # Open weathermap Key (Contact OpenWeatherMap.org directly if you need a new key)
     _api_key="080535da15e1e2a21f933846b0ba824a"
@@ -49,6 +74,12 @@ class Configuration:
 
     # List of loaded options for display
     configOptions = {}
+
+    # i2c_address
+    _i2c_address = 0x00
+
+    _display_width = 0      # Line width of display width 0 = use program default
+    _display_lines = 2      # Number of display lines
 
     # Initialisation routine
     def __init__(self):
@@ -107,10 +138,101 @@ class Configuration:
                     msg = "Invalid option " + option + ' in section ' \
                         + section + ' in ' + ConfigFile
                     print(msg)
-            
+
+            section = 'DISPLAY'
+            options =  config.options(section)
+            for option in options:
+                option = option.lower()
+                parameter = config.get(section,option)
+                parameter = parameter.lstrip('"')
+                parameter = parameter.rstrip('"')
+                parameter = parameter.lstrip("'")
+                parameter = parameter.rstrip("'")
+
+                #self.configOptions[option] = parameter
+
+                if option == 'i2c_address':
+                    try:
+                        self._i2c_address = int(parameter,16)
+                    except Exception as e:
+                        self.invalidParameter(ConfigFile,option,parameter)
+
+                elif 'display_width' in option:
+                    try:
+                        self.display_width = int(parameter)
+                    except:
+                        self.invalidParameter(ConfigFile,option,parameter)
+
+                elif 'display_lines' in option:
+                    try:
+                        self.display_lines = int(parameter)
+                    except:
+                        self.invalidParameter(ConfigFile,option,parameter)
+
+                elif 'display_type' in option:
+                    self.display_type = self.LCD    # Default
+
+                    if parameter == 'LCD':
+                        self.display_type = self.LCD
+
+                    elif parameter == 'LCD_I2C_PCF8574':
+                        self.display_type = self.LCD_I2C_PCF8574
+
+                    elif parameter == 'LCD_I2C_ADAFRUIT':
+                        self.display_type = self.LCD_I2C_ADAFRUIT
+
+                    elif parameter == 'LCD_ADAFRUIT_RGB':
+                        self.display_type = self.LCD_ADAFRUIT_RGB
+
+                    elif parameter == 'NO_DISPLAY':
+                        self.display_type = self.NO_DISPLAY
+
+                    elif parameter == 'GRAPHICAL':
+                        self.display_type = self.GRAPHICAL_DISPLAY
+
+                    elif parameter == 'OLED_128x64':
+                        self.display_type = self.OLED_128x64
+
+                    elif parameter == 'PIFACE_CAD':
+                        self.display_type = self.PIFACE_CAD
+
+                    elif parameter == 'ST7789TFT':
+                        self.display_type = self.ST7789TFT
+
+                    elif parameter == 'SSD1306':
+                        self.display_type = self.SSD1306
+
+                    elif parameter == 'SH1106_SPI':
+                        self.display_type = self.SH1106_SPI
+
+                    elif parameter == 'LCD_I2C_JHD1313':
+                        self.display_type = self.LCD_I2C_JHD1313
+
+                    elif parameter == 'LCD_I2C_JHD1313_SGM31323':
+                        self.display_type = self.LCD_I2C_JHD1313_SGM31323
+
+                    elif 'LUMA' in parameter:
+                        param = parameter.upper()
+                        self.display_type = self.LUMA
+                        self.luma_device = 'SH1106'  # Default
+                        luma_devices = param.split('.')
+                        if len(luma_devices) > 0:
+                            self.luma_device = luma_devices[1]
+
+                else:
+                    msg = "Invalid option " + option + ' in section ' \
+                        + section + ' in ' + ConfigFile
+                    print(msg)
+
         except configparser.NoSectionError:
             msg = configparser.NoSectionError(section),'in',ConfigFile
             print(msg)
+
+    # Invalid parameters message
+    def invalidParameter(self, ConfigFile, option, parameter):
+        msg = "Invalid parameter " + parameter + ' in option ' \
+            + option + ' in ' + ConfigFile
+        print(msg)
 
     @property
     def city(self):
@@ -193,6 +315,54 @@ class Configuration:
     def udp_port(self, parameter):
         self._udp_port = int(parameter)
 
+    # Get Display name
+    def getDisplayName(self):
+        name = self.DisplayTypes[self.display_type]
+        if name == 'LUMA':
+            name = name + '.' + self.luma_device
+        return name
+
+    # Get Display type
+    def getDisplayType(self):
+        return self.display_type
+
+    # Get LUMA device name eg SH1106 SSD1306
+    @property
+    def luma_device(self):
+        return self._luma_device
+
+    @luma_device.setter
+    def luma_device(self, value):
+        self._luma_device = value
+
+    # Get display I2C address
+    @property
+    def i2c_address(self):
+        return self._i2c_address
+
+    @i2c_address.setter
+    def i2c_address(self, value):
+        if value  > 0x0:
+            self._i2c_address = value
+
+    # Get display width
+    @property
+    def display_width(self):
+        return self._display_width
+
+    @display_width.setter
+    def display_width(self, value):
+        self._display_width = value
+
+    # Get Display lines
+    @property
+    def display_lines(self):
+        return self._display_lines
+
+    @display_lines.setter
+    def display_lines(self, value):
+        self._display_lines = value
+
 # End of configuration class
 
 # Test configuration routine
@@ -214,6 +384,12 @@ if __name__ == '__main__':
     print ("Exit command (exit_command):", config.exit_command)
     print ("UDP host (udp_host):", config.udp_host)
     print ("UDP port (udp_port):", config.udp_port)
+    print ("\n[DISPLAY] section")
+    print ("-------------------")
+    print ("Display type (display_type):", config.getDisplayType(), config.getDisplayName())
+    print ("Display lines (display_lines):", config.display_lines)
+    print ("Display width (display_width):", config.display_width)
+    print ("I2C address (i2c_address):", hex(config.i2c_address))
     print ("")
 
 # End of __main__

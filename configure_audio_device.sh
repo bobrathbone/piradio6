@@ -2,7 +2,7 @@
 # set -x
 # Raspberry Pi Internet Radio
 # Audio output configurator
-# $Id: configure_audio_device.sh,v 1.8 2022/03/10 07:00:18 bob Exp $
+# $Id: configure_audio_device.sh,v 1.9 2023/10/09 10:58:28 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -141,7 +141,12 @@ else
 fi
 
 if [[ ${device} != "vc4hdmi" ]]; then
-    configure ${card} ${device}
+    grep "hw:wm8960" ${ASOUNDCONF} >/dev/null 2>&1
+	if [[ $? != 0 ]]; then	# Don't seperate from above
+        configure ${card} ${device}
+    else
+        echo "Skipping configuration of ${ASOUNDCONF} for WM8960 devices"
+    fi
 fi
 
 # End of script

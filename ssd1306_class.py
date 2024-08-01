@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# $Id: ssd1306_class.py,v 1.25 2023/07/06 11:11:37 bob Exp $
+# $Id: ssd1306_class.py,v 1.27 2024/03/03 18:43:14 bob Exp $
 # This class drives the Sitronix SSD1306 controller for the 128x64 pixel TFT
 # It requirs the I2C dtoverlay to be loaded. The I2C address is normally 0x37
 #
-# $Id: ssd1306_class.py,v 1.25 2023/07/06 11:11:37 bob Exp $
+# $Id: ssd1306_class.py,v 1.27 2024/03/03 18:43:14 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -21,7 +21,10 @@
 # git clone https://github.com/adafruit/Adafruit_Python_SSD1306.git
 # cd Adafruit_Python_SSD1306
 # sudo python3 setup.py install
-#
+# OR RUN
+# sudo apt -y install libffi-dev
+# sudo apt -y install build-essential libi2c-dev i2c-tools python3-dev
+# pip3 install Adafruit-SSD1306
 
 import sys,time
 import signal
@@ -216,7 +219,7 @@ if __name__ == '__main__':
     log = None
     UP=1
     log = Log()
-        if len(log.getName()) < 1:
+    if len(log.getName()) < 1:
         log.init("radio")
     eventStr = "No event"
     volume = 0

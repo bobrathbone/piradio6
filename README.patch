@@ -1,20 +1,18 @@
-Patch 3 for version 7.4 - 28 November 2022
+Patch 2 for version 7.7 - 29 July 2024
 
 Changes
 =======
-1) Correct Pimoroni Pirate Radio button settings
-2) Correct create_stations.py --delete_old not working
-3) Correct corrupt /etc/mpd.conf.orig
-4) Prevent i2s-mmap being configured twice in /boot/config.txt
-5) Use language file for radiod and MPD versions text 
+1) Install alternative smbus2 library in /usr/share/radio
+
+Also see README file 
 
 To install the patch
 ====================
 cd /usr/share/radio
-wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.4-3.tar.gz
-tar -xvf radiod-patch-7.4-3.tar.gz
-sudo systemctl restart radiod.service
+wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.7-2.tar.gz
+tar -xvf radiod-patch-7.7-2.tar.gz
 
-This patch contains all previous patches unless patch 1
+This patch only contains the smbus library 
 
 End of README.patch
+

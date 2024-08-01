@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.32 2023/09/09 09:00:02 bob Exp $
+# $Id: station.urls,v 1.35 2024/03/03 18:51:25 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -24,25 +24,25 @@
 
 # Name of playlist file
 (Radio)
-# United Kingdom
-[BBC - Radio 1] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_one.m3u8
-[BBC - Radio 2] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_two.m3u8
-[BBC - Radio 3] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_three.m3u8
-[BBC - Radio 4] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_fourfm.m3u8
-[BBC - Radio 5 live] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_fourfm.m3u8
-[BBC - Radio 6 Music] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_fourfm.m3u8
-[BBC - Radio 1Xtra] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_1xtra.m3u8
-[BBC - Radio 4 Extra] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_four_extra.m3u8
-[BBC - Radio 5 Live sports extra (UK only)] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_five_live_sports_extra.m3u8
-[BBC - Radio 6] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_five_live.m3u8
-[BBC - Radio Asian Network] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_asian_network.m3u8
+# United Kingdom (Full list available at https://gist.github.com/bpsib/67089b959e4fa898af69fea59ad74bc3)
+[BBC - Radio 1] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_one/bbc_radio_one.isml/bbc_radio_one-audio%3d96000.norewind.m3u8
+[BBC - Radio 2] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_two/bbc_radio_two.isml/bbc_radio_two-audio%3d96000.norewind.m3u8
+[BBC - Radio 3] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_three/bbc_radio_three.isml/bbc_radio_three-audio%3d96000.norewind.m3u8
+[BBC - Radio 4] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_fourfm/bbc_radio_fourfm.isml/bbc_radio_fourfm-audio%3d96000.norewind.m3u8
+[BBC - Radio 5 live] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_five_live/bbc_radio_five_live.isml/bbc_radio_five_live-audio%3d96000.norewind.m3u8
+[BBC - Radio 6 Music] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_6music/bbc_6music.isml/bbc_6music-audio%3d96000.norewind.m3u8
+[BBC - Radio 1Xtra] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_1xtra/bbc_1xtra.isml/bbc_1xtra-audio%3d96000.norewind.m3u8
+[BBC - Radio 4 Extra] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_four_extra/bbc_radio_four_extra.isml/bbc_radio_four_extra-audio%3d96000.norewind.m3u8
+[BBC - Radio 5 Live sports extra (UK only)] http://as-hls-uk-live.akamaized.net/pool_904/live/uk/bbc_radio_five_live_sports_extra/bbc_radio_five_live_sports_extra.isml/bbc_radio_five_live_sports_extra-audio%3d96000.norewind.m3u8
+[BBC - Radio 6 music] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_6music/bbc_6music.isml/bbc_6music-audio%3d96000.norewind.m3u8
+[BBC - Radio Asian Network] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_asian_network/bbc_asian_network.isml/bbc_asian_network-audio%3d96000.norewind.m3u8
 [BBC - BBC World Service] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_world_service.m3u8
 
-# The above streams are for non-UK. For UK-only streams
-# replace /nonuk/ with /uk/ and /sbr_low/ with /sbr_med/.
-# Different bitrates are available by replacing /sbr_med/ :
-# /sbr_vlow/ = 48k /sbr_low/ = 96k
-# UK only: /sbr_med/ = 128k /sbr_high/ = 320k
+# The above streams are worldwide so sports commentary, etc may not be available. For UK restricted content,
+# replace -ww- and /ww/ with -uk- and /uk/.
+# Different bitrates are available by replacing 96000 :
+# 48000 = 48k, 96000 = 96k
+# UK only: 128000 = 128k, 320000 = 320k
 
 # UK stations
 [Caroline Pirate] http://sc3.radiocaroline.net:8030/listen.m3u8
@@ -81,7 +81,6 @@
 [Radio 88.6 Hard Rock] http://edge09.streamonkey.net/radio886-hardrock/stream/mp3
 [Radio 88.6 Classik Rock] http://edge09.streamonkey.net/radio886-classicrock/stream/mp3
 [Radio 88.6New Rock] http://edge61.streamonkey.net/radio886-newrock/stream/mp3
-[Liferadio Tirol] http://194.232.200.164:8000
 [Kronehit 105,8] http://onair.krone.at/kronehit.mp3
 [Welle 1 Linz] https://live.welle1.at:17128/stream
 
@@ -216,6 +215,9 @@
 # Australia
 [ABC classic] http://live-radio01.mediahubaustralia.com/2FMW/mp3/
 [Hobart local radio] http://live-radio01.mediahubaustralia.com/7LRW/mp3/
+
+# Poland
+[Disco radio] http://stream.rcs.revma.com:80/cvswvmyewzzuv
 
 #(Air traffic)
 # Live_ATC (Uncomment to try)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.16 2023/09/23 11:29:24 bob Exp $
+# $Id: ireventd.py,v 1.24 2024/05/24 11:01:06 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -49,6 +49,8 @@ udpport = 5100      # IR Listener UDP port number default 5100
 config = Configuration()
 pidfile = '/var/run/ireventd.pid'
 key_maps = '/etc/rc_keymaps'
+sys_rc = '/sys/class/rc'
+rc_device = ''
 
 
 # Signal SIGTERM handler
@@ -63,6 +65,7 @@ class RemoteDaemon(Daemon):
 
     keytable = 'myremote.toml'
     keymaps = '/etc/rc_keymaps'
+    ir_device = 'rc0'	# Can be rc0, rc1, rc2, rc4 - Run ir-keytable 
     play_number = 0
     timer_running = False
     timer = None
@@ -82,6 +85,7 @@ class RemoteDaemon(Daemon):
         print(msg)
         log.message(msg, log.DEBUG)
 
+
         remote_led = config.remote_led
         if remote_led > 0:
             print("Flashing LED on GPIO", remote_led)
@@ -92,11 +96,16 @@ class RemoteDaemon(Daemon):
         else:
             log.message("Remote control LED disabled", log.DEBUG)
 
+        self.ir_device = self.get_ir_device('gpio_ir_recv')
+
+        print("Using device /sys/class/rc/" + self.ir_device)
+
         udphost = config.remote_control_host
         udpport = config.remote_control_port
         log.message("UDP connect host " + udphost + " port " + str(udpport), log.DEBUG)
 
         devices = [InputDevice(path) for path in list_devices()]
+        #print("DEBUG " + str(devices))
 
         self.keytable = config.keytable 
         self.loadKeyTable(self.keytable)
@@ -114,7 +123,33 @@ class RemoteDaemon(Daemon):
 
         self.listener(irin)
 
-# End of class overrides
+    # Returns the device name for the "gpio_ir_recv" overlay (rc0...rc6)
+    # Used to load ir_keytable
+    def get_ir_device(self,sName):
+        global rc_device
+        found = False
+        for x in range(7):
+            name = ''
+            device = ''
+            for y in range(7):
+                file = sys_rc + '/rc' + str(x) + '/input' + str(y) + '/name'
+                if os.path.isfile (file):
+                    try:
+                        f = open(file, "r")
+                        name = f.read()
+                        name = name.strip()
+                        if (sName == name):
+                            device = 'rc' + str(x)
+                            rc_device = sys_rc + '/rc' + str(x)
+                            found = True
+                            break
+                        f.close()
+                    except Exception as e:
+                        print(str(e))
+            if found:
+                break
+
+        return device
 
     # Used by KEY_NUMERIC_x entries 
     def timerTask(self):
@@ -131,7 +166,10 @@ class RemoteDaemon(Daemon):
     # Load the specified key table into /etc/rc_keymaps/
     def loadKeyTable(self,keytable):
         log.message("Loading " + self.keytable, log.DEBUG)
-        execCommand("sudo /usr/bin/ir-keytable -c -w " + self.keymaps + "/" + keytable)
+        cmd = "sudo /usr/bin/ir-keytable -c -w " + self.keymaps + "/" + keytable + " -s " + self.ir_device
+        print(cmd) 
+        execCommand("sudo /usr/bin/ir-keytable -c -w " + self.keymaps + "/" + keytable
+		    + " -s " + self.ir_device)
 
     # Handle the IR input event
     def readInputEvent(self,device):
@@ -163,7 +201,7 @@ class RemoteDaemon(Daemon):
                     else:
                         keycode = data.keycode
 
-                    #print(keycode,hex(data.scancode),data.keystate)
+                    print(keycode,hex(data.scancode),data.keystate)
     
                     if 'KEY_NUMERIC_' in keycode :
                         playnum = int(keycode.split('_')[2])
@@ -290,15 +328,22 @@ def usageSend():
     print ("   KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK,KEY_INFO,KEY_MUTE")
     sys.exit(2)
 
-# get gpio-ir dtoverlay configuration
+# get gpio-ir dtoverlay configuration and port configuration
 def getBootConfig(str):
-    f = open("/boot/config.txt", "r")
+    file = "/boot/config.txt"
+    if os.path.exists("/boot/firmware/config.txt"):      
+        file = "/boot/firmware/config.txt"
+
+    f = open(file, "r")
+    msg = 'Warning: dtoverlay gpio-ir not configured in ' + file
     for line in f:
         if re.search(str, line):
-            return line
+            msg = line
+    return msg
 
 # Display configuration
 def displayConfiguration():
+    global rc_device
     print("Remote Control daemon configuration")
     print("-----------------------------------")
     config = Configuration()
@@ -309,6 +354,19 @@ def displayConfiguration():
     line = getBootConfig("^dtoverlay=gpio-ir")
     if line != None:
         print(line.rstrip())
+
+    mods = execCommand("lsmod | grep -i gpio_ir_recv")
+    if len(mods) > 0:
+        x = mods.split(' ')
+        print ("Module %s loaded" % x[0])
+    else:
+        print ("ERROR: Module gpio_ir_recv not loaded, missing gpio-ir overlay")
+
+    daemon.get_ir_device('gpio_ir_recv')
+    print('Sysfs: ' + rc_device)
+   
+    protos = execCommand("cat " + rc_device + '/protocols')
+    print('Protocols ' + protos) 
 
     for file in os.listdir(key_maps):
         if file.endswith(".toml"):

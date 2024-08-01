@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Weather station class
-# $Id: weather_class.py,v 1.13 2023/09/14 11:01:11 bob Exp $
+# $Id: weather_class.py,v 1.18 2024/07/30 14:02:18 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : https://www.bobrathbone.com/
@@ -17,7 +17,7 @@
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 #            The authors shall not be liable for any loss or damage however caused.
 #
-# Configuration for this program is in wxconfig.py
+# Configuration for this program is in /etc/weather.conf
 #
 # Install the pre-requisite packages
 # sudo pip3 install request
@@ -30,7 +30,7 @@ import pdb
 import os
 import sys
 import time
-from wxconfig import *
+from wxconfig_class import Configuration
 
 try:
     import requests
@@ -50,6 +50,7 @@ except ImportError:
 abs_zero = float(273.15)
 hpa2inches = 0.029529983071445
 
+config = Configuration()
 
 # Weather Class
 class Weather:
@@ -57,20 +58,23 @@ class Weather:
     # Pressure units I=Imperial(Inches) M=Metric(Millibars)
     pressure_units = 'I'
 
-    location = "%s,%s" % (CITY,COUNTRYCODE)
+    location = "%s,%s" % (config.city,config.countrycode)
 
     # Open weathermap and API Key (Contact openweathermap.org)
 
+    coords = None
 
     def __init__(self):
+        return
+
+    def init(self):
         self.coords = self.get_coords(self.location) 
         self.latitude = self.convertCoordinate(self.coords[0],'lat')
         self.longitude = self.convertCoordinate(self.coords[1],'long')
 
         self.url = "https://api.openweathermap.org/data/2.5/weather?q=" + self.location\
-              + "&mode=xml" + "&units=" + UNITS + "&pressure_units=" + PRESSURE_UNITS\
-              + "&lang=" + LANG + "&APPID=" + API_KEY
-
+              + "&mode=xml" + "&units=" + config.units + "&pressure_units=" + config.pressure_units\
+              + "&lang=" + config.language + "&APPID=" + config.api_key
         print(self.url)
 
     # Get current weather, See https://openweathermap.org/current 
@@ -96,17 +100,16 @@ class Weather:
             temperature = round(temperature, 1)
             weather["temperature"] = temperature
             
-
             x = curr[0].find("humidity")
             weather["humidity"] = (x.attrs['value'] + '%')
 
-            weather["units"] = UNITS 
+            weather["units"] = config.units 
 
             x = curr[0].find("pressure")
             pressure = float((x.attrs['value']))
 
             temp_units = 'C'
-            if UNITS == "imperial" or PRESSURE_UNITS == 'I':
+            if config.units == "imperial" or config.pressure_units == 'I':
                 temp_units = 'F'
                 pressure_units = '"'
                 pressure = self.convert2inches(pressure)
@@ -124,13 +127,15 @@ class Weather:
             weather["clouds"] = (x.attrs['value'])
 
             #x = curr[0].find("wind")
-            #pdb.set_trace()
-            #weather["wind"] = (x.attrs['value'])
-
+            #weather["wind"] = (x.attrs['speed'])
+                
             return weather
+        elif res.status_code == 401:
+            msg = "Invalid API key. See https://openweathermap.org/faq#error401 for more info."
+            return msg
         else:
-            print("Status code %s" % res.status_code)
-            return weather
+            msg = "Status code %s" % res.status_code
+            return msg 
 
     # Convert a city name and country code to latitude and longitude
     def get_coords(self,location):
@@ -143,10 +148,10 @@ class Weather:
             print("geocode error %s", status)
 
         if coords == None:
-            msg = "Trying to get coordinates for " +  CITY +  " (" + COUNTRYCODE + ")"
+            msg = "Trying to get coordinates for " +  config.city +  " (" + config.countrycode + ")"
             print (msg)
             time.sleep(3)  # Wait before letting the weather.service retry
-            sys.exit(1)
+            #sys.exit(1)
 
         return coords
 
@@ -179,6 +184,7 @@ class Weather:
 
 if __name__ == "__main__":
     weather = Weather()
+    weather.init()
 
     while True:
         try:

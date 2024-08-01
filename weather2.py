@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Weather station class
-# $Id: weather.py,v 1.30 2024/07/30 12:49:11 bob Exp $
+# $Id: weather2.py,v 1.9 2024/08/01 14:13:06 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : https://www.bobrathbone.com/
@@ -31,25 +31,67 @@ from time import strftime
 from display_class import Display
 from translate_class import Translate
 from weather_class import Weather
-from udp_server_class import UDPServer
-from udp_server_class import RequestHandler
 from wxconfig_class import Configuration
 
 wxconfig = Configuration()
 weather = Weather()
 translate = Translate()
 display = Display(translate)
+ip_addr = ''  # Local IP address
 
-lines = display.getLines()
+#lines = display.getLines()
+lines = 4
 wx = None
-
-server = None
-ip_addr = ""
 
 # Return date and time
 def getDateTime():
     todaysdate = strftime(wxconfig.date_format)
     return todaysdate
+
+# Display weather
+def displayWeather(getnew):
+    global wx
+
+    if getnew:
+        try:
+            wx = weather.get()
+            print(wx)
+            print('\n')
+        except Exception as e:
+            print(str(e))
+            pass
+    try:
+        location = wx['location']
+        temperature = wx['temperature']
+        units = wx['units']
+        temp_units = wx['temp_units']
+        humidity = wx['humidity']
+        pressure = wx['pressure']
+        pressure_units = wx['pressure_units']
+        summary = wx['summary']
+        clouds = wx['clouds']
+        if int(clouds) > 0:
+            clouds = clouds + '%'
+        else:
+            clouds = ''
+    except:
+        display.out(2,wx)
+        sys.exit(1)
+
+    if lines > 2:
+        display.out(2,location)
+        display.out(3,"%s%s %s%s %s" % (temperature,temp_units,pressure,pressure_units,humidity))
+        display.out(4,"%s %s" % (summary.capitalize(),clouds))
+    else:
+        display.out(1,"%s%s %s%s %s" % (temperature,temp_units,pressure,pressure_units,humidity))
+        display.out(2,"%s %s" % (summary.capitalize(),clouds))
+
+# Signal SIGTERM handler
+def signalHandler(signal,frame):
+    display.clear()
+    display.out(1,"End of progrram")
+    time.sleep(3)
+    sys.exit(0)
 
 # Get IP address
 def get_ip():
@@ -80,132 +122,48 @@ def waitForNetwork():
             time.sleep(0.5)
     return ipaddr
 
-# Display weather
-def displayWeather(getnew):
-    global wx
-
-    if getnew:
-        wx = weather.get()
-        print(wx)
-        print('\n')
-
-    try:
-        location = wx['location']
-        temperature = wx['temperature']
-        units = wx['units']
-        temp_units = wx['temp_units']
-        humidity = wx['humidity']
-        pressure = wx['pressure']
-        pressure_units = wx['pressure_units']
-        summary = wx['summary']
-        clouds = wx['clouds']
-        if int(clouds) > 0:
-            clouds = clouds + '%'
-        else:
-            clouds = ''
-    except:
-        display.out(2,wx)
-        sys.exit(1)
-
-    if lines > 2:
-        display.out(2,location)
-        display.out(3,"%s%s %s%s %s" % (temperature,temp_units,pressure,pressure_units,humidity))
-        display.out(4,"%s %s" % (summary.capitalize(),clouds))
-    else:
-        display.out(1,"%s%s %s%s %s" % (temperature,temp_units,pressure,pressure_units,humidity))
-        display.out(2,"%s %s" % (summary.capitalize(),clouds))
-
-# Signal SIGTERM handler
-def signalHandler(signal,frame):
-    display.clear()
-    sys.exit(0)
-
-# Execute a system command
-def execCommand(cmd):
-    p = os.popen(cmd)
-    return  p.readline().rstrip('\n')
-
-# Exit program
-def exitProgram():
-    display.clear()
-    display.out(1,"Program finished")
-    display.out(2,"")
-    if lines > 2:
-        display.out(3,"")
-        display.out(4,"")
-    GPIO.cleanup()
-    cmd = wxconfig.exit_command 
-    if len(cmd) > 3:
-        print(cmd)
-        execCommand(cmd + '&')
-    sys.exit(0)
-
-# Call back routine for the IR remote and Web Interface
-def remoteCallback():
-    global server
-    key = server.getData()
-    msg = "Remote control sent %s" % key
-    print(msg)
-    if key == 'KEY_EXIT':
-        print("Setting SHUTDOWN event")
-        event.set(event.SHUTDOWN)
-
-# Start the UDP server to listen to IR commands
-def startUdpServer():
-    global server
-    # Start the IR remote control listener
-    started = False
-    try:
-        server = UDPServer((wxconfig.udp_host,wxconfig.udp_port),RequestHandler)
-        msg = "UDP Server listening on " + wxconfig.udp_host + " port " + str(wxconfig.udp_port)
-        print(msg)
-        server.listen(server,remoteCallback)
-        started = True
-    except Exception as e:
-        print(str(e))
-        print("UDP server could not bind to " + wxconfig.udp_host
-                + " port " + str(wxconfig.udp_port))
-        return started
-
 # Main weather display routine
 if __name__ == '__main__':
 
-    # THis is the radio configuration in /etc/radiod.conf
+    # This is the radio configuration in /etc/radiod.conf
     from config_class import Configuration
     config = Configuration()
     from event_class import Event
 
-    event = Event(config)
-
     signal.signal(signal.SIGTERM,signalHandler)
     signal.signal(signal.SIGHUP,signalHandler)
-    display.init()
-    count = 0
-    getnew = True
-    startUdpServer()
 
+    # Display on same screen as radio 
+    # display.init()     # Initialise
+
+    # Display weather on a second screen
+
+    display2_type = wxconfig.display_type
+    luma_name = wxconfig.luma_device
+    display2_i2c = wxconfig.i2c_address
+    callback = None
+    display.init(callback,display2_type,display2_i2c,luma_name)
+    
     ip_addr = waitForNetwork()
-
+    
     # Only initialise if there is an IP address
     if len(ip_addr) > 7:
         weather.init()
     else:
         print("No network found - Exiting")
         sys.exit(1)
-    
+
+    count = 0
+    getnew = True
+
     while True:
-        if event.detected():
-            type = event.getType()
-            name = event.eventNames[int(type)]
-            print("Event %d %s" % (type,name))
-            if name == "MENU_BUTTON_DOWN" or name == "MUTE_BUTTON_DOWN" or name == "SHUTDOWN":
-                exitProgram()
-            else:
-                event.clear()
         try:
             if display.lines > 2:
                 display.out(1,getDateTime())
-            displayWeather(getnew)
+            try:
+                displayWeather(getnew)
+            except:
+                pass
             if count < 1:   
                 count = 300
                 getnew = True 
@@ -216,7 +174,7 @@ if __name__ == '__main__':
 
         except KeyboardInterrupt:
             display.clear()
-            exitProgram()
+            exit(0)
 
 # End of script 
 

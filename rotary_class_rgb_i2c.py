@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-# Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class_rgb_i2c.py,v 1.7 2021/09/27 10:07:53 bob Exp $
+# Raspberry Pi RGB I2C Rotary Encoder Class
+# $Id: rotary_class_rgb_i2c.py,v 1.15 2024/07/23 06:35:02 bob Exp $
 #
 # Author : Bob Rathbone and Lubos Ruckl (Czech republic)
 # Site   : http://www.bobrathbone.com
 #
-# This class is the driver for the Sparkfun I2C RGB Rotary Encoder 
+# This class is the driver for the Pimoroni I2C RGB Rotary Encoder 
+# See: See https://shop.pimoroni.com/products/rgb-encoder-breakout  
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
@@ -19,9 +20,11 @@ import threading
 import time,sys
 import colorsys
 import ioexpander as io
+import threading
 import pdb
 import RPi.GPIO as GPIO
 
+GPIO.setmode(GPIO.BCM)
 I2C_ADDR = 0x1F  # 0x18 for IO Expander, 0x1F for the encoder breakout
 
 PIN_RED = 1
@@ -53,14 +56,20 @@ class RGB_I2C_RotaryEncoder:
     sEvents = ['NO_CHANGE', 'CLOCKWISE', 'ANTICLOCKWISE', 'BUTTONDOWN']
     i2c_address = 0xF0
     button = 0
+    interrupt_pin = 4
+    ioe = None
 
-    def __init__(self,i2c_address=0xF0,button=button,callback=callback):
-        ioe = None
-        threading.Thread.__init__(self)
+    def __init__(self,i2c_address=0xF0,button=button,callback=callback,interrupt_pin=22):
+        self.interrupt_pin = interrupt_pin
         self.callback = callback
         self.button = button
         self.i2c_address = i2c_address
-        self.ioe = io.IOE(i2c_addr=self.i2c_address, interrupt_pin=4)
+        self.ioe = io.IOE(i2c_address,interrupt_pin)
+        t = threading.Thread(target=self._setup,args=(i2c_address,callback,interrupt_pin))
+        t.daemon = True
+        t.start()
+
+    def _setup(self,i2c_address,callback,interrupt_pin):
 
         # Swap the interrupt pin for the Rotary Encoder breakout
         self.ioe.enable_interrupt_out(pin_swap=True)
@@ -119,7 +128,6 @@ class RGB_I2C_RotaryEncoder:
                     else:
                         direction = NO_CHANGE
                     self.xcount = count
-                    self.ioe.clear_interrupt()
 
                 if direction != NO_CHANGE:
                     if cycle:
@@ -127,7 +135,8 @@ class RGB_I2C_RotaryEncoder:
                     self.rotary_event(direction)
                     self.direction = direction
                     self.count = count
-                time.sleep(0.1)
+                time.sleep(0.05)
+                # Don't clear interrupt here. Clear it in the event handler
             except Exception as e:
                 print( str(e))
 
@@ -142,7 +151,10 @@ class RGB_I2C_RotaryEncoder:
 
     # Call back routine called by rotary encoder events
     def rotary_event(self, direction):
-        self.callback(direction)
+        if self.ioe.get_interrupt():
+            self.callback(direction)
+            self.ioe.clear_interrupt()
+        
 
     # Push button up event
     def button_event(self,button):
@@ -163,6 +175,7 @@ class RGB_I2C_RotaryEncoder:
         else:
             pressed = True
         return pressed
+
     # Set the IOE i2c address (Caution - understand before using)
     def set_i2c_addr(self, i2c_addr):
         print("Setting IOE I2C address to %s" % hex(i2c_addr))
@@ -178,6 +191,9 @@ if __name__ == "__main__":
 
     volume_i2c = 0x0F
     channel_i2c = 0x1F
+
+    volume_interrupt = 22
+    channel_interrupt = 23
 
     test_volume = False
     test_channel = False
@@ -277,11 +293,12 @@ if __name__ == "__main__":
     cycle=True # Cycle colours when encoder knob turned
 
     if test_volume:
-        print("Volume rotary encoder I2C address=%s" % hex(volume_i2c))
+        print("Volume rotary encoder I2C address=%s Interrupt pin %d" % (hex(volume_i2c),volume_interrupt))
         mute_switch = config.getSwitchGpio("mute_switch")
         print("Mute switch GPIO", mute_switch)
         try:
-            volume_encoder = RGB_I2C_RotaryEncoder(volume_i2c,mute_switch,volume_callback)
+            volume_encoder = RGB_I2C_RotaryEncoder(volume_i2c,mute_switch,
+                            channel_callback,volume_interrupt)
             volume_encoder.run(cycle)
         except Exception as e:
             print(str(e))
@@ -289,11 +306,12 @@ if __name__ == "__main__":
             sys.exit(1)
 
     if test_channel:
-        print("Channel rotary encoder I2C address=%s" % hex(channel_i2c))
+        print("Channel rotary encoder I2C address=%s Interrupt pin %d" % (hex(channel_i2c),volume_interrupt))
         menu_switch = config.getSwitchGpio("menu_switch")
         print("Menu switch GPIO", menu_switch)
         try:
-            channel_encoder = RGB_I2C_RotaryEncoder(channel_i2c,menu_switch,channel_callback)
+            channel_encoder = RGB_I2C_RotaryEncoder(channel_i2c,menu_switch,
+                            channel_callback,channel_interrupt)
             channel_encoder.run(cycle)
         except Exception as e:
             print(str(e))

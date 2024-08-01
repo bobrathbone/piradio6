@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.98 2023/09/27 08:42:43 bob Exp $
+# $Id: config_class.py,v 1.105 2024/07/23 08:30:51 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -56,13 +56,16 @@ class Configuration:
     SSD1306 = 9         # Sitronix SSD1306 controller for the 128x64 tft
     SH1106_SPI = 10     # SH1106_SPI controller for Waveshare 1.3" 128x64 tft
     LUMA = 11           # Luma driver for  most OLEDs
-    LCD_I2C_JHD1313 = 12    # Grove 2x16 I2C LCD RGB 
+    LCD_I2C_JHD1313 = 12        # Grove 2x16 I2C LCD RGB 
+    LCD_I2C_JHD1313_SGM31323 = 13   # Grove 2x16 I2C RGB LCD & SGM31323 controllor 
+                                    # for colour backlight
 
     display_type = LCD
     DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574', 
              'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 
              'GRAPHICAL_DISPLAY', 'OLED_128x64', 
-             'PIFACE_CAD','ST7789TFT','SSD1306','SH1106_SPI','LUMA','LCD_I2C_JHD1313' ]
+             'PIFACE_CAD','ST7789TFT','SSD1306','SH1106_SPI','LUMA',
+             'LCD_I2C_JHD1313','LCD_I2C_JHD1313_SGM31323' ]
 
     # User interface ROTARY or BUTTONS
     ROTARY_ENCODER = 0
@@ -92,10 +95,13 @@ class Configuration:
     _display_playlist_number = False # Two line displays only, display station(n)
     _source = RADIO          # Source RADIO or MEDIA Player
     _rotary_class = STANDARD # Rotary class STANDARD,RGB_ROTARY or ALTERNATIVE 
+    _rotary_step_size = False     # Rotary full step (False) or half step (True) configuration
     _rotary_gpio_pullup =  GPIO.PUD_UP  # KY-040 encoders have own 10K pull-up resistors. 
                             # Set internal pullups to off with rotary_gpio_pullup = GPIO.PUD_OFF
     _volume_rgb_i2c=0x0F    # Volume RGB I2C Rotary encoder hex address
     _channel_rgb_i2c=0x1F   # Channel RGB I2C Rotary encoder hex address
+    _volume_interrupt_pin=22  # Volume RGB I2C Rotary encoder interrupt pin
+    _channel_interrupt_pin=23 # Channel RGB I2C Rotary encoder interrupt pin
     _display_width = 0      # Line width of display width 0 = use program default
     _display_lines = 2      # Number of display lines
     _scroll_speed = float(0.3)   # Display scroll speed (0.01 to 0.3)
@@ -120,8 +126,9 @@ class Configuration:
     _remote_listen_host = 'localhost'    # Address (locahost) or IP adress of remote UDP server
     _keytable = 'myremote.toml'          # IR event daemon keytable name
 
-    _i2c_address = 0x00  # Use defaults or use setting in radiod.conf 
-    _i2c_bus = 1         # The I2C bus is normally 1
+    _i2c_address = 0x00      # Use defaults or use setting in radiod.conf 
+    _i2c_rgb_address = 0x00  # Use default I2C RGB display LCD in radiod.conf 
+    _i2c_bus = 1             # The I2C bus is normally 1
     _speech = False          # Speech on for visually impaired or blind persons
     _speak_info = False      # If speach enable also speak info (IP address and hostname)
     _speech_volume = 80      # Percentage speech volume 
@@ -190,6 +197,7 @@ class Configuration:
            'error_color' : 0x0,
            'search_color' : 0x0,
            'source_color' : 0x0,
+           'news_color' : 0x0,
            'info_color' : 0x0,
            'menu_color' : 0x0,
            'sleep_color': 0x0 }
@@ -201,6 +209,7 @@ class Configuration:
            'error_color' : 'RED',
            'search_color' : 'GREEN',
            'source_color' : 'TEAL',
+           'news_color' : 'WHITE',
            'info_color' : 'BLUE',
            'menu_color' : 'YELLOW',
            'sleep_color': 'BLACK' }
@@ -313,6 +322,9 @@ class Configuration:
                 elif option == 'remote_listen_host':
                     self.remote_listen_host = parameter
 
+                elif option == 'keytable':
+                    self.keytable = parameter
+
                 elif option == 'mpdport':
                     try:
                         self.mpdport = int(parameter)
@@ -349,6 +361,12 @@ class Configuration:
                 elif option == 'i2c_address':
                     try:
                         self.i2c_address = int(parameter,16)
+                    except Exception as e:
+                        self.invalidParameter(ConfigFile,option,parameter)
+
+                elif option == 'i2c_rgb_address':
+                    try:
+                        self.i2c_rgb_address = int(parameter,16)
                     except Exception as e:
                         self.invalidParameter(ConfigFile,option,parameter)
 
@@ -485,6 +503,9 @@ class Configuration:
                     elif parameter == 'LCD_I2C_JHD1313':
                         self.display_type = self.LCD_I2C_JHD1313
 
+                    elif parameter == 'LCD_I2C_JHD1313_SGM31323':
+                        self.display_type = self.LCD_I2C_JHD1313_SGM31323
+
                     elif 'LUMA' in parameter:
                         param = parameter.upper()
                         self.display_type = self.LUMA
@@ -511,6 +532,9 @@ class Configuration:
                         self.rotary_gpio_pullup = GPIO.PUD_OFF 
                     else:
                         self.rotary_gpio_pullup = GPIO.PUD_UP 
+
+                elif option == 'rotary_step_size':
+                    self.rotary_step_size = parameter
 
                 elif option == 'exit_action':
                     self.shutdown = parameter
@@ -571,6 +595,12 @@ class Configuration:
 
                 elif option == 'channel_rgb_i2c':
                     self.channel_rgb_i2c = parameter
+
+                elif option == 'volume_interupt_pin':
+                    self.volume_interupt_pin = parameter
+
+                elif option == 'channel_interrupt_pin':
+                    self.channel_interrupt_pin = parameter
 
                 elif option == 'shutdown_command':
                     self.shutdown_command = parameter
@@ -742,6 +772,16 @@ class Configuration:
     def i2c_address(self, value):
         if value  > 0x0:
             self._i2c_address = value
+
+    # Get I2C RGB address for colour LCD displays
+    @property
+    def i2c_rgb_address(self):
+        return self._i2c_rgb_address
+
+    @i2c_rgb_address.setter
+    def i2c_rgb_address(self, value):
+        if value  > 0x0:
+            self._i2c_rgb_address = value
 
     # Get I2C bus number
     @property
@@ -995,6 +1035,19 @@ class Configuration:
     @rotary_class.setter
     def rotary_class(self, value):
         self._rotary_class = value
+
+
+    # Set rotary class step size to half (True) or full (False) 
+    @property
+    def rotary_step_size(self):
+        return self._rotary_step_size
+
+    @rotary_step_size.setter
+    def rotary_step_size(self, value):
+        if value == 'half':
+            self._rotary_step_size = True
+        else:
+            self._rotary_step_size = False
 
     # Get rotary encoder pull-up resistor configuration
     @property
@@ -1594,6 +1647,23 @@ class Configuration:
         if self.hexValue(parameter):
             self._channel_rgb_i2c = int(parameter,16)
 
+    # RGB I2C Rotary Encodernterrupt pins 
+    @property
+    def volume_interrupt_pin(self):
+        return self._volume_interrupt_pin
+
+    @volume_interrupt_pin.setter
+    def volume_interrupt_pin(self, parameter):
+        self._volume_interrupt_pin = int(parameter)
+
+    @property
+    def volume_interrupt_pin(self):
+        return self._volume_interrupt_pin
+
+    @volume_interrupt_pin.setter
+    def volume_interrupt_pin(self, parameter):
+        self._volume_interrupt_pin = int(parameter)
+
     # Shutdown command
     @property
     def shutdown_command(self):
@@ -1694,8 +1764,15 @@ if __name__ == '__main__':
     if  config.rotary_gpio_pullup == GPIO.PUD_OFF: 
         rotary_pullup = "PUD_OFF" 
     print ("Rotary resistor pullup (rotary_pullup):", rotary_pullup)
-    print ("Volume RGB I2C hex address (volume_rgb_i2c):", hex(config.volume_rgb_i2c))
-    print ("Channel RGB I2C hex address (channel_rgb_i2c):", hex(config.channel_rgb_i2c))
+    if config.rotary_step_size:
+        step_size = 'half' 
+    else:
+        step_size = 'full' 
+    print ("Rotary step size (rotary_step_size):", step_size)
+    print ("Volume RGB I2C hex address (volume_rgb_i2c):",hex(config.volume_rgb_i2c))
+    print ("Channel RGB I2C hex address (channel_rgb_i2c):",hex(config.channel_rgb_i2c))
+    print ("Volume RGB I2C interrupt pin (volume_interrupt_pin):",config.volume_interrupt_pin)
+    print ("Channel RGB I2C interrupt pin (channel_interrupt_pin):",config.channel_interrupt_pin)
 
     print('')
     print ("Display type (display_type):", config.getDisplayType(), config.getDisplayName())
@@ -1715,6 +1792,11 @@ if __name__ == '__main__':
     print('')
     print ("I2C bus: (config.i2c_bus)", config.i2c_bus)
     print ("I2C address (i2c_address):", hex(config.i2c_address))
+    print ("I2C RGB address (i2c_rgb_address):", hex(config.i2c_rgb_address))
+
+    # IR remote control parametere
+    print('')
+    print ("IR key table (keytable):", config.keytable)
 
     # Internet check
     print('')
