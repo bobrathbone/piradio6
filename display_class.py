@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.43 2024/07/05 11:47:17 bob Exp $
+# $Id: display_class.py,v 1.41 2023/09/22 12:10:34 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -16,6 +16,7 @@
 import pdb
 import os,sys
 import time,pwd
+import threading
 from config_class import Configuration
 from log_class import Log
 
@@ -58,6 +59,7 @@ class Display:
     ImageColor = None
 
     def __init__(self,translate):
+        threading.Thread.__init__(self)
         self.translate = translate
 
     # Initialise 
@@ -191,7 +193,6 @@ class Display:
             self.has_buttons = False # Use standard button interface
             self._isOLED = True
             self._mute_line = 4
-            screen.setScrollSpeed(scroll_speed)
 
         elif dtype == config.LUMA:
             from luma_class import LUMA

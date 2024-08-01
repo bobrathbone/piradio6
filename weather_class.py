@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Weather station class
-# $Id: weather_class.py,v 1.16 2024/06/21 12:47:04 bob Exp $
+# $Id: weather_class.py,v 1.13 2023/09/14 11:01:11 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : https://www.bobrathbone.com/
@@ -17,7 +17,7 @@
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 #            The authors shall not be liable for any loss or damage however caused.
 #
-# Configuration for this program is in /etc/weather.conf
+# Configuration for this program is in wxconfig.py
 #
 # Install the pre-requisite packages
 # sudo pip3 install request
@@ -30,7 +30,7 @@ import pdb
 import os
 import sys
 import time
-from wxconfig_class import Configuration
+from wxconfig import *
 
 try:
     import requests
@@ -50,7 +50,6 @@ except ImportError:
 abs_zero = float(273.15)
 hpa2inches = 0.029529983071445
 
-config = Configuration()
 
 # Weather Class
 class Weather:
@@ -58,7 +57,7 @@ class Weather:
     # Pressure units I=Imperial(Inches) M=Metric(Millibars)
     pressure_units = 'I'
 
-    location = "%s,%s" % (config.city,config.countrycode)
+    location = "%s,%s" % (CITY,COUNTRYCODE)
 
     # Open weathermap and API Key (Contact openweathermap.org)
 
@@ -69,8 +68,8 @@ class Weather:
         self.longitude = self.convertCoordinate(self.coords[1],'long')
 
         self.url = "https://api.openweathermap.org/data/2.5/weather?q=" + self.location\
-              + "&mode=xml" + "&units=" + config.units + "&pressure_units=" + config.pressure_units\
-              + "&lang=" + config.language + "&APPID=" + config.api_key
+              + "&mode=xml" + "&units=" + UNITS + "&pressure_units=" + PRESSURE_UNITS\
+              + "&lang=" + LANG + "&APPID=" + API_KEY
 
         print(self.url)
 
@@ -97,16 +96,17 @@ class Weather:
             temperature = round(temperature, 1)
             weather["temperature"] = temperature
             
+
             x = curr[0].find("humidity")
             weather["humidity"] = (x.attrs['value'] + '%')
 
-            weather["units"] = config.units 
+            weather["units"] = UNITS 
 
             x = curr[0].find("pressure")
             pressure = float((x.attrs['value']))
 
             temp_units = 'C'
-            if config.units == "imperial" or config.pressure_units == 'I':
+            if UNITS == "imperial" or PRESSURE_UNITS == 'I':
                 temp_units = 'F'
                 pressure_units = '"'
                 pressure = self.convert2inches(pressure)
@@ -124,15 +124,13 @@ class Weather:
             weather["clouds"] = (x.attrs['value'])
 
             #x = curr[0].find("wind")
-            #weather["wind"] = (x.attrs['speed'])
-                
+            #pdb.set_trace()
+            #weather["wind"] = (x.attrs['value'])
+
             return weather
-        elif res.status_code == 401:
-            msg = "Invalid API key. See https://openweathermap.org/faq#error401 for more info."
-            return msg
         else:
-            msg = "Status code %s" % res.status_code
-            return msg 
+            print("Status code %s" % res.status_code)
+            return weather
 
     # Convert a city name and country code to latitude and longitude
     def get_coords(self,location):
@@ -145,7 +143,7 @@ class Weather:
             print("geocode error %s", status)
 
         if coords == None:
-            msg = "Trying to get coordinates for " +  config.city +  " (" + config.countrycode + ")"
+            msg = "Trying to get coordinates for " +  CITY +  " (" + COUNTRYCODE + ")"
             print (msg)
             time.sleep(3)  # Wait before letting the weather.service retry
             sys.exit(1)

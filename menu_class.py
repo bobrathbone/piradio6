@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Menu Class
-# $Id: menu_class.py,v 1.2 2024/07/13 19:33:59 bob Exp $
+# $Id: menu_class.py,v 1.1 2020/10/10 15:00:46 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -87,17 +87,9 @@ class Menu:
         self.menu_mode = menu_mode
         return self.menu_mode
 
-    # get menu mode
-    def get(self):
-        return self.menu_mode
-
     # Get current option 
     def getOption(self):
         return self.option
-
-    # Set current option 
-    def setOption(self, option):
-        self.option = option
 
     # Get the option name
     def getOptionName(self, option):

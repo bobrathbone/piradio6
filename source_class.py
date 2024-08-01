@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.11 2024/01/15 15:26:38 bob Exp $
+# $Id: source_class.py,v 1.10 2023/06/09 11:16:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -66,7 +66,6 @@ class Source:
         try:
             # Get the list of playlists from MPD
             mylist = self.client.listplaylists()
-            mylist = sorted(mylist, key = lambda info: info['playlist'])
             
             for i,info in enumerate(mylist):
                 playlist = info['playlist']

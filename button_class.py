@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.11 2023/09/27 13:11:59 bob Exp $
+# $Id: button_class.py,v 1.10 2023/09/26 11:49:52 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,10 +16,7 @@ import os,sys
 import time
 import RPi.GPIO as GPIO
 import threading
-import pdb
 from constants import *
-
-GPIO.setmode(GPIO.BCM)
 
 class Button:
 
@@ -35,6 +32,7 @@ class Button:
         self.log = log
 
         if self.button > 0:
+            GPIO.setmode(GPIO.BCM)
             GPIO.setwarnings(False)
 
             if pull_up_down == DOWN:
@@ -47,7 +45,7 @@ class Button:
                 sEdge = 'Falling'
 
             try:
-                msg = "Creating button object for GPIO " +  str(self.button) \
+                msg = "Creating button for GPIO " +  str(self.button) \
                      + " edge=" +  sEdge
                 log.message(msg, log.DEBUG)
                 # The following lines enable the internal pull-up resistor
@@ -102,7 +100,7 @@ if __name__ == "__main__":
 
     print("Test Button Class")
 
-    # Get switch configuration
+    # Get configuration
     left_switch = config.getSwitchGpio("left_switch")
     right_switch = config.getSwitchGpio("right_switch")
     mute_switch = config.getSwitchGpio("mute_switch")
@@ -115,9 +113,9 @@ if __name__ == "__main__":
 
     print("Left switch GPIO", left_switch)
     print("Right switch GPIO", right_switch)
-    print("Mute switch GPIO", mute_switch)
     print("Up switch GPIO", up_switch)
     print("Down switch GPIO", down_switch)
+    print("Mute switch GPIO", mute_switch)
     print("Menu switch GPIO", menu_switch)
     print("Aux switch 1 GPIO", aux_switch1)
     print("Aux switch 2 GPIO", aux_switch2)
@@ -140,7 +138,6 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print(" Stopped")
-        GPIO.cleanup()
         sys.exit(0)
 
 # End of script

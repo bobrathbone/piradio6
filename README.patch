@@ -1,20 +1,20 @@
-Patch 1 for version 7.7 - 14 July 2024
+Patch 3 for version 7.4 - 28 November 2022
 
 Changes
 =======
-1) Ignore button UP events in the STANDARD and ALTERNATIVE rotary classes
-2) Correct menu step through not working if alarm feature set
-3) Driver for the Grove v5 RGB I2C LCD added (lcd_i2c_jhd1313_sgm31323.py)
-
-Also see README file 
+1) Correct Pimoroni Pirate Radio button settings
+2) Correct create_stations.py --delete_old not working
+3) Correct corrupt /etc/mpd.conf.orig
+4) Prevent i2s-mmap being configured twice in /boot/config.txt
+5) Use language file for radiod and MPD versions text 
 
 To install the patch
 ====================
 cd /usr/share/radio
-wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.7-1.tar.gz
-tar -xvf radiod-patch-7.7-1.tar.gz
+wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.4-3.tar.gz
+tar -xvf radiod-patch-7.4-3.tar.gz
+sudo systemctl restart radiod.service
 
-This patch contains all previous patches unless patch 1.
+This patch contains all previous patches unless patch 1
 
 End of README.patch
-

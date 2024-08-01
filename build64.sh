@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build64.sh,v 1.6 2024/06/21 08:36:57 bob Exp $
+# $Id: build64.sh,v 1.4 2023/06/28 06:47:05 bob Exp $
 # Build script for the Raspberry PI radio (64 bit)
 # Run this script as user pi and not root
 
@@ -51,7 +51,6 @@ IFS=${SAVEIFS}
 
 echo "Building package ${PKG} version ${VERSION}" | tee ${BUILDLOG}
 echo "from input file ${PKGDEF}" | tee -a ${BUILDLOG}
-echo "Update version and build number in constants.py as required"
 sudo chown ${USR}:${GRP} *.py *.cmd *.sh
 sudo chmod +x *.py *.cmd *.sh
 sudo chmod -x language/* voice.dist
@@ -74,9 +73,5 @@ if [[ ${ans} == 'y' ]]; then
         echo "Package ${DEBPKG} has errors" | tee -a ${BUILDLOG}
     fi
 fi
-
-echo
-echo "Now install the ${DEBPKG} package with the following command:"
-echo "sudo dpkg -i ${DEBPKG}"
 
 # End of build script

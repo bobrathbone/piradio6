@@ -1,5 +1,5 @@
 # Radio systemd script
-# $Id: radiod.service,v 1.3 2024/03/04 19:45:02 bob Exp $
+# $Id: radiod.service,v 1.1 2020/10/10 15:00:46 bob Exp $
 [Unit]
 Description=Radio daemon
 After=network.target

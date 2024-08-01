@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-# Raspberry Pi RGB I2C Rotary Encoder Class
-# $Id: rotary_class_rgb_i2c.py,v 1.10 2024/07/06 08:47:15 bob Exp $
+# Raspberry Pi Rotary Encoder Class
+# $Id: rotary_class_rgb_i2c.py,v 1.7 2021/09/27 10:07:53 bob Exp $
 #
 # Author : Bob Rathbone and Lubos Ruckl (Czech republic)
 # Site   : http://www.bobrathbone.com
 #
-# This class is the driver for the Pimoroni I2C RGB Rotary Encoder 
-# See: See https://shop.pimoroni.com/products/rgb-encoder-breakout  
+# This class is the driver for the Sparkfun I2C RGB Rotary Encoder 
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
@@ -57,6 +56,7 @@ class RGB_I2C_RotaryEncoder:
 
     def __init__(self,i2c_address=0xF0,button=button,callback=callback):
         ioe = None
+        threading.Thread.__init__(self)
         self.callback = callback
         self.button = button
         self.i2c_address = i2c_address
@@ -163,7 +163,6 @@ class RGB_I2C_RotaryEncoder:
         else:
             pressed = True
         return pressed
-
     # Set the IOE i2c address (Caution - understand before using)
     def set_i2c_addr(self, i2c_addr):
         print("Setting IOE I2C address to %s" % hex(i2c_addr))

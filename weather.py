@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Weather station class
-# $Id: weather.py,v 1.29 2024/06/23 08:09:05 bob Exp $
+# $Id: weather.py,v 1.22 2023/09/26 07:07:06 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : https://www.bobrathbone.com/
@@ -23,18 +23,16 @@ import os
 import time
 import pdb
 import signal
-import subprocess
-import RPi.GPIO as GPIO
 
 from time import strftime
 from display_class import Display
 from translate_class import Translate
 from weather_class import Weather
+from wxconfig import *
 from udp_server_class import UDPServer
 from udp_server_class import RequestHandler
-from wxconfig_class import Configuration
 
-wxconfig = Configuration()
+
 weather = Weather()
 translate = Translate()
 display = Display(translate)
@@ -46,7 +44,7 @@ server = None
 
 # Return date and time
 def getDateTime():
-    todaysdate = strftime(wxconfig.date_format)
+    todaysdate = strftime(DATE_FORMAT)
     return todaysdate
 
 # Display weather
@@ -57,24 +55,19 @@ def displayWeather(getnew):
         wx = weather.get()
         print(wx)
         print('\n')
-
-    try:
-        location = wx['location']
-        temperature = wx['temperature']
-        units = wx['units']
-        temp_units = wx['temp_units']
-        humidity = wx['humidity']
-        pressure = wx['pressure']
-        pressure_units = wx['pressure_units']
-        summary = wx['summary']
-        clouds = wx['clouds']
-        if int(clouds) > 0:
-            clouds = clouds + '%'
-        else:
-            clouds = ''
-    except:
-        display.out(2,wx)
-        sys.exit(1)
+    location = wx['location']
+    temperature = wx['temperature']
+    units = wx['units']
+    temp_units = wx['temp_units']
+    humidity = wx['humidity']
+    pressure = wx['pressure']
+    pressure_units = wx['pressure_units']
+    summary = wx['summary']
+    clouds = wx['clouds']
+    if int(clouds) > 0:
+        clouds = clouds + '%'
+    else:
+        clouds = ''
 
     if lines > 2:
         display.out(2,location)
@@ -98,11 +91,10 @@ def execCommand(cmd):
 def exitProgram():
     display.clear()
     display.out(1,"Program finished")
-    GPIO.cleanup()
-    cmd = wxconfig.exit_command 
+    cmd = EXIT_COMMAND 
     if len(cmd) > 3:
         print(cmd)
-        execCommand(cmd + '&')
+        execCommand(cmd)
     sys.exit(0)
 
 # Call back routine for the IR remote and Web Interface
@@ -121,58 +113,55 @@ def startUdpServer():
     # Start the IR remote control listener
     started = False
     try:
-        server = UDPServer((wxconfig.udp_host,wxconfig.udp_port),RequestHandler)
-        msg = "UDP Server listening on " + wxconfig.udp_host + " port " + str(wxconfig.udp_port)
+        server = UDPServer((UDP_HOST,UDP_PORT),RequestHandler)
+        msg = "UDP Server listening on " + UDP_HOST + " port " + str(UDP_PORT)
         print(msg)
         server.listen(server,remoteCallback)
         started = True
     except Exception as e:
         print(str(e))
-        print("UDP server could not bind to " + wxconfig.udp_host
-                + " port " + str(wxconfig.udp_port))
+        print("UDP server could not bind to " + UDP_HOST
+                + " port " + str(UDP_PORT))
         return started
 
 # Main weather display routine
-if __name__ == '__main__':
+from config_class import Configuration
+from event_class import Event
 
-    # THis is the radio configuration in /etc/radiod.conf
-    from config_class import Configuration
-    config = Configuration()
-    from event_class import Event
+config = Configuration()
+event = Event(config)
 
-    event = Event(config)
+signal.signal(signal.SIGTERM,signalHandler)
+signal.signal(signal.SIGHUP,signalHandler)
+display.init()
+count = 0
+getnew = True
+startUdpServer()
 
-    signal.signal(signal.SIGTERM,signalHandler)
-    signal.signal(signal.SIGHUP,signalHandler)
-    display.init()
-    count = 0
-    getnew = True
-    startUdpServer()
-
-    while True:
-        if event.detected():
-            type = event.getType()
-            name = event.eventNames[int(type)]
-            print("Event %d %s" % (type,name))
-            if name == "MENU_BUTTON_DOWN" or name == "MUTE_BUTTON_DOWN" or name == "SHUTDOWN":
-                exitProgram()
-            else:
-                event.clear()
-        try:
-            if display.lines > 2:
-                display.out(1,getDateTime())
-            displayWeather(getnew)
-            if count < 1:   
-                count = 300
-                getnew = True 
-            else:
-                count -= 1
-                time.sleep(1)
-                getnew = False 
-
-        except KeyboardInterrupt:
-            display.clear()
+while True:
+    if event.detected():
+        type = event.getType()
+        name = event.eventNames[int(type)]
+        print("Event %d %s" % (type,name))
+        if name == "MENU_BUTTON_DOWN" or name == "MUTE_BUTTON_DOWN" or name == "SHUTDOWN":
             exitProgram()
+        else:
+            event.clear()
+    try:
+        if display.lines > 2:
+            display.out(1,getDateTime())
+        displayWeather(getnew)
+        if count < 1:   
+            count = 300
+            getnew = True 
+        else:
+            count -= 1
+            time.sleep(1)
+            getnew = False 
+
+    except KeyboardInterrupt:
+        display.clear()
+        exitProgram()
 
 # End of script 
 

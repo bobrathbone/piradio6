@@ -1,7 +1,7 @@
 #!/bin/bash 
 set -e
 # Radio daemon pre-install script
-# $Id: piradio.preinst,v 1.3 2023/11/12 07:22:47 bob Exp $
+# $Id: piradio.preinst,v 1.1 2020/10/12 11:22:12 bob Exp $
 
 RADIOLIB=/var/lib/radiod
 MPDCONF=/etc/mpd.conf
@@ -18,11 +18,19 @@ fi
 echo "Raspberry PI internet radio installation"
 if [[ -d ${RADIOLIB} ]]; then
 	echo "The radio software appears to be already installed"
-    echo "Saving current configuration"
-    echo "Copying ${MPDCONF} to ${MPDCONF}.save"
-    sudo cp -fp ${MPDCONF} ${MPDCONF}.save
-    echo "Software only will be upgraded"
-    echo "Your existing configuration will not be changed unless you choose otherwise"
+	if [[ ! -f  ${MPDCONF}.orig ]]; then
+		echo "Saving current configuration"
+		echo "Copying ${MPDCONF} to ${MPDCONF}.orig"
+		sudo cp -fp ${MPDCONF} ${MPDCONF}.orig
+		echo "Copying ${BOOTCMD} to ${BOOTCMD}.orig"
+		sudo cp -fp ${BOOTCMD} ${BOOTCMD}.orig
+		echo "Copying ${MODULES} to ${MODULES}.orig"
+		sudo cp -fp ${MODULES} ${MODULES}.orig
+	else
+		echo "Software only will be upgraded"
+		echo "Your existing configuration will not be changed"
+	fi
+	sleep 2
 	echo "Stopping radiod service"
 	sudo systemctl stop radiod 
 fi

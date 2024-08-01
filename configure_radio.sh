@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.43 2024/06/22 08:36:00 bob Exp $
+# $Id: configure_radio.sh,v 1.37 2023/09/13 09:44:25 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -39,10 +39,7 @@ OS_RELEASE=/etc/os-release
 LOGDIR=${DIR}/logs
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/config.txt
-BOOTCONFIG_2=/boot/firmware/config.txt
 ETCMODULES=/etc/modules
-MPDCONF=/etc/mpd.conf
-WXCONFIG=/etc/weather.conf
 LOG=${LOGDIR}/install.log
 SPLASH="bitmaps\/raspberry-pi-logo.bmp" # Used for sed so \ needed
 
@@ -52,8 +49,6 @@ SCREEN_SIZE="800x480"   # Screen size 800x480, 720x480 or 480x320
 PROGRAM="Daemon radiod configured"
 GPROG=""    # Which graphical radio (gradio or vgradio)
 FLIP_OLED_DISPLAY=0 # 1 = Flip OLED idisplay upside down
-
-declare -i PI_MODEL=0  # 0=Undefined 5=Model 5 4=Model 4 or less
 
 # Wiring type and schemes
 BUTTON_WIRING=0 # 0 Not used or SPI/I2C, 1=Buttons, 2=Rotary encoders, 3=PHat BEAT
@@ -114,32 +109,6 @@ sudo chown ${USR}:${GRP} ${LOGDIR}
 sudo rm -f ${LOG}
 echo "$0 configuration log, $(date) " | tee ${LOG}
 
-# In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
-if [[ $(release_id) -ge 12 ]]; then
-    BOOTCONFIG=${BOOTCONFIG_2}
-fi
-
-echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
-
-# Copy weather configuration file to /etc
-if [[ ! -f   ${WXCONFIG} ]]; then
-    sudo cp -f ${DIR}/weather.conf ${WXCONFIG}
-fi
-
-# Replace /etc/mpd.conf if corrupt
-grep ^audio_out /etc/mpd.conf >/dev/null 2>&1
-if [[ $? != 0 ]]; then
-    echo "Replacing corrupt ${MPDCONF} with ${DIR}/mpd.conf"
-    sudo cp ${DIR}/mpd.conf ${MPDCONF}
-fi
-
-# Replace /etc/mpd.conf.orig if corrupt
-grep ^audio_out /etc/mpd.conf.orig >/dev/null 2>&1
-if [[ $? != 0 ]]; then
-    echo "Replacing corrupt ${MPDCONF}.orig with ${DIR}/mpd.conf"
-    sudo cp ${DIR}/mpd.conf ${MPDCONF}.orig
-fi
-
 # Check if user wants to configure radio if upgrading
 if [[ -f ${CONFIG}.org ]]; then
     ans=0
@@ -170,40 +139,6 @@ elif [[ ${ans} == '1' ]]; then
     sudo cp ${DIR}/radiod.conf ${CONFIG}
     echo "Current configuration ${CONFIG} replaced with distribution" | tee -a ${LOG}
 fi
-
-# Select Raspberry Pi model  
-ans=0
-selection=1 
-while [ $selection != 0 ]
-do
-    ans=$(whiptail --title "Select Raspberry Pi Model" --menu "Choose your option" 15 75 9 \
-    "1" "Raspberry Pi Model 5" \
-    "2" "Raspberry Pi Model 4 or earlier" \
-    "3" "Do not change configuration" 3>&1 1>&2 2>&3) 
-
-    exitstatus=$?
-    if [[ $exitstatus != 0 ]]; then
-        exit 0
-    fi
-
-    if [[ ${ans} == '1' ]]; then
-        DESC="Raspberry Pi Model 5 selected"
-        PI_MODEL=5
-
-    elif [[ ${ans} == '2' ]]; then
-        DESC="Raspberry Pi Model 4 or earlier"
-        PI_MODEL=4
-
-    else
-        DESC="Raspberry Pi model unchanged"  
-        echo ${DESC} | tee -a ${LOG}
-    fi
-
-    whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
-    selection=$?
-done
-echo ${DESC} | tee -a ${LOG}
-
 
 # Select the user interface (Buttons or Rotary encoders)
 ans=0
@@ -1012,18 +947,6 @@ fi
 #######################################
 # Commit changes to radio config file #
 #######################################
-
-# Enable GPIO converter module if model is a Raspberry Pi 5 or later or Bookworm OS or later
-echo "VERSION_ID"  $(release_id)
-if [[ ${PI_MODEL} -ge 5 || $(release_id) -ge 12 ]]; then
-    # Enable GPIO converter in ${DIR}/RPi
-    touch ${DIR}/RPi/__init__.py | tee -a ${LOG}
-    echo "GPIO conversion enabled" | tee -a ${LOG}
-else
-    # Disable GPIO converter
-    rm -f  ${DIR}/RPi/__init__.py | tee -a ${LOG}
-    echo "GPIO conversion disabled" | tee -a ${LOG}
-fi 
 
 # Save original configuration file
 if [[ ! -f ${CONFIG}.org ]]; then

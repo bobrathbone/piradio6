@@ -3,7 +3,7 @@
 # as used by the Waveshare 1.3" 128 X 64 OLED RPi hat with 3 buttons and a 5-button joystick 
 # It requires the SPI dtoverlay to be loaded. 
 #
-# $Id: sh1106_class.py,v 1.14 2023/10/04 16:02:01 bob Exp $
+# $Id: sh1106_class.py,v 1.12 2023/09/15 10:52:40 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -307,17 +307,8 @@ class SH1106:
         # flip is True or False
         if flip:
             self.command(0xc8)  #0xc0
-
-
-    # Set Scroll line speed - Best values are 0.2 and 0.3
-    # Limit to between 0.08 and 0.6
-    def setScrollSpeed(self,speed):
-        if speed < 0.08:
-                speed = 0.08
-        elif speed > 0.6:
-                speed = 0.6
-        self.scroll_speed = speed
-        return self.scroll_speed
+        #self.command(0xa1)  #0xa0
+        #self.command(0xa7)  #0xc0
 
 # End of SH1106 class
 
@@ -336,7 +327,6 @@ if __name__ == '__main__':
 
     display = SH1106()
     display.init(interrupt)
-    display.setScrollSpeed(0.2)
     display.clear()
 
     # Uncomment to invert display

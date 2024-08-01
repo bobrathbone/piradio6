@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.100 2024/07/13 19:33:59 bob Exp $
+# $Id: radiod.py,v 1.90 2023/09/26 11:49:52 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -21,7 +21,6 @@ import socket
 import datetime
 import subprocess
 from time import strftime
-import RPi.GPIO as GPIO
 
 import pdb
 # To set break-point: pdb.set_trace()
@@ -291,9 +290,6 @@ class MyDaemon(Daemon):
             
                 radio.displayVuMeter()
 
-                # Keep MPD connection alive
-                radio.ping()
-
                 # This delay must be >= to any GPIO bounce times
                 time.sleep(0.2)
 
@@ -516,7 +512,6 @@ def handleRadioEvent(event,display,radio,menu):
     elif event_type == event.MENU_BUTTON_DOWN:
         if radio.muted():
             radio.unmute()
-            
         handleMenuChange(display,radio,menu,message)
 
     elif event_type == event.AUX_SWITCH1:
@@ -544,19 +539,23 @@ def handleRadioEvent(event,display,radio,menu):
             display.out(1, message.get('stopped'))
             cmd = radio.config.execute
             if len(cmd) > 3:
-                GPIO.cleanup()
                 msg = "Executing %s" % cmd
                 log.message(msg, log.INFO)
+                pid = os.fork()
 
-                # Stop UDP server thread
-                radio.server.stop()
-                try:
-                    execCommand(cmd + ' &')
-                except Exception as e:
-                    print(str(e))
+                # Execute command from forked process
+                if pid > 0:
+                    try:
+                        subprocess.Popen(args=[cmd, ' &'] ,shell=False,
+                            stdin=None, stdout=None, stderr=None, close_fds=True)
+                        #execCommand(cmd + ' &')
+                    except Exception as e:
+                        print(str(e))
 
-                sys.exit(0)
-
+                    msg = "Exiting child process %s" % os.getpid()
+                    log.message(msg, log.DEBUG)
+                    sys.exit(0)
+        os.wait()
         msg = "Exiting! process %s" % os.getpid()
         print(msg)
         log.message(msg, log.INFO)
@@ -628,18 +627,17 @@ def handleSearchEvent(event,display,radio,menu):
 def handleMenuChange(display,radio,menu,message):
     global newMenu
     newMenu = True
-    current_menu = menu.get() # Needed for alarm check 
     menu_mode = menu.cycle()
     menu_name = menu.getName()
 
     log.message('Menu mode ' + str(menu_mode) + ' ' + str(menu_name), log.DEBUG)
     hostname = socket.gethostname()
-    ip_addr = radio.get_ip()
+    ip_addr = radio.execCommand('hostname -I')
 
     source_type = radio.getSourceType()
 
     # Was the previous option to activate the alarm?
-    if menu.getOption() == menu.OPTION_ALARM and current_menu == menu.MENU_OPTIONS:
+    if menu.getOption() == menu.OPTION_ALARM:
         if radio.getAlarmType() != 0:
             sleep(radio,menu)
 
@@ -848,7 +846,6 @@ def wakeup(radio,menu):
     log.message("Alarm fired", log.INFO)
     radio.unmute()
     menu.set(menu.MENU_TIME)
-    menu.setOption(menu.OPTION_RANDOM)
 
 # Mute radio
 def mute(radio,display):
@@ -863,7 +860,7 @@ def mute(radio,display):
 def displayStartup(display,radio):
     nlines = display.getLines()
     pid = os.getpid()
-    ipaddr = radio.get_ip()
+    ipaddr = radio.execCommand('hostname -I')
     version = radio.getVersion()
     msg = message.get('radio_version')
 
@@ -1079,8 +1076,7 @@ def displayInfo(display,radio,message):
         lwidth = display.getWidth()
     ipaddr = message.getIpAddress()
     if len(ipaddr) < 1:
-        ipaddr = radio.get_ip()
-        ipaddr = message.storeIpAddress(ipaddr)
+        ipaddr = message.storeIpAddress(radio.execCommand('hostname -I'))
     version = radio.getVersion()
     nlines = display.getLines()
     display.backlight('info_color')
@@ -1449,13 +1445,13 @@ def execCommand(cmd):
     return result
 
 def usage():
-    print("usage: %s start|stop|restart|status|version|build|nodaemon" % sys.argv[0])
+    print("usage: %s start|stop|restart|status|version|nodaemon" % sys.argv[0])
 
 # End of class
 
 ### Main routine ###
 if __name__ == "__main__":
-    from constants import __version__, __build__
+    from constants import __version__
 
     if len(sys.argv) < 2:
         usage()
@@ -1463,10 +1459,6 @@ if __name__ == "__main__":
 
     if 'version' == sys.argv[1]:
         print('Version',__version__)
-        sys.exit(0)
-
-    if 'build' == sys.argv[1]:
-        print('Build',__build__)
         sys.exit(0)
 
     if pwd.getpwuid(os.geteuid()).pw_uid > 0:
@@ -1484,8 +1476,6 @@ if __name__ == "__main__":
             daemon.restart()
         elif 'status' == sys.argv[1]:
             daemon.status()
-        elif 'build' == sys.argv[1]:
-            daemon.build()
         elif 'nodaemon' == sys.argv[1]:
             daemon.nodaemon()
         else:

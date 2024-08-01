@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.53 2023/11/27 07:56:30 bob Exp $
+# $Id: display_config.sh,v 1.50 2023/08/05 09:26:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,7 +24,6 @@ DIR=/usr/share/radio
 LOGDIR=${DIR}/logs
 LOG=${LOGDIR}/config.log
 BOOTCONFIG=/boot/config.txt
-BOOTCONFIG_2=/boot/firmware/config.txt
 MPD_CONFIG=/etc/mpd.conf
 OS_RELEASE=/etc/os-release
 DEBIAN_VERSION=/etc/debian_version
@@ -37,9 +36,6 @@ EMAIL=bob@bobrathbone.com
 LXSESSION=/home/${USR}/.config/lxsession
 MPDLIB=/var/lib/mpd
 BLUETOOTHCTL=/usr/bin/bluetoothctl
-# The LXDE sub directory can be plain LXDE or LXDE-${USR}
-AUTOSTART="${LXSESSION}/LXDE*/autostart"
-WAYFIRE_INI=~/.config/wayfire.ini
 
 # Get OS release ID
 function release_id
@@ -60,18 +56,6 @@ function codename
     echo ${CODENAME}
 }
 
-# Return X protocol (X11 or Wayland)
-function X-protocol 
-{
-    type=$(loginctl show-session $(loginctl | grep "$USER" | awk '{print $1}') -p Type | grep -i wayland)
-    if [[ $? == 0 ]]; then  # Do not seperate from above
-        X=Wayland
-    else
-        X=X11
-    fi
-    echo ${X} 
-}
-
 if [[ ! -d ${DIR} ]]; then
     echo "Error: Radio software not installed - Exiting."
     exit 1
@@ -80,6 +64,14 @@ fi
 # Create run log directory
 mkdir -p ${LOGDIR}
 sudo chown ${USR}:${GRP} ${LOGDIR}
+
+# Select correct LXDE autostart directory
+if [[ $(release_id) -ge 12 ]]; then
+    LXDE="LXDE"
+else
+    LXDE="LXDE-pi"
+fi
+AUTOSTART=/home/${USR}/.config/lxsession/${LXDE}/autostart
 
 echo "Configuration log for $(hostname) $(date)" | tee ${LOG}
 grep ^Release ${DIR}/README | tee -a ${LOG}
@@ -96,7 +88,7 @@ echo | tee -a ${LOG}
 echo "Kernel version " | tee -a ${LOG}
 echo "--------------" | tee -a ${LOG}
 uname -a  | tee -a ${LOG}
-echo "OS $(codename) Architecture $(getconf LONG_BIT)-bit" | tee -a ${LOG}
+echo "Architecture $(getconf LONG_BIT)-bit" | tee -a ${LOG}
 echo | tee -a ${LOG}
 
 echo "User $(id -u -n)" | tee -a ${LOG}
@@ -110,10 +102,9 @@ echo | tee -a ${LOG}
 echo "Desktop installation" | tee -a ${LOG}
 echo "--------------------" | tee -a ${LOG}
 if [[ -f /usr/bin/startx ]]; then
-    X=$(X-protocol)
-    echo "X-Windows appears to be installed and is using the ${X} protocol" | tee -a ${LOG}
-    if [[ ${X} == "X11" ]]; then
-        entry=$(grep -i 'radio' ${AUTOSTART})
+	echo "X-Windows appears to be installed" | tee -a ${LOG}
+    if [[ -f ${AUTOSTART} ]]; then
+        entry=$(grep -i "radio" ${AUTOSTART})
         if [[ $? == 0 ]]; then
             if [[ ${entry:0:1} == "#" ]]; then
                 echo "Graphic version of the radio is disabled in ${AUTOSTART}" | tee -a ${LOG}
@@ -124,17 +115,8 @@ if [[ -f /usr/bin/startx ]]; then
         else
             echo "Graphic versions of the radio not configured in ${AUTOSTART}" | tee -a ${LOG}
         fi
-
-    elif [[ ${X} == "Wayland" ]]; then
-        echo; 
-        echo "${WAYFIRE_INI} file autostart configuration" | tee -a ${LOG}
-        grep "\[autostart\]" ${WAYFIRE_INI} | tee -a ${LOG}
-        sed -e '1,/\[autostart\]/d' ${WAYFIRE_INI} | tee -a ${LOG}
-        if [[ $? != 0 ]]; then
-            echo "[autostart] not configured in ${WAYFIRE_INI}" | tee -a ${LOG}
-        fi
-    else 
-        echo "No X-Window configuration foe wayland or X11 found" | tee -a ${LOG}
+    else
+        echo "Error - No ${AUTOSTART} file found"  | tee -a ${LOG}
     fi
 else
 	echo "X-Windows is not installed" | tee -a ${LOG}
@@ -194,11 +176,6 @@ mpc outputs | tee -a ${LOG}
 if [[ -f /usr/bin/pulseaudio ]];then
 	echo | tee -a ${LOG}
 	echo "The pulseaudio package appears to be installed" | tee -a ${LOG}
-fi
-
-# In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
-if [[ $(release_id) -ge 12 ]]; then
-    BOOTCONFIG=${BOOTCONFIG_2}
 fi
 
 # Display boot configuration

@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-# Raspberry Pi RGB I2C Rotary Encoder Class
-# $Id: rgb_set_i2c_address.py,v 1.5 2024/06/13 16:05:41 bob Exp $
+# Raspberry Pi Rotary Encoder Class
+# $Id: rgb_set_i2c_address.py,v 1.4 2021/09/23 14:38:13 bob Exp $
 #
 # Author : Bob Rathbone and Lubos Ruckl (Czech republic)
 # Site   : http://www.bobrathbone.com
 #
-# This program is used to set programable I2C addresses of the Pimoroni I2C RGB Rotary Encoder 
-# See https://shop.pimoroni.com/products/rgb-encoder-breakout
-#
+# This class is the driver for the Sparkfun I2C RGB Rotary Encoder 
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.

@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
-# Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.69 2024/05/13 10:07:53 bob Exp $
+# Raspberry Pi Internet Radio
+# $Id: configure_audio.sh,v 1.55 2023/07/27 15:54:31 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -31,7 +31,6 @@ USR=$(logname)
 GRP=$(id -g -n ${USR})
 
 BOOTCONFIG=/boot/config.txt
-BOOTCONFIG_2=/boot/firmware/config.txt
 MPDCONFIG=/etc/mpd.conf
 ASOUNDCONF=/etc/asound.conf
 MODPROBE=/etc/modprobe.d/alsa-base.conf
@@ -59,14 +58,12 @@ HDMI=2  # HDMI
 DAC=3   # DAC card
 BLUETOOTH=4 # Bluetooth speakers
 USB=5   # USB PnP DAC
-TLVDAC=6 # tlvaudioCODEC
-WM8960=7 # Waveshare WM8960 DAC
-RPI=8    # RPi Sound Cards
+TLVAUDIO=6 # tlvaudioCODEC
 
 TYPE=${JACK}
 
-SCARD="headphones"  # aplay -l string. Set to headphones, HDMI, DAC ,bluetooth or other 
-            # description to configure the audio_out parameter in the configuration file
+SCARD="headphones"  # aplay -l string. Set to headphones, HDMI, DAC or bluetooth
+            # to configure the audio_out parameter in the configuration file
 PIVUMETER=0 # PVumeter using alsa
 
 # dtoverlay parameter in /etc/config.txt
@@ -77,7 +74,6 @@ DEVICE="hw:0,0"
 CARD=0
 NAME="Onboard jack"
 MIXER="software"
-COMMAND=""
 # Format is Frequency 44100 Hz: 16 bits: 2 channels
 FORMAT="44100:16:2"
 NUMID=1
@@ -130,21 +126,13 @@ function card_id
     echo ${CARD_ID}
 }
 
-# Releases before Bullseye not supported
-if [[ $(release_id) -lt 11 ]]; then
-    echo "This program is only supported on Raspbian Bullseye/Bookworm or later!" | tee -a ${LOG}
+# Releases before Buster not supported
+if [[ $(release_id) -lt 10 ]]; then
+    echo "This program is only supported on Raspbian Buster/Bullseye or later!" | tee -a ${LOG}
     echo "This system is running $(codename) OS"
     echo "Exiting program." | tee -a ${LOG}
     exit 1
 fi
-
-
-# In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
-if [[ $(release_id) -ge 12 ]]; then
-    BOOTCONFIG=${BOOTCONFIG_2}
-fi
-
-echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
 
 # Location of raspotify configuration file has changed in Bullseye
 if [[ $(release_id) -ge 11 ]]; then
@@ -195,9 +183,7 @@ do
     "14" "Adafruit speaker bonnet" \
     "15" "Pimoroni Pirate Audio" \
     "16" "HiFiBerry DAC 400" \
-    "17" "Waveshare WM8960 DAC" \
-    "18" "RPi (Raspberry Pi) Audio Cards" \
-    "19" "Manually configure" 3>&1 1>&2 2>&3)
+    "17" "Manually configure" 3>&1 1>&2 2>&3)
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -298,7 +284,8 @@ do
         USE_PULSE=1
         AUDIO_INTERFACE="pulse"
         TYPE=${BLUETOOTH}
-        ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.blue
+        # Copy asound.conf but it isn't used 
+        ASOUND_CONF_DIST=${ASOUND_CONF_DIST}
         LOCK_CONFIG=1   
         CARD=-1     # No cards displayed (aplay -l) 
 
@@ -327,77 +314,12 @@ do
         TYPE=${TVDAC}
 
     elif [[ ${ans} == '17' ]]; then
-        DESC="Waveshare WM8960 DAC" 
-        NAME=${DESC}
-        DTOVERLAY="wm8960-soundcard"
-        MIXER="software"
-        TYPE=${WM8960}
-        LOCK_CONFIG=1   
-        ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.wm8960
-
-    elif [[ ${ans} == '18' ]]; then
-        DESC="RPi (Raspberry Pi) Audio Cards" 
-        NAME=${DESC}
-        TYPE=${RPI}
-
-    elif [[ ${ans} == '19' ]]; then
         DESC="Manual configuration"
     fi
 
     whiptail --title "$DESC selected" --yesno "Is this correct?" 10 60
     selection=$?
 done 
-
-# Handle RPi Display cards
-if [[ ${TYPE} == ${RPI} ]]; then
-    SCARD="Unknown"
-    selection=1 
-    while [ $selection != 0 ]
-    do
-        ans=$(whiptail --title "Select audio output" --menu "Choose your option" 18 75 12 \
-        "1" "RPi DAC Pro" \
-        "2" "RPi DigiAmp Plus" \
-        "3" "RPi DAC Plus" \
-        "4" "RPi Codec Zero" 3>&1 1>&2 2>&3)
-
-        exitstatus=$?
-        if [[ $exitstatus != 0 ]]; then
-            exit 0
-        fi
-
-        if [[ ${ans} == '1' ]]; then
-            DESC="RPi DAC Pro"
-            NAME=${DESC}
-            DTOVERLAY="rpi-dacpro"
-            MIXER="software"
-            SCARD="DAC"
-
-        elif [[ ${ans} == '2' ]]; then
-            DESC="RPi DigiAmp Plus"
-            NAME=${DESC}
-            DTOVERLAY="rpi-digiampplus"
-            MIXER="software"
-            SCARD="DigiAmp+"
-
-        elif [[ ${ans} == '3' ]]; then
-            DESC="RPi DAC Plus"
-            NAME=${DESC}
-            DTOVERLAY="rpi-dacplus"
-            MIXER="software"
-            SCARD="DAC+"
-
-        elif [[ ${ans} == '4' ]]; then
-            DESC="RPi Codec Zero"
-            NAME=${DESC}
-            DTOVERLAY="rpi-codeczero"
-            MIXER="software"
-            SCARD="Codec Zero"
-        fi
-
-        whiptail --title "$DESC selected" --yesno "Is this correct?" 10 60
-        selection=$?
-    done
-fi
 
 # Summarise selection
 echo "${DESC} selected" | tee -a ${LOG}
@@ -433,7 +355,7 @@ if [[ ${USE_PULSE} == 1 ]]; then
         fi
     fi
     grep "^load-module module-native-protocol-tcp" ${PULSE_PA}
-    if [[ $? != 0 ]]; then  # Do not separate from above
+    if [[ $? != 0 ]]; then  # Do not seperate from above
         cmd="sudo cp ${PULSE_PA}.orig ${PULSE_PA}"
         echo $cmd | tee -a ${LOG}
         $cmd | tee -a ${LOG}
@@ -454,13 +376,9 @@ else
 
 fi
 
-# Lock audio configuration if required (radiod won't dynamically configure Card number)
-# See audio_config_lock parameter in /etc/radiod.conf
 if [[ ${LOCK_CONFIG} == 1 ]]; then
     # Lock configuration in /etc/radiod.conf
     sudo sed -i -e "0,/^audio_config_locked=/{s/audio_config_locked=.*/audio_config_locked=yes/}" ${CONFIG}
-else
-    sudo sed -i -e "0,/^audio_config_locked=/{s/audio_config_locked=.*/audio_config_locked=no/}" ${CONFIG}
 fi
 
 # Check if audio_out parameter in configuration file
@@ -476,8 +394,6 @@ fi
 
 # Select HDMI name ether "HDMI" (Buster/Bullseye) or "vc4hdmi" (Bullseye)
 # Also setup audio_out parameter in the config file
-echo "Configuring ${NAME} as output" | tee -a ${LOG}
-
 if [[ ${TYPE} == ${HDMI} ]]; then
     echo "Configuring HDMI as output" | tee -a ${LOG}
     sudo touch ${LIBDIR}/hdmi
@@ -514,11 +430,6 @@ elif [[ ${TYPE} == ${TLVDAC} ]]; then
     echo "Configuring tlvaudioCODEC as output" | tee -a ${LOG}
     SCARD="tlvaudioCODEC"
 
-elif [[ ${TYPE} == ${WM8960} ]]; then
-    echo "Configuring Waveshare WM8960 as output" | tee -a ${LOG}
-    SCARD="wm8960soundcard"
-
-
 # Configure bluetooth device
 elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
  
@@ -534,11 +445,7 @@ elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
     echo |  tee -a ${LOG}
     echo "Bluetooth device configuration"  |  tee -a ${LOG}
     echo "------------------------------"  |  tee -a ${LOG}
-    if [[ $(release_id) -lt 12 ]]; then
-        PAIRED=$(bluetoothctl paired-devices)
-    else
-        PAIRED=$(bluetoothctl devices)
-    fi
+    PAIRED=$(bluetoothctl paired-devices)
     echo ${PAIRED} |  tee -a ${LOG}
     BT_NAME=$(echo ${PAIRED} | awk '{print $3}')
     BT_DEVICE=$( echo ${PAIRED} | awk '{print $2}')
@@ -601,6 +508,8 @@ fi
 echo |  tee -a ${LOG}
 if [[ ${CARD} -ge 0 ]]; then
     echo "Configuring ${ASOUNDCONF} with card ${CARD} " | tee -a ${LOG}
+else
+    echo "${ASOUNDCONF} not required with pulseaudio and Bluetooth" | tee -a ${LOG}
 fi
 
 if [[ ! -f ${ASOUNDCONF}.org && -f ${ASOUNDCONF} ]]; then
@@ -609,8 +518,12 @@ if [[ ! -f ${ASOUNDCONF}.org && -f ${ASOUNDCONF} ]]; then
 fi
 
 # Set up /etc/asound.conf except if using pulseaudio and bluetooth
-echo "Copying ${ASOUND_CONF_DIST} to ${ASOUNDCONF}" | tee -a ${LOG}
-sudo cp -f ${ASOUND_DIR}/${ASOUND_CONF_DIST} ${ASOUNDCONF}
+if [[ ${TYPE} != ${BLUETOOTH} ]]; then
+    echo "Copying ${ASOUND_CONF_DIST} to ${ASOUNDCONF}" | tee -a ${LOG}
+    sudo cp -f ${ASOUND_DIR}/${ASOUND_CONF_DIST} ${ASOUNDCONF}
+else
+    sudo rm -f ${ASOUNDCONF}
+fi
 
 if [[ ${CARD} == 0 ]]; then
         sudo sed -i -e "0,/card/s/1/0/" ${ASOUNDCONF}
@@ -655,11 +568,6 @@ else
         sudo sed -i -e "0,/device/{s/.*device.*/\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
     fi
 fi
-if [[ ${TYPE} == ${WM8960} ]]; then
-    # Set up aplay pipe
-    #sudo sed -i -e "0,/device/{s/.*device.*/\tcommand\t\t\"${COMMAND}\"/}" ${MPDCONFIG}
-    sudo sed -i -e "0,/device/{s/.*device.*/\#\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
-fi
 
 # Set up mpd.conf for Pirate radio with pHat Beat (pivumeter)
 if [[ ${PIVUMETER} == 1 ]]; then
@@ -692,7 +600,6 @@ echo "Delete old audio overlays" | tee -a ${LOG}
 sudo sed -i '/dtoverlay=iqaudio/d' ${BOOTCONFIG}
 sudo sed -i '/dtoverlay=hifiberry/d' ${BOOTCONFIG}
 sudo sed -i '/dtoverlay=justboom/d' ${BOOTCONFIG}
-sudo sed -i '/dtoverlay=wm8960-soundcard/d' ${BOOTCONFIG}
 
 # Add dtoverlay for sound cards and disable on-board sound
 if [[ ${DTOVERLAY} != "" || ${TYPE} == ${HDMI} ]]; then
@@ -716,7 +623,7 @@ if [[ ${DTOVERLAY} != "" || ${TYPE} == ${HDMI} ]]; then
         OVERLAY_LOADED=0
     fi
 else
-    if [[ ${TYPE} == ${BLUETOOTH} || ${TYPE} == ${USB} || ${TYPE} == ${WM8960} ]]; then
+    if [[ ${TYPE} == ${BLUETOOTH} || ${TYPE} == ${USB} ]]; then
         # Switch off onboard devices (headphones and HDMI) if bluetooth or USB
         sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
         sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
@@ -826,22 +733,6 @@ if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
     fi
 fi
 
-# Integrity check of /boot/config.txt
-declare -i lines=$(wc -l ${BOOTCONFIG} | awk '{print $1}')
-if [[ ${lines} -lt 10 ]]; then
-    echo "ERROR: ${BOOTCONFIG} failed integrity check"
-    echo "Restoring ${BOOTCONFIG} from ${BOOTCONFIG}.orig"
-    sudo cp ${BOOTCONFIG}.orig ${BOOTCONFIG}
-    echo "Re-run sudo ${0} "
-    exit 1
-else
-    echo
-    echo "${BOOTCONFIG} has ${lines} lines"
-    echo
-fi
-
-# Sync changes to disk
-sync;sync
 
 echo "A log of these changes has been written to ${LOG}"
 exit 0

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.18 2024/07/13 19:33:59 bob Exp $
+# $Id: rotary_class.py,v 1.9 2021/10/02 10:07:38 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -135,8 +135,8 @@ FULL_TAB = (
 # Enable this to emit codes twice per step.
 # HALF_STEP == True: emits a code at 00 and 11
 # HALF_STEP == False: emits a code at 00 only
-#HALF_STEP     = True   # Moved to the init routine
-#STATE_TAB = HALF_TAB if HALF_STEP else FULL_TAB
+HALF_STEP     = False
+STATE_TAB = HALF_TAB if HALF_STEP else FULL_TAB
 
 # State table has, for each state (row), the new state
 # to set based on the next encoder output. From left to right in,
@@ -158,10 +158,8 @@ class RotaryEncoder:
     BUTTONDOWN=3
     BUTTONUP=4
 
-    def __init__(self, pinA, pinB, button,callback,rotary_step_size=False):
-        self.STATE_TAB = HALF_TAB if rotary_step_size else FULL_TAB
-        pullup = GPIO.PUD_UP
-        t = threading.Thread(target=self._run,args=(pinA,pinB,button,callback,pullup))
+    def __init__(self, pinA, pinB, button,callback,pullup=GPIO.PUD_UP):
+        t = threading.Thread(target=self._run,args=(pinA,pinB,button,callback,pullup,))
         t.daemon = True
         t.start()
 
@@ -185,6 +183,7 @@ class RotaryEncoder:
                 gpio = self.pinB
                 GPIO.add_event_detect(self.pinA, GPIO.BOTH, callback=self.rotary_event)
                 GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.rotary_event)
+                #pdb.set_trace()
             if button > 0:
                 gpio = self.button
                 GPIO.setup(self.button, GPIO.IN, pull_up_down=self.pullup)
@@ -201,7 +200,7 @@ class RotaryEncoder:
         # Grab state of input pins.
         pinstate = (GPIO.input(self.pinB) << 1) | GPIO.input(self.pinA)
         # Determine new state from the pins and state table.
-        self.state = self.STATE_TAB[self.state & 0xf][pinstate]
+        self.state = STATE_TAB[self.state & 0xf][pinstate]
         # Return emit bits, ie the generated event.
         result = self.state & 0x30
         if result:
@@ -209,11 +208,12 @@ class RotaryEncoder:
             self.callback(event)
             return result
 
-    # Push button down event
+    # Push button up event
     def button_event(self,button):
         # Ignore Button Up events   
-        if self.buttonPressed(button):
-            self.callback(self.BUTTONDOWN)
+        if not GPIO.input(button): 
+            event = self.BUTTONDOWN 
+            self.callback(event)
         return
 
     # Get a button state - returns 1 or 0
@@ -221,7 +221,6 @@ class RotaryEncoder:
         return  GPIO.input(button)
 
     def buttonPressed(self,button):
-        time.sleep(0.05)
         state = self.getButtonState(button) 
         if state == 1:
             pressed = False
@@ -272,11 +271,6 @@ if __name__ == "__main__":
     down_switch = config.getSwitchGpio("down_switch")
     up_switch = config.getSwitchGpio("up_switch")
     menu_switch = config.getSwitchGpio("menu_switch")
-    rotary_step_size = config.rotary_step_size
-    if config.rotary_step_size:
-        step_size = 'half'
-    else:
-        step_size = 'full'
 
     print("Left switch GPIO", left_switch)
     print("Right switch GPIO", right_switch)
@@ -284,12 +278,9 @@ if __name__ == "__main__":
     print("Down switch GPIO", down_switch)
     print("Mute switch GPIO", mute_switch)
     print("Menu switch GPIO", menu_switch)
-    print("Rotary encoder step size =", step_size)
     
-    volumeknob = RotaryEncoder(left_switch,right_switch,mute_switch,
-                volume_event,rotary_step_size)
-    tunerknob = RotaryEncoder(down_switch,up_switch,menu_switch,
-                tuner_event,rotary_step_size)
+    volumeknob = RotaryEncoder(left_switch,right_switch,mute_switch, volume_event)
+    tunerknob = RotaryEncoder(down_switch,up_switch,menu_switch, tuner_event)
 
     try:
         while True:

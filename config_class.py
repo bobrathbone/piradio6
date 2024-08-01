@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.101 2024/06/21 06:27:42 bob Exp $
+# $Id: config_class.py,v 1.98 2023/09/27 08:42:43 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -92,7 +92,6 @@ class Configuration:
     _display_playlist_number = False # Two line displays only, display station(n)
     _source = RADIO          # Source RADIO or MEDIA Player
     _rotary_class = STANDARD # Rotary class STANDARD,RGB_ROTARY or ALTERNATIVE 
-    _rotary_step_size = False     # Rotary full step (False) or half step (True) configuration
     _rotary_gpio_pullup =  GPIO.PUD_UP  # KY-040 encoders have own 10K pull-up resistors. 
                             # Set internal pullups to off with rotary_gpio_pullup = GPIO.PUD_OFF
     _volume_rgb_i2c=0x0F    # Volume RGB I2C Rotary encoder hex address
@@ -314,9 +313,6 @@ class Configuration:
                 elif option == 'remote_listen_host':
                     self.remote_listen_host = parameter
 
-                elif option == 'keytable':
-                    self.keytable = parameter
-
                 elif option == 'mpdport':
                     try:
                         self.mpdport = int(parameter)
@@ -515,9 +511,6 @@ class Configuration:
                         self.rotary_gpio_pullup = GPIO.PUD_OFF 
                     else:
                         self.rotary_gpio_pullup = GPIO.PUD_UP 
-
-                elif option == 'rotary_step_size':
-                    self.rotary_step_size = parameter
 
                 elif option == 'exit_action':
                     self.shutdown = parameter
@@ -1002,19 +995,6 @@ class Configuration:
     @rotary_class.setter
     def rotary_class(self, value):
         self._rotary_class = value
-
-
-    # Set rotary class step size to half (True) or full (False) 
-    @property
-    def rotary_step_size(self):
-        return self._rotary_step_size
-
-    @rotary_step_size.setter
-    def rotary_step_size(self, value):
-        if value == 'half':
-            self._rotary_step_size = True
-        else:
-            self._rotary_step_size = False
 
     # Get rotary encoder pull-up resistor configuration
     @property
@@ -1714,11 +1694,6 @@ if __name__ == '__main__':
     if  config.rotary_gpio_pullup == GPIO.PUD_OFF: 
         rotary_pullup = "PUD_OFF" 
     print ("Rotary resistor pullup (rotary_pullup):", rotary_pullup)
-    if config.rotary_step_size:
-        step_size = 'half' 
-    else:
-        step_size = 'full' 
-    print ("Rotary step size (rotary_step_size):", step_size)
     print ("Volume RGB I2C hex address (volume_rgb_i2c):", hex(config.volume_rgb_i2c))
     print ("Channel RGB I2C hex address (channel_rgb_i2c):", hex(config.channel_rgb_i2c))
 
@@ -1740,10 +1715,6 @@ if __name__ == '__main__':
     print('')
     print ("I2C bus: (config.i2c_bus)", config.i2c_bus)
     print ("I2C address (i2c_address):", hex(config.i2c_address))
-
-    # IR remote control parametere
-    print('')
-    print ("IR key table (keytable):", config.keytable)
 
     # Internet check
     print('')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.138 2024/07/13 19:33:59 bob Exp $
+# $Id: radio_class.py,v 1.120 2023/08/28 09:35:33 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -70,6 +70,7 @@ StreamFile = RadioLibDir + "/streaming"
 
 log = None
 language = None
+server = None
 
 Mpd = "/usr/bin/mpd"    # Music Player Daemon
 Mpc = "/usr/bin/mpc"    # Music Player Client
@@ -80,7 +81,6 @@ MPD_STREAM_ERROR = 1
 MPD_NO_CONNECTION = 2
 MPD_ERROR = 3
 INTERNET_ERROR = 4
-MPD_EMPTY_PLAYLIST = 5
 
 ON = True
 OFF = False
@@ -89,7 +89,6 @@ OFF = False
 class Radio:
     translate = None    # Translate object
     spotify = None      # Spotify object
-    server = None
 
     client = mpd.MPDClient()    
     volume = 0
@@ -153,7 +152,6 @@ class Radio:
     error_display_delay = 0     # Delay before clearing error messages
     playlist_size = 0           # For checking changes to the playlist
     PL = None                   # Playlist class
-    ip_addr = ''                # Local IP address
     
     # MPD Options
     random = False  # Random tracks
@@ -198,7 +196,7 @@ class Radio:
         CurrentSourceFile: 0,
         SourceNameFile: "Radio",
         VolumeFile: 75,
-        MixerVolumeFile: 90,
+        MixerVolumeFile: 45,
         TimerFile: 30,
         AlarmFile: "0:07:00", 
         StreamFile: "off", 
@@ -207,7 +205,7 @@ class Radio:
 
     # Error strings 
     errorStrings = ['No error','MPD stream error','MPD connection error',
-                    'MPD error','No Internet','Empty playlist']
+                    'MPD error','No Internet']
 
     # Initialisation routine
     def __init__(self, menu, event, translate, config, logobj):
@@ -258,10 +256,6 @@ class Radio:
         log.message("Starting service mpd.socket", log.DEBUG)
         self.execCommand("sudo systemctl start mpd.socket")
 
-    def restartMpd(self):
-        log.message("Restarting service mpd.service", log.DEBUG)
-        self.execCommand("sudo systemctl restart mpd.service")
-
     # Set up configuration files
     def setupConfiguration(self):
         # Create directory 
@@ -274,11 +268,12 @@ class Radio:
             if not os.path.isfile(file) or os.path.getsize(file) == 0:
                 self.execCommand ("echo " + str(value) + " > " + file)
 
-        # Link /var/lib/mpd/music/media to /media/<user>
-        cmd = "rm -f /var/lib/mpd/music/media"
-        self.execCommand(cmd)
-        cmd = "sudo ln -s /media/" + self.usr + " /var/lib/mpd/music/media"
-        self.execCommand(cmd)
+        # Create mount point for USB stick and link it to the music directory
+        if not os.path.isfile("/media"):
+            self.execCommand("mkdir -p /media")
+            if not os.path.ismount("/media"):
+                os.chown('/media', self.uid, self.gid)
+            self.execCommand("sudo ln -f -s /media /var/lib/mpd/music")
 
         # Create mount point for networked music library (NAS)
         if not os.path.isfile("/share"):
@@ -319,21 +314,6 @@ class Radio:
         log.message("radio.setMixerId " + str(update), log.DEBUG)
         return update
 
-    # Get IP address 
-    def get_ip(self):
-        if len(self.ip_addr) < 7:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.settimeout(0)
-            try:
-                # Google DNS
-                s.connect(('8.8.8.8', 1))
-                self.ip_addr = s.getsockname()[0]
-            except Exception:
-                IP = ''
-            finally:
-                s.close()
-        return self.ip_addr
-
     # Wait for the network
     # If using comitup ignore address
     def waitForNetwork(self):
@@ -341,20 +321,20 @@ class Radio:
         waiting4network = True
         count = 30
         while waiting4network:
-            ipaddr = self.get_ip()
+            ipaddr = self.execCommand('hostname -I')
             log.message("IP: " + str(ipaddr) +  " " + str(count), log.DEBUG)
             count -= 1
-            if (count < 0) or (len(ipaddr) > 3):
+            if (count < 0) or (len(ipaddr) > 1):
                 # Don't use Comitup web address
                 if not self.config.comitup_ip in ipaddr:
                     waiting4network = False
-            else:
-                time.sleep(0.5)
+            time.sleep(0.5)
         return ipaddr
 
     # Call back routine for the IR remote and Web Interface
     def remoteCallback(self):
-        key = self.server.getData()
+        global server
+        key = server.getData()
         set_interrupt = True
 
         log.message("IR remoteCallback " + key, log.DEBUG)
@@ -452,6 +432,7 @@ class Radio:
 
     # Set up radio configuration and start the MPD daemon
     def start(self):
+        global server
         global language
 
         self.config.display()
@@ -533,13 +514,6 @@ class Radio:
 
         self.volume.set(self.volume.getStoredVolume())
 
-        # Restore alsamixer settings (alsa-state/alsa-store services 
-        # not working in Bookworm)
-        # Temporary workaround until above services fixed
-        cmd = "/usr/sbin/alsactl restore"
-        log.message(cmd, log.DEBUG)
-        self.execCommand(cmd)   
-
         # Alarm and timer settings
         self.timeTimer = int(time.time())
         self.alarmTime = self.getStoredAlarm()
@@ -557,11 +531,11 @@ class Radio:
 
         # Start the IR remote control listener
         try:
-            self.server = UDPServer((self.udphost,self.udpport),RequestHandler)
+            server = UDPServer((self.udphost,self.udpport),RequestHandler)
             msg = "UDP Server listening on " + self.udphost + " port " \
                 + str(self.udpport)
             log.message(msg, log.INFO)
-            self.server.listen(self.server,self.remoteCallback)
+            server.listen(server,self.remoteCallback)
         except Exception as e:
             log.message(str(e), log.ERROR)
             log.message("UDP server could not bind to " + self.udphost
@@ -633,8 +607,6 @@ class Radio:
 
         if os.path.isfile("/usr/bin/bluetoothctl") and connectBT:
             log.message("Connecting Bluetooth device " + bluetooth_device, log.DEBUG)
-            cmd = "bluetoothctl power on"
-            os.system(cmd)
             cmd = "bluetoothctl info " + bluetooth_device + " >/dev/null 2>&1"
 
             # Re-pair Bluetooth device if no info for device
@@ -643,11 +615,14 @@ class Radio:
                     + bluetooth_device, log.DEBUG)
                 cmd = "bluetoothctl remove " + bluetooth_device
                 os.system(cmd)
-                cmd = "bluetoothctl power on "
-                os.system(cmd)
+
                 # Scan for 10 seconds
-                cmd = "bluetoothctl --timeout 10 scan on"
+                cmd = "bluetoothctl --timeout 10 scan on &"
                 os.system(cmd)
+
+                # Allow scan to finish
+                time.sleep(11)
+
                 # Re-pair the device
                 cmd = "bluetoothctl pair " + bluetooth_device
                 os.system(cmd)
@@ -658,18 +633,13 @@ class Radio:
                 if os.system(cmd) == 0:
                     connected = True
             else:
-                retry = 4
                 cmd = "bluetoothctl connect " + bluetooth_device
-                while retry > 0:
-                    if os.system(cmd) == 0:
-                        log.message("Connected Bluetooth device " + bluetooth_device,log.DEBUG) 
-                        connected = True
-                        retry = 0
-                    else:
-                        log.message("Failed to connect Bluetooth device "+bluetooth_device,log.DEBUG)
-                        connected = False
-                        time.sleep(2)
-                        retry -= 1
+                if os.system(cmd) == 0:
+                    log.message("Connectd Bluetooth device " + bluetooth_device,                             log.DEBUG)
+                    connected = True
+                else:
+                    log.message("Failed to connect Bluetooth device ",                           log.DEBUG)
+                    connected = False
         return  connected
 
     # Restart MPD
@@ -1321,11 +1291,10 @@ class Radio:
 
             if t1.hour == t2.hour and t1.minute == t2.minute and not self.alarmTriggered:
                 # Is this a weekday
-                if int(t1.second) < 5:  # Only trigger alarm once 
-                    if type == self.ALARM_WEEKDAYS and weekday < 5: 
-                        fireAlarm = True
-                    elif type < self.ALARM_WEEKDAYS:    
-                        fireAlarm = True
+                if type == self.ALARM_WEEKDAYS and weekday < 5: 
+                    fireAlarm = True
+                elif type < self.ALARM_WEEKDAYS:    
+                    fireAlarm = True
 
                 if fireAlarm:
                     self.alarmTriggered = fireAlarm 
@@ -1494,10 +1463,8 @@ class Radio:
             pos = currentsong.get("pos")
             if pos == None:
                 currentid = self.current_id
-                if self.errorCode == 0:
-                    log.message("radio.getCurrentID error id: " + str(pos),log.ERROR)
-                msg = "Empty playlist %s" % self.source.getNewName()
-                self.setError(MPD_EMPTY_PLAYLIST,text=msg)
+                log.message("radio.getCurrentID error id: " + str(pos),log.ERROR)
+                self.setError(MPD_NO_CONNECTION)
                 self.setInterrupt()
                 
             else:
@@ -1902,7 +1869,7 @@ class Radio:
     # Load source. Either radio, media or airplay
     def loadSource(self):
         # Get the source type radio,media or airplay
-        sources = self.getSources()
+        self.getSources()
         source_type = self.source.getNewType()
         type_name = self.source.getNewTypeName()
         source_name = self.source.getNewName()
@@ -1967,10 +1934,9 @@ class Radio:
 
     def loadPlaylist(self):
         source_type = self.source.getNewType()
-        type_name  = self.source.getNewTypeName()
         pname = self.source.getNewName()
 
-        msg = "Load playlist " + pname + " type " + str(source_type) + " " + type_name
+        msg = "Load playlist " + pname + " type " + str(source_type)
         log.message(msg, log.DEBUG)
 
         try:
@@ -2283,10 +2249,6 @@ class Radio:
     def getVersion(self):
         return __version__
 
-    # Build number
-    def getBuild(self):
-        return __build__
-
     # Set an interrupt received
     def setInterrupt(self):
         self.interrupt = True
@@ -2337,25 +2299,25 @@ class Radio:
     def getSpotifyInfo(self):
         return self.spotify.getInfo()
 
-    # Mount the USB stick, Note if using a bootable USB drive sda1/2 are alread mounted
+    # Mount the USB stick
     def mountUsb(self):
         usbok = False
-        if os.path.exists("/dev/sdb1"):
-            device = "/dev/sdb1"
-            usbok = True
-
-        elif os.path.exists("/dev/sda1"):
+        if os.path.exists("/dev/sda1"):
             device = "/dev/sda1"
             usbok = True
 
+        elif os.path.exists("/dev/sdb1"):
+            device = "/dev/sdb1"
+            usbok = True
+
         if usbok:
-            mountpoint = '/media/' + self.usr 
-            if not os.path.ismount(mountpoint):
+            if not os.path.ismount('/media'):
+                log.message("Mounting " + device, log.DEBUG)
                 self.execCommand("/bin/mount -o rw,uid=1000,gid=1000 " \
-                    + device + " " + mountpoint)
-                log.message("Mounted " + device + " on " +  mountpoint, log.DEBUG)
+                    + device + " /media")
+                log.message(device + " mounted on /media", log.DEBUG)
             else:
-                log.message("Media already mounted on " + mountpoint, log.DEBUG)
+                log.message("Media already mounted", log.DEBUG)
         else:
             msg = "No USB stick found!"
             log.message(msg, log.WARNING)
@@ -2380,12 +2342,11 @@ class Radio:
         self.mountShare()
         return
 
-    # Unmount mount points /media/<user> and /share
+    # Unmount all drives
     def unmountAll(self):
-        mountpoint = "/media/" + self.usr
-        if os.path.ismount(mountpoint):
+        if os.path.ismount('/media'):
             # Un-mount USB stick
-            self.execCommand("sudo /bin/umount " + mountpoint + " 2>&1 >/dev/null")
+            self.execCommand("sudo /bin/umount /media 2>&1 >/dev/null")
         if os.path.ismount('/share'):
             self.execCommand("sudo /bin/umount /share 2>&1 >/dev/null")
         return

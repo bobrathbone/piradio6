@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.28 2024/06/21 16:00:53 bob Exp $
+# $Id: volume_class.py,v 1.22 2021/07/12 06:38:25 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -63,7 +63,6 @@ class Volume:
         vol = self._getStoredVolume()
         self.speech_volume = vol
         self.audio_device = self.config.audio_out
-
 
         # Are we using bluetooth?
         if self.audio_device == "bluetooth":
@@ -163,15 +162,13 @@ class Volume:
     # Set the Mixer volume level
     def _setMixerVolume(self,volume,store):
         
-        # Restore alsamixer settings (Restore Waveshare DAC headphone mixer setting)
-
+        #if self.mixer_volume_id > 0 and volume != self.mixer_volume: 
         if self.mixer_volume_id > 0: 
             log.message("volume._setMixerVolume " + str(volume), log.DEBUG) 
             cmd = "sudo amixer " + self.mixer_device + " cset numid=" + str(self.mixer_volume_id) \
                                   + " " + str(volume) + "%"
             log.message(cmd, log.DEBUG)
             self.execCommand(cmd)
-
             self.mixer_volume = volume
             
             if store:
@@ -195,9 +192,7 @@ class Volume:
                 volume = 0
 
         try:
-                with open(VolumeFile, 'w') as f:
-                    f.write(str(volume))
-                    f.close()
+                self.execCommand("echo " + str(volume) + " > " + VolumeFile)
         except:
                 log.message("Error writing " + VolumeFile, log.ERROR)
 
@@ -286,7 +281,6 @@ class Volume:
     # Mute the volume (Do not store volume setting in /var/lib/radio)
     def mute(self):
         source_type = self.source.getType()
-        mute_action = self.config.mute_action
 
         self.set(0,store=False)
         if source_type == self.source.RADIO or source_type == self.source.MEDIA:

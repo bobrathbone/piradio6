@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class_rgb.py,v 1.3 2024/07/06 08:47:15 bob Exp $
+# $Id: rotary_class_rgb.py,v 1.2 2021/09/19 15:27:13 bob Exp $
 # Version to support RGB Rotary encoders with LEDs
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
@@ -75,6 +75,7 @@
 import os,sys,pwd
 import time
 import RPi.GPIO as GPIO
+import threading
 
 R_CCW_BEGIN   = 0x1
 R_CW_BEGIN    = 0x2
@@ -158,6 +159,7 @@ class RotaryEncoderRgb:
     BUTTONUP=4
 
     def __init__(self, pinA, pinB, button,callback,pullup=GPIO.PUD_UP):
+        threading.Thread.__init__(self)
         self.pinA = pinA
         self.pinB = pinB
         self.button = button

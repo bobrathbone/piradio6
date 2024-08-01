@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio64,v 1.29 2024/07/14 06:16:05 bob Exp $
+# $Id: piradio64,v 1.13 2023/09/14 07:18:03 bob Exp $
 # This package must be built under Raspbian Buster (Not Jessie or earlier)
 # This is the 64 bit version
 # Source: <source package name; defaults to package name>
@@ -10,7 +10,7 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 4.0.0
 
 Package: radiod
-Version: 7.7
+Version: 7.6
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
@@ -69,7 +69,6 @@ Files:  radiod.py /usr/share/radio/
     create_stations.py /usr/share/radio/
     create_playlist.sh /usr/share/radio/
     configure_audio_device.sh /usr/share/radio/
-    install_wm8960.sh /usr/share/radio/
     radio_class.py /usr/share/radio/
     lcd_class.py /usr/share/radio/
     i2c_class.py /usr/share/radio/
@@ -77,8 +76,6 @@ Files:  radiod.py /usr/share/radio/
     lcd_i2c_pcf8574.py /usr/share/radio/
     lcd_adafruit_class.py /usr/share/radio/
     lcd_piface_class.py /usr/share/radio/
-    lcd_i2c_jhd1313.py /usr/share/radio/
-    lcd_i2c_jhd1313_sgm31323.py /usr/share/radio/
     no_display.py /usr/share/radio/
     radio_daemon.py /usr/share/radio/
     wiring.py /usr/share/radio/
@@ -102,11 +99,7 @@ Files:  radiod.py /usr/share/radio/
     status_led_class.py /usr/share/radio/
     weather.py /usr/share/radio/
     weather_class.py /usr/share/radio/
-    wxconfig_class.py /usr/share/radio/
-    weather.conf /usr/share/radio/
-    RPi/GPIO.py /usr/share/radio/RPi/
-    RPi/test_pwm.py /usr/share/radio/RPi/
-    RPi/README /usr/share/radio/RPi/
+    wxconfig.py /usr/share/radio/
     oled/__init__.py /usr/share/radio/oled/
     oled/Font.py /usr/share/radio/oled/
     oled/Graphics.py /usr/share/radio/oled/
@@ -126,9 +119,7 @@ Files:  radiod.py /usr/share/radio/
     asound/asound.conf.dist.bonnet /usr/share/radio/asound
     asound/asound.conf.dist.pivumeter /usr/share/radio/asound
     asound/asound.conf.dist.pipe /usr/share/radio/asound
-    asound/asound.conf.dist.vc4hdmi /usr/share/radio/asound
     asound/asound.conf.dist.softvol /usr/share/radio/asound
-    asound/asound.conf.dist.wm8960 /usr/share/radio/asound
     codes/__init__.py /usr/share/radio/codes/
     codes/English.py /usr/share/radio/codes/
     codes/Russian.py /usr/share/radio/codes/
@@ -140,7 +131,6 @@ Files:  radiod.py /usr/share/radio/
     configs/mpdstream /usr/share/radio/configs/
     shairport-sync.service /lib/systemd/system/
     radiod.conf /usr/share/radio/
-    mpd.conf /usr/share/radio/
     radiod.service /lib/systemd/system/
     irradiod.service /lib/systemd/system/
     ireventd.service /lib/systemd/system/
