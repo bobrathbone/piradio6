@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.28 2024/06/21 16:00:53 bob Exp $
+# $Id: volume_class.py,v 1.30 2024/08/09 10:51:36 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -347,6 +347,25 @@ class Volume:
 
 # End of class
 
+def displayFile(filename):
+    with open(filename) as f:
+        s = f.read()
+        s = s.rstrip()
+        return s
+
+if __name__ == "__main__":
+
+    from time import strftime
+    
+    dateformat = "%H:%M %d/%m/%Y"
+    sDate = strftime(dateformat)
+    print("Volume class configuration %s" % sDate)
+    print("===========================================")
+    print("VolumeFile " + VolumeFile + " = " + displayFile(VolumeFile))
+    print("MixerVolumeFile " + MixerVolumeFile + " = " + displayFile(MixerVolumeFile))
+    print("MixerIdFile " + MixerIdFile + " = " + displayFile(MixerIdFile))
+
+# End of script
+
 # set tabstop=4 shiftwidth=4 expandtab
 # retab
-

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This class drives the Solomon Systech SSD1306 128 by 64 pixel OLED
 #
-# $Id: oled_class.py,v 1.7 2021/06/03 09:13:12 bob Exp $
+# $Id: oled_class.py,v 1.9 2024/08/16 16:08:08 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -154,7 +154,7 @@ class   Oled:
     def stop_scroll(self):
         self.dis.deactivate_scroll()
 
-    def setFont(self,scale):
+    def setFontScale(self,scale):
         self.scale = int(scale)
         self.f = Font(self.scale)
 
@@ -380,10 +380,10 @@ if __name__ == "__main__":
         # Draw splash
         oled.drawSplash("bitmaps/raspberry-pi-logo.bmp",2)
 
-        oled.setFont(2)
+        oled.setFontScale(2)
         sDate = strftime(dateformat)
         oled.out(1,sDate,no_interrupt)
-        oled.setFont(1)
+        oled.setFontScale(1)
         oled.out(2,"abcdefghijklmonopqrstuvwxyz",no_interrupt)
         oled.out(3,mesg,no_interrupt)
         oled.out(4,"ABCEFGHIJKLMONOPQRSTUVWXYZz",no_interrupt)

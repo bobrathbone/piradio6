@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.24 2024/05/24 11:01:06 bob Exp $
+# $Id: ireventd.py,v 1.26 2024/08/31 13:24:11 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -326,6 +326,7 @@ def usageSend():
     print ("Where <KEY> is a valid IR_KEY")
     print ("   KEY_VOLUMEUP,KEY_VOLUMEDOWN,KEY_CHANNELUP,KEY_CHANNELDOWN,")
     print ("   KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK,KEY_INFO,KEY_MUTE")
+    print ("   PLAY_n Where n is the station or track number. E.g. PLAY_9 or PLAY_176 ")
     sys.exit(2)
 
 # get gpio-ir dtoverlay configuration and port configuration
@@ -396,6 +397,7 @@ if __name__ == "__main__":
             msg = 'IR_REMOTE'
             if len(sys.argv) > 2:   
                 msg = sys.argv[2]
+                msg = msg.upper()
                 reply = daemon.send(msg)
                 print(reply)
             else:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.51 2024/07/27 13:27:50 bob Exp $
+# $Id: display_class.py,v 1.64 2024/08/27 11:23:07 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -39,8 +39,9 @@ class Display:
     width = SCREEN_WIDTH    # Default width
     saved_volume = 0
     saved_font_size = 1
+    saved_time = ''         # Prevent unecessary diplay of time
 
-    delay = 0  # Delay (volume) display for n cycles (2 line displays)
+    delay = 0  # Delay (volume) display for n cycles (2 line displays or volume display)
 
     # The Adafruit RGB plate has buttons otherwis False
     has_buttons = False
@@ -50,7 +51,8 @@ class Display:
     # a bar on the bottom line of the screen. True for OLEDs, False for LCDs 
     _isOLED = False
     _mute_line = 4  # OLEDs only. Line to display mute message
-    _refresh_volume_bar = False  # If previously mutred force display of OLED volume slider
+    _refresh_volume_bar = False  # If previously muted force display of OLED volume slider
+    _no_scrolling = False   # Suppress scrolling during volume display update
 
     i2c_bus = 1 # All later RPIs use bus 1 (old RPIs use bus 0)
 
@@ -116,11 +118,9 @@ class Display:
             i2c_interface = True
 
         elif dtype == config.LCD_I2C_JHD1313:
-            print("LCD_I2C_JHD1313")
             from PIL import ImageColor
             self.ImageColor = ImageColor
             from lcd_i2c_jhd1313 import Lcd_i2c_jhd1313
-            print("LCD_I2C_JHD1313 A")
             screen = Lcd_i2c_jhd1313()
 
             if configured_i2c != 0:
@@ -230,7 +230,8 @@ class Display:
             if config.flip_display_vertically:
                 rotation = 2
             screen.init(callback=self.callback,code_page=code_page, 
-                        luma_device=luma_device,rotation=rotation)
+                        luma_device=luma_device,rotation=rotation,
+                        font_size=config.font_size,font_name=config.font_name)
             screen.setScrollSpeed(scroll_speed)
             self.has_buttons = False # Use standard button interface
             self._isOLED = True
@@ -296,7 +297,7 @@ class Display:
 
     # Get LCD number of lines
     def getLines(self):
-        if self.isOLED():
+        if self._isOLED:
             self.lines = screen.getLines()
         else:
             self.lines = config.display_lines
@@ -304,12 +305,28 @@ class Display:
                 self.lines = 2
         return self.lines
 
-    # Set font
-    def setFont(self,size):
+    # Switch off scrolling when adjusting the volume
+    # OnOff is True or False
+    def noScrolling(self,OnOff):
+        self._no_scrolling = OnOff
+
+    # Set font size
+    def setFontSize(self,size):
         displayType = config.getDisplayType()
         if displayType == config.OLED_128x64 and size != self.saved_font_size:
-            screen.setFont(size)
+            screen.setFontSize(size)
             self.saved_font_size = size
+        else:
+            screen.setFontSize(size)
+
+    # Set font name
+    def setFontName(self,name):
+        displayType = config.getDisplayType()
+        if displayType == config.OLED_128x64 and size != self.saved_font_size:
+            screen.setFontName(name)
+            self.saved_font_name = name
+        else:
+            screen.setFontName(name)
 
     # Display a flash image for delay seconds
     def drawSplash(self,image,delay):
@@ -318,8 +335,15 @@ class Display:
     # Send string to display if it has not already been displayed
     def out(self,line,message,interrupt=no_interrupt):
         global screen
-        leng = len(message)
         index = line-1
+
+        leng = len(message)
+        if self._no_scrolling:
+            if self.isOLED():
+                leng = self.getChars()
+            else:
+                leng = self.width
+            message = message[0:leng]
 
         if leng < 1:
             message = " "
@@ -347,6 +371,16 @@ class Display:
             screen.update()
         return
 
+
+    # With OLEDs the amount of characters on a line varies
+    # This routine should not be called unless the screen is an OLED
+    def getChars(self):
+        if self.isOLED():
+            leng = screen.getChars()
+        else:
+            leng = self.width
+        return leng
+
     # Clear display and line buffer
     def clear(self):
         screen.clear()
@@ -359,10 +393,14 @@ class Display:
     # Set get delay cycles ( Used for temporary message displays)
     def setDelay(self,cycles):
         self.delay = cycles
-        return
+        return self.delay
 
     # Used to display changed volume on 2 line displays
     def getDelay(self):
+        return self.delay
+
+    # Count down volume display delay on 2 line displays
+    def decrementDelay(self):
         self.delay -= 1
         if self.delay < 0:
             self.delay = 0
@@ -416,8 +454,6 @@ class Display:
         if self.saved_volume != volume or self.checkRefreshVolumeBar():
             self.saved_volume = volume
             dType = config.getDisplayType()
-            if dType != config.SSD1306 and dType != config.SH1106_SPI:
-                self.out(self._mute_line," ") # Clear mute message
             screen.volume(volume)
             self.update()
             self._refresh_volume_bar = False

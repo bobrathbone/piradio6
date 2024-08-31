@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.138 2024/07/13 19:33:59 bob Exp $
+# $Id: radio_class.py,v 1.143 2024/08/29 18:46:34 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -24,6 +24,7 @@ import time,datetime
 import re
 import socket
 import socketserver
+import platform
 from time import strftime
 from os import stat
 from pwd import *
@@ -154,6 +155,7 @@ class Radio:
     playlist_size = 0           # For checking changes to the playlist
     PL = None                   # Playlist class
     ip_addr = ''                # Local IP address
+    OSrelease = ''              # OS Release 
     
     # MPD Options
     random = False  # Random tracks
@@ -465,10 +467,14 @@ class Radio:
         language = Language(self.speech) # language is a global
 
         # Log OS version information 
+        self.arch = platform.architecture()[0]
         OSrelease = self.execCommand("cat /etc/os-release | grep NAME")
         OSrelease = OSrelease.replace("PRETTY_NAME=", "OS release: ")
-        OSrelease = OSrelease.replace('"', '')
-        log.message(OSrelease, log.INFO)
+        self.OSrelease = OSrelease.replace('"', '')
+        log.message(self.OSrelease + ' ' + self.arch, log.INFO)
+        (x,self.OSname) = self.OSrelease.split('(')
+        self.OSname = self.OSname.replace(')','')
+        self.OSname = self.OSname.title()
         myos = self.execCommand('uname -a')
         log.message(myos, log.INFO)
 
@@ -942,13 +948,6 @@ class Radio:
             self.connectBluetoothDevice()
             self.clearError()
         self.volume.unmute()
-
-        # Prevent skipping to next channel
-        if  self.source.getType() == self.source.RADIO:
-            try:
-                self.client.play(self.current_id-1)
-            except:
-                pass
 
     # Ping MPD server to keep client connected
     def ping(self):
@@ -1478,8 +1477,17 @@ class Radio:
     
     # Execute system command
     def execCommand(self,cmd):
-        p = os.popen(cmd)
-        return  p.readline().rstrip('\n')
+        try:
+            p = os.popen(cmd)
+            result =  p.readline().rstrip('\n')
+        except Exception as e:
+            print(cmd) 
+            msg = "radio.execCommand: " + str(cmd)
+            log.message(msg,log.ERROR)
+            print(str(e))
+            log.message(str(e),log.ERROR)
+            result = ""
+        return result 
 
     # Execute MPC comnmand via OS
     # Some commands are easier using mpc and don't have 
@@ -2209,8 +2217,6 @@ class Radio:
         log.message("Created new searchlist " + str(len(self.searchlist)), 
                         log.DEBUG)
         
-    # Get the length of the current list
-
     # Get the length of the current list
     def getListLength(self):
         return len(self.searchlist) 

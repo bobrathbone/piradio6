@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.35 2024/03/03 18:51:25 bob Exp $
+# $Id: station.urls,v 1.38 2024/08/30 08:51:45 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -68,9 +68,7 @@
 [Hitradio OE3] https://orf-live.ors-shoutcast.at/oe3-q1a
 [Radio Wien] https://orf-live.ors-shoutcast.at/wie-q2a
 [Radio NOE] https://orf-live.ors-shoutcast.at/noe-q1a
-[Radio Burgenland] https://orf-live.ors-shoutcast.at/bgl-q2a.m3u
 [Radio Energy Wien] http://stream1.energy.at:8000/aacplus.m3u
-[Arabella Wien] https://frontend.streams.arabella.at/arabella-wien?aggregator=arabella-playlistfile
 [Arabella NÖ] http://frontend.streams.arabella.at/arabella-niederoesterreich/stream/mp3?aggregator=arabella-playlistfile
 [Arabella Lovesong] https://frontend.streams.arabella.at/arabella-lovesongs/stream/mp3?aggregator=arabella-playlistfile
 [Arabella Austropop] https://frontend.streams.arabella.at/arabella-austropop/stream/mp3?aggregator=arabella-playlistfile
@@ -163,7 +161,6 @@
 [Steel FM] http://ice6.securenetsystems.net/STEELFM.m3u
 
 # Classical 
-[Classic FM] http://46.10.150.123:80/classic-fm.mp3
 [Classic FM] http://icecast.thisisdax.com/ClassicFMMP3.m3u
 [Radio Swiss Classic] http://stream.srg-ssr.ch/m/rsc_de/mp3_128
 [P2 Musik] http://http-live.sr.se/p2musik-mp3-192

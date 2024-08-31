@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This class drives the Sitronix ST7789 controller and 240x240 pixel TFT
 #
-# $Id: st7789tft_class.py,v 1.10 2023/07/06 11:11:37 bob Exp $
+# $Id: st7789tft_class.py,v 1.20 2024/08/25 08:57:21 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -13,14 +13,31 @@
 # Acknowledgement: Adapted from Pimoroni example code originally adapted from
 # code from Tony DiCola Adafruit Industries
 #
+# Switch settings for radio software
+# menu_switch=0
+# mute_switch=0
+# up_switch=16      Channel up
+# down_switch=5     Channel down
+# left_switch=6     Volume down
+# right_switch=20   Volume up
+
+"""
+Key mapping
+===========
+Volume:  [A] DOWN --- [X] UP
+Channel: [B] DOWN --- [Y] UP
+"""
 
 import sys,time
 import signal
 from PIL import Image, ImageDraw, ImageFont
-import ST7789 as ST7789
+import st7789 as ST7789
 import pdb
 
-# Create ST7789 LCD display class.
+# Commands to invert display (Not working on Pirate Audio)
+ST7789_INVOFF = 0x20
+ST7789_INVON = 0x21
+
 tft = ST7789.ST7789(
     port=0,
     rotation=90,
@@ -30,26 +47,9 @@ tft = ST7789.ST7789(
     spi_speed_hz=80 * 1000 * 1000
 )
 
-# Flip display vertically set rotation=270
-tft_flip = ST7789.ST7789(
-    port=0,
-    rotation=270,
-    cs=ST7789.BG_SPI_CS_FRONT,  # BG_SPI_CSB_BACK or BG_SPI_CS_FRONT
-    dc=9,
-    backlight=13,               
-    spi_speed_hz=80 * 1000 * 1000
-)
-
 # See fc-list command for available fonts
 
-WIDTH = tft.width
-HEIGHT = tft.height
-size = (WIDTH,HEIGHT)
 bgcolor = (0, 0, 150)
-
-# Define a canvas to draw on
-canvas = Image.new("RGB", (size), bgcolor)
-draw = ImageDraw.Draw(canvas)
 
 # Line addresses
 #        1 2  3  4   5   6  
@@ -66,6 +66,8 @@ class ST7789:
     # Define display characteristics
     nlines = 7
     nchars = 16 # Character width can vary
+    height = 0 
+    width = 0
 
     # Line 2 is different from the others and uses a larger font
     default_font = ImageFont.truetype("DejaVuSansMono.ttf", default_fontSize)
@@ -77,13 +79,22 @@ class ST7789:
 
     # Initialisation routes
     def init(self,callback,flip=False):
-        global tft,tft_flip
+        global tft,canvas,draw
         self.callback = callback
-
-        # Flip display if required
-        if flip:
-            tft = tft_flip   
         tft.begin()
+
+        # Flip display if required (Not working on Pimoroni Pirate Audio)
+        if flip:
+            tft.command(ST7789_INVON)  # Invert display
+        else:
+            tft.command(ST7789_INVON)  # Don't invert display
+
+        # Define a canvas to draw on
+        self.width = tft.width
+        self.height = tft.height
+        size = (self.width,self.height)
+        canvas = Image.new("RGB", (size), bgcolor)
+        draw = ImageDraw.Draw(canvas)
 
     # Update the display canvas with all of drawn images
     # Must be called to display the objects previously drawn
@@ -98,19 +109,14 @@ class ST7789:
     def drawImage(self,image,x,y):
         try:
             img = Image.open(image)
-            img = img.resize((WIDTH, HEIGHT))
-
-            #img = img.resize(float(80),float(80))
-            # img = img.thumbnail(80,80)    # Gives __getitem__ error
-            #img.show() # X-Windows  and imagemagick package required
-            #img = img.thumbnail((80,80), img.ANTIALIAS) # Gves error
+            img = img.resize((tft.width,tft.height))
             tft.display(img)
         except Exception as e:
             print("drawImage",str(e))
 
     # Dummy set width
     def setWidth(self,width):
-        return WIDTH
+        return self.width
 
     # This device does not have color backgrounds
     def hasColor(self):
@@ -149,21 +155,21 @@ class ST7789:
             if line == 2:
                 newSize = L2_fontSize
                 font = ImageFont.truetype("DejaVuSansMono.ttf", L2_fontSize)
-                size = font.getsize(text)
-                fwidth = size[0]
+                size = font.getlength(text)
+                fwidth = size
                 reduce = 1
-                while size[0] > WIDTH:
+                while size > self.width:
                     newSize -= reduce
                     if newSize < 25:
                         break
                     font = ImageFont.truetype("DejaVuSansMono.ttf", 
                         newSize)
-                    size = font.getsize(text)
+                    size = font.getlength(text)
                 self.L2_font = font
             self.TextLines[line-1] = text
 
-        size = font.getsize(text)
-        if size[0] > WIDTH:
+        size = font.getlength(text)
+        if size > self.width:
                 self._scroll(line,text,font,interrupt)
         else:
                 self._out(line,text,font)
@@ -186,35 +192,30 @@ class ST7789:
         self.update()
 
         # Small delay before scrolling
-        if not skip:
-            for i in range(0, 10):
-                time.sleep(0.1)
-                if interrupt():
-                    skip = True
-                    break
+        for i in range(0, 10):
+            time.sleep(0.1)
+            if interrupt():
+                return
 
         # Now scroll the message
-        if not skip:
-            for i in range(0, ilen):
-                self._out(line,text[i:],font)
-                self.update()
-        
-                fsize = font.getsize(text[i:])
-                if fsize[0] <  WIDTH:
-                    break
+        for i in range(0, ilen):
+            self._out(line,text[i:],font)
+            self.update()
+    
+            fsize = font.getlength(text[i:])
+            if fsize <  self.width:
+                break
 
-                if interrupt():
-                    skip = True
-                    break
-                else:
-                    time.sleep(self.scroll_speed)
+            if interrupt():
+                return
+            else:
+                time.sleep(self.scroll_speed)
 
         # Small delay before exiting
-        if not skip:
-            for i in range(0, 10):
-                time.sleep(0.1)
-                if interrupt():
-                        break
+        for i in range(0, 10):
+            time.sleep(0.1)
+            if interrupt():
+                return        
         return
 
     # Clear line using background colour
@@ -222,27 +223,27 @@ class ST7789:
         linepos = Lines[line-1]
 
         if line == 2:
-            size = self.L2_large_font.getsize("ABC")
+            size = self.L2_large_font.size
         else:
-            size = font.getsize("ABC")
-
-        height =  size[1] 
+            size = font.getlength("ABC")
+        height = tft.height/6 - 6
         x1 = 0
         y1 = linepos
-        x2 = WIDTH
+        x2 = self.width
         y2 = linepos + height + height/5
         self.drawRectangle((x1,y1,x2,y2), bgcolor)
         return
 
+    # Display volume bar on line 6
     def volume(self,vol):
         border = 2
         border2 = 3
-        vwidth = WIDTH - border * 2
+        vwidth = self.width - border * 2
         vheight = 25
         
         x1 = border
-        y1 = HEIGHT-border-vheight
-        x2 = WIDTH 
+        y1 = self.height-border-vheight
+        x2 = self.width 
         y2 = x2
         draw.rectangle((x1, y1, x2, y2), (255, 255, 255))
         x1 += border2
@@ -252,7 +253,7 @@ class ST7789:
         draw.rectangle((x1, y1, x2, y2), (0, 0, 0))
 
         # Draw the volume level
-        range = (WIDTH - (border + border2) * 2) * vol/100
+        range = (self.width - (border + border2) * 2) * vol/100
         x2 = x1 + range
         draw.rectangle((x1, y1, x2, y2), (100, 0, 255))
         self.update()
@@ -272,15 +273,15 @@ if __name__ == '__main__':
     from button_class import Button
 
     display = None
+    mesg = "Press a button!"
+    event = False
+    incVolume = True
 
     dateformat = "%H:%M %d/%m/%Y"
-    log = None
-    if len(log.getName()) < 1:
-        log.init("radio")
-    UP=1
     log = Log()
-    eventStr = "No event"
-    volume = 90
+    log.init("radio")
+    UP=1
+    volume = 50
 
     # Signal SIGTERM handler
     def signalHandler(signal,frame):
@@ -290,7 +291,10 @@ if __name__ == '__main__':
 
     # Interrupt routine
     def interrupt():
-        return False
+        global event
+        event1 = event
+        event = False
+        return event1
         
     # Execute system command
     def execCommand(cmd):
@@ -298,37 +302,31 @@ if __name__ == '__main__':
             return  p.readline().rstrip('\n')
 
     def buttonEvent(gpio):
-        global eventStr,volume
-        volChange = False
-        adjust = 0  
+        global volume,incVolume,mesg,event
         button = ''
         if gpio == 5:
-            button = "A"
-            execCommand("mpc prev")
+            button = "A Channel down"
+            incVolume = False
         elif gpio == 6:
-            button = "B"
-            adjust = -5
-            volChange = True
+            button = "B Volume down"
+            volume = volume - 10
+            incVolume = False
         elif gpio == 16:
-            button = "X"
-            execCommand("mpc next")
+            button = "X Channel up"
         elif gpio == 24:
-            button = "Y"
-            adjust = 5
-            volChange = True
+            button = "Y Volume up"
+            volume = volume + 10
         else:
             button = "?"
-        eventStr = "Button " + button + " pressed"
-        volume += adjust
+        event = True
+        mesg = button + ' ' + str(gpio)
+
         if volume > 100:
             volume = 100
         elif volume < 0:
             volume = 0
+        print("Button event",gpio,"Button",button,volume)
 
-        if volChange:
-            execCommand("mpc volume " + str(volume))
-        
-        
     # Define the buttons
     def setupButtons():
         Button(5, buttonEvent, log, pull_up_down=UP)
@@ -344,7 +342,7 @@ if __name__ == '__main__':
     display = ST7789()
 
     # Set flip=True to flip display vertically
-    display.init(callback=None,flip=False)
+    display.init(callback=None,flip=True)
     dir = os.path.dirname(__file__)
     display.drawSplash(dir + "/images/raspberrypi.png",2)
     display.update
@@ -354,29 +352,30 @@ if __name__ == '__main__':
     display.clear()
     while True:
         try:
-            #display.drawRectangle((0, 0, 240, 240), (0, 30, 0))
-            volume += 10
-            if volume > 100:
-                volume = 0
+
+            # Increment volume bar until volume up/down pressed 
+            if incVolume:
+                volume += 10
+                if volume > 100:
+                    volume = 0
 
             display.volume(volume)
 
             sDate = strftime(dateformat)
             display.out(1,sDate,interrupt)
             
-            #display.setFontSize(25)
-            text = "abcdefghijklmnopqrstuvwxyz 0123456789"
-            display.out(2,text,interrupt)
-
             text = "TFT display test"
             display.out(3,text,interrupt)
 
             text = "   PID " + str(os.getpid())
             display.out(4,text,interrupt)
 
-            text = "www.bobrathbone.com"
+            text = mesg
             display.setFontSize(20)
             display.out(5,text,interrupt)
+
+            text = "abcdefghijklmnopqrstuvwxyz 0123456789"
+            display.out(2,text,interrupt)
 
             display.update()
             time.sleep(0.3)

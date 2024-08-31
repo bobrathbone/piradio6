@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.45 2024/07/20 12:54:45 bob Exp $
+# $Id: configure_radio.sh,v 1.46 2024/08/23 14:26:18 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1196,9 +1196,9 @@ elif [[ ${BUTTON_WIRING} == "5" ]]; then
     sudo sed -i -e "0,/^down_switch/{s/down_switch.*/down_switch=5/}" ${CONFIG}
     sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=6/}" ${CONFIG}
 
-    # Some versions of the Pimoroni Audio use GPIO 24 for the right switch
-    #sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=24/}" ${CONFIG}
-    sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=20/}" ${CONFIG}
+    # Some versions of the Pimoroni Audio use GPIO 20 for the right switch
+    sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=24/}" ${CONFIG}
+    #sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=20/}" ${CONFIG}
 
 # Configure 1.3" OLED with 5-button joystick and 3 push buttons
 elif [[ ${BUTTON_WIRING} == "6" ]]; then

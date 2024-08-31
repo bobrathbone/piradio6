@@ -12,13 +12,19 @@ This software uses the python3-mpd library. See https://packages.debian.org/sid/
 
 Version 7.8 release notes
 -------------------------
-Release 1 August 2024 - Build 4 
+Release 30 August 2024 - Build 7 
 
 1) Grove v5 RGB I2C LCD added (lcd_i2c_jhd1313_sgm31323.py) integrated into configurator
 2) Amend display_class to use colour definitions in /etc/radiod.conf for jhd1313_sgm31323 LCD
 3) RGB I2C Rotary encoders now use the interrupt pin on the encoders themselves 
 4) New parameter news_color added for RSS menu display (News feeds etc)
 5) New weather2.py program added which uses a secondary display instead of the radio display 
+6) Display basic configuration in volume_class.py if called directly
+7) Improved volume control speed 
+8) Parameters font_size and font_name added for TFT displays to radiod.conf
+9) Improved RGB backlight  handling routines. In mute mode always show mute colour
+10) Amend st7789_class used by Pimoroni Pirate audio to use new ST7789 TFT code
+11) Bit rate displayed on line 5 of the Pirate Audio Radio (ST7789 display)
 
 Version 7.7 release notes
 -------------------------

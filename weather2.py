@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Weather station class
-# $Id: weather2.py,v 1.9 2024/08/01 14:13:06 bob Exp $
+# $Id: weather2.py,v 1.12 2024/08/16 16:58:25 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : https://www.bobrathbone.com/
@@ -42,6 +42,10 @@ ip_addr = ''  # Local IP address
 #lines = display.getLines()
 lines = 4
 wx = None
+
+# Flip the display
+NORMAL=0
+FLIP=2
 
 # Return date and time
 def getDateTime():
@@ -137,12 +141,14 @@ if __name__ == '__main__':
     # display.init()     # Initialise
 
     # Display weather on a second screen
-
     display2_type = wxconfig.display_type
     luma_name = wxconfig.luma_device
     display2_i2c = wxconfig.i2c_address
     callback = None
+    font_name = wxconfig.font_name
     display.init(callback,display2_type,display2_i2c,luma_name)
+    display.setFontSize(wxconfig.font_size)
+    display.setFontName(wxconfig.font_name)
     
     ip_addr = waitForNetwork()
     

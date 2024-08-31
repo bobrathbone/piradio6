@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.25 2024/07/22 14:09:32 bob Exp $
+# $Id: event_class.py,v 1.26 2024/08/08 08:12:38 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -559,8 +559,7 @@ if __name__ == "__main__":
                 print("Event %d %s" % (type,name))
                 event.clear()
             else:
-                # This delay must be >= any GPIO bounce times
-                time.sleep(0.2)
+                time.sleep(0.01)
 
     except KeyboardInterrupt:
         print(" Stopped")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Weather Program Configuration Class
-# $Id: wxconfig_class.py,v 1.7 2024/07/31 08:54:37 bob Exp $
+# $Id: wxconfig_class.py,v 1.8 2024/08/14 09:33:07 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -168,6 +168,15 @@ class Configuration:
                         self.display_lines = int(parameter)
                     except:
                         self.invalidParameter(ConfigFile,option,parameter)
+
+                elif 'font_size' in option:
+                    try:
+                        self.font_size = int(parameter)
+                    except:
+                        self.invalidParameter(ConfigFile,option,parameter)
+
+                elif 'font_name' in option:
+                    self.font_name = parameter
 
                 elif 'display_type' in option:
                     self.display_type = self.LCD    # Default
@@ -363,6 +372,24 @@ class Configuration:
     def display_lines(self, value):
         self._display_lines = value
 
+    # Get font size
+    @property
+    def font_size(self):
+        return self._font_size
+
+    @font_size.setter
+    def font_size(self, value):
+        self._font_size = int(value)
+
+    # Get font name and size
+    @property
+    def font_name(self):
+        return self._font_name
+
+    @font_name.setter
+    def font_name(self, value):
+        self._font_name = value
+
 # End of configuration class
 
 # Test configuration routine
@@ -389,6 +416,8 @@ if __name__ == '__main__':
     print ("Display type (display_type):", config.getDisplayType(), config.getDisplayName())
     print ("Display lines (display_lines):", config.display_lines)
     print ("Display width (display_width):", config.display_width)
+    print ("TFT display font name (font_name):", config.font_name)
+    print ("TFT display font size (font_size):", config.font_size)
     print ("I2C address (i2c_address):", hex(config.i2c_address))
     print ("")
 

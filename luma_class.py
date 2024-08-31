@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: luma_class.py,v 1.25 2023/07/05 08:52:02 bob Exp $
+# $Id: luma_class.py,v 1.29 2024/08/20 11:31:37 bob Exp $
 # This class drives the SH1106 controller for the 128x64 pixel TFT
 # It requirs the I2C dtoverlay to be loaded. The I2C address is normally 0x37
 #
@@ -56,12 +56,12 @@ display = None  # Our "canvas"
 class LUMA:
     # See fc-list command for available fonts
     font_name = "DejaVuSansMono.ttf"
-    font = ImageFont.truetype(font_name, 13)
+    font_size = 13
+    font = ImageFont.truetype(font_name, font_size)
 
     # Define display characteristics
     nlines = 4
     nchars = 20
-    draw = None
     scroll_speed = 0.002
     iVolume = 0
     rotation = 0
@@ -75,19 +75,24 @@ class LUMA:
         return
 
     # Initialisation routes
-    def init(self,callback,code_page=0,luma_device='SH1106',rotation=0):
-        global image,draw,display,oled
+    def init(self,callback=None,code_page=0,luma_device='SH1106',
+             font_size=13,font_name="DejaVuSansMono.ttf",rotation=0):
+        #global image,draw,display,oled
+        global image,display,oled
         self.callback = callback
         self.rotation = rotation
+        self.font_size = font_size
+        self.font_name = font_name.replace('"','')
+        self.font = ImageFont.truetype(self.font_name, self.font_size)
         oled = self.configureDevice(luma_device,self.rotation)
 
-        # Work out number of characters will fit in the screen
+        # Work out number of characters will fit on the screen
         i = len(sText)
         while self.font.getlength(sText[:i]) > float(oled.width):
             i = i-1
         self.nchars = i
 
-    # Configure the LUMA oled device and screenorientation
+    # Configure the LUMA oled device and screen orientation
     # ssd1306, ssd1309, ssd1325, ssd1331, sh1106, ws0010
     def configureDevice(self,luma_device,rotation):
         self.luma_device = luma_device.upper()
@@ -104,7 +109,6 @@ class LUMA:
             self.nchars = 10
             self.font_name = "DejaVuSans.ttf"
             self.font = ImageFont.truetype(self.font_name, 18)
-            #self.Lines = [0,20,40,60]
             self.Lines = [0,16,32,48]
         else:
             oled = sh1106(serial,rotate=rotation)
@@ -147,6 +151,11 @@ class LUMA:
     # Set the size of font
     def setFontSize(self,font_size):
         self.font = ImageFont.truetype(self.font_name, font_size)
+        return self.font
+
+    # Set the font name
+    def setFontName(self,font_name):
+        self.font = ImageFont.truetype(self.font_name, self.font_size)
         return self.font
 
     def out(self,line,text,interrupt):
@@ -269,10 +278,14 @@ if __name__ == '__main__':
     log = Log()
     eventStr = "No event"
     volume = 0
+    speed_test = False
 
     # Flip the display
     NORMAL=0
     FLIP=2
+
+    font_size = 10
+    font_name = "DejaVuSansMono.ttf"
 
     # Signal SIGTERM handler
     def signalHandler(signal,frame):
@@ -301,11 +314,13 @@ if __name__ == '__main__':
 
     display = LUMA()
     # FLIP = Flip display verticaly, NORMAL = Don't flip
-    display.init(None,luma_device='SH1106_128x32',rotation=NORMAL)
+    display.init(None,luma_device='SH1106',font_name=font_name,font_size=font_size,rotation=NORMAL)
+    font = display.setFontSize(font_size)
 
     print("OLED = " + display.getLumaDevice())
     print("Screen: %s x %s" % (oled.width,oled.height))
     print("Lines:" + str(display.getLines()) + " Character Width:" + str(display.getChars()))
+    print("Font size: " + str(font_size))
     print("Oled color:",display.hasColor())
 
     display.clear()
@@ -324,15 +339,15 @@ if __name__ == '__main__':
             display.out(1,sDate,interrupt)
             
             text = "abcdefghijklmnopqrstuvwxyz 0123456789"
-            display.out(2,text,interrupt)
+            if speed_test:
+                display.out(2,text[0:display.getChars()],interrupt)
+            else:
+                display.out(2,text,interrupt)
     
             text = "PID %s Vol %s" % (pid, volume)
-            
             display.out(3,text,interrupt)
 
             display.update()
-
-            time.sleep(3)
 
             volume += 10
             if volume > 100:

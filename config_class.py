@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.105 2024/07/23 08:30:51 bob Exp $
+# $Id: config_class.py,v 1.107 2024/08/14 06:14:58 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -104,6 +104,8 @@ class Configuration:
     _channel_interrupt_pin=23 # Channel RGB I2C Rotary encoder interrupt pin
     _display_width = 0      # Line width of display width 0 = use program default
     _display_lines = 2      # Number of display lines
+    _font_size = 11         # Font size (TFT displays only)
+    _font_name = "DejaVuSansMono.ttf"  # Font name (TFT displays only)
     _scroll_speed = float(0.3)   # Display scroll speed (0.01 to 0.3)
     _airplay = False     # Use airplay
     _mixer_preset = 0    # Mixer preset volume (0 disable setting as MPD controls it)
@@ -430,6 +432,15 @@ class Configuration:
                     except:
                         self.invalidParameter(ConfigFile,option,parameter)
 
+                elif 'font_size' in option:
+                    try:
+                        self.font_size = int(parameter)
+                    except:
+                        self.invalidParameter(ConfigFile,option,parameter)
+
+                elif 'font_name' in option:
+                    self.font_name = parameter
+
                 elif 'scroll_speed' in option:
                     try:
                         self.scroll_speed = float(parameter)
@@ -596,8 +607,8 @@ class Configuration:
                 elif option == 'channel_rgb_i2c':
                     self.channel_rgb_i2c = parameter
 
-                elif option == 'volume_interupt_pin':
-                    self.volume_interupt_pin = parameter
+                elif option == 'volume_interrupt_pin':
+                    self.volume_interrupt_pin = parameter
 
                 elif option == 'channel_interrupt_pin':
                     self.channel_interrupt_pin = parameter
@@ -1177,6 +1188,23 @@ class Configuration:
     def display_lines(self, value):
         self._display_lines = value
 
+    # Get font size 
+    @property
+    def font_size(self):
+        return self._font_size
+
+    @font_size.setter
+    def font_size(self, value):
+        self._font_size = int(value)
+
+    # Get font name and size
+    @property
+    def font_name(self):
+        return self._font_name
+
+    @font_name.setter
+    def font_name(self, value):
+        self._font_name = value
 
     # Get scroll speed
     @property
@@ -1777,7 +1805,9 @@ if __name__ == '__main__':
     print('')
     print ("Display type (display_type):", config.getDisplayType(), config.getDisplayName())
     print ("Display lines (display_lines):", config.display_lines)
-    print ("Display width display_width):", config.display_width)
+    print ("Display width (display_width):", config.display_width)
+    print ("TFT display font name (font_name):", config.font_name)
+    print ("TFT display font size (font_size):", config.font_size)
     print ("Scroll speed (scroll_speed):", config.scroll_speed)
     print ("Mixer Volume Preset (config.mixer_preset):", config.mixer_preset)
     print('')
