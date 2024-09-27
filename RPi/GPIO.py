@@ -1,13 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Raspberry Pi RPi.GPIO interception package
-# $Id: GPIO.py,v 1.11 2024/06/20 13:55:33 bob Exp $
+# $Id: GPIO.py,v 1.14 2002/01/03 14:41:25 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
 # This package intercepts RPi.GPIO calls and redirects them to the lgpio package
-# calls specifically used for the Raspberry Pi model 5 
+# calls specifically used for the Raspberry Pi model 5 or Bookworm 
 # See: https://abyz.me.uk/lg/py_lgpio.html
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
@@ -20,6 +20,8 @@ import lgpio
 import time
 import re
 import pdb
+
+IGNORE_WARNINGS = True  # Set to False for debugging GPIO code. See GPIO.setwarnings
 
 # RPi.GPIO definitions (Note: they are different to LGPIO variables)
 BOARD = 10
@@ -45,7 +47,6 @@ pins = {
          36:16, 37:26, 38:20, 40:21,
        }
         
-
 # LGPIO Flags
 LGPIO_PULL_UP = 32
 LGPIO_PULL_DOWN = 64
@@ -87,8 +88,12 @@ def _get_gpio(line):
             pass
     return pin     
 
-# Set warnings ignored
+# The lgpio package does not have the equivalent of GPIO.setwarnings
+# so the setwarnings can eitherbe ignored or be used to enable/disable lgpio exceptions
+# Set IGNORE_WARNINGS to True at the beginning of this program to prevent warnings/exceptions
 def setwarnings(boolean=True):
+    if not IGNORE_WARNINGS:
+        lgpio.exceptions = boolean
     return
 
 # Setup GPIO line for INPUT or OUTPUT and set internal Pull Up/Down resistors
