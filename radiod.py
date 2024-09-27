@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.129 2024/08/30 11:08:38 bob Exp $
+# $Id: radiod.py,v 1.136 2002/01/02 14:47:54 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -165,6 +165,7 @@ class MyDaemon(Daemon):
         global radio
         global message
         global statusLed
+        global newMenu
 
         event = Event(config) # Must be initialised here
 
@@ -228,12 +229,10 @@ class MyDaemon(Daemon):
         log.message('Radio running pid ' + str(os.getpid()), log.INFO)
 
         statusLed.set(StatusLed.NORMAL)
+        display.refreshVolumeBar()
 
         # Main processing loop
         while True:
-
-            if display.isOLED() and newMenu:
-                display.refreshVolumeBar()
 
             try:
                 menu_mode = menu.mode()
@@ -431,9 +430,9 @@ def handleRadioEvent(event,display,radio,menu):
     nlines = display.getLines()
     displayType = display.getDisplayType()
 
-    vDelay = 30
-    if display.isOLED():
-        vDelay = 4
+    vDelay = 60
+    #if display.isOLED():
+     #   vDelay = 4
 
     log.message('handleRadioEvent ' + str(event_type) + ' ' + event_name, log.DEBUG)
 
@@ -458,6 +457,7 @@ def handleRadioEvent(event,display,radio,menu):
                     displayVolume(display, radio)
                     time.sleep(0.1)
 
+        display.refreshVolumeBar()
         volume_change = True    
 
     elif event_type == event.VOLUME_DOWN:
@@ -480,6 +480,7 @@ def handleRadioEvent(event,display,radio,menu):
                     displayVolume(display, radio)
                     time.sleep(0.1)
 
+        display.refreshVolumeBar()
         volume_change = True    
 
     elif event_type == event.MUTE_BUTTON_DOWN:
@@ -490,6 +491,9 @@ def handleRadioEvent(event,display,radio,menu):
             # Need clear line 5 on the OLED_128x64 display
             if displayType == radio.config.OLED_128x64:
                 display.out(5, ' ', no_interrupt)
+            display.refreshVolumeBar()
+            if display.getLines() == 4:
+                display.out(4, "", no_interrupt)
         else:
             log.message('Mute switch, speech ' + str(radio.config.speech), 
                     log.DEBUG)
@@ -520,6 +524,7 @@ def handleRadioEvent(event,display,radio,menu):
         if radio.config.verbose:
             speakCurrent(message,radio,speak_title=False)
         _connecting = False
+        display.refreshVolumeBar()
 
     elif event_type == event.CHANNEL_DOWN:
         log.message('Channel DOWN', log.DEBUG)
@@ -530,12 +535,14 @@ def handleRadioEvent(event,display,radio,menu):
         if radio.config.verbose:
             speakCurrent(message,radio,speak_title=False)
         _connecting = False
+        display.refreshVolumeBar()
 
     elif event_type == event.MENU_BUTTON_DOWN:
         if radio.muted():
             radio.unmute()
             
         handleMenuChange(display,radio,menu,message)
+        display.refreshVolumeBar()
 
     elif event_type == event.AUX_SWITCH1:
         log.message('AUX switch 1 DOWN', log.DEBUG)
@@ -575,6 +582,7 @@ def handleRadioEvent(event,display,radio,menu):
                     print(str(e))
 
                 sys.exit(0)
+
 
         msg = "Exiting! process %s" % os.getpid()
         print(msg)
@@ -711,7 +719,6 @@ def handleMenuChange(display,radio,menu,message):
             sMenu = sMenu.lower()
 
         message.speak(sMenu)
-        display.checkRefreshVolumeBar()
 
     time.sleep(0.2) # Prevent skipping next menu
     return menu_mode
@@ -880,9 +887,6 @@ def wakeup(radio,menu):
 # Mute radio
 def mute(radio,display):
     radio.mute()
-    # Force OLEDs to re-display volume bar if unmuting
-    if display.isOLED():
-        display.refreshVolumeBar()
 
 ################ Display Routines ############
 
@@ -1150,27 +1154,28 @@ def displayInfo(display,radio,message):
     nlines = display.getLines()
     msg = message.get('radio_version') + ' ' + version
     
-    display.out(1, msg[0:lwidth] , interrupt )
+    display.out(1, msg, interrupt )
 
     if nlines > 2:
         if display.getDelay() > 0:
             displayVolume(display, radio)
         else:
             msg = 'Hostname: ' + socket.gethostname()
-            display.out(4,msg[0:lwidth],interrupt)
+            display.out(4,msg,interrupt)
 
         display.out(2, 'IP:' + ipaddr, interrupt )
         msg = 'MPD version ' + radio.getMpdVersion()
-        display.out(3, msg[0:lwidth], interrupt )
+        display.out(3, msg, interrupt )
 
     else:
         msg = 'IP:%s %s' % (ipaddr,socket.gethostname())
-        display.out(2, msg[0:lwidth], interrupt )
+        display.out(2, msg, interrupt )
 
     if nLines >= 5 and displayType == radio.config.ST7789TFT:
         msg = radio.OSname + ' ' + radio.arch
         display.out(5,msg)
-        
+
+    display.update()    
     newMenu = False
 
 

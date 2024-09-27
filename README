@@ -12,7 +12,7 @@ This software uses the python3-mpd library. See https://packages.debian.org/sid/
 
 Version 7.8 release notes
 -------------------------
-Release 30 August 2024 - Build 7 
+Release 26 September 2024 - Build 10 
 
 1) Grove v5 RGB I2C LCD added (lcd_i2c_jhd1313_sgm31323.py) integrated into configurator
 2) Amend display_class to use colour definitions in /etc/radiod.conf for jhd1313_sgm31323 LCD
@@ -25,6 +25,11 @@ Release 30 August 2024 - Build 7
 9) Improved RGB backlight  handling routines. In mute mode always show mute colour
 10) Amend st7789_class used by Pimoroni Pirate audio to use new ST7789 TFT code
 11) Bit rate displayed on line 5 of the Pirate Audio Radio (ST7789 display)
+12) IR event daemon - improvement to send command message responses (OK, Invalid key etc.)
+13) Standard rotary class step size (half/full) configured in radio configuration program
+14) WM8960 install_wm8960.sh script configures necessary parameters in /boot/firmware/config.txt 
+15) Correct rotary_class_rgb_i2c.py test routine (volume showing 'channel' event)
+16) Reduce number of unecessary OLED screen updates to improve performance
 
 Version 7.7 release notes
 -------------------------

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi TCPIP server class
-# $Id: udp_server_class.py,v 1.6 2023/10/03 14:07:13 bob Exp $
+# $Id: udp_server_class.py,v 1.7 2024/08/31 16:02:13 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -50,8 +50,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
             client_data = client_data.decode("utf-8")
             socket = self.request[1]
             log.message("UDP Server received: " + client_data, Log.DEBUG)
-            callback()  # Call the get data routine
-            reply = "OK".encode()
+            reply = callback()  # Call the get data routine
+            reply = reply.encode()
             socket.sendto(reply, self.client_address)
         except Exception as e:
             log.message("UDP RequestHandler " + str(e), Log.ERROR)

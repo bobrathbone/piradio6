@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.64 2024/08/27 11:23:07 bob Exp $
+# $Id: display_class.py,v 1.69 2002/01/02 14:33:43 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -356,21 +356,25 @@ class Display:
                 screen.out(line,message,interrupt)
 
             # Only display if this is a different message on this line
-            elif message !=  self.lineBuffer[index] or self.isOLED():
+            elif message !=  self.lineBuffer[index]:
                 screen.out(line,message,interrupt)
+                self.update()
 
             # Store the message in the line buffer for comparison
             # with the next message
             self.lineBuffer[index] = message    
-            self.update()
         return
+
+    # Clear the line buffer to force redisplay of the line specified
+    def clearLineBuffer(self,line):
+        index = line - 1
+        if index >= 0 and index <= self.lines:     
+            self.lineBuffer[index] = ''    
 
     # Update screen buffer (Only for OLEDs)
     def update(self):
         if self.isOLED(): 
             screen.update()
-        return
-
 
     # With OLEDs the amount of characters on a line varies
     # This routine should not be called unless the screen is an OLED
@@ -451,7 +455,7 @@ class Display:
 
     # Oled volume bar. Not used by LCDs
     def volume(self,volume):
-        if self.saved_volume != volume or self.checkRefreshVolumeBar():
+        if self.saved_volume != volume or self._refresh_volume_bar:
             self.saved_volume = volume
             dType = config.getDisplayType()
             screen.volume(volume)
@@ -475,17 +479,15 @@ class Display:
                     print(bitmap,"does not exist")
             except Exception as e:
                 print("Splash:",e)
-    
-    # Forces OLED volume to be re-displayed
-    def checkRefreshVolumeBar(self):
-        return self._refresh_volume_bar
-            
+
+    # Force volume bar to be displayed during unmute
+    # and control changes. For OLEDs only
     def refreshVolumeBar(self):
-        self._refresh_volume_bar = True
-            
-    def clearRefreshVolumeBar(self):
-        self._refresh_volume_bar = False
-            
+        if self._isOLED:
+            self._refresh_volume_bar = True
+            if self.getLines() == 4:
+                self.out(4, "", no_interrupt)
+    
 # End of Display class
 
 

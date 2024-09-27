@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.26 2024/08/31 13:24:11 bob Exp $
+# $Id: ireventd.py,v 1.27 2002/01/02 14:52:48 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -324,7 +324,7 @@ def usage():
 def usageSend():
     print(("Usage: %s send <KEY>" % sys.argv[0]))
     print ("Where <KEY> is a valid IR_KEY")
-    print ("   KEY_VOLUMEUP,KEY_VOLUMEDOWN,KEY_CHANNELUP,KEY_CHANNELDOWN,")
+    print ("   KEY_VOLUMEUP,KEY_VOLUMEDOWN,KEY_CHANNELUP,KEY_CHANNELDOWN,KEY_MENU")
     print ("   KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK,KEY_INFO,KEY_MUTE")
     print ("   PLAY_n Where n is the station or track number. E.g. PLAY_9 or PLAY_176 ")
     sys.exit(2)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This class drives the Sitronix ST7789 controller and 240x240 pixel TFT
 #
-# $Id: st7789tft_class.py,v 1.20 2024/08/25 08:57:21 bob Exp $
+# $Id: st7789tft_class.py,v 1.21 2002/01/01 13:37:48 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -59,7 +59,7 @@ L2_fontSize = 35
 
 ## ST7789 TFT display class
 class ST7789:
-    scroll_speed = 0.01
+    scroll_speed = 0.001
     #        1  2  3  4  5  6
     TextLines = ['','','','','','']
 
@@ -166,13 +166,14 @@ class ST7789:
                         newSize)
                     size = font.getlength(text)
                 self.L2_font = font
-            self.TextLines[line-1] = text
 
         size = font.getlength(text)
         if size > self.width:
                 self._scroll(line,text,font,interrupt)
         else:
                 self._out(line,text,font)
+
+        self.TextLines[line-1] = text
         return
 
     # Write text to line using line number
@@ -192,8 +193,8 @@ class ST7789:
         self.update()
 
         # Small delay before scrolling
-        for i in range(0, 10):
-            time.sleep(0.1)
+        for i in range(0, 20):
+            time.sleep(self.scroll_speed)
             if interrupt():
                 return
 
@@ -213,7 +214,7 @@ class ST7789:
 
         # Small delay before exiting
         for i in range(0, 10):
-            time.sleep(0.1)
+            time.sleep(self.scroll_speed)
             if interrupt():
                 return        
         return

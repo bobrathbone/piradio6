@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio - Install Waveshare WM8960 DAC driver
-# $Id: install_wm8960.sh,v 1.10 2024/03/13 15:58:21 bob Exp $
+# $Id: install_wm8960.sh,v 1.13 2024/09/24 11:07:47 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -13,12 +13,12 @@
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 #             The authors shall not be liable for any loss or damage however caused.
 
-BOOTCONFIG=/boot/config.txt
-BOOTCONFIG_2=/boot/firmware/config.txt
 OS_RELEASE=/etc/os-release
-DIR=/usr/share/radio
+DIR=$(pwd)
 LOGDIR=${DIR}/logs
+mkdir -p ${LOGDIR}
 LOG=${LOGDIR}/wm8960.log
+BOOTCONFIG="/boot/firmware/config.txt"
 
 # we create a dir with this version to ensure that 'dkms remove' won't delete
 # the sources during kernel updates
@@ -45,86 +45,54 @@ function release_id
     echo ${ID}
 }
 
-function install_module {
-  src=$1
-  mod=$2
-
-  if [[ -d /var/lib/dkms/$mod/$ver/$marker ]]; then
-    rmdir /var/lib/dkms/$mod/$ver/$marker
-  fi
-
-  if [[ -e /usr/src/$mod-$ver || -e /var/lib/dkms/$mod/$ver ]]; then
-    dkms remove --force -m $mod -v $ver --all
-    rm -rf /usr/src/$mod-$ver
-  fi
-  mkdir -p /usr/src/$mod-$ver
-  cp -a $src/* /usr/src/$mod-$ver/
-  dkms add -m $mod -v $ver
-  dkms build $uname_r -m $mod -v $ver && dkms install --force $uname_r -m $mod -v $ver
-
-  mkdir -p /var/lib/dkms/$mod/$ver/$marker
-}
-
-# In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
-if [[ $(release_id) -ge 12 ]]; then
-    BOOTCONFIG=${BOOTCONFIG_2}
-    echo "Configuring ${BOOTCONFIG} parameters"
-fi
 
 echo "$0 WM8960 configuration log, $(date) " | tee ${LOG}
 
-#download the archive
-echo "Cloning https://github.com/waveshare/WM8960-Audio-HAT"  | tee -a ${LOG}
-rm -rf WM8960-Audio-HAT
-git clone https://github.com/waveshare/WM8960-Audio-HAT
+# In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
+if [[ $(release_id) -lt 12 ]]; then
+    echo "This script only runs on Bookworm or later - Exiting" | tee -a ${LOG}
+    exit 1
+fi
 
-apt update
-apt-get -y install raspberrypi-kernel-headers raspberrypi-kernel
-apt-get -y install  dkms git i2c-tools libasound2-plugins
+# Check if this machine is 32-bit if so set arm_64bit=0 in config.txt
+BIT=$(getconf LONG_BIT)
+if [[ ${BIT} == "32" ]]; then
+    grep "arm_64bit=0" ${BOOTCONFIG} >/dev/null 2>&1
+    if [[ $? != 0 ]]; then
+        echo "# Disable 64-bit for the Waveshare WM8960 sound-card" >> ${BOOTCONFIG}
+        echo "Setting arm_64bit=0 in ${BOOTCONFIG}" | tee -a ${LOG}
+        echo "arm_64bit=0" >> ${BOOTCONFIG} 
+    fi
+fi
+
+# Disable VC4 KMS V3D audio
+grep "^dtoverlay=vc4-kms-v3d" ${BOOTCONFIG} >/dev/null 2>&1
+if [[ $? == 0 ]]; then
+    echo "Disabling VC4 KMS V3D audio in ${BOOTCONFIG}" | tee -a ${LOG}
+    sed -i -e "0,/^dtoverlay=vc4-kms-v3d/{s/dtoverlay.*/#dtoverlay=vc4-kms-v3d/}" ${BOOTCONFIG} 
+fi
+
+echo "Disable on-board audio" | tee -a ${LOG}
+sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
+sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
+
+# Install git download the archive
+sudo apt-get install git 
+echo "Cloning https://github.com/waveshare/WM8960-Audio-HAT" | tee -a ${LOG}
+rm -rf WM8960-Audio-HAT
+git clone https://github.com/waveshare/WM8960-Audio-HAT  | tee -a ${LOG}
 
 # Change to WM8960-Audio-HAT directory
 cd WM8960-Audio-HAT
 pwd | tee -a ${LOG}
 
-# install WM8960 overlay 
-cmd="cp wm8960-soundcard.dtbo /boot/overlays" 
-echo ${cmd}  | tee -a ${LOG}
-${cmd}
+echo | tee -a ${LOG}
+echo "============== Running Waveshare installation script ==============" | tee -a ${LOG}
+./install.sh | tee -a ${LOG}
+echo "============== End of Waveshare installation script ==============" | tee -a ${LOG}
+echo | tee -a ${LOG}
 
-#set kernel modules
-grep -q "i2c-dev" /etc/modules || \
-  echo "i2c-dev" >> /etc/modules  
-grep -q "snd-soc-wm8960" /etc/modules || \
-  echo "snd-soc-wm8960" >> /etc/modules  
-grep -q "snd-soc-wm8960-soundcard" /etc/modules || \
-  echo "snd-soc-wm8960-soundcard" >> /etc/modules  
-  
-#set dtoverlays
-sed -i -e 's:#dtparam=i2s=on:dtparam=i2s=on:g' ${BOOTCONFIG} || true
-sed -i -e 's:#dtparam=i2c_arm=on:dtparam=i2c_arm=on:g' ${BOOTCONFIG} || true
-grep -q "dtoverlay=i2s-mmap" ${BOOTCONFIG} || \
-  echo "dtoverlay=i2s-mmap" >> ${BOOTCONFIG} 
-
-#grep -q "dtparam=i2s=on" ${BOOTCONFIG} || \
-#  echo "dtparam=i2s=on" >> ${BOOTCONFIG}
-
-grep -q "dtoverlay=wm8960-soundcard" ${BOOTCONFIG} || \
-  echo "dtoverlay=wm8960-soundcard" >> ${BOOTCONFIG} 
-  
-#install config files
-mkdir -p /etc/wm8960-soundcard 
-
-cp *.conf /etc/wm8960-soundcard
-cp *.state /etc/wm8960-soundcard
-
-#set service 
-# Amended by Bob Rathbone - Don't try to start the wm8960-soundcard.service
-# Only copy it and disable wm8960-soundcard.service. Not working in Bookworm
-cp wm8960-soundcard /usr/bin/
-cp wm8960-soundcard.service /lib/systemd/system/
-echo "Enabling wm8960-soundcard.service" | tee -a ${LOG}
-sudo systemctl enable wm8960-soundcard.service
-
+echo
 echo "----------------------------------------------------------------------------------"
 echo "A log of this installation will be found in ${LOG} "
 echo "----------------------------------------------------------------------------------"

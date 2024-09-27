@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: luma_class.py,v 1.29 2024/08/20 11:31:37 bob Exp $
+# $Id: luma_class.py,v 1.31 2002/01/01 14:37:20 bob Exp $
 # This class drives the SH1106 controller for the 128x64 pixel TFT
 # It requirs the I2C dtoverlay to be loaded. The I2C address is normally 0x37
 #
@@ -62,7 +62,7 @@ class LUMA:
     # Define display characteristics
     nlines = 4
     nchars = 20
-    scroll_speed = 0.002
+    scroll_speed = 0.005
     iVolume = 0
     rotation = 0
 
@@ -203,8 +203,8 @@ class LUMA:
 
         # Small delay before scrolling
         if not skip:
-            for i in range(0, 8):
-                time.sleep(0.1)
+            for i in range(0, 16):
+                time.sleep(self.scroll_speed)
                 if interrupt():
                     skip = True
                     break
@@ -227,8 +227,8 @@ class LUMA:
 
         # Small delay before exiting
         if not skip:
-            for i in range(0, 8):
-                time.sleep(0.1)
+            for i in range(0, 16):
+                time.sleep(self.scroll_speed)
                 if interrupt():
                         break
         return
@@ -259,9 +259,10 @@ class LUMA:
     def getChars(self):
         return self.nchars
 
-    # Set the scroll speed
+    # Set the scroll speed. 0 = use default
     def setScrollSpeed(self,scroll_speed):
-        self.scroll_speed = scroll_speed
+        if scroll_speed > 0:
+            self.scroll_speed = scroll_speed
 
     # Get Luma device
     def getLumaDevice(self):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi RGB I2C Rotary Encoder Class
-# $Id: rotary_class_rgb_i2c.py,v 1.15 2024/07/23 06:35:02 bob Exp $
+# $Id: rotary_class_rgb_i2c.py,v 1.16 2002/01/01 10:22:06 bob Exp $
 #
 # Author : Bob Rathbone and Lubos Ruckl (Czech republic)
 # Site   : http://www.bobrathbone.com
@@ -298,7 +298,7 @@ if __name__ == "__main__":
         print("Mute switch GPIO", mute_switch)
         try:
             volume_encoder = RGB_I2C_RotaryEncoder(volume_i2c,mute_switch,
-                            channel_callback,volume_interrupt)
+                            volume_callback,volume_interrupt)
             volume_encoder.run(cycle)
         except Exception as e:
             print(str(e))
@@ -306,7 +306,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     if test_channel:
-        print("Channel rotary encoder I2C address=%s Interrupt pin %d" % (hex(channel_i2c),volume_interrupt))
+        print("Channel rotary encoder I2C address=%s Interrupt pin %d" % (hex(channel_i2c),channel_interrupt))
         menu_switch = config.getSwitchGpio("menu_switch")
         print("Menu switch GPIO", menu_switch)
         try:

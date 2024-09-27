@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.46 2024/08/23 14:26:18 bob Exp $
+# $Id: configure_radio.sh,v 1.47 2024/09/17 07:24:52 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -88,6 +88,11 @@ VOLUME_RANGE=20
 
 # Date format (Use default in radiod.conf)
 DATE_FORMAT=""  
+
+# Rotary encoder step size  
+# Only used in the standard rotary encoder class and NOT the alternative rotary class
+# ABC encoders seem to work best with 'full' step, KY040 encoders better with 'half' step
+ROTARY_STEP_SIZE="full"
 
 # Get OS release ID
 function release_id
@@ -352,6 +357,7 @@ if [[ ${USER_INTERFACE} == "2" ]]; then
         elif [[ ${ans} == '2' ]]; then
             DESC="Configuring rotary encoders (eg. KY-040) with own pull-up resistors"
             ROTARY_HAS_RESISTORS=1
+            ROTARY_STEP_SIZE="half"
 
         elif [[ ${ans} == '3' ]]; then
             DESC="Configuring rotary encoders with RGB LEDs"
@@ -1069,6 +1075,7 @@ if [[ ${USER_INTERFACE} == "1" || ${USER_INTERFACE} == "8" || ${USER_INTERFACE} 
 elif [[ ${USER_INTERFACE} == "2" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=rotary_encoder/}" ${CONFIG}
     sudo sed -i -e "0,/^rotary_class/{s/rotary_class.*/rotary_class=${ROTARY_CLASS}/}" ${CONFIG}
+    sudo sed -i -e "0,/^rotary_step_size/{s/rotary_step_size.*/rotary_step_size=${ROTARY_STEP_SIZE}/}" ${CONFIG}
     if [[ ${ROTARY_HAS_RESISTORS} == 1 ]]; then
         sudo sed -i -e "0,/^rotary_gpio_pullup/{s/rotary_gpio_pullup.*/rotary_gpio_pullup=none/}" ${CONFIG}
     fi
@@ -1254,6 +1261,8 @@ fi
 
 if [[ ${USER_INTERFACE} == "2" ]]; then
     echo $(grep "^rotary_class=" ${CONFIG} ) | tee -a ${LOG}
+    echo $(grep "^rotary_gpio_pullup=" ${CONFIG} ) | tee -a ${LOG}
+    echo $(grep "^rotary_step_size=" ${CONFIG} ) | tee -a ${LOG}
 fi
 
 if [[ $DISPLAY_TYPE != "" ]]; then

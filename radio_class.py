@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.143 2024/08/29 18:46:34 bob Exp $
+# $Id: radio_class.py,v 1.145 2024/09/14 08:34:55 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -344,7 +344,6 @@ class Radio:
         count = 30
         while waiting4network:
             ipaddr = self.get_ip()
-            log.message("IP: " + str(ipaddr) +  " " + str(count), log.DEBUG)
             count -= 1
             if (count < 0) or (len(ipaddr) > 3):
                 # Don't use Comitup web address
@@ -358,6 +357,7 @@ class Radio:
     def remoteCallback(self):
         key = self.server.getData()
         set_interrupt = True
+        response = 'OK'
 
         log.message("IR remoteCallback " + key, log.DEBUG)
 
@@ -441,12 +441,13 @@ class Radio:
         else:
             log.message("radio.remoteCallBack invalid IR key " + key, log.DEBUG)
             set_interrupt = False
+            response = "Invalid " + key
 
         # Interrupt scrolling display
         if set_interrupt:
             self.setInterrupt()
 
-        return 
+        return response 
 
     #  Get LOAD_PLAYLIST event playlist name
     def getPlaylistName(self):
