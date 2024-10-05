@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: luma_class.py,v 1.31 2002/01/01 14:37:20 bob Exp $
+# $Id: luma_class.py,v 1.34 2002/01/08 15:42:37 bob Exp $
 # This class drives the SH1106 controller for the 128x64 pixel TFT
 # It requirs the I2C dtoverlay to be loaded. The I2C address is normally 0x37
 #
@@ -62,6 +62,9 @@ class LUMA:
     # Define display characteristics
     nlines = 4
     nchars = 20
+    line_height = 16
+    bartop = 4  # Volume bar top size correction
+    barbot = 4  # Volume bar bottom size correction
     scroll_speed = 0.005
     iVolume = 0
     rotation = 0
@@ -105,11 +108,11 @@ class LUMA:
         elif self.luma_device == 'WS0010':
             oled = ws0010(serial,rotate=rotation)
         elif self.luma_device == 'SH1106_128X32':
+            # Although this is a 128x32 bit display    
+            # Luma maps it to 128x64 bits
             oled = sh1106(serial,rotate=rotation)
-            self.nchars = 10
-            self.font_name = "DejaVuSans.ttf"
-            self.font = ImageFont.truetype(self.font_name, 18)
-            self.Lines = [0,16,32,48]
+            self.bartop = 2
+            self.barbot = 0
         else:
             oled = sh1106(serial,rotate=rotation)
         return oled
@@ -242,10 +245,10 @@ class LUMA:
         x = 0
         # Clear any previous text
         y = self.Lines[line-1]
-        draw.rectangle((0,y,oled.width,16 * line), outline=0, fill=0)
-        y = self.Lines[line-1] + 4
+        draw.rectangle((0,y,oled.width,self.line_height * line), outline=0, fill=0)
+        y = self.Lines[line-1] + self.bartop
         x1 = oled.width - 1
-        y1 = 16*line - 4
+        y1 = self.line_height*line - self.barbot  
         draw.rectangle((x,y,x1,y1), outline=1, fill=0)
         x1 = int(oled.width * vol/100)
         # Draw the volume level
@@ -281,12 +284,15 @@ if __name__ == '__main__':
     volume = 0
     speed_test = False
 
+    # Luma device for SSD1306, SSD1309, SSD1325, SSD1331, SH1106, SH1106_128x32, WS0010
+    # Change to the device you want to test and the font size 
+    device = 'SH1106' 
+    font_size = 12
+    font_name = "DejaVuSansMono.ttf"
+
     # Flip the display
     NORMAL=0
     FLIP=2
-
-    font_size = 10
-    font_name = "DejaVuSansMono.ttf"
 
     # Signal SIGTERM handler
     def signalHandler(signal,frame):
@@ -315,7 +321,7 @@ if __name__ == '__main__':
 
     display = LUMA()
     # FLIP = Flip display verticaly, NORMAL = Don't flip
-    display.init(None,luma_device='SH1106',font_name=font_name,font_size=font_size,rotation=NORMAL)
+    display.init(None,luma_device=device,font_name=font_name,font_size=font_size,rotation=NORMAL)
     font = display.setFontSize(font_size)
 
     print("OLED = " + display.getLumaDevice())

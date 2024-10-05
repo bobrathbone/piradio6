@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio64,v 1.33 2024/08/01 10:53:00 bob Exp $
+# $Id: piradio64,v 1.34 2002/01/06 09:24:13 bob Exp $
 # This package must be built under Raspbian Buster (Not Jessie or earlier)
 # This is the 64 bit version
 # Source: <source package name; defaults to package name>
@@ -87,6 +87,8 @@ Files:  radiod.py /usr/share/radio/
     configure_audio.sh /usr/share/radio/
     configure_ir_remote.sh /usr/share/radio/
     display_config.sh /usr/share/radio/
+    display_wifi.sh /usr/share/radio/
+    display_os.sh /usr/share/radio/
     display_title.sh /usr/share/radio/
     set_mixer_id.sh /usr/share/radio/
     install_streaming.sh /usr/share/radio/

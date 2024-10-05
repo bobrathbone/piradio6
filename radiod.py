@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.136 2002/01/02 14:47:54 bob Exp $
+# $Id: radiod.py,v 1.137 2002/01/05 08:03:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -338,6 +338,11 @@ class MyDaemon(Daemon):
     def getVersion(self):
         myradio = Radio(menu,event,None,config,log)    
         return myradio.getVersion()
+
+    # Build
+    def getBuild(self):
+        myradio = Radio(menu,event,None,config,log)    
+        return myradio.getBuild()
 
 # End of class overrides
 
@@ -1151,8 +1156,10 @@ def displayInfo(display,radio,message):
         ipaddr = radio.get_ip()
         ipaddr = message.storeIpAddress(ipaddr)
     version = radio.getVersion()
+    build = radio.getBuild()
     nlines = display.getLines()
-    msg = message.get('radio_version') + ' ' + version
+    #msg = message.get('radio_version') + ' ' + version
+    msg = message.get('radio_version') + ' ' + build
     
     display.out(1, msg, interrupt )
 
@@ -1531,7 +1538,7 @@ def usage():
 
 ### Main routine ###
 if __name__ == "__main__":
-    from constants import __version__, __build__
+    from constants import __version__, build
 
     if len(sys.argv) < 2:
         usage()
@@ -1542,7 +1549,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if 'build' == sys.argv[1]:
-        print('Build',__build__)
+        print('Build',build)
         sys.exit(0)
 
     if pwd.getpwuid(os.geteuid()).pw_uid > 0:

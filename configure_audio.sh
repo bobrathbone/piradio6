@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.69 2024/05/13 10:07:53 bob Exp $
+# $Id: configure_audio.sh,v 1.71 2002/01/09 18:41:58 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -152,6 +152,9 @@ if [[ $(release_id) -ge 11 ]]; then
 else
     SPOTIFY_CONFIG=/etc/default/raspotify
 fi
+
+# Add the user to the audio group 
+sudo usermod -G audio -a $USER
 
 # Stop the radio and MPD
 CMD="sudo systemctl stop radiod.service"
@@ -323,6 +326,7 @@ do
         DESC="HiFiBerry DAC 400" 
         NAME=${DESC}
         DTOVERLAY="dacberry400"
+        SCARD="tlvaudioCODEC"
         MIXER="software"
         TYPE=${TVDAC}
 

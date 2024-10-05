@@ -12,7 +12,7 @@ This software uses the python3-mpd library. See https://packages.debian.org/sid/
 
 Version 7.8 release notes
 -------------------------
-Release 26 September 2024 - Build 10 
+Release 5 October 2024 - Build 12 
 
 1) Grove v5 RGB I2C LCD added (lcd_i2c_jhd1313_sgm31323.py) integrated into configurator
 2) Amend display_class to use colour definitions in /etc/radiod.conf for jhd1313_sgm31323 LCD
@@ -30,6 +30,12 @@ Release 26 September 2024 - Build 10
 14) WM8960 install_wm8960.sh script configures necessary parameters in /boot/firmware/config.txt 
 15) Correct rotary_class_rgb_i2c.py test routine (volume showing 'channel' event)
 16) Reduce number of unecessary OLED screen updates to improve performance
+17) Add the user to the audio group (Not always added)
+18) Display version and build number in the radio information display screen
+19) Script to display just OS details (display_os.sh) added to build
+20) Correct the audio configuration installation script for the HiFiBerry DAC 400
+21) Don't display IPv6 IP addresses in the information screen
+22) Configure wayfire.ini for auto start if X-Windows Wayland installed
 
 Version 7.7 release notes
 -------------------------

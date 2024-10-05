@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.47 2024/09/17 07:24:52 bob Exp $
+# $Id: configure_radio.sh,v 1.52 2002/01/11 09:45:02 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -46,11 +46,15 @@ WXCONFIG=/etc/weather.conf
 LOG=${LOGDIR}/install.log
 SPLASH="bitmaps\/raspberry-pi-logo.bmp" # Used for sed so \ needed
 
+# X-Window parameters
 LXSESSION=""    # Start desktop radio at boot time
+WAYFIRE_INI=/home/$USR/.config/wayfire.ini
 FULLSCREEN=""   # Start graphic radio fullscreen
 SCREEN_SIZE="800x480"   # Screen size 800x480, 720x480 or 480x320
+
 PROGRAM="Daemon radiod configured"
-GPROG=""    # Which graphical radio (gradio or vgradio)
+GPROG=""        # Which graphical radio (gradio or vgradio)
+FONT_SIZE=11    # Font size for TFT displays 
 FLIP_OLED_DISPLAY=0 # 1 = Flip OLED idisplay upside down
 
 declare -i PI_MODEL=0  # 0=Undefined 5=Model 5 4=Model 4 or less
@@ -69,7 +73,7 @@ I2C_REQUIRED=0
 I2C_ADDRESS="0x0"
 SPI_REQUIRED=0
 PIFACE_REQUIRED=0	
-SCROLL_SPEED="0.2" 
+SCROLL_SPEED="0.02" 
 ROTARY_CLASS="standard"    # Standard abc Rotary Encoders
 ROTARY_HAS_RESISTORS=0	# Support for KY-040 or ABC Rotary encoders
 ADAFRUIT_SSD1306=0	# Adafruit SSD1306 libraries required
@@ -111,6 +115,18 @@ function codename
     arr=(${VERSION_CODENAME//=/ })
     CODENAME=$(echo "${arr[1]}" | tr -d '"')
     echo ${CODENAME}
+}
+
+# Return X protocol (X11 or Wayland)
+function X-protocol
+{
+    type=$(loginctl show-session $(loginctl | grep "$USER" | awk '{print $1}') -p Type | grep -i wayland)
+    if [[ $? == 0 ]]; then  # Do not seperate from above
+        X=Wayland
+    else
+        X=X11
+    fi
+    echo ${X}
 }
 
 # Create log directory
@@ -544,6 +560,7 @@ do
         DESC="128x64 OLED with SSD1306 SPI interface"
         DLINES=4
         DWIDTH=16
+        SCROLL_SPEED="0.01" 
         VOLUME_RANGE=10
         SPI_REQUIRED=1
         SPLASH="images\/raspberrypi.png"
@@ -553,6 +570,7 @@ do
         DESC="OLEDs using LUMA driver"
         DLINES=4
         DWIDTH=16
+        SCROLL_SPEED="0.01" 
         VOLUME_RANGE=10
         I2C_REQUIRED=1
         I2C_ADDRESS="0x3C"
@@ -581,6 +599,7 @@ do
         DESC="OLED using SH1106 SPI interface"
         DLINES=4
         DWIDTH=16
+        SCROLL_SPEED="0.01" 
         VOLUME_RANGE=20
         SPI_REQUIRED=1
         SPLASH="bitmaps\/raspberry-pi-logo.bmp" 
@@ -627,6 +646,7 @@ if [[ ${DISPLAY_TYPE} == "LUMA" ]]; then
         elif [[ ${ans} == '2' ]]; then
             DESC="SH1106 128x32 monochrome OLED"
             DISPLAY_TYPE="${DISPLAY_TYPE}.SH1106_128x32"
+            FONT_SIZE=12
 
         elif [[ ${ans} == '3' ]]; then
             DESC="SSD1306 128x64 monochrome OLED"
@@ -874,7 +894,7 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
             DESC="7-inch TFT touch-screen (1024x600)"
             SCREEN_SIZE="1024x600"
 
-        elif [[ ${ans} == '4' ]]; then
+        elif [[ ${ans} == '5' ]]; then
             DESC="HDMI television or monitor"
             SCREEN_SIZE="800x480"
 
@@ -992,35 +1012,65 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     echo "Desktop program ${GPROG}.py configured" | tee -a ${LOG}
 fi
 
-echo "Configuring radio for $(codename) OS " 
+echo "Configuring radio for $(codename) OS " | tee -a ${LOG}
 
-# Correct missing autostart file
-if [[ $(release_id) -ge 12 ]]; then
-    LXDE="LXDE"
-else 
-    LXDE="LXDE-pi"
-fi
+# X-Windows radio desktop program (gradio or vgradio) installation 
+# Install for both X11 and Wayland protocols as user can switch between them
+
+# Correct missing autostart file (Redundant code ?)
+#if [[ $(release_id) -ge 12 ]]; then
+#    LXDE="LXDE"
+#else 
+#    LXDE="LXDE-${USER}"
+#fi
+
+LXDE="LXDE-${USER}"
+
+echo "X-Windows desktop is running the $(X-protocol) protocol" | tee -a ${LOG}
 
 LXDE_DIR=/home/${USR}/.config/lxsession/${LXDE}
-AUTOSTART="${LXDE_DIR}/autostart"
+X11_AUTOSTART="${LXDE_DIR}/autostart"
 if [[ ! -d ${LXDE_DIR} ]]; then
     mkdir -p ${LXDE_DIR}
-    cp ${DIR}/lxsession/${LXDE}.autostart ${AUTOSTART} 
+    cp ${DIR}/lxsession/${LXDE}.autostart ${X11_AUTOSTART} 
     chown -R ${USR}:${GRP} /home/${USR}/.config/lxsession
 fi
 
-# Configure desktop autostart if X-Windows installed
-if [[ -f ${AUTOSTART} ]]; then
+# Configure desktop X11 autostart if X-Windows installed
+if [[ -f ${X11_AUTOSTART} ]]; then
     if [[ ${LXSESSION} == "yes" ]]; then
         # Delete old entry if it exists
-        sudo sed -i -e "/radio/d" ${AUTOSTART}
-        echo "Configuring ${AUTOSTART} for automatic start" | tee -a ${LOG}
-	cmd="@sudo /usr/share/radio/${GPROG}.py"
-        sudo echo ${cmd} | sudo tee -a  ${AUTOSTART}
+        sudo sed -i -e "/radio/d" ${X11_AUTOSTART}
+        echo "Configuring ${X11_AUTOSTART} for automatic start" | tee -a ${LOG}
+	    cmd="@sudo /usr/share/radio/${GPROG}.py"
+        sudo echo ${cmd} | sudo tee -a  ${X11_AUTOSTART}
     else
-        sudo sed -i -e "/radio/d" ${AUTOSTART}
+        sudo sed -i -e "/radio/d" ${X11_AUTOSTART}
     fi
 fi
+
+# Configure desktop wayfire.ini if Wayland installed 
+if [[ -f ${WAYFIRE_INI} ]]; then
+    echo "Configuring ${WAYFIRE_INI} for automatic start" | tee -a ${LOG}
+    if [[ ${LXSESSION} == "yes" ]]; then
+        grep "^\[autostart\]"  ${WAYFIRE_INI} > /dev/null 2>&1
+        if [[ $? != 0 ]]; then
+            echo >> ${WAYFIRE_INI}
+            cmd="[autostart]"
+            echo ${cmd} | tee -a ${LOG}
+            echo ${cmd} >> ${WAYFIRE_INI}
+        fi 
+        # Delete old entry if it exists
+        sudo sed -i "/^radiod = sudo/d" ${WAYFIRE_INI}
+        sudo sed -i "/^#radiod = sudo/d" ${WAYFIRE_INI}
+        cmd="radiod = sudo /usr/share/radio/${GPROG}.py"
+        echo ${cmd} | tee -a ${LOG}
+        echo ${cmd} >> ${WAYFIRE_INI} 
+    else
+        # Delete radiod startup 
+        sed -i '/radiod = sudo/d' ${WAYFIRE_INI}
+    fi
+fi 
 
 # Install Adafruit SSD1306 package if required
 if [[ ${ADAFRUIT_SSD1306} > 0  ]]; then
@@ -1056,6 +1106,7 @@ if [[ ${DISPLAY_TYPE} != "" ]]; then
     sudo sed -i -e "0,/^display_width/{s/display_width.*/display_width=${DWIDTH}/}" ${CONFIG}
     sudo sed -i -e "0,/^volume_range/{s/volume_range.*/volume_range=${VOLUME_RANGE}/}" ${CONFIG}
     sudo sed -i -e "0,/^scroll_speed/{s/scroll_speed.*/scroll_speed=${SCROLL_SPEED}/}" ${CONFIG}
+    sudo sed -i -e "0,/^font_size/{s/font_size.*/font_size=${FONT_SIZE}/}" ${CONFIG}
 fi
 
 if [[ $DATE_FORMAT != "" ]]; then

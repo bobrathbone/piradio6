@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.61 2023/07/22 13:40:50 bob Exp $
+# $Id: gradio.py,v 1.62 2002/01/09 18:57:01 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -231,6 +231,7 @@ def displayInfo(screen,font,radio,message):
     ipaddr = message.getIpAddress()
     if len(ipaddr) < 1:
         ipaddr = message.storeIpAddress(radio.execCommand('hostname -I'))
+    ipaddr = ipaddr.split()[0]
     sIP = "IP address: " + ipaddr
     sHostname = 'Hostname: ' +  socket.gethostname()
 

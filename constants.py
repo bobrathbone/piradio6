@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio Class
-# $Id: constants.py,v 1.27 2002/01/02 08:14:31 bob Exp $
+# $Id: constants.py,v 1.30 2002/01/09 18:41:58 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -17,9 +17,9 @@
 #
 
 # Amend version and 
-__build_no__ = 10
+__build_no__ = 12
 __version__ = "7.8" 
-__build__ = __version__ + '.' + str(__build_no__)
+build = __version__ + '.' + str(__build_no__)
 
 # Up/Down constants (switch levels)
 UP = 1 

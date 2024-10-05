@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.145 2024/09/14 08:34:55 bob Exp $
+# $Id: radio_class.py,v 1.146 2002/01/05 08:03:08 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -2292,7 +2292,11 @@ class Radio:
 
     # Build number
     def getBuild(self):
-        return __build__
+        return build
+
+    def getArchitecture(self):
+        arch = self.execCommand("getconf LONG_BIT")
+        return arch
 
     # Set an interrupt received
     def setInterrupt(self):
