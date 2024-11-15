@@ -1,0 +1,97 @@
+# Alternative asound.conf for Bluetooth devices
+# Note: Replace <btdevice> with Bluetooth address eg. "00:75:58:41:B1:25"
+#       This will be done automatically by the configure_bluetooth.sh script
+
+defaults.bluealsa.service "org.bluealsa"
+defaults.bluealsa.profile "a2dp"
+defaults.bluealsa.delay 10000
+defaults.bluealsa.interface "hci0"
+defaults.bluealsa.device "<btdevice>"
+
+ctl.bluealsa {
+        @args [ SRV BAT ]
+        @args.SRV {
+                type string
+                default {
+                        @func refer
+                        name defaults.bluealsa.service
+                }
+        }
+        @args.BAT {
+                type string
+                default {
+                        @func refer
+                        name defaults.bluealsa.battery
+                }
+        }
+        type bluealsa
+        service $SRV
+        battery $BAT
+}
+
+pcm.bluealsa {
+        @args [ SRV DEV PROFILE DELAY ]
+        @args.SRV {
+                type string
+                default {
+                        @func refer
+                        name defaults.bluealsa.service
+                }
+        }
+        @args.DEV {
+                type string
+                default {
+                        @func refer
+                        name defaults.bluealsa.device
+                }
+        }
+        @args.PROFILE {
+                type string
+                default {
+                        @func refer
+                        name defaults.bluealsa.profile
+                }
+        }
+        @args.DELAY {
+                type integer
+                default {
+                        @func refer
+                        name defaults.bluealsa.delay
+                }
+        }
+        type plug
+        slave.pcm {
+                type bluealsa
+                service $SRV
+                device $DEV
+                profile $PROFILE
+                delay $DELAY
+        }
+        hint {
+                show {
+                        @func refer
+                        name defaults.namehint.extended
+                }
+                description "Bluetooth Audio Hub"
+        }
+}
+
+pcm {
+        type bluealsa
+        interface "hci0"
+        device "<btdevice>"
+        profile "a2dp"
+}
+
+ctl.!default {
+        type bluealsa
+        interface "hci0"
+}
+
+# MPD /etc/mpd.conf configuration
+# audio_output {
+#     type        "alsa"
+#     name        "SP-AD70-B"
+#     device      "bluealsa"
+#     mixer_type      "software"  # optional
+#}

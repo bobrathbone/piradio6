@@ -1,3 +1,7 @@
+# asound.conf for Bluetooth devices
+# Note: Replace <btdevice> with Bluetooth address eg. "00:75:58:41:B1:25"
+#       This will be done automatically by the configure_bluetooth.sh script
+
 # Set default mixer controls
 ctl.!default {
     type hw
@@ -20,7 +24,7 @@ pcm.bluetooth {
             pcm {
                 type bluealsa
 		service org.bluealsa
-                device 00:75:58:41:B1:25
+                device <btdevice>
                 profile "a2dp"
             }
       }
@@ -33,3 +37,11 @@ pcm.bluetooth {
 ctl.bluetooth {
       type bluetooth
 }
+
+# MPD /etc/mpd.conf configuration
+# audio_output {
+#     type        "alsa"
+#     name        "SP-AD70-B"
+#     device      "bluealsa"
+#     mixer_type      "software"  # optional
+#}
