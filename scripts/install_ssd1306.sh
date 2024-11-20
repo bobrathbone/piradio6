@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: install_ssd1306.sh,v 1.7 2021/06/28 19:45:07 bob Exp $
+# $Id: install_ssd1306.sh,v 1.1 2002/02/24 14:42:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

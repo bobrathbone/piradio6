@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build64.sh,v 1.6 2024/06/21 08:36:57 bob Exp $
+# $Id: build64.sh,v 1.10 2002/02/23 18:00:32 bob Exp $
 # Build script for the Raspberry PI radio (64 bit)
 # Run this script as user pi and not root
 
@@ -21,6 +21,13 @@ ARCH=$(grep ^Architecture: ${PKGDEF} | awk '{print $2}')
 DEBPKG=${PKG}_${VERSION}_${ARCH}.deb
 BUILDLOG=build.log
 OS_RELEASE=/etc/os-release
+EQUIVS=/usr/bin/equivs-build
+
+# Colours
+orange='\033[33m'
+blue='\033[34m'
+green='\033[32m'
+default='\033[39m'
 
 # Check we are not running as sudo
 if [[ "$EUID" -eq 0 ]];then
@@ -56,6 +63,14 @@ sudo chown ${USR}:${GRP} *.py *.cmd *.sh
 sudo chmod +x *.py *.cmd *.sh
 sudo chmod -x language/* voice.dist
 
+if [[ ! -f ${MPD} ]]; then
+    sudo apt-get -y install python3-mpd mpd
+fi
+
+if [[ ! -f ${EQUIVS} ]];then
+    sudo apt-get -y install equivs apt-file lintian
+fi
+
 # Build the package
 equivs-build ${PKGDEF} | tee -a ${BUILDLOG}
 
@@ -77,6 +92,10 @@ fi
 
 echo
 echo "Now install the ${DEBPKG} package with the following command:"
+printf $orange
 echo "sudo dpkg -i ${DEBPKG}"
+printf $default
+printf "To configure the radio software run ${green}radio-config\n\n"
+printf $default
 
 # End of build script

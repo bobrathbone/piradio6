@@ -2,7 +2,7 @@
 #set -x
 #set -B
 # Raspberry Pi Internet Radio setup script
-# $Id: setup.sh,v 1.13 2023/11/17 17:11:07 bob Exp $
+# $Id: setup.sh,v 1.14 2002/02/06 13:36:54 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -85,7 +85,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Remove redundant packages
-sudo apt -y autoremove
+sudo apt-get -y autoremove
 
 # Update file cache
 sudo apt-file update

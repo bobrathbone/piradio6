@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet language Class
-# $Id: message_class.py,v 1.4 2021/05/15 09:58:14 bob Exp $
+# $Id: message_class.py,v 1.5 2002/01/19 14:25:32 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -67,7 +67,8 @@ class Message:
                 message = language.getText('vol')
             else:
                 message = language.getText('volume')
-            self.line = self.lines  # Display on last line
+            #self.line = self.lines  # Display on last line
+            self.line = self.display.getLines()  # Display on last line
 
         else:
             if label == 'muted':

@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.26 2024/08/08 08:12:38 bob Exp $
+# $Id: event_class.py,v 1.27 2002/01/23 09:42:06 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -438,11 +438,13 @@ class Event():
 
             volumeknob = RotaryEncoder(self.left_switch, self.right_switch,
                     self.mute_switch,self.volume_event,
-                    rotary_step_size=self.config.rotary_step_size)
+                    rotary_step_size=self.config.rotary_step_size,
+                    ky040_r1_fitted=self.config.ky040_r1_fitted)
 
             tunerknob = RotaryEncoder(self.down_switch, self.up_switch,
                     self.menu_switch,self.tuner_event, 
-                    rotary_step_size=self.config.rotary_step_size)
+                    rotary_step_size=self.config.rotary_step_size,
+                    ky040_r1_fitted=self.config.ky040_r1_fitted)
     
         elif self.config.rotary_class == self.config.RGB_ROTARY:
             log.message("event.setInterface RotaryEncoder RGB_ROTARY", log.DEBUG)

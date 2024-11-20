@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Weather Program Configuration Class
-# $Id: wxconfig_class.py,v 1.8 2024/08/14 09:33:07 bob Exp $
+# $Id: wxconfig_class.py,v 1.9 2002/01/21 07:04:01 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -223,10 +223,10 @@ class Configuration:
                     elif 'LUMA' in parameter:
                         param = parameter.upper()
                         self.display_type = self.LUMA
-                        self.luma_device = 'SH1106'  # Default
-                        luma_devices = param.split('.')
-                        if len(luma_devices) > 0:
-                            self.luma_device = luma_devices[1]
+                        self.device_driver = 'SH1106'  # Default
+                        devices = param.split('.')
+                        if len(devices) > 0:
+                            self.device_driver = devices[1]
 
                 else:
                     msg = "Invalid option " + option + ' in section ' \
@@ -328,7 +328,7 @@ class Configuration:
     def getDisplayName(self):
         name = self.DisplayTypes[self.display_type]
         if name == 'LUMA':
-            name = name + '.' + self.luma_device
+            name = name + '.' + self.device_driver
         return name
 
     # Get Display type
@@ -337,12 +337,12 @@ class Configuration:
 
     # Get LUMA device name eg SH1106 SSD1306
     @property
-    def luma_device(self):
-        return self._luma_device
+    def device_driver(self):
+        return self._device_driver
 
-    @luma_device.setter
-    def luma_device(self, value):
-        self._luma_device = value
+    @device_driver.setter
+    def device_driver(self, value):
+        self._device_driver = value
 
     # Get display I2C address
     @property

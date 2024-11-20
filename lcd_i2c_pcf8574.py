@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_pcf8574.py,v 1.7 2022/05/05 19:05:46 bob Exp $
+# $Id: lcd_i2c_pcf8574.py,v 1.8 2002/02/05 10:43:13 bob Exp $
 #
 # PCF8574 I2C LCD Backpack LCD class
 # Use this program to test I2C Backpack LCD wiring
@@ -199,7 +199,7 @@ class Lcd_i2c_pcf8574:
 
         if not skip:
             for i in range(0, 5):
-                time.sleep(0.2)
+                time.sleep(self.scroll_speed)
                 if interrupt():
                     skip = True
                     break
@@ -214,7 +214,7 @@ class Lcd_i2c_pcf8574:
 
         if not skip:
             for i in range(0, 5):
-                time.sleep(0.2)
+                time.sleep(self.scroll_speed)
                 if interrupt():
                     break
         return

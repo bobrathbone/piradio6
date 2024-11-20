@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # Raspberry Pi Voltage and temperature check 
-# $Id: check_voltage.sh,v 1.1 2024/03/29 13:04:26 bob Exp $
-#
-# IR remote tester
-# Assumes device already configured with ir-keytable
+# $Id: check_voltage.sh,v 1.1 2002/02/24 14:42:36 bob Exp $
 #
 # Author:Dave Hartbull Paraphraser 
 # Website: https://gist.github.com/Paraphraser/

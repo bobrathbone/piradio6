@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio - Install Waveshare WM8960 DAC driver
-# $Id: install_wm8960.sh,v 1.13 2024/09/24 11:07:47 bob Exp $
+# $Id: install_wm8960.sh,v 1.1 2002/02/24 14:42:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -14,7 +14,7 @@
 #             The authors shall not be liable for any loss or damage however caused.
 
 OS_RELEASE=/etc/os-release
-DIR=$(pwd)
+DIR="/usr/share/radio"
 LOGDIR=${DIR}/logs
 mkdir -p ${LOGDIR}
 LOG=${LOGDIR}/wm8960.log
@@ -77,7 +77,7 @@ sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 
 # Install git download the archive
-sudo apt-get install git 
+sudo apt-get -y install git 
 echo "Cloning https://github.com/waveshare/WM8960-Audio-HAT" | tee -a ${LOG}
 rm -rf WM8960-Audio-HAT
 git clone https://github.com/waveshare/WM8960-Audio-HAT  | tee -a ${LOG}
@@ -96,15 +96,8 @@ echo
 echo "----------------------------------------------------------------------------------"
 echo "A log of this installation will be found in ${LOG} "
 echo "----------------------------------------------------------------------------------"
-
 echo
-echo "Now run the audio configuration program (configure_audio.sh)"
-echo " and select option 17 Waveshare WM8960 DAC"
-echo -n "Run audio configuration tool y/n: "
-read ans
-if [[ ${ans} == 'y' ]]; then
-    ${DIR}/configure_audio.sh  
-fi
+
 # End of script
 # set tabstop=4 shiftwidth=4 expandtab
 # retab

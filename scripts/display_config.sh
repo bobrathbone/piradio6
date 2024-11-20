@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.53 2023/11/27 07:56:30 bob Exp $
+# $Id: display_config.sh,v 1.1 2002/02/24 14:42:36 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -312,11 +312,6 @@ echo "IP route:" | tee -a ${LOG}
 ip route | tee -a ${LOG}
 
 ./display_wifi.sh | tee -a ${LOG}
-
-echo | tee -a ${LOG}
-echo "Network Time information" | tee -a ${LOG}
-echo "------------------------" | tee -a ${LOG}
-timedatectl timesync-status | tee -a ${LOG}
 
 echo | tee -a ${LOG}
 echo "=================== End of run =====================" | tee -a ${LOG}

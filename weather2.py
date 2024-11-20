@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Weather station class
-# $Id: weather2.py,v 1.12 2024/08/16 16:58:25 bob Exp $
+# $Id: weather2.py,v 1.13 2002/01/21 07:04:01 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : https://www.bobrathbone.com/
@@ -142,11 +142,11 @@ if __name__ == '__main__':
 
     # Display weather on a second screen
     display2_type = wxconfig.display_type
-    luma_name = wxconfig.luma_device
+    device_name = wxconfig.device_driver
     display2_i2c = wxconfig.i2c_address
     callback = None
     font_name = wxconfig.font_name
-    display.init(callback,display2_type,display2_i2c,luma_name)
+    display.init(callback,display2_type,display2_i2c,device_name)
     display.setFontSize(wxconfig.font_size)
     display.setFontName(wxconfig.font_name)
     

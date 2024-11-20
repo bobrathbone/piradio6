@@ -2,7 +2,7 @@
 # set -x
 # Raspberry Pi Internet Radio
 # Audio output configurator
-# $Id: configure_audio_device.sh,v 1.9 2023/10/09 10:58:28 bob Exp $
+# $Id: configure_audio_device.sh,v 1.1 2002/02/24 14:42:36 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

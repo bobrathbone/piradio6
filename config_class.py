@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.107 2024/08/14 06:14:58 bob Exp $
+# $Id: config_class.py,v 1.116 2002/02/23 10:42:53 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -59,13 +59,14 @@ class Configuration:
     LCD_I2C_JHD1313 = 12        # Grove 2x16 I2C LCD RGB 
     LCD_I2C_JHD1313_SGM31323 = 13   # Grove 2x16 I2C RGB LCD & SGM31323 controllor 
                                     # for colour backlight
+    WS_SPI_SSD1309 = 14 # Waveshare SPI SSD1309  OLED
 
     display_type = LCD
     DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574', 
              'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 
              'GRAPHICAL_DISPLAY', 'OLED_128x64', 
              'PIFACE_CAD','ST7789TFT','SSD1306','SH1106_SPI','LUMA',
-             'LCD_I2C_JHD1313','LCD_I2C_JHD1313_SGM31323' ]
+             'LCD_I2C_JHD1313','LCD_I2C_JHD1313_SGM31323','WS_SPI_SSD1309' ]
 
     # User interface ROTARY or BUTTONS
     ROTARY_ENCODER = 0
@@ -87,6 +88,7 @@ class Configuration:
     RGB_I2C_ROTARY = 3  # Select rotary_class_rgb_i2c.py
 
     # Configuration parameters accesible through @property and @<parameter>.setter
+    # Radio parameters
     _mpdport = 6600         # MPD port number
     _client_timeout = 10    # MPD client timeout in secons 3 to 15 seconds
     _dateformat = "%H:%M %d/%m/%Y"   # Date format
@@ -94,10 +96,6 @@ class Configuration:
     _volume_increment = 1   # Volume increment 1 to 10
     _display_playlist_number = False # Two line displays only, display station(n)
     _source = RADIO          # Source RADIO or MEDIA Player
-    _rotary_class = STANDARD # Rotary class STANDARD,RGB_ROTARY or ALTERNATIVE 
-    _rotary_step_size = False     # Rotary full step (False) or half step (True) configuration
-    _rotary_gpio_pullup =  GPIO.PUD_UP  # KY-040 encoders have own 10K pull-up resistors. 
-                            # Set internal pullups to off with rotary_gpio_pullup = GPIO.PUD_OFF
     _volume_rgb_i2c=0x0F    # Volume RGB I2C Rotary encoder hex address
     _channel_rgb_i2c=0x1F   # Channel RGB I2C Rotary encoder hex address
     _volume_interrupt_pin=22  # Volume RGB I2C Rotary encoder interrupt pin
@@ -121,6 +119,13 @@ class Configuration:
     _mute_action = 0      # MPD action on mute, 1=pause, 2=stop, 0=volume off only
     MuteActions =  ['Pause','Stop']  # Text for above _mute_action
 
+    # Rotary encoder parameters
+    _rotary_class = STANDARD # Rotary class STANDARD,RGB_ROTARY or ALTERNATIVE 
+    _rotary_step_size = False     # Rotary full step (False) or half step (True) configuration
+    _rotary_gpio_pullup =  GPIO.PUD_UP  # KY-040 encoders have own 10K pull-up resistors. 
+                            # Set internal pullups to off with rotary_gpio_pullup = GPIO.PUD_OFF
+    _ky040_r1_fitted = False # Older KY-040 rotary encoders have  
+
     # Remote control parameters 
     _remote_led = 0  # Remote Control activity LED 0 = No LED    
     _remote_control_host = 'localhost'   # Remote control to radio communication host
@@ -140,6 +145,8 @@ class Configuration:
     _execute = ''               # Execute this parameter when exiting radio
     _comitup_ip = "10.41.0.1"   # Comitup initial IP address.
     _pivumeter = False          # Pimoroni Pivumeter
+    _device_driver = ""         # Device driver for LUMA and Waveshare SPI OLEDs
+    _no_internet_switch = False # If no Internet available switch to MEDIA
 
     # Shoutcast ID
     _shoutcast_key = "anCLSEDQODrElkxl"
@@ -393,6 +400,9 @@ class Configuration:
                 elif option == 'speech':
                     self.speech = parameter
 
+                elif option == 'no_internet_switch':
+                    self.no_internet_switch = parameter
+
                 elif option == 'verbose':
                     self.verbose = parameter
 
@@ -520,10 +530,18 @@ class Configuration:
                     elif 'LUMA' in parameter:
                         param = parameter.upper()
                         self.display_type = self.LUMA
-                        self.luma_device = 'SH1106'  # Default
-                        luma_devices = param.split('.')
-                        if len(luma_devices) > 0:
-                            self.luma_device = luma_devices[1]
+                        self.device_driver = 'SH1106'  # Default
+                        drivers = param.split('.')
+                        if len(drivers) > 0:
+                            self.device_driver = drivers[1]
+
+                    elif 'WS_SPI_SSD1309' in parameter:
+                        param = parameter.upper()
+                        self.display_type = self.WS_SPI_SSD1309
+                        self.device_driver = '2in5'  # Default
+                        drivers = param.split('.')
+                        if len(drivers) > 0:
+                            self.device_driver = drivers[1].lower()
 
                     else:
                         self.invalidParameter(ConfigFile,option,parameter)
@@ -543,6 +561,9 @@ class Configuration:
                         self.rotary_gpio_pullup = GPIO.PUD_OFF 
                     else:
                         self.rotary_gpio_pullup = GPIO.PUD_UP 
+
+                elif option == 'rotary_gpio_pullup':
+                    self.ky040_r1_fitted = convertYesNo(parameter)
 
                 elif option == 'rotary_step_size':
                     self.rotary_step_size = parameter
@@ -992,7 +1013,16 @@ class Configuration:
             log.message("Invalid option " + int(iColor), log.ERROR)
         return sColor
 
-    # Get speech
+    # Swith to MEDIA if no Internet available
+    @property
+    def no_internet_switch(self):
+        return self._no_internet_switch
+
+    @no_internet_switch.setter
+    def no_internet_switch(self, parameter):
+        self._no_internet_switch = self.convertYesNo(parameter)
+
+    # Get speech setting
     @property
     def speech(self):
         return self._speech
@@ -1068,6 +1098,15 @@ class Configuration:
     @rotary_gpio_pullup.setter
     def rotary_gpio_pullup(self, value):
         self._rotary_gpio_pullup = value
+
+    # Get KY-040 rotary encoder R1 resistor status 
+    @property
+    def ky040_r1_fitted(self):
+        return self._ky040_r1_fitted
+
+    @ky040_r1_fitted.setter
+    def ky040_r1_fitted(self, value):
+        self._ky040_r1_fitted = value
 
     # Returns the switch GPIO configuration by label
     @property
@@ -1158,17 +1197,17 @@ class Configuration:
     def getDisplayName(self):
         name = self.DisplayTypes[self.display_type]
         if name == 'LUMA':
-            name = name + '.' + self.luma_device
+            name = name + '.' + self.device_driver
         return name
 
     # Get LUMA device name eg SH1106 SSD1306
     @property
-    def luma_device(self):
-        return self._luma_device
+    def device_driver(self):
+        return self._device_driver
 
-    @luma_device.setter
-    def luma_device(self, value):
-        self._luma_device = value
+    @device_driver.setter
+    def device_driver(self, value):
+        self._device_driver = value
 
     # Get LCD width
     @property
@@ -1677,12 +1716,12 @@ class Configuration:
 
     # RGB I2C Rotary Encodernterrupt pins 
     @property
-    def volume_interrupt_pin(self):
-        return self._volume_interrupt_pin
+    def channel_interrupt_pin(self):
+        return self._channel_interrupt_pin
 
-    @volume_interrupt_pin.setter
-    def volume_interrupt_pin(self, parameter):
-        self._volume_interrupt_pin = int(parameter)
+    @channel_interrupt_pin.setter
+    def channel_interrupt_pin(self, parameter):
+        self._channel_interrupt_pin = int(parameter)
 
     @property
     def volume_interrupt_pin(self):
@@ -1714,9 +1753,10 @@ class Configuration:
 
 # End Configuration of class
 
+
 # Test Configuration class and diagnostics
 if __name__ == '__main__':
-
+    import subprocess
     config = Configuration()
 
     # Convert True/False to Yes/No
@@ -1767,6 +1807,7 @@ if __name__ == '__main__':
     print ("Speech volume adjustment (speech_volume):", str(config.speech_volume) + '%')
     print ("Speak info (speak_info):", TrueFalse2yn(config.speak_info))
     print ("Allow playlists playlists (update_playlists):", TrueFalse2yn(config.update_playlists))
+    print ("Load MEDIA if no Internet (no_internet_switch):",TrueFalse2yn(config.no_internet_switch))
 
     print('')
     for switch_label in config.switches:
@@ -1788,15 +1829,18 @@ if __name__ == '__main__':
     print('')
     rclass = ['Standard', 'Alternative',  'rgb_rotary', 'rgb_i2c_rotary']
     print ("Rotary class:", config.rotary_class, rclass[config._rotary_class])
-    rotary_pullup = "PUD_UP" 
+    rotary_pullup = "up {GPIO.PUD_UP}" 
     if  config.rotary_gpio_pullup == GPIO.PUD_OFF: 
-        rotary_pullup = "PUD_OFF" 
+        rotary_pullup = "none {GPIO.PUD_OFF}" 
     print ("Rotary resistor pullup (rotary_pullup):", rotary_pullup)
     if config.rotary_step_size:
         step_size = 'half' 
     else:
         step_size = 'full' 
     print ("Rotary step size (rotary_step_size):", step_size)
+    print ("KY040 rotary encoder R1 resistor fitted: (ky040_r1_fitted):",
+            TrueFalse2yn(config.ky040_r1_fitted))
+
     print ("Volume RGB I2C hex address (volume_rgb_i2c):",hex(config.volume_rgb_i2c))
     print ("Channel RGB I2C hex address (channel_rgb_i2c):",hex(config.channel_rgb_i2c))
     print ("Volume RGB I2C interrupt pin (volume_interrupt_pin):",config.volume_interrupt_pin)
@@ -1871,6 +1915,16 @@ if __name__ == '__main__':
     print ("\n[AIRPLAY] section")
     print ("----------------")
     print ("Airplay (airplay):", TrueFalse2yn(config.airplay))
+
+    # Display nuber of active lines in /etc/radiod.conf
+    cmd = 'cat ' + ConfigFile + '| grep "^[a-z||A-Z]"| wc -l'
+    lines = subprocess.check_output(cmd,shell=True )
+    lines = lines.strip()
+    lines = lines.decode('utf-8')
+
+    print ("\n==========================================")
+    print(str(lines) + " active lines found in /etc/radiod.conf")
+    print ("==========================================")
 # End of __main__
 
 # set tabstop=4 shiftwidth=4 expandtab

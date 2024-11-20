@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.12 2024/06/19 15:16:16 bob Exp $
+# $Id: lcd_class.py,v 1.13 2002/02/03 09:37:44 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -104,7 +104,7 @@ class Lcd:
 
     width = LCD_WIDTH
     # If display can support umlauts set to True else False
-    scroll_speed = 0.3       # Default scroll speed
+    scroll_speed = 0.2       # Default scroll speed
 
     def __init__(self):
         return
@@ -298,7 +298,7 @@ class Lcd:
         # Small delay before scrolling
         if not skip:
             for i in range(0, 10):
-                time.sleep(0.1)
+                time.sleep(self.scroll_speed)
                 if interrupt():
                     skip = True
                     break
@@ -317,7 +317,7 @@ class Lcd:
         # Small delay before exiting
         if not skip:
             for i in range(0, 10):
-                time.sleep(0.1)
+                time.sleep(self.scroll_speed)
                 if interrupt():
                     break
         return

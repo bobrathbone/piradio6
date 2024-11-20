@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.71 2002/01/09 18:41:58 bob Exp $
+# $Id: configure_audio.sh,v 1.1 2002/02/24 14:42:36 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -23,6 +23,15 @@
 # This script requires an English locale(C)
 export LC_ALL=C
 
+FLAGS=$1
+DIR=/usr/share/radio
+# Test flag - change to current directory
+if [[ ${FLAGS} == "-t" ]]; then
+    DIR=$(pwd)
+fi
+LOGDIR=${DIR}/logs
+LOG=${LOGDIR}/audio.log
+
 SKIP_PKG_CHANGE=$1
 SCRIPT=$0
 
@@ -36,22 +45,20 @@ MPDCONFIG=/etc/mpd.conf
 ASOUNDCONF=/etc/asound.conf
 MODPROBE=/etc/modprobe.d/alsa-base.conf
 MODULES=/proc/asound/modules
-DIR=/usr/share/radio
 CONFIG=/etc/radiod.conf
 ASOUND_DIR=${DIR}/asound
 AUDIO_INTERFACE="alsa"
 LIBDIR=/var/lib/radiod
 PIDFILE=/var/run/radiod.pid
-I2SOVERLAY="dtoverlay=i2s-mmap"
 PULSEAUDIO=/usr/bin/pulseaudio
 SPOTIFY_CONFIG=/etc/default/raspotify
 MIXER_ID_FILE=${LIBDIR}/mixer_volume_id
 PULSE_PA=/etc/pulse/default.pa
 OS_RELEASE=/etc/os-release
-LOGDIR=${DIR}/logs
-LOG=${LOGDIR}/audio.log
 
-BLUETOOTH_SERVICE=/lib/systemd/system/bluetooth.service
+# Waveshare WM8960 DAC alsamixer commands
+WM8960_ALSA_STORE="sudo alsactl store --file  /etc/wm8960-soundcard/wm8960_asound.state"
+ALSA_RESTORE="/usr/sbin/alsactl restore"
 
 # Audio types
 JACK=1  # Audio Jack or Sound Cards
@@ -96,6 +103,7 @@ sudo chown ${USR}:${GRP} ${LOGDIR}
 
 sudo rm -f ${LOG}
 echo "$0 configuration log, $(date) " | tee ${LOG}
+sudo chown ${USR}:${GRP} ${LOG}
 
 # Get OS release ID
 function release_id
@@ -114,6 +122,16 @@ function codename
     arr=(${VERSION_CODENAME//=/ })
     CODENAME=$(echo "${arr[1]}" | tr -d '"')
     echo ${CODENAME}
+}
+
+function no_install
+{
+    echo
+    echo "WARNING!" 
+    echo "You cannot configure $1 during the initial installation" | tee -a ${LOG}
+    echo "Finish installing the radio package first then run radio-config from the command line"
+    echo "Press enter to continue: "
+    read x
 }
 
 # Identify card ID from "aplay -l" command
@@ -169,7 +187,7 @@ sleep 2 # Allow time for service to stop
 # If the above fails check pid
 if [[ -f  ${PIDFILE} ]];then
     rpid=$(cat ${PIDFILE})
-    if [[ $? == 0 ]]; then  # Don't seperate from above
+    if [[ $? == 0 ]]; then  # Don't separate from above
         sudo kill -TERM ${rpid}  >/dev/null 2>&1
     fi
 fi
@@ -295,14 +313,10 @@ do
         TYPE=${DAC}
 
     elif [[ ${ans} == '13' ]]; then
+        # Bluetooth is setup in the configure_bluetooth.sh script
         DESC="Bluetooth device"
-        # NAME is set up later
-        MIXER="software"
-        USE_PULSE=1
-        AUDIO_INTERFACE="pulse"
         TYPE=${BLUETOOTH}
-        ASOUND_CONF_DIST=${ASOUND_CONF_DIST}.blue
-        LOCK_CONFIG=1   
+        SCARD="bluetooth"
         CARD=-1     # No cards displayed (aplay -l) 
 
     elif [[ ${ans} == '14' ]]; then
@@ -351,6 +365,8 @@ do
     whiptail --title "$DESC selected" --yesno "Is this correct?" 10 60
     selection=$?
 done 
+
+echo "$DESC selected, dtoverlay ${DTOVERLAY}" | tee -a ${LOG}
 
 # Handle RPi Display cards
 if [[ ${TYPE} == ${RPI} ]]; then
@@ -401,6 +417,102 @@ if [[ ${TYPE} == ${RPI} ]]; then
         whiptail --title "$DESC selected" --yesno "Is this correct?" 10 60
         selection=$?
     done
+    echo "Rasperry Pi $DESC selected" | tee -a ${LOG}
+fi
+
+
+# Waveshare WM8960 DAC driver options
+ADJ_ALSA=0
+REMOVE_WM8960=0
+INSTALL_WM8960=0
+if [[ ${TYPE} == ${WM8960} ]]; then
+
+    if [[ ${SKIP_PKG_CHANGE} == "-s" ]]; then
+        no_install "Waveshare WM8960 Hat"
+        exit 0
+    else
+        echo "Installing WM8960 packages" | tee -a ${LOG}
+        ${DIR}/install_wm8960.sh 
+    fi
+
+    status=$(dkms status wm8960-soundcard)  
+    echo ${status} | tee -a ${LOG}
+    if [[ ${status} != "" ]]; then  
+        selection=1 
+        while [ $selection != 0 ]
+        do
+            ans=$(whiptail --title "Select audio output" --menu "Choose your option" 18 75 12 \
+            "1" "Adjust sound mixer settings (alsamixer)" \
+            "2" "Re-install Waveshare WM8960 DAC driver (Run Un-install first)" \
+            "3" "Un-install Waveshare WM8960 DAC driver" 3>&1 1>&2 2>&3)
+
+            exitstatus=$?
+            if [[ $exitstatus != 0 ]]; then
+                exit 0
+            fi
+
+            if [[ ${ans} == '1' ]]; then
+                DESC="Adjust sound mixer settings"
+                ADJ_ALSA=1
+            fi
+
+            if [[ ${ans} == '2' ]]; then
+                DESC="install Waveshare WM8960 DAC driver"
+                INSTALL_WM8960=1
+            fi
+
+            if [[ ${ans} == '3' ]]; then
+                DESC="Remove Waveshare WM8960 DAC driver"
+                REMOVE_WM8960=1
+            fi
+
+            whiptail --title "$DESC selected" --yesno "Is this correct?" 10 60
+            selection=$?
+        done
+    else         
+        INSTALL_WM8960=1
+    fi
+fi
+
+if [[ ${ADJ_ALSA} == '1' ]]; then
+    echo | tee -a ${LOG}
+    echo "The program will now call alsamixer to adjust output settings"
+    echo "Press F6 in alsamixer to select the Waveshare DAC (wm8960-soundcard)"
+    echo "After running alsamixer press ESC to save settings or Ctl-C to abandon them"
+    echo -n "Continue y/n: "
+    read ans
+    if [[ ${ans} == 'y' ]]; then
+        sudo ${ALSA_RESTORE} | tee -a ${LOG}
+        /usr/bin/alsamixer | tee -a ${LOG}
+        if [[ $? == 0 ]]; then  # Do not separate from above
+            echo "Saving alsamixer settings" | tee -a ${LOG}
+            sudo ${WM8960_ALSA_STORE} | tee -a ${LOG}
+        else
+            clear
+        fi
+    fi
+    exit 0
+fi
+
+if [[ ${INSTALL_WM8960} == '1' ]]; then
+    echo | tee -a ${LOG}
+    cd ${DIR}/WM8960-Audio-HAT 
+    echo "Installng Waveshare DAC driver (wm8960-soundcard)" | tee -a ${LOG}
+    sudo ./install_wm8960.sh | tee -a ${LOG}
+fi
+
+if [[ ${REMOVE_WM8960} == '1' ]]; then
+    echo | tee -a ${LOG}
+    echo "Un-installng Waveshare DAC driver (wm8960-soundcard)?" | tee -a ${LOG}
+    cd ${DIR}/WM8960-Audio-HAT 
+    if [[ $? == 0 ]]; then  # Do not separate from above
+        sudo ./uninstall.sh | tee -a ${LOG}
+        sudo rm -rf ${DIR}/WM8960-Audio-HAT | tee -a ${LOG}
+        sudo rm -f /etc/wm8960-soundcard | tee -a ${LOG}
+    else
+        echo "${DIR}/WM8960-Audio-HAT already un-installed" | tee -a ${LOG}
+    fi
+    exit 0
 fi
 
 # Summarise selection
@@ -414,48 +526,51 @@ if [[ ! -f /usr/bin/amixer && ${SKIP_PKG_CHANGE} != "-s" ]]; then
     sudo apt-get --yes install ${PKG}
 fi
 
-# Check if required pulse audio installed
-if [[ ${USE_PULSE} == 1 ]]; then
-    if [[ ! -f ${PULSEAUDIO} ]]; then
-        if [[ ${SKIP_PKG_CHANGE} == "-s" ]]; then
-            echo "${DESC} requires pulseaudio to run correctly" | tee -a ${LOG}
-            echo "Run: sudo apt-get install pulseaudio" | tee -a ${LOG}
-            echo "and re-run ${SCRIPT}" | tee -a ${LOG}
-            exit 1
-        else
-            PKG="pulseaudio"
-            echo "Installing ${PKG} package" | tee -a ${LOG}
-            sudo apt-get --yes install ${PKG}
+# Check if required pulse audio installed. 
+# Bluetooth is handled in configure_bluetooth.sh
+if [[ ${TYPE} != ${BLUETOOTH} ]]; then
+    if [[ ${USE_PULSE} == 1 ]]; then
+        if [[ ! -f ${PULSEAUDIO} ]]; then
+            if [[ ${SKIP_PKG_CHANGE} == "-s" ]]; then
+                echo "${DESC} requires pulseaudio to run correctly" | tee -a ${LOG}
+                echo "Run: sudo apt-get install pulseaudio" | tee -a ${LOG}
+                echo "and re-run ${SCRIPT}" | tee -a ${LOG}
+                exit 1
+            else
+                PKG="pulseaudio"
+                echo "Installing ${PKG} package" | tee -a ${LOG}
+                sudo apt-get --yes install ${PKG}
 
-            # Set up /etc/pulse/default.pa
-            if [[ ! -f ${PULSE_PA}.orig ]]; then
-                cmd="sudo cp ${PULSE_PA} ${PULSE_PA}.orig"
-                echo $cmd | tee -a ${LOG}
-                $cmd | tee -a ${LOG}
+                # Set up /etc/pulse/default.pa
+                if [[ ! -f ${PULSE_PA}.orig ]]; then
+                    cmd="sudo cp ${PULSE_PA} ${PULSE_PA}.orig"
+                    echo $cmd | tee -a ${LOG}
+                    $cmd | tee -a ${LOG}
+                fi
+                
             fi
-            
         fi
-    fi
-    grep "^load-module module-native-protocol-tcp" ${PULSE_PA}
-    if [[ $? != 0 ]]; then  # Do not separate from above
-        cmd="sudo cp ${PULSE_PA}.orig ${PULSE_PA}"
-        echo $cmd | tee -a ${LOG}
-        $cmd | tee -a ${LOG}
-        sudo sed -i -e "0,/^load-module module-native-protocol-unix/{s/load-module module-native-protocol-unix/load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1/}" ${PULSE_PA}
-    fi
-else
-    if [[ -f ${PULSEAUDIO} ]]; then
-        if [[ ${SKIP_PKG_CHANGE} == '-s' ]]; then
-            echo "${DESC} requires pulseaudio to be removed" | tee -a ${LOG}
-            echo "Run: sudo apt-get remove pulseaudio" | tee -a ${LOG}
-            echo "and re-run ${SCRIPT}" | tee -a ${LOG}
-            echo "" | tee -a ${LOG}
-        else
-            echo "Un-installng pulseaudio" | tee -a ${LOG}
-            sudo apt --yes remove pulseaudio | tee -a ${LOG}
+        grep "^load-module module-native-protocol-tcp" ${PULSE_PA}
+        if [[ $? != 0 ]]; then  # Do not separate from above
+            cmd="sudo cp ${PULSE_PA}.orig ${PULSE_PA}"
+            echo $cmd | tee -a ${LOG}
+            $cmd | tee -a ${LOG}
+            sudo sed -i -e "0,/^load-module module-native-protocol-unix/{s/load-module module-native-protocol-unix/load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1/}" ${PULSE_PA}
         fi
-    fi
+    else
+        if [[ -f ${PULSEAUDIO} ]]; then
+            if [[ ${SKIP_PKG_CHANGE} == '-s' ]]; then
+                echo "${DESC} requires pulseaudio to be removed" | tee -a ${LOG}
+                echo "Run: sudo apt-get remove pulseaudio" | tee -a ${LOG}
+                echo "and re-run ${SCRIPT}" | tee -a ${LOG}
+                echo "" | tee -a ${LOG}
+            else
+                echo "Un-installng pulseaudio" | tee -a ${LOG}
+                sudo apt-get --yes remove pulseaudio | tee -a ${LOG}
+            fi
+        fi
 
+    fi
 fi
 
 # Lock audio configuration if required (radiod won't dynamically configure Card number)
@@ -467,7 +582,8 @@ else
     sudo sed -i -e "0,/^audio_config_locked=/{s/audio_config_locked=.*/audio_config_locked=no/}" ${CONFIG}
 fi
 
-# Check if audio_out parameter in configuration file
+grep "^audio_config_locked="  ${CONFIG} | tee -a ${LOG}
+
 # Configure pulseaudio package
 PKG="pulseaudio"
 if [[ -x /usr/bin/${PKG} && ${USE_PULSE} == 1 ]]; then
@@ -529,75 +645,24 @@ elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
     # Install Bluetooth packages 
     if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
         echo "Installing Bluetooth packages" | tee -a ${LOG}
-        sudo apt --yes install pulseaudio-module-bluetooth 
-    fi
-
-    echo "Configuring Blutooth device as output" | tee -a ${LOG}
-
-    # Configure bluealsa
-    echo |  tee -a ${LOG}
-    echo "Bluetooth device configuration"  |  tee -a ${LOG}
-    echo "------------------------------"  |  tee -a ${LOG}
-    if [[ $(release_id) -lt 12 ]]; then
-        PAIRED=$(bluetoothctl paired-devices)
+        ${DIR}/configure_bluetooth.sh 
     else
-        PAIRED=$(bluetoothctl devices)
+        no_install "Bluetooth"
     fi
-    echo ${PAIRED} |  tee -a ${LOG}
-    BT_NAME=$(echo ${PAIRED} | awk '{print $3}')
-    BT_DEVICE=$( echo ${PAIRED} | awk '{print $2}')
-
-    # Disable Sap initialisation in bluetooth.service   
-    grep "noplugin=sap" ${BLUETOOTH_SERVICE}
-    if [[ $? != 0 ]]; then  # Do not seperate from above
-        echo "Disabling Sap driver in  ${BLUETOOTH_SERVICE}" | tee -a ${LOG}
-        sudo sed -i -e 's/^ExecStart.*/& --plugin=a2dp --noplugin=sap/' ${BLUETOOTH_SERVICE} | tee -a ${LOG}
-    fi
-
-    # Connect the Bluetooth device
-    if [[  ${BT_DEVICE} != '' ]];then
-        echo "Bluetooth device ${BT_NAME} ${BT_DEVICE} found"  |  tee -a ${LOG}
-        NAME=${BT_NAME}
-        DEVICE="bluetooth"
-        cmd="bluetoothctl trust ${BT_DEVICE}" 
-        echo $cmd | tee -a ${LOG}
-        $cmd | tee -a ${LOG}
-        cmd="bluetoothctl connect ${BT_DEVICE}" 
-        echo $cmd | tee -a ${LOG}
-        $cmd | tee -a ${LOG}
-        cmd="bluetoothctl discoverable on" 
-        echo $cmd | tee -a ${LOG}
-        $cmd | tee -a ${LOG}
-        cmd="bluetoothctl info ${BT_DEVICE}" 
-        echo $cmd | tee -a ${LOG}
-        $cmd | tee -a ${LOG}
-
-        # Configure bluetooth device in /etc/radiod.conf 
-        sudo sed -i -e "0,/^bluetooth_device/{s/bluetooth_device.*/bluetooth_device=${BT_DEVICE}/}" ${CONFIG}
-    else
-        echo "Error: No paired bluetooth devices found" | tee -a ${LOG}
-        echo "Use bluetoothctl to pair Bluetooth device" | tee -a ${LOG}
-        echo "and re-run this program with the following commands" | tee -a ${LOG}
-        echo "  cd ${DIR} " | tee -a ${LOG}
-        echo "  sudo ./configure_audio.sh  " | tee -a ${LOG}
-        echo -n "Press enter to continue: "
-        read ans
-        exit 1
-    fi
-    SCARD="bluetooth"
+    exit 0
 fi
 
-# Configure the audio_out parameter in /etc/radiod.conf
-echo |  tee -a ${LOG}
-echo "Configuring audio_out parameter in ${CONFIG} with ${SCARD} " | tee -a ${LOG}
-sudo sed -i -e "0,/audio_out=/{s/^#aud/aud/}" ${CONFIG}
-sudo sed -i -e "0,/audio_out=/{s/^audio_out=.*/audio_out=\"${SCARD}\"/}" ${CONFIG}
-grep -i "audio_out="  ${CONFIG} | tee -a ${LOG}
-
 # Configure Card device using the audio_out parameter configured above in /etc/radiod.conf 
-if [[ ${TYPE} != ${BLUETOOTH} ]]; then
+if [[ ${TYPE} !=  ${BLUETOOTH} ]]; then
+    # Configure the audio_out parameter in /etc/radiod.conf
+    echo |  tee -a ${LOG}
+    echo "Configuring audio_out parameter in ${CONFIG} with ${SCARD} " | tee -a ${LOG}
+    sudo sed -i -e "0,/audio_out=/{s/^#aud/aud/}" ${CONFIG}
+    sudo sed -i -e "0,/audio_out=/{s/^audio_out=.*/audio_out=\"${SCARD}\"/}" ${CONFIG}
+    grep -i "audio_out="  ${CONFIG} | tee -a ${LOG}
+
     CARD_ID=$(card_id ${SCARD})
-    echo "Card ${SCARD} ID ${CARD_ID}"
+    echo "Card ${SCARD} ID ${CARD_ID}" | tee -a ${LOG}
     DEVICE=$(echo ${DEVICE} | sed -e 's/:0/:'"${CARD_ID}"'/')
 fi
 
@@ -627,11 +692,6 @@ fi
 # Save original configuration 
 if [[ ! -f ${MPDCONFIG}.orig ]]; then
     grep ^audio_output ${MPDCONFIG}
-    if [[ $? != 0 ]]; then
-        echo "Correcting corrupt ${MPDCONFIG} (Missing audio_out definition)" 
-        sudo cp -f -p ${DIR}/mpd.conf ${MPDCONFIG}
-        sudo cp -f -p ${DIR}/mpd.conf ${MPDCONFIG}.orig
-    fi
     sudo cp -f -p ${MPDCONFIG} ${MPDCONFIG}.orig
 fi
 
@@ -642,23 +702,16 @@ echo "Device ${DEVICE}"
 NAME=$(echo ${NAME} | sed 's/\//\\\//')
 DEVICE=$(echo ${DEVICE} | sed 's/\//\\\//')
 
-if [[ ${TYPE} == ${BLUETOOTH} ]]; then
-    sudo sed -i -e "0,/^\sname/{s/\sname.*/\tname\t\t\"${NAME}\"/}" ${MPDCONFIG}
-    sudo sed -i -e "0,/^\stype/{s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
-    sudo sed -i -e "0,/device/{s/.*device.*/\tserver\t\t\"127.0.0.1\"/}" ${MPDCONFIG}
-    sudo sed -i -e "0,/device <btdevice>/{s/device <btdevice>/device \"${BT_DEVICE}\"/g}" ${ASOUNDCONF}
-    sudo sed -i -e "0,/defaults.bluealsa.device <btdevice>/{s/device <btdevice>/device \"${BT_DEVICE}\"/g}" ${ASOUNDCONF}
+sudo sed -i -e "0,/^\stype/{s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
+sudo sed -i -e "0,/^\sname/{s/\sname.*/\tname\t\t\"${NAME}\"/}" ${MPDCONFIG}
+sudo sed -i -e "0,/mixer_type/{s/.*mixer_type.*/\tmixer_type\t\"${MIXER}\"/}" ${MPDCONFIG}
+sudo sed -i -e "/^#/ ! {s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
+if [[ ${PIVUMETER} == 1 ]]; then
+    sudo sed -i -e "0,/device/{s/.*device.*/\#\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
 else
-    sudo sed -i -e "0,/^\stype/{s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
-    sudo sed -i -e "0,/^\sname/{s/\sname.*/\tname\t\t\"${NAME}\"/}" ${MPDCONFIG}
-    sudo sed -i -e "0,/mixer_type/{s/.*mixer_type.*/\tmixer_type\t\"${MIXER}\"/}" ${MPDCONFIG}
-    sudo sed -i -e "/^#/ ! {s/\stype.*/\ttype\t\t\"${AUDIO_INTERFACE}\"/}" ${MPDCONFIG}
-    if [[ ${PIVUMETER} == 1 ]]; then
-        sudo sed -i -e "0,/device/{s/.*device.*/\#\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
-    else
-        sudo sed -i -e "0,/device/{s/.*device.*/\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
-    fi
+    sudo sed -i -e "0,/device/{s/.*device.*/\tdevice\t\t\"${DEVICE}\"/}" ${MPDCONFIG}
 fi
+  
 if [[ ${TYPE} == ${WM8960} ]]; then
     # Set up aplay pipe
     #sudo sed -i -e "0,/device/{s/.*device.*/\tcommand\t\t\"${COMMAND}\"/}" ${MPDCONFIG}
@@ -679,7 +732,7 @@ fi
 
 # Save all new alsa settings
 sudo alsactl store
-if [[ $? != 0 ]]; then  # Don't seperate from above
+if [[ $? != 0 ]]; then  # Don't separate from above
     echo "Failed to alsa settings"
 fi
 
@@ -720,27 +773,13 @@ if [[ ${DTOVERLAY} != "" || ${TYPE} == ${HDMI} ]]; then
         OVERLAY_LOADED=0
     fi
 else
-    if [[ ${TYPE} == ${BLUETOOTH} || ${TYPE} == ${USB} || ${TYPE} == ${WM8960} ]]; then
+    if [[ ${TYPE} == ${USB} || ${TYPE} == ${WM8960} ]]; then
         # Switch off onboard devices (headphones and HDMI) if bluetooth or USB
         sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
         sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
     else
         sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=on/g'  ${BOOTCONFIG}
         sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=on/g'  ${BOOTCONFIG}
-    fi
-fi
-
-# Switch on I2S audio for PCM5102A devices
-sudo sed -i 's/^#dtparam=i2s=.*$/dtparam=i2s=on/g'  ${BOOTCONFIG}
-
-# Configure I2S overlay
-grep "^#${I2SOVERLAY}" ${BOOTCONFIG} >/dev/null 2>&1
-if [[ $?  == 0 ]]; then
-        sudo sed -i 's/^#dtoverlay=i2s-mmap/dtoverlay=i2s-mmap/g'  ${BOOTCONFIG}
-else
-    grep "^${I2SOVERLAY}" ${BOOTCONFIG} >/dev/null 2>&1
-    if [[ $?  != 0 ]]; then
-        sudo  bash -c "echo ${I2SOVERLAY} >> ${BOOTCONFIG}"
     fi
 fi
 
@@ -764,19 +803,6 @@ grep ^dtoverlay ${BOOTCONFIG} | tee -a ${LOG}
 echo | tee -a ${LOG}
 DESC=$(echo ${DESC} | sed 's/\\\//\//g')
 echo "${DESC} configured" | tee -a ${LOG}
-
-grep ^audio_out= ${CONFIG}
-if [[ $? != 0 ]]; then  # Don't seperate from above
-        echo "ERROR: audio_out parameter missing from ${CONFIG}" | tee -a ${LOG}
-        echo "At the end of this program run \"amixer controls | grep card\" " | tee -a ${LOG}
-        echo "to display available audio output devices" | tee -a ${LOG}
-        echo '' | tee -a ${LOG}
-        echo "Add the audio_out parameter to ${CONFIG} as shown below" | tee -a ${LOG}
-        echo "     audio_out=\"<unique string>\"" | tee -a ${LOG}
-        echo "     Where: <unique string> is a unique string from the amixer command output" | tee -a ${LOG}
-        echo "Enter to continue: "
-        read ans
-fi
 
 cmd="sudo echo 0 > ${MIXER_ID_FILE}"
 echo ${cmd} | tee -a ${LOG}

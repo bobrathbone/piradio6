@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.69 2002/01/02 14:33:43 bob Exp $
+# $Id: display_class.py,v 1.81 2002/01/23 07:39:03 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -50,7 +50,7 @@ class Display:
     # The OLED_128x64, ST7789TFT and SSD1306 OLEDS all display volume as
     # a bar on the bottom line of the screen. True for OLEDs, False for LCDs 
     _isOLED = False
-    _mute_line = 4  # OLEDs only. Line to display mute message
+    _mute_line = 4  # Line to display mute message
     _refresh_volume_bar = False  # If previously muted force display of OLED volume slider
     _no_scrolling = False   # Suppress scrolling during volume display update
 
@@ -63,16 +63,18 @@ class Display:
         self.translate = translate
 
     # Initialise 
-    def init(self,callback=None,display2_type=0,display2_i2c=0,luma_name=""):
+    def init(self,callback=None,display2_type=0,display2_i2c=0,device_name=""):
         self.callback = callback
         log.init('radio')
-        self.setupDisplay(display2_type,display2_i2c,luma_name)
+        self.setupDisplay(display2_type,display2_i2c,device_name)
     
     # Set up configured screen class
     # If display2_type or display2_i2c are set they override the settings
     # in /etc/radiod.conf to support a two screen system
-    def setupDisplay(self,display2_type,display2_i2c,luma_name):
-        global screen
+    def setupDisplay(self,display2_type,display2_i2c,device_name):
+        global screen,config
+        device_driver = ''
+
         if display2_type > 0:
             dtype = display2_type
         else:
@@ -222,20 +224,34 @@ class Display:
         elif dtype == config.LUMA:
             from luma_class import LUMA
             screen = LUMA()
-            if len(luma_name) > 0:
-                luma_device = luma_name
+            if len(device_name) > 0:
+                device_driver = device_name
             else:
-                luma_device = config.luma_device
+                device_driver = config.device_driver
             rotation = 0
             if config.flip_display_vertically:
                 rotation = 2
             screen.init(callback=self.callback,code_page=code_page, 
-                        luma_device=luma_device,rotation=rotation,
+                        device_driver=device_driver,rotation=rotation,
                         font_size=config.font_size,font_name=config.font_name)
             screen.setScrollSpeed(scroll_speed)
             self.has_buttons = False # Use standard button interface
             self._isOLED = True
             self._mute_line = 4
+
+        elif dtype == config.WS_SPI_SSD1309:
+            from ws_spi_ssd1309_class import WS_spi_ssd1309
+            screen = WS_spi_ssd1309()
+            if len(device_name) > 0:
+                device_driver = device_name
+            else:
+                device_driver = config.device_driver
+            flip = config.flip_display_vertically
+            screen.init(callback=self.callback,flip=flip,device_driver=device_driver)
+            self._isOLED = True
+            screen.setScrollSpeed(scroll_speed)
+            self._mute_line = 5
+            screen.drawFrame()  # Specific to this display
 
         else:
             # Default LCD
@@ -243,6 +259,7 @@ class Display:
             screen = Lcd()
             screen.init(code_page = self.code_page)
             screen.setScrollSpeed(scroll_speed)
+            self._mute_line = config.display_lines
 
         # Log code files used and codepage
         log.message("Display code page " + str(hex(self.code_page)), log.INFO)
@@ -251,26 +268,42 @@ class Display:
         for i in range (0,len(font_files)):
             log.message("Loaded " + str(font_files[i]), log.INFO)
 
-        # Set up screen width (if 0 use default)
+        # Set up number of lines (if 0 use default from screen driver)
+        self.lines = config.display_lines 
+        if self.lines <= 0:
+            if self._isOLED:
+                self.lines = screen.getLines()
+            else:
+                # If an LCD display_lines = 0 is invalid
+                self.lines = 2
+
+        # Set up screen width (if 0 use default from screen driver)
         self.width = config.display_width  
-
-        self.lines = self.getLines()
-
-        if self.width != 0:
-            screen.setWidth(config.display_width)
-        else:
-            screen.setWidth(SCREEN_WIDTH)
+        if self.width <= 0:
+            # This may be in characters or pixels
+            self.width = screen.getWidth()
+            if self._isOLED:
+                self.width = self.width // 5   # Estimate only
 
         sName  = self.getDisplayName()
-        msg = 'Screen ' + sName + ' Lines=' + str(self.lines) \
-             + ' Width=' + str(self.width) 
+        d =  ''
+        if len(device_driver) > 0:
+            d = '.' + device_driver
+        msg = 'Screen ' + sName + d  + ' Lines=' + str(self.lines) \
+             + ' Character width=' + str(self.width) 
+
+        print(msg)
+        log.message(msg, log.INFO)
         
         if i2c_address > 0 and i2c_interface:
             msg = msg + ' Address=' + hex(i2c_address)
 
         log.message(msg, log.INFO)
 
-        self.splash()
+        if dtype == config.WS_SPI_SSD1309:
+            screen.drawSplash(delay=3)
+        else:
+            self.splash()
 
         # Set up number of lines and display buffer
         for i in range(0, self.lines):
@@ -287,22 +320,16 @@ class Display:
 
     # Get LCD width
     def getWidth(self):
-        self.width = config.display_width
         return self.width
 
     # Set the display width
     def setWidth(self,width):
-        self.width = width
-        return width
+        if not self._isOLED:
+            self.width = width
+        return self.width
 
     # Get LCD number of lines
     def getLines(self):
-        if self._isOLED:
-            self.lines = screen.getLines()
-        else:
-            self.lines = config.display_lines
-            if self.lines < 1:
-                self.lines = 2
         return self.lines
 
     # Switch off scrolling when adjusting the volume
@@ -427,6 +454,9 @@ class Display:
     def hasColor(self):
         return screen.hasColor()
 
+    def getMuteLine(self):
+        return self._mute_line
+
     # LCD Backlight
     def backlight(self, label):
         if self.hasColor():
@@ -485,8 +515,10 @@ class Display:
     def refreshVolumeBar(self):
         if self._isOLED:
             self._refresh_volume_bar = True
-            if self.getLines() == 4:
-                self.out(4, "", no_interrupt)
+            #if self.getLines() == 4:
+            if self.getLines() == self._mute_line:
+                #self.out(4, "", no_interrupt)
+                self.out(self._mute_line, "", no_interrupt)
     
 # End of Display class
 

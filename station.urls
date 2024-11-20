@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.38 2024/08/30 08:51:45 bob Exp $
+# $Id: station.urls,v 1.39 2002/02/10 05:53:40 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -153,7 +153,6 @@
 [Easy hits Florida HD] http://airspectrum.cdnstream1.com:8116/1649_192.m3u
 
 # Norwegian stations
-[NRK1 Oslo] http://lyd.nrk.no/nrk_radio_p1_ostlandssendingen_mp3_h.m3u
 [Radio Nova Oslo] http://stream.radionova.no/fm993.mp3.m3u
 [Ariel Radio] https://streams.radio.co/sf069f3c03/listen
 
@@ -166,10 +165,6 @@
 [P2 Musik] http://http-live.sr.se/p2musik-mp3-192
 [Classical 102] http://tuner.classical102.com:80/
 [Radio Svizzera Classica] http://stream.srg-ssr.ch/rsc_it/mp3_128.m3u
-[Viva Classica!] http://rondo.iradio.fi:8000/viva-hi.mp3
-
-# Disco
-[1.FM - Disco Ball 70's-80's Radio] http://sc-disco.1.fm:8100
 
 # Chill out
 [Lounge-radio.com-Swiss made] http://live.streamhosting.ch:80
@@ -177,11 +172,6 @@
 
 # Latino
 [181.FM Salsa] http://relay.181.fm:8098
-
-# New Zealand
-[ZM Todays Hit Music] http://ais-nzme.streamguys1.com/nz_008_aac
-[The Hits Chch] http://ais-nzme.streamguys1.com/nz_006_aac
-[Radio Hauraki] http://ais-nzme.streamguys1.com/nz_009_aac
 
 # USA
 [181.fm The Mix] http://listen.livestreamingservice.com:8032

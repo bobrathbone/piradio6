@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.146 2002/01/05 08:03:08 bob Exp $
+# $Id: radio_class.py,v 1.151 2002/02/20 05:48:43 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -308,7 +308,11 @@ class Radio:
     def needMixerUpdate(self,MixerIdFile):
         id = 0
         update = False
-        if os.path.isfile(MixerIdFile):
+        audio_out = self.config.audio_out
+        if audio_out == 'bluetooth':
+            update = False
+
+        elif os.path.isfile(MixerIdFile):
             id = self.getStoredInteger(MixerIdFile,0)   
             if id < 1:
                 update = True
@@ -318,7 +322,7 @@ class Radio:
         else:
             update = True
 
-        log.message("radio.setMixerId " + str(update), log.DEBUG)
+        log.message("radio.setMixerId for  %s %s " % (audio_out,str(update)), log.DEBUG)
         return update
 
     # Get IP address 
@@ -543,7 +547,7 @@ class Radio:
         # Restore alsamixer settings (alsa-state/alsa-store services 
         # not working in Bookworm)
         # Temporary workaround until above services fixed
-        cmd = "/usr/sbin/alsactl restore"
+        cmd = "/usr/sbin/alsactl --no-ucm restore"
         log.message(cmd, log.DEBUG)
         self.execCommand(cmd)   
 
@@ -642,6 +646,7 @@ class Radio:
             log.message("Connecting Bluetooth device " + bluetooth_device, log.DEBUG)
             cmd = "bluetoothctl power on"
             os.system(cmd)
+            
             cmd = "bluetoothctl info " + bluetooth_device + " >/dev/null 2>&1"
 
             # Re-pair Bluetooth device if no info for device
@@ -2063,6 +2068,7 @@ class Radio:
                     log.message("No Internet connection: " + str(e), log.ERROR)
                     log.message("Tried " + host + " port " + str(port) , log.ERROR)
                     self.setError(INTERNET_ERROR)
+                    self.ip_addr = ''
                     self.setInterrupt()
                 time.sleep(1)
         else:

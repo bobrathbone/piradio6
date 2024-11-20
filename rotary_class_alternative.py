@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: rotary_class_alternative.py,v 1.6 2024/07/10 10:51:24 bob Exp $
+# $Id: rotary_class_alternative.py,v 1.9 2002/01/23 15:33:05 bob Exp $
 #
 # Raspberry Pi Alternative Rotary Encoder Class
 # Certain Rotary Encoders will not work with the current version of the Rotary class.
@@ -40,12 +40,12 @@ class RotaryEncoderAlternative:
     direction = 0
 
     # Initialise rotary encoder object
-    def __init__(self,pinA,pinB,button,callback):
-        t = threading.Thread(target=self._run,args=(pinA,pinB,button,callback,))
+    def __init__(self,pinA,pinB,button,callback,ky040_r1_fitted=False):
+        t = threading.Thread(target=self._run,args=(pinA,pinB,button,callback,ky040_r1_fitted))
         t.daemon = True
         t.start()
 
-    def _run(self, pinA, pinB, button,callback):
+    def _run(self, pinA, pinB, button, callback, ky040_r1_fitted):
         self.pinA = pinA
         self.pinB = pinB
         self.button = button
@@ -54,19 +54,28 @@ class RotaryEncoderAlternative:
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         
-        # The following lines enable the internal pull-up resistors
-        # on version 2 (latest) boards
-        if pinA > 0 and pinB > 0:
-            GPIO.setup(self.pinA, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.setup(self.pinB, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            # Add event detection to the GPIO inputs
-            GPIO.add_event_detect(self.pinA, GPIO.BOTH, callback=self.switch_event)
-            GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.switch_event)
-        if button > 0:
-            GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            # Add event detection to the GPIO inputs
-            GPIO.add_event_detect(self.button, GPIO.BOTH, callback=self.button_event, bouncetime=200)
-        return
+        try:
+            # The following lines enable the internal pull-up resistors
+            # on version 2 (latest) boards
+            if pinA > 0 and pinB > 0:
+                GPIO.setup(self.pinA, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.setup(self.pinB, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                # Add event detection to the GPIO inputs
+                GPIO.add_event_detect(self.pinA, GPIO.BOTH, callback=self.switch_event)
+                GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.switch_event)
+            if button > 0:
+                gpio = self.button
+                if ky040_r1_fitted:
+                    GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_OFF)
+                else:
+                    GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                # Add event detection to the GPIO inputs
+                GPIO.add_event_detect(self.button, GPIO.BOTH, callback=self.button_event, 
+                                       bouncetime=200)
+            
+        except Exception as e:
+            print("Rotary Encoder initialise error GPIO %s %s" % (gpio,str(e)))
+            sys.exit(1)
 
     # Call back routine called by switch events
     def switch_event(self,switch):
@@ -166,16 +175,30 @@ if __name__ == "__main__":
     up_switch = config.getSwitchGpio("up_switch")
     menu_switch = config.getSwitchGpio("menu_switch")
 
+    if config.rotary_step_size:
+        step_size = 'half'
+    else:
+        step_size = 'full'
+
+    ky040_r1_fitted = config.ky040_r1_fitted
+    if ky040_r1_fitted:
+        r1_fitted = 'yes'
+    else:
+        r1_fitted = 'no'
+
     print("Left switch GPIO", left_switch)
     print("Right switch GPIO", right_switch)
     print("Up switch GPIO", up_switch)
     print("Down switch GPIO", down_switch)
     print("Mute switch GPIO", mute_switch)
     print("Menu switch GPIO", menu_switch)
+    print("Rotary encoder step size =", step_size)
+    print("KY040 rotary encoder R1 resistor fitted =", ky040_r1_fitted)
 
     volumeknob = RotaryEncoderAlternative(left_switch,right_switch,mute_switch,volume_event)
     tunerknob = RotaryEncoderAlternative(down_switch,up_switch,menu_switch,tuner_event)
 
+    print("Waiting for events")
     try:
         while True:
             time.sleep(0.05)

@@ -1,13 +1,13 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.52 2002/01/11 09:45:02 bob Exp $
+# $Id: configure_radio.sh,v 1.2 2002/02/24 16:31:38 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
 # This program is used during installation to set up which
-# radio daemon is to be used
+# radio daemon and peripherals are to be used
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
@@ -24,6 +24,7 @@ FLAGS=$1
 SERVICE=/lib/systemd/system/radiod.service
 BINDIR="\/usr\/share\/radio\/"  # Used for sed so \ needed
 DIR=/usr/share/radio
+SCRIPTS=${DIR}/scripts
 
 # Development directory
 if [[ ! -d ${DIR} ]];then
@@ -32,23 +33,30 @@ if [[ ! -d ${DIR} ]];then
 fi
 
 # Version 7.5 onwards allows any user with sudo permissions to install the software
-USR=$(logname)
-GRP=$(id -g -n ${USR})
+USER=$(logname)
+GRP=$(id -g -n ${USER})
 
 OS_RELEASE=/etc/os-release
 LOGDIR=${DIR}/logs
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/config.txt
 BOOTCONFIG_2=/boot/firmware/config.txt
+CMDLINE=/boot/cmdline.txt
+CMDLINE_2=/boot/firmware/cmdline.txt
 ETCMODULES=/etc/modules
 MPDCONF=/etc/mpd.conf
 WXCONFIG=/etc/weather.conf
 LOG=${LOGDIR}/install.log
+NODAEMON_LOG=${LOGDIR}/radiod_nodaemon.log
 SPLASH="bitmaps\/raspberry-pi-logo.bmp" # Used for sed so \ needed
+MANAGE_PIP=/usr/lib/python3.11/EXTERNALLY-MANAGED 
 
 # X-Window parameters
 LXSESSION=""    # Start desktop radio at boot time
-WAYFIRE_INI=/home/$USR/.config/wayfire.ini
+WAYFIRE_INI=/home/$USER/.config/wayfire.ini
+LABWC_DIR=/home/$USER/.config/labwc
+LABWC_AUTOSTART=${LABWC_DIR}/autostart
+LABWC=/usr/bin/labwc
 FULLSCREEN=""   # Start graphic radio fullscreen
 SCREEN_SIZE="800x480"   # Screen size 800x480, 720x480 or 480x320
 
@@ -67,13 +75,14 @@ PULL_UP_DOWN=0  # Pull up/down resistors 1=Up, 0=Down
 USER_INTERFACE=0    # 0 Not configured, 1=Buttons, 2=Rotary encoders, 3=HDMI/Touch-screen
             # 4=IQaudIO(I2C), 5=Pimoroni pHAT(SPI), 6=Adafruit RGB(I2C),
             # 7=PiFace CAD, 8=Pirate Audio, 9=pHat with 3 buttons and joystick 
+
 # Display type
 DISPLAY_TYPE=""
 I2C_REQUIRED=0
 I2C_ADDRESS="0x0"
 SPI_REQUIRED=0
 PIFACE_REQUIRED=0	
-SCROLL_SPEED="0.02" 
+SCROLL_SPEED="0.2" 
 ROTARY_CLASS="standard"    # Standard abc Rotary Encoders
 ROTARY_HAS_RESISTORS=0	# Support for KY-040 or ABC Rotary encoders
 ADAFRUIT_SSD1306=0	# Adafruit SSD1306 libraries required
@@ -81,8 +90,9 @@ ADAFRUIT_SSD1306=0	# Adafruit SSD1306 libraries required
 # Display characteristics
 I2C_ADDRESS=0x00        # I2C device address
 I2C_RGB_ADDRESS=0x00    # I2C RGB device address
-DLINES=4            # Number of display lines
+DLINES=4        # Number of display lines
 DWIDTH=20       # Display character width
+FLIP=0          # OLED display can be flipped vertically
 
 # Old wiring down switch
 DOWN_SWITCH=10
@@ -97,6 +107,9 @@ DATE_FORMAT=""
 # Only used in the standard rotary encoder class and NOT the alternative rotary class
 # ABC encoders seem to work best with 'full' step, KY040 encoders better with 'half' step
 ROTARY_STEP_SIZE="full"
+
+# KY040 rotary encoders can have resistor R1 (SW to VCC) omitted, 1 = R1 fitted
+KY040_R1_FITTED=0
 
 # Get OS release ID
 function release_id
@@ -117,31 +130,25 @@ function codename
     echo ${CODENAME}
 }
 
-# Return X protocol (X11 or Wayland)
-function X-protocol
+function no_install
 {
-    type=$(loginctl show-session $(loginctl | grep "$USER" | awk '{print $1}') -p Type | grep -i wayland)
-    if [[ $? == 0 ]]; then  # Do not seperate from above
-        X=Wayland
-    else
-        X=X11
-    fi
-    echo ${X}
+    echo
+    echo "WARNING!"
+    echo "You cannot configure $1 during the initial installation" | tee -a ${LOG}
+    echo "Finish installing the radio package first then run radio-config from the command line"
+    echo "Press enter to continue: "
+    read x
 }
 
 # Create log directory
 sudo mkdir -p ${LOGDIR}
-sudo chown ${USR}:${GRP} ${LOGDIR}
-
-sudo rm -f ${LOG}
-echo "$0 configuration log, $(date) " | tee ${LOG}
+sudo chown ${USER}:${GRP} ${LOGDIR}
 
 # In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
 if [[ $(release_id) -ge 12 ]]; then
     BOOTCONFIG=${BOOTCONFIG_2}
+    CMDLINE=${CMDLINE_2}
 fi
-
-echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
 
 # Copy weather configuration file to /etc
 if [[ ! -f   ${WXCONFIG} ]]; then
@@ -161,25 +168,205 @@ if [[ $? != 0 ]]; then
     echo "Replacing corrupt ${MPDCONF}.orig with ${DIR}/mpd.conf"
     sudo cp ${DIR}/mpd.conf ${MPDCONF}.orig
 fi
+# Display top level menu 
+DRIVERS=0
+COMPONENTS=0
+EDIT=0
+DAEMONS=0
 
-# Check if user wants to configure radio if upgrading
-if [[ -f ${CONFIG}.org ]]; then
-    ans=0
-    ans=$(whiptail --title "Upgrading, Re-configure radio?" --menu "Choose your option" 15 75 9 \
-    "1" "Run radio configuration?" \
-    "2" "Do not change configuration?" 3>&1 1>&2 2>&3) 
+# Display full menu if not called from package install
+if [[ ${FLAGS} != "-s" ]]; then
+    if [[ -f ${CONFIG}.org ]]; then
+        ans=0
+        ans=$(whiptail --title "Upgrading, Re-configure radio?" --menu "Choose your option" 15 75 9 \
+        "1" "Configure radio software" \
+        "2" "Configure audio output devices" \
+        "3" "Update radio stations playlist" \
+        "4" "Create media playlists" \
+        "5" "Diagnostics and Information" \
+        "6" "Documents" \
+        "7" "Edit configuration files" \
+        "8" "Install/configure drivers and software components" \
+        "9" "Start/Stop/Configure radio daemons" 3>&1 1>&2 2>&3) 
 
-    exitstatus=$?
-    if [[ $exitstatus != 0 ]] || [[ ${ans} == '2' ]]; then
-        echo "Current configuration in ${CONFIG} unchanged" | tee -a ${LOG}
-        exit 0
+        exitstatus=$?
+        if [[ $exitstatus != 0 ]]; then
+            exit 0
+
+        elif [[ ${ans} == '2' ]]; then
+            sudo ${SCRIPTS}/configure_audio.sh ${FLAGS}
+            exit 0
+
+        elif [[ ${ans} == '3' ]]; then
+            sudo ${DIR}/create_stations.py 
+            exit 0
+
+        elif [[ ${ans} == '4' ]]; then
+            sudo ${SCRIPTS}/create_playlist.sh ${FLAGS}
+            exit 0
+
+        elif [[ ${ans} == '5' ]]; then
+            ${SCRIPTS}/diagnostics.sh ${FLAGS}
+            exit 0
+
+        elif [[ ${ans} == '6' ]]; then
+            ${SCRIPTS}/display_docs.sh ${FLAGS}
+            exit 0
+
+        elif [[ ${ans} == '7' ]]; then
+            EDIT=1
+
+        elif [[ ${ans} == '8' ]]; then
+            COMPONENTS=1
+
+        elif [[ ${ans} == '9' ]]; then
+            DAEMONS=1
+        fi
     fi
 fi
+
+if [[ ${COMPONENTS} == 1 ]]; then
+    ans=$(whiptail --title "Install software and driver components" --menu "Choose your option" 15 75 9 \
+    "1" "Install IR remote control" \
+    "2" "Install Web Interface" \
+    "3" "Install Airplay (shairport-sync)" \
+    "4" "Install Icecast" \
+    "5" "Install Speech facility" \
+    "6" "Install Luma OLED/TFT driver" \
+    "7" "Install a Bluetooth audio device" \
+    3>&1 1>&2 2>&3) 
+
+    exitstatus=$?
+    if [[ $exitstatus != 0 ]]; then
+        exit 0
+
+    elif [[ ${ans} == '1' ]]; then
+        ${SCRIPTS}/configure_ir_remote.sh ${FLAGS}
+
+    elif [[ ${ans} == '2' ]]; then
+        ${SCRIPTS}/install_web_interface.sh ${FLAGS}
+
+    elif [[ ${ans} == '3' ]]; then
+        ${SCRIPTS}/install_airplay.sh  ${FLAGS}
+
+    elif [[ ${ans} == '4' ]]; then
+        sudo ${SCRIPTS}/install_streaming.sh ${FLAGS}
+
+    elif [[ ${ans} == '5' ]]; then
+        ${SCRIPTS}/configure_speech.sh ${FLAGS}
+
+    elif [[ ${ans} == '6' ]]; then
+        ${SCRIPTS}/install_luma.sh ${FLAGS}
+
+    elif [[ ${ans} == '7' ]]; then
+        ${SCRIPTS}/configure_bluetooth.sh ${FLAGS}
+
+    fi
+
+    ## To do
+    ## ${DIR}/install_ssd1306.sh ${FLAGS}
+    exit 0
+fi
+
+if [[ ${DAEMONS} == 1 ]]; then
+    run_daemons=1
+    while [ $run_daemons == 1 ]
+    do
+        SERVICE=""
+        ACTION="status"
+        ans=$(whiptail --title "Select operation" --menu "Choose your option" 16 75 10 \
+        "1" "Start radio daemon " \
+        "2" "Stop radio daemon " \
+        "3" "Enable radio daemon " \
+        "4" "Disable radio daemon " \
+        "5" "Start IR remote control daemon" \
+        "6" "Stop IR remote control daemon" \
+        "7" "Enable IR remote control daemon" \
+        "8" "Disable IR remote control daemon" \
+        "9" "Radio service status" \
+        "10" "IR remote control daemon status" 3>&1 1>&2 2>&3) 
+
+        exitstatus=$?
+        if [[ $exitstatus != 0 ]]; then
+            exit 0
+
+        elif [[ ${ans} == '1' ]]; then
+            SERVICE=radiod.service 
+            ACTION=restart
+
+        elif [[ ${ans} == '2' ]]; then
+            SERVICE=radiod.service 
+            ACTION=stop
+
+        elif [[ ${ans} == '3' ]]; then
+            SERVICE=radiod.service 
+            ACTION=enable
+
+        elif [[ ${ans} == '4' ]]; then
+            SERVICE=radiod.service 
+            ACTION=disable
+
+        elif [[ ${ans} == '5' ]]; then
+            SERVICE=ireventd.service 
+            ACTION=restart
+
+        elif [[ ${ans} == '6' ]]; then
+            SERVICE=ireventd.service 
+            ACTION=stop
+
+        elif [[ ${ans} == '7' ]]; then
+            SERVICE=ireventd.service 
+            ACTION=enable
+
+        elif [[ ${ans} == '8' ]]; then
+            SERVICE=ireventd.service 
+            ACTION=disable
+
+        elif [[ ${ans} == '9' ]]; then
+            SERVICE=radiod.service 
+            ACTION=status
+
+        elif [[ ${ans} == '10' ]]; then
+            SERVICE=ireventd.service 
+            ACTION=status
+        fi
+
+        # If SERVICE defined carry out the required action
+        if [[ ${SERVICE} != "" ]]; then 
+            clear
+            echo "Press Ctl-C to exit"
+            echo "==================="
+            echo
+            cmd="sudo systemctl ${ACTION} ${SERVICE}" 
+            echo ${cmd}
+            if  [[ ${ACTION} == "status" ]]; then
+                ${cmd} 
+            else
+                ${cmd} &
+            fi
+        fi
+    done
+    exit 0
+fi
+
+if [[ ${EDIT} == 1 ]]; then
+    ${SCRIPTS}/edit_files.sh
+    exit 0
+fi
+
+# Normal cofiguration start
+sudo rm -f ${LOG}
+echo "$0 configuration log, $(date) " | tee ${LOG}
+echo "Using ${DIR}" | tee -a ${LOG}
+echo "Configuring radio for $(codename) OS " | tee -a ${LOG}
+echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
 
 # Copy the distribution configuration
 ans=$(whiptail --title "Replace your configuration file ?" --menu "Choose your option" 15 75 9 \
 "1" "Replace configuration file" \
-"2" "Do not replace configuration" 3>&1 1>&2 2>&3) 
+"2" "Amend existing configuration file" \
+"3" "Only update software" \
+3>&1 1>&2 2>&3) 
 
 exitstatus=$?
 if [[ $exitstatus != 0 ]]; then
@@ -191,6 +378,13 @@ elif [[ ${ans} == '1' ]]; then
     echo "Existing configuration  copied to ${CONFIG}.save" | tee -a ${LOG}
     sudo cp ${DIR}/radiod.conf ${CONFIG}
     echo "Current configuration ${CONFIG} replaced with distribution" | tee -a ${LOG}
+
+elif [[ ${ans} == '2' ]]; then
+    echo "Amend existing configuration"  | tee -a ${LOG}
+
+elif [[ ${ans} == '3' ]]; then
+    echo "Software only update"  | tee -a ${LOG}
+    exit 0
 fi
 
 # Select Raspberry Pi model  
@@ -225,6 +419,41 @@ do
     selection=$?
 done
 echo ${DESC} | tee -a ${LOG}
+
+# Select the wiring type (40 or 26 pin) if not already specified
+if [[ ${GPIO_PINS} == "0" ]]; then
+    ans=0
+    selection=1 
+    while [ $selection != 0 ]
+    do
+        ans=$(whiptail --title "Select wiring version" --menu "Choose your option" 15 75 9 \
+        "1" "40 pin version wiring" \
+        "2" "26 pin version wiring" \
+        "3" "Do not change configuration" 3>&1 1>&2 2>&3) 
+
+        exitstatus=$?
+        if [[ $exitstatus != 0 ]]; then
+            exit 0
+        fi
+
+        if [[ ${ans} == '1' ]]; then
+            DESC="40 pin version selected"
+            GPIO_PINS=1
+
+        elif [[ ${ans} == '2' ]]; then
+            DESC="26 pin version selected"
+            GPIO_PINS=2
+
+        else
+            DESC="Wiring configuration in ${CONFIG} unchanged"  
+            echo ${DESC} | tee -a ${LOG}
+        fi
+
+        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
+        selection=$?
+    done
+    echo ${DESC} | tee -a ${LOG}
+fi
 
 
 # Select the user interface (Buttons or Rotary encoders)
@@ -356,11 +585,12 @@ if [[ ${USER_INTERFACE} == "2" ]]; then
 
         ans=$(whiptail --title "Select type of rotary encoder" --menu "Choose your option" 15 75 9 \
         "1" "Standard rotary encoders with A, B and C inputs only" \
-        "2" "Rotary encoders encoders (eg KY-040) with own pull-up resistors" \
-        "3" "Rotary encoders with RGB LEDs" \
-        "4" "I2C Rotary encoders with RGB LEDs" \
-        "5" "Standard A,B,C rotary encoders alternative driver" \
-        "6" "Not sure" 3>&1 1>&2 2>&3) 
+        "2" "Rotary encoders (eg KY-040) with no resistor R1 (default)" \
+        "3" "Rotary encoders (eg KY-040) with resistor R1 fitted (3 resistors)" \
+        "4" "Rotary encoders with RGB LEDs" \
+        "5" "I2C Rotary encoders with RGB LEDs" \
+        "6" "Standard A,B,C rotary encoders alternative driver" \
+        "7" "Not sure" 3>&1 1>&2 2>&3) 
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -371,61 +601,33 @@ if [[ ${USER_INTERFACE} == "2" ]]; then
             DESC="Configuring standard rotary encoders"
 
         elif [[ ${ans} == '2' ]]; then
-            DESC="Configuring rotary encoders (eg. KY-040) with own pull-up resistors"
+            DESC="Configuring rotary encoders (eg. KY-040) with resistor R1 omitted"
             ROTARY_HAS_RESISTORS=1
             ROTARY_STEP_SIZE="half"
 
         elif [[ ${ans} == '3' ]]; then
+            DESC="Configuring rotary encoders (eg. KY-040) with resistor R1 fitted"
+            ROTARY_HAS_RESISTORS=1
+            ROTARY_STEP_SIZE="half"
+            KY040_R1_FITTED=1
+
+        elif [[ ${ans} == '4' ]]; then
             DESC="Configuring rotary encoders with RGB LEDs"
             ROTARY_HAS_RESISTORS=1
             ROTARY_CLASS="rgb_rotary"
 
-        elif [[ ${ans} == '4' ]]; then
+        elif [[ ${ans} == '5' ]]; then
             DESC="Configuring I2C rotary encoders with RGB LEDs"
             ROTARY_CLASS="rgb_i2c_rotary"
             GPIO_PINS=3
 
-        elif [[ ${ans} == '5' ]]; then
+        elif [[ ${ans} == '6' ]]; then
             DESC="Standard rotary encoders alternative driver"
             ROTARY_HAS_RESISTORS=1
             ROTARY_CLASS="alternative"
 
         else
             DESC="Standard rotary encoders"  
-            echo ${DESC} | tee -a ${LOG}
-        fi
-
-        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
-        selection=$?
-    done
-    echo ${DESC} | tee -a ${LOG}
-fi
-# Select the wiring type (40 or 26 pin) if not already specified
-if [[ ${GPIO_PINS} == "0" ]]; then
-    ans=0
-    selection=1 
-    while [ $selection != 0 ]
-    do
-        ans=$(whiptail --title "Select wiring version" --menu "Choose your option" 15 75 9 \
-        "1" "40 pin version wiring" \
-        "2" "26 pin version wiring" \
-        "3" "Do not change configuration" 3>&1 1>&2 2>&3) 
-
-        exitstatus=$?
-        if [[ $exitstatus != 0 ]]; then
-            exit 0
-        fi
-
-        if [[ ${ans} == '1' ]]; then
-            DESC="40 pin version selected"
-            GPIO_PINS=1
-
-        elif [[ ${ans} == '2' ]]; then
-            DESC="26 pin version selected"
-            GPIO_PINS=2
-
-        else
-            DESC="Wiring configuration in ${CONFIG} unchanged"  
             echo ${DESC} | tee -a ${LOG}
         fi
 
@@ -490,8 +692,10 @@ do
     "11" "Grove LCD RGB JHD1313 (AIP31068L controller)" \
     "12" "Grove LCD RGB JHD1313 (SGM31323 controller)" \
     "13" "OLEDs using SH1106 SPI interface, buttons & joystick" \
-    "14" "No display used/Pimoroni Pirate radio" \
-    "15" "Do not change display type" 3>&1 1>&2 2>&3) 
+    "14" "Waveshare 2.42\" OLED with SPI interface" \
+    "15" "Waveshare 1.5\" OLED with SPI interface" \
+    "16" "No display used/Pimoroni Pirate radio" \
+    "17" "Do not change display type" 3>&1 1>&2 2>&3) 
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -536,6 +740,7 @@ do
         DATE_FORMAT="%H:%M %d%m"
         DLINES=5
         DWIDTH=20
+        FLIP=1
 
     elif [[ ${ans} == '7' ]]; then
         DISPLAY_TYPE="PIFACE_CAD"
@@ -560,7 +765,7 @@ do
         DESC="128x64 OLED with SSD1306 SPI interface"
         DLINES=4
         DWIDTH=16
-        SCROLL_SPEED="0.01" 
+        SCROLL_SPEED="0.1" 
         VOLUME_RANGE=10
         SPI_REQUIRED=1
         SPLASH="images\/raspberrypi.png"
@@ -570,11 +775,12 @@ do
         DESC="OLEDs using LUMA driver"
         DLINES=4
         DWIDTH=16
-        SCROLL_SPEED="0.01" 
+        SCROLL_SPEED="0.1" 
         VOLUME_RANGE=10
         I2C_REQUIRED=1
         I2C_ADDRESS="0x3C"
         SPLASH="images\/raspberrypi.png"
+        FLIP=1
 
     elif [[ ${ans} == '11' ]]; then
         DISPLAY_TYPE="LCD_I2C_JHD1313"
@@ -599,12 +805,32 @@ do
         DESC="OLED using SH1106 SPI interface"
         DLINES=4
         DWIDTH=16
-        SCROLL_SPEED="0.01" 
+        SCROLL_SPEED="0.1" 
         VOLUME_RANGE=20
         SPI_REQUIRED=1
         SPLASH="bitmaps\/raspberry-pi-logo.bmp" 
 
     elif [[ ${ans} == '14' ]]; then
+        DISPLAY_TYPE="WS_SPI_SSD1309.2in42"
+        DESC="Waveshare 2.42\" OLED with SPI interface"
+        DLINES=5
+        DWIDTH=25
+        SCROLL_SPEED="0.07" 
+        VOLUME_RANGE=20
+        SPI_REQUIRED=1
+        FLIP=1
+
+    elif [[ ${ans} == '15' ]]; then
+        DISPLAY_TYPE="WS_SPI_SSD1309.1in5_b"
+        DESC="Waveshare 1.5\" OLED with SPI interface"
+        DLINES=5
+        DWIDTH=25
+        SCROLL_SPEED="0.007" 
+        VOLUME_RANGE=20
+        SPI_REQUIRED=1
+        FLIP=1
+
+    elif [[ ${ans} == '16' ]]; then
         DISPLAY_TYPE="NO_DISPLAY"
         DLINES=0
         DWIDTH=0
@@ -620,7 +846,22 @@ do
     selection=$?
 done 
 
+# Create "check_luma.py"
+cat >check_luma.py << EOF
+import luma.core
+EOF
+
 if [[ ${DISPLAY_TYPE} == "LUMA" ]]; then
+
+    python check_luma.py >/dev/null 2>&1
+    if [[ $? == 0 ]]; then
+        echo "Luma core already installed" | tee -a ${LOG}
+    else
+        echo "Installing Luma core" | tee -a ${LOG}
+        ${SCRIPTS}/install_luma.sh        
+    fi
+
+    # Configure LUMA.driver
     ans=0
     selection=1 
     while [ $selection != 0 ]
@@ -676,7 +917,7 @@ if [[ ${DISPLAY_TYPE} == "LUMA" ]]; then
 fi
 
 # Flip display upside down option
-if [[ ${DISPLAY_TYPE} == "OLED_128x64" || ${DISPLAY_TYPE} =~ "LUMA" ]]; then
+if [[ ${FLIP} == 1 ]]; then
     ans=0
     selection=1 
     while [ $selection != 0 ]
@@ -704,15 +945,15 @@ if [[ ${DISPLAY_TYPE} == "OLED_128x64" || ${DISPLAY_TYPE} =~ "LUMA" ]]; then
 fi
 
 if [[ ${SPI_REQUIRED} != 0 ]]; then
-        echo | tee -a ${LOG}
-        echo "The chosen display (${DESC}) requires the" | tee -a ${LOG}
-        echo "SPI kernel module to be loaded at boot time." | tee -a ${LOG}
-        echo "The program will call the raspi-config program" | tee -a ${LOG}
-        echo "Select the following options on the next screens:" | tee -a ${LOG}
-        echo "   5 Interfacing options" | tee -a ${LOG}
-        echo "   P4 Enable/Disable automatic loading of SPI kernel module" | tee -a ${LOG}
-        echo; echo -n "Press enter to continue: "
-        read ans
+    echo | tee -a ${LOG}
+    echo "The chosen display (${DESC}) requires the" | tee -a ${LOG}
+    echo "SPI kernel module to be loaded at boot time." | tee -a ${LOG}
+    echo "The program will call the raspi-config program" | tee -a ${LOG}
+    echo "Select the following options on the next screens:" | tee -a ${LOG}
+    echo "   5 Interfacing options" | tee -a ${LOG}
+    echo "   P4 Enable/Disable automatic loading of SPI kernel module" | tee -a ${LOG}
+    echo; echo -n "Press enter to continue: "
+    read ans
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -720,6 +961,8 @@ if [[ ${SPI_REQUIRED} != 0 ]]; then
     fi
 
     # Enable the SPI kernel interface 
+    sudo sed -i 's/^#dtparam=spi=.*$/dtparam=spi=on/'  ${BOOTCONFIG}
+    sudo sed -i 's/^dtparam=spi=.*$/dtparam=spi=on/'  ${BOOTCONFIG}
     ans=0
     ans=$(whiptail --title "Enable SPI interface" --menu "Choose your option" 15 75 9 \
     "1" "Enable SPI Kernel Interface " \
@@ -736,7 +979,7 @@ if [[ ${SPI_REQUIRED} != 0 ]]; then
         echo "The selected interface requires the PiFace CAD Python library" | tee -a ${LOG}
         echo "It is necessary to install the python-pifacecad library" | tee -a ${LOG}
         echo "After this program finishes carry out the following command:" | tee -a ${LOG}
-        echo "   sudo apt-get install python-pifacecad" | tee -a ${LOG}
+        echo "   sudo apt-get -y install python-pifacecad" | tee -a ${LOG}
         echo "and reboot the system." | tee -a ${LOG}
         echo; echo -n "Press enter to continue: "
         read ans
@@ -859,6 +1102,27 @@ if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
         selection=$?
     done
 
+elif [[ ${DISPLAY_TYPE} =~ "WS_SPI_SSD1309" ]]; then
+    if [[ ${FLAGS} != "-s" ]]; then
+        if [[ $(release_id) -ge 12 ]]; then
+            sudo mv ${MANAGE_PIP} ${MANAGE_PIP}.old
+        fi
+        sudo apt-get install python3-pip
+        sudo pip3 install RPi.GPIO
+        sudo apt-get install python3-smbus
+        sudo pip3 install spidev
+
+        if [[ $(release_id) -ge 12 ]]; then
+            sudo mv ${MANAGE_PIP}.old ${MANAGE_PIP}
+        fi
+
+        sudo sed -i 's/^#dtparam=spi=.*$/dtparam=spi=on/'  ${BOOTCONFIG}
+        sudo sed -i 's/^dtparam=spi=.*$/dtparam=spi=on/'  ${BOOTCONFIG}
+    else
+        no_install "Waveshare SPI SSD1309 display"
+        exit 0
+    fi
+
 elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     # Configure graphical display
     ans=0
@@ -869,8 +1133,8 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
         "1" "Raspberry Pi 7-inch touch-screen (800x480)" \
         "2" "Medium 3.5 inch TFT touch-screen (720x480)" \
         "3" "Small 2.8 inch TFT touch-screen (480x320)" \
-        "4" "7-inch TFT touch-screen (1024x600)" \
-        "5" "HDMI television or monitor (800x480)" \
+        "4" "7-inch TFT touch-screen (800x480)" \
+        "5" "HDMI television or monitor (1024x600)" \
         "6" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
         exitstatus=$?
@@ -892,11 +1156,11 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
 
         elif [[ ${ans} == '4' ]]; then
             DESC="7-inch TFT touch-screen (1024x600)"
-            SCREEN_SIZE="1024x600"
+            SCREEN_SIZE="800x480"
 
         elif [[ ${ans} == '5' ]]; then
             DESC="HDMI television or monitor"
-            SCREEN_SIZE="800x480"
+            SCREEN_SIZE="1024x600"
 
         else
             DESC="Graphical display type unchanged"    
@@ -998,7 +1262,7 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
             FULLSCREEN="yes"
 
         elif [[ ${ans} == '2' ]]; then
-            DESC="Do not start radio at boot time" 
+            DESC="Start radio in a desktop window" 
             FULLSCREEN="no"
 
         else
@@ -1012,69 +1276,97 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     echo "Desktop program ${GPROG}.py configured" | tee -a ${LOG}
 fi
 
-echo "Configuring radio for $(codename) OS " | tee -a ${LOG}
 
 # X-Windows radio desktop program (gradio or vgradio) installation 
 # Install for both X11 and Wayland protocols as user can switch between them
-
-# Correct missing autostart file (Redundant code ?)
-#if [[ $(release_id) -ge 12 ]]; then
-#    LXDE="LXDE"
-#else 
-#    LXDE="LXDE-${USER}"
-#fi
-
 LXDE="LXDE-${USER}"
-
-echo "X-Windows desktop is running the $(X-protocol) protocol" | tee -a ${LOG}
-
-LXDE_DIR=/home/${USR}/.config/lxsession/${LXDE}
+LXDE_DIR=/home/${USER}/.config/lxsession/${LXDE}
 X11_AUTOSTART="${LXDE_DIR}/autostart"
-if [[ ! -d ${LXDE_DIR} ]]; then
-    mkdir -p ${LXDE_DIR}
-    cp ${DIR}/lxsession/${LXDE}.autostart ${X11_AUTOSTART} 
-    chown -R ${USR}:${GRP} /home/${USR}/.config/lxsession
-fi
 
-# Configure desktop X11 autostart if X-Windows installed
-if [[ -f ${X11_AUTOSTART} ]]; then
-    if [[ ${LXSESSION} == "yes" ]]; then
-        # Delete old entry if it exists
-        sudo sed -i -e "/radio/d" ${X11_AUTOSTART}
-        echo "Configuring ${X11_AUTOSTART} for automatic start" | tee -a ${LOG}
-	    cmd="@sudo /usr/share/radio/${GPROG}.py"
-        sudo echo ${cmd} | sudo tee -a  ${X11_AUTOSTART}
-    else
-        sudo sed -i -e "/radio/d" ${X11_AUTOSTART}
+if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
+
+    echo "Configuring X-Windows configuration for automatic start" | tee -a ${LOG}
+    if [[ ! -d ${LXDE_DIR} ]]; then
+        mkdir -p ${LXDE_DIR}
+        cp ${DIR}/lxsession/${LXDE}.autostart ${X11_AUTOSTART} 
+        chown -R ${USER}:${GRP} /home/${USER}/.config/lxsession
     fi
-fi
 
-# Configure desktop wayfire.ini if Wayland installed 
-if [[ -f ${WAYFIRE_INI} ]]; then
-    echo "Configuring ${WAYFIRE_INI} for automatic start" | tee -a ${LOG}
-    if [[ ${LXSESSION} == "yes" ]]; then
-        grep "^\[autostart\]"  ${WAYFIRE_INI} > /dev/null 2>&1
-        if [[ $? != 0 ]]; then
-            echo >> ${WAYFIRE_INI}
-            cmd="[autostart]"
+    # Configure desktop X11 autostart if X-Windows installed
+    if [[ -f ${X11_AUTOSTART} ]]; then
+        echo "${X11_AUTOSTART}" | tee -a ${LOG}
+        if [[ ${LXSESSION} == "yes" ]]; then
+            # Delete old entry if it exists
+            sudo sed -i -e "/radio/d" ${X11_AUTOSTART}
+            cmd="@sudo /usr/share/radio/${GPROG}.py"
+            sudo echo ${cmd} | tee -a ${LOG}
+            echo ${cmd} >>  ${X11_AUTOSTART}
+        fi
+        echo | tee -a ${LOG}
+    fi
+
+    # Configure desktop wayfire.ini if Wayland installed 
+    if [[ -f ${WAYFIRE_INI} ]]; then
+        echo "${WAYFIRE_INI}" | tee -a ${LOG}
+        if [[ ${LXSESSION} == "yes" ]]; then
+            grep "^\[autostart\]"  ${WAYFIRE_INI} > /dev/null 2>&1
+            if [[ $? != 0 ]]; then
+                echo >> ${WAYFIRE_INI}
+                cmd="[autostart]"
+                echo ${cmd} | tee -a ${LOG}
+                echo ${cmd} >> ${WAYFIRE_INI}
+            fi 
+            # Delete old entry if it exists
+            sudo sed -i "/^radiod = sudo/d" ${WAYFIRE_INI}
+            sudo sed -i "/^#radiod = sudo/d" ${WAYFIRE_INI}
+            cmd="radiod = sudo /usr/share/radio/${GPROG}.py"
             echo ${cmd} | tee -a ${LOG}
-            echo ${cmd} >> ${WAYFIRE_INI}
-        fi 
-        # Delete old entry if it exists
-        sudo sed -i "/^radiod = sudo/d" ${WAYFIRE_INI}
-        sudo sed -i "/^#radiod = sudo/d" ${WAYFIRE_INI}
-        cmd="radiod = sudo /usr/share/radio/${GPROG}.py"
-        echo ${cmd} | tee -a ${LOG}
-        echo ${cmd} >> ${WAYFIRE_INI} 
-    else
-        # Delete radiod startup 
+            echo ${cmd} >> ${WAYFIRE_INI} 
+        fi
+        echo | tee -a ${LOG}
+    fi 
+
+    if [[ -f ${LABWC} ]]; then
+        echo "${LABWC_AUTOSTART}" | tee -a ${LOG}
+        if [[ ${LXSESSION} == "yes" ]]; then
+            if [[ ! -d ${LABWC_DIR} ]]; then
+                mkdir -p ${LABWC_DIR}
+            fi
+            if [[ ! -d ${LABWC_AUTOSTART} ]]; then
+                touch ${LABWC_AUTOSTART}
+            fi
+            sed -i '/gradio/d' ${LABWC_AUTOSTART} >/dev/null 2>&1
+            cmd="sudo /usr/share/radio/${GPROG}.py &"
+            echo ${cmd} | tee -a ${LOG}
+            echo ${cmd} >> ${LABWC_AUTOSTART} 
+            chown -R pi:pi ${LABWC_DIR}
+        fi
+    fi
+else
+    # Delete auto-run entries from all X-Windows configurations
+    echo "Deleting any X-Windows application start commands" | tee -a ${LOG}
+    if [[ -f ${X11_AUTOSTART} ]]; then
+        echo "   ${X11_AUTOSTART}" | tee -a ${LOG}
+        sudo sed -i "/gradio/d" ${X11_AUTOSTART}
+        sudo sed -i "/vgradio/d" ${X11_AUTOSTART}
+    fi
+
+    if [[ -f ${WAYFIRE_INI} ]]; then
+        echo "   ${WAYFIRE_INI}" | tee -a ${LOG}
         sed -i '/radiod = sudo/d' ${WAYFIRE_INI}
     fi
-fi 
+
+    if [[ -f ${LABWC_AUTOSTART} ]]; then
+        echo "   ${LABWC_AUTOSTART}" | tee -a ${LOG}
+        sed -i '/gradio/d' ${LABWC_AUTOSTART}
+        sed -i '/vgradio/d' ${LABWC_AUTOSTART}
+    fi
+
+fi  # End of ${DISPLAY_TYPE} == "GRAPHICAL" 
 
 # Install Adafruit SSD1306 package if required
 if [[ ${ADAFRUIT_SSD1306} > 0  ]]; then
-    ${DIR}/install_ssd1306.sh | tee -a ${LOG}
+    ${SCRIPTS}/install_ssd1306.sh | tee -a ${LOG}
 fi
 
 #######################################
@@ -1127,9 +1419,17 @@ elif [[ ${USER_INTERFACE} == "2" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=rotary_encoder/}" ${CONFIG}
     sudo sed -i -e "0,/^rotary_class/{s/rotary_class.*/rotary_class=${ROTARY_CLASS}/}" ${CONFIG}
     sudo sed -i -e "0,/^rotary_step_size/{s/rotary_step_size.*/rotary_step_size=${ROTARY_STEP_SIZE}/}" ${CONFIG}
+
     if [[ ${ROTARY_HAS_RESISTORS} == 1 ]]; then
         sudo sed -i -e "0,/^rotary_gpio_pullup/{s/rotary_gpio_pullup.*/rotary_gpio_pullup=none/}" ${CONFIG}
     fi
+
+    if [[ ${KY040_R1_FITTED} == 1 ]]; then 
+        r1fitted=yes
+    else
+        r1fitted=no
+    fi
+    sudo sed -i -e "0,/^ky040_r1_fitted/{s/ky040_r1_fitted.*/ky040_r1_fitted=${r1fitted}/}" ${CONFIG}
 
 elif [[ ${USER_INTERFACE} == "3" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=graphical/}" ${CONFIG}
@@ -1299,6 +1599,18 @@ else
     sudo sed -i -e "0,/^flip_display_vertically/{s/flip_display_vertically.*/flip_display_vertically=no/}" ${CONFIG}
 fi
 
+# Disable dtoverlay=i2s-mmap (now automatically loaded)
+echo "Disable dtoverlay=i2s-mmap in ${BOOTCONFIG}" 
+sudo sed -i -e "0,/^dtoverlay=i2s-mmap/{s/^dtoverlay=i2s-mmap.*/#dtoverlay=i2s-mmap/}" ${BOOTCONFIG}
+
+# Force fsck file system check
+grep -q "fsck.mode=force" ${CMDLINE}
+if [[ $? -ne 0 ]]; then
+    sudo cp -f ${CMDLINE} ${CMDLINE}.save
+    sudo sed -i -e "0,/fsck.repair=yes/{s/fsck.repair=yes/fsck.repair=yes fsck.mode=force/}" ${CMDLINE}
+    echo "Added fsck.mode=force to ${CMDLINE}"
+fi
+
 #####################
 # Summarise changes #
 #####################
@@ -1314,6 +1626,7 @@ if [[ ${USER_INTERFACE} == "2" ]]; then
     echo $(grep "^rotary_class=" ${CONFIG} ) | tee -a ${LOG}
     echo $(grep "^rotary_gpio_pullup=" ${CONFIG} ) | tee -a ${LOG}
     echo $(grep "^rotary_step_size=" ${CONFIG} ) | tee -a ${LOG}
+    echo $(grep "^ky040_r1_fitted=" ${CONFIG} ) | tee -a ${LOG}
 fi
 
 if [[ $DISPLAY_TYPE != "" ]]; then
@@ -1359,10 +1672,10 @@ echo | tee -a ${LOG}
 if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
 
     # Set up desktop radio execution icon
-    sudo cp ${DIR}/Desktop/gradio.desktop /home/${USR}/Desktop/.
-    sudo cp ${DIR}/Desktop/vgradio.desktop /home/${USR}/Desktop/.
-    sudo chmod +x /home/${USR}/Desktop/gradio.desktop
-    sudo chmod +x /home/${USR}/Desktop/vgradio.desktop
+    sudo cp ${DIR}/Desktop/gradio.desktop /home/${USER}/Desktop/.
+    sudo cp ${DIR}/Desktop/vgradio.desktop /home/${USER}/Desktop/.
+    sudo chmod +x /home/${USER}/Desktop/gradio.desktop
+    sudo chmod +x /home/${USER}/Desktop/vgradio.desktop
 
     # Add [SCREEN] section to the configuration file
     grep "\[SCREEN\]" ${CONFIG} >/dev/null 2>&1
@@ -1406,6 +1719,12 @@ if [[ ! -f /usr/sbin/anacron && ${FLAGS} != "-s" ]]; then
         sudo apt-get --yes install ${PKG}
 fi
 
+# Install config-parser if running Bullseye
+PKG="python-configparser"
+if [[ $(release_id) -le 12 ]]; then
+        echo "Installing ${PKG} package" | tee -a ${LOG}
+        sudo apt-get -y install ${PKG}
+fi
 
 # Configure audio device
 ans=0
@@ -1414,7 +1733,7 @@ ans=$(whiptail --title "Configure audio interface?" --menu "Choose your option" 
 "2" "Do not change audio configuration" 3>&1 1>&2 2>&3) 
 
 if [[ ${ans} == '1' ]]; then
-    sudo ${DIR}/configure_audio.sh ${FLAGS}
+    sudo ${SCRIPTS}/configure_audio.sh ${FLAGS}
 else
     echo "Audio configuration unchanged."    | tee -a ${LOG}
 fi
@@ -1442,3 +1761,5 @@ exit 0
 
 # End of configuration script
 
+# set tabstop=4 shiftwidth=4 expandtab
+# retab

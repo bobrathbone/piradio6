@@ -10,9 +10,23 @@ See http://www.musicpd.org/
 Use "sudo apt-get install mpd mpc python3-mpd" to install the Music Player Daemon (MPD)
 This software uses the python3-mpd library. See https://packages.debian.org/sid/python3-mpd
 
+To configure the radio software and components run: 
+radio-config
+from the command line
+
+Version 7.9 release notes
+-------------------------
+Release 9 November 2024 - Build 2 (Beta) 
+1) Prevent radio program from crashing if no IP network and no media to load
+2) Support for the Waveshare 1.5 and 2.42-Inch SPI interface OLEDs added
+3) New configuration parameter ky040_r1_fitted added to set KY040 switch (SW) pullup resistor
+4) New check_voltage.sh script added to check CPU and RAM voltage, temperature etc
+5) Radio configuration now calls most other scripts from a top level menu
+6) New parameter no_internet_switch yes/no to switch to MEDIA if no Internet for the radio
+
 Version 7.8 release notes
 -------------------------
-Release 5 October 2024 - Build 12 
+Release 7 October 2024 - Build 13 
 
 1) Grove v5 RGB I2C LCD added (lcd_i2c_jhd1313_sgm31323.py) integrated into configurator
 2) Amend display_class to use colour definitions in /etc/radiod.conf for jhd1313_sgm31323 LCD
@@ -35,7 +49,7 @@ Release 5 October 2024 - Build 12
 19) Script to display just OS details (display_os.sh) added to build
 20) Correct the audio configuration installation script for the HiFiBerry DAC 400
 21) Don't display IPv6 IP addresses in the information screen
-22) Configure wayfire.ini for auto start if X-Windows Wayland installed
+22) Support gradio and vgradio under X-Windows wayfire and labwc backend
 
 Version 7.7 release notes
 -------------------------

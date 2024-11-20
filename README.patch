@@ -1,16 +1,17 @@
-Patch 2 for version 7.7 - 29 July 2024
+Patch 2 for version 7.8 - 1 November 2024
 
 Changes
 =======
-1) Install alternative smbus2 library in /usr/share/radio
+1) Prevent radio program crashing if no Internet and no media to load as alternative
+2) Correct error loading MEDIA if no Internet available
 
 Also see README file 
 
 To install the patch
 ====================
 cd /usr/share/radio
-wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.7-2.tar.gz
-tar -xvf radiod-patch-7.7-2.tar.gz
+wget http://www.bobrathbone.com/raspberrypi/packages/radiod-patch-7.8-2.tar.gz
+tar -xvf radiod-patch-7.8-2.tar.gz
 
 This patch only contains the smbus library 
 

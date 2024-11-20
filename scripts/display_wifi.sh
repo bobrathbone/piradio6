@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display Wi-Fi details
-# $Id: display_wifi.sh,v 1.9 2022/04/21 11:09:44 bob Exp $
+# $Id: display_wifi.sh,v 1.1 2002/02/24 14:42:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

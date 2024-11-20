@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.137 2002/01/05 08:03:08 bob Exp $
+# $Id: radiod.py,v 1.146 2002/02/11 07:25:39 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -198,27 +198,34 @@ class MyDaemon(Daemon):
             radio.setRomanize(romanize)  # Switch Romanisation on/off
 
         ipaddr = radio.waitForNetwork()
+        # Start radio and load source (radio, media or airplay)
+        display.out(2,"Starting MPD")
+        radio.start()
 
         # Wait for network
         if nlines > 2:
             line = 3
         else: 
             line = 2
-
-        if len(ipaddr) < 1:
+        if len(ipaddr) < 1 and config.no_internet_switch:
             # Switch to MEDIA if no IP address
-            display.out(line,"No network")
-            radio.cycleWebSource(radio.source.MEDIA)
+            msg = "No Internet"
+            display.out(line,msg)
+            log.message(msg, log.ERROR)       
+            try:
+                radio.cycleWebSource(radio.source.MEDIA)
+            except:
+                log.message("Error trying to load media", log.ERROR)       
+                pass
         else:
-            msg = "IP " + ipaddr
+            if len(ipaddr) < 1:
+                msg = "No Internet"
+            else:
+                msg = "IP " + ipaddr
             log.message(msg, log.INFO)
             display.out(line,msg)
 
-        time.sleep(1.25)    # Allow time to display IP address
-
-        # Start radio and load source (radio, media or airplay)
-        display.out(2,"Starting MPD")
-        radio.start()
+        time.sleep(2)    # Allow time to display IP address
 
         loadSource(display,radio)
         current_id = radio.getCurrentID()
@@ -291,6 +298,10 @@ class MyDaemon(Daemon):
 
                 # Keep MPD connection alive
                 radio.ping()
+
+                # Recover from no Internet connection
+                #if len(ipaddr) < 1:
+                ipaddr = radio.get_ip()
 
                 # When volume switches or rotary encoder operated display
                 # message scrolling is suppressed for a few seconds to speed
@@ -436,8 +447,6 @@ def handleRadioEvent(event,display,radio,menu):
     displayType = display.getDisplayType()
 
     vDelay = 60
-    #if display.isOLED():
-     #   vDelay = 4
 
     log.message('handleRadioEvent ' + str(event_type) + ' ' + event_name, log.DEBUG)
 
@@ -922,7 +931,7 @@ def displayTimeDate(display,radio,message):
     
     width = display.getWidth()
 
-    # Small displays drop day of the week
+    # Small displays drop day of the week, ignore width
     if width < 16:
         msg = msg[0:5] 
     else:
@@ -1375,6 +1384,7 @@ def displayCurrent(display,radio,message):
     elif sourceType == radio.source.SPOTIFY:
         displaySpotify(display,radio)
 
+    #display.update()
     newMenu = False
 
 # Display current playing selection or station
@@ -1459,9 +1469,11 @@ def displayVolume(display,radio):
 def _displayVolume(display,radio):
     global _volume
     msg = ''
+    mute_line = 0
     volume = radio.getDisplayVolume()
     if radio.muted():
         msg = message.get('muted')
+        mute_line = display.getMuteLine()
         radio.getVolume() # Check if volume changed by external client
     else:
         msg = message.get('volume') + ' ' + str(volume)
@@ -1473,7 +1485,11 @@ def _displayVolume(display,radio):
         elif radio.config.display_blocks:
             msg = message.volumeBlocks()
     if volume != _volume:
-        display.out(message.getLine(), msg, no_interrupt)
+        if mute_line > 0:
+            line = mute_line
+        else:
+            line = message.getLine()
+        display.out(line, msg, no_interrupt)
         _volume = volume
 
 # The OLEDs have a special volume display bar on the last line

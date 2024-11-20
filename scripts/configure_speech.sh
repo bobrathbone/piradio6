@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_speech.sh,v 1.5 2002/02/15 14:34:34 bob Exp $
+# $Id: configure_speech.sh,v 1.1 2002/02/24 14:42:36 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -16,9 +16,15 @@
 # This program uses whiptail. Set putty terminal to use UTF-8 charachter set
 # for best results
 
+FLAGS=$1
 DIR=/usr/share/radio
+# Test flag - change to current directory
+if [[ ${FLAGS} == "-t" ]]; then
+    DIR=$(pwd)
+fi
 LOGDIR=${DIR}/logs
-LOG=${DIR}/install_speech.log
+LOG=${LOGDIR}/install_speech.log
+
 ESPEAK=/usr/bin/espeak
 CONFIG=/etc/radiod.conf
 APLAY=/usr/bin/aplay

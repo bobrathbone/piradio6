@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.27 2002/01/02 14:52:48 bob Exp $
+# $Id: ireventd.py,v 1.30 2002/02/26 09:39:23 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -63,12 +63,13 @@ def signalHandler(signal,frame):
 # Daemon class
 class RemoteDaemon(Daemon):
 
+    keytable = config.keytable
     keytable = 'myremote.toml'
-    keymaps = '/etc/rc_keymaps'
-    ir_device = 'rc0'	# Can be rc0, rc1, rc2, rc4 - Run ir-keytable 
+    ir_device = 'rc0'	# Can be rc0, rc1, rc2, rc4 - Run ir-keytable to see
     play_number = 0
     timer_running = False
     timer = None
+    protocols_cmd = 'sudo ir-keytable -p rc-5,rc-5-sz,jvc,sony,nec,sanyo,mce_kbd,rc-6,sharp'
 
     def run(self):
         global remote_led
@@ -165,10 +166,16 @@ class RemoteDaemon(Daemon):
 
     # Load the specified key table into /etc/rc_keymaps/
     def loadKeyTable(self,keytable):
-        log.message("Loading " + self.keytable, log.DEBUG)
-        cmd = "sudo /usr/bin/ir-keytable -c -w " + self.keymaps + "/" + keytable + " -s " + self.ir_device
+        # Load protocols
+        print(self.protocols_cmd) 
+        log.message(self.protocols_cmd, log.DEBUG)
+        execCommand(self.protocols_cmd)
+        msg = "Loading " + key_maps + "/" + self.keytable  
+        log.message(msg,log.INFO)
+        cmd = "sudo /usr/bin/ir-keytable -c -w " + key_maps + "/" + keytable + " -s " + self.ir_device
         print(cmd) 
-        execCommand("sudo /usr/bin/ir-keytable -c -w " + self.keymaps + "/" + keytable
+        log.message(cmd,log.DEBUG)
+        execCommand("sudo /usr/bin/ir-keytable -c -w " + key_maps + "/" + keytable
 		    + " -s " + self.ir_device)
 
     # Handle the IR input event

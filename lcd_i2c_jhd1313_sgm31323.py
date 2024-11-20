@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: lcd_i2c_jhd1313_sgm31323.py,v 1.6 2024/07/21 07:56:40 bob Exp $
+# $Id: lcd_i2c_jhd1313_sgm31323.py,v 1.7 2002/02/05 10:43:13 bob Exp $
 #
 # Driver class for the Grove JHD1313 I2C LCD RGB display, version 5
 # This introduced the SGM31323 backlight driver and altered the I2C addresses
@@ -141,7 +141,7 @@ class Lcd_i2c_jhd1313_sgm31323:
         # Small delay before scrolling
         if not skip:
             for i in range(0, 10):
-                time.sleep(0.1)
+                time.sleep(self.scroll_speed)
                 if interrupt():
                     skip = True
                     break
@@ -159,7 +159,7 @@ class Lcd_i2c_jhd1313_sgm31323:
         # Small delay before exiting
         if not skip:
             for i in range(0, 10):
-                time.sleep(0.1)
+                time.sleep(self.scroll_speed)
                 if interrupt():
                     break
 

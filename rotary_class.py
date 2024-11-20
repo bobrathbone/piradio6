@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.18 2024/07/13 19:33:59 bob Exp $
+# $Id: rotary_class.py,v 1.22 2002/01/23 15:33:05 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -158,14 +158,15 @@ class RotaryEncoder:
     BUTTONDOWN=3
     BUTTONUP=4
 
-    def __init__(self, pinA, pinB, button,callback,rotary_step_size=False):
+    def __init__(self, pinA, pinB, button,callback,rotary_step_size=False,ky040_r1_fitted=False):
         self.STATE_TAB = HALF_TAB if rotary_step_size else FULL_TAB
         pullup = GPIO.PUD_UP
-        t = threading.Thread(target=self._run,args=(pinA,pinB,button,callback,pullup))
+        t = threading.Thread(target=self._run,args=(pinA,pinB,button,callback,
+                              pullup,ky040_r1_fitted))
         t.daemon = True
         t.start()
 
-    def _run(self, pinA, pinB, button,callback,pullup):
+    def _run(self,pinA,pinB,button,callback,pullup,ky040_r1_fitted):
         self.pinA = pinA
         self.pinB = pinB
         self.button = button
@@ -187,10 +188,14 @@ class RotaryEncoder:
                 GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.rotary_event)
             if button > 0:
                 gpio = self.button
-                GPIO.setup(self.button, GPIO.IN, pull_up_down=self.pullup)
+                # Don't configure internal pull up/dowh resistor (R1) if already fitted
+                if ky040_r1_fitted: 
+                    GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_OFF)
+                else:
+                    GPIO.setup(self.button, GPIO.IN, pull_up_down=self.pullup)
                 # Add event detection to the GPIO input
                 GPIO.add_event_detect(self.button, GPIO.FALLING, callback=self.button_event, 
-                        bouncetime=150)
+                                      bouncetime=150)
 
         except Exception as e:
             print("Rotary Encoder initialise error GPIO %s %s" % (gpio,str(e)))
@@ -278,6 +283,12 @@ if __name__ == "__main__":
     else:
         step_size = 'full'
 
+    ky040_r1_fitted = config.ky040_r1_fitted
+    if ky040_r1_fitted:
+        r1_fitted = 'yes'
+    else:
+        r1_fitted = 'no'
+
     print("Left switch GPIO", left_switch)
     print("Right switch GPIO", right_switch)
     print("Up switch GPIO", up_switch)
@@ -285,12 +296,14 @@ if __name__ == "__main__":
     print("Mute switch GPIO", mute_switch)
     print("Menu switch GPIO", menu_switch)
     print("Rotary encoder step size =", step_size)
+    print("KY040 encoder R1 resistor fitted =", r1_fitted)
     
     volumeknob = RotaryEncoder(left_switch,right_switch,mute_switch,
-                volume_event,rotary_step_size)
+                volume_event,rotary_step_size,ky040_r1_fitted)
     tunerknob = RotaryEncoder(down_switch,up_switch,menu_switch,
-                tuner_event,rotary_step_size)
+                tuner_event,rotary_step_size,ky040_r1_fitted)
 
+    print("Waiting for events")
     try:
         while True:
             time.sleep(0.05)

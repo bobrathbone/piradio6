@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: set_mixer_id.sh,v 1.21 2023/11/27 13:43:49 bob Exp $
+# $Id: set_mixer_id.sh,v 1.1 2002/02/24 14:42:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
