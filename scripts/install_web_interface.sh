@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Web Interface
-# $Id: install_web_interface.sh,v 1.1 2002/02/24 14:42:37 bob Exp $
+# $Id: install_web_interface.sh,v 1.2 2024/11/25 10:16:09 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

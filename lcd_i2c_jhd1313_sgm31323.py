@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: lcd_i2c_jhd1313_sgm31323.py,v 1.7 2002/02/05 10:43:13 bob Exp $
+# $Id: lcd_i2c_jhd1313_sgm31323.py,v 1.8 2024/11/25 10:17:29 bob Exp $
 #
 # Driver class for the Grove JHD1313 I2C LCD RGB display, version 5
 # This introduced the SGM31323 backlight driver and altered the I2C addresses

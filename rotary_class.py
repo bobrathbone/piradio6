@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.22 2002/01/23 15:33:05 bob Exp $
+# $Id: rotary_class.py,v 1.23 2024/11/25 10:17:30 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net

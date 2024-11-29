@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.151 2002/02/20 05:48:43 bob Exp $
+# $Id: radio_class.py,v 1.153 2024/11/25 13:42:14 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -2284,13 +2284,16 @@ class Radio:
         if len(self.searchlist) < 1:
             artist = "No playlists"
         else:
-            sections = self.searchlist[index].split(' - ')
-            leng = len(sections)
-            if leng > 1:
-                artist = sections[0]
-            else:
-                artist = "Unknown artist"
+            artist = "Unknown artist"
+            try:
+                sections = self.searchlist[index].split(' - ')
+                leng = len(sections)
+                if leng > 1:
+                    artist = sections[0]
+            except:
+                pass
         return artist
+            
 
     # Version number
     def getVersion(self):

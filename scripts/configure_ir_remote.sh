@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.3 2002/02/26 17:03:42 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.9 2024/11/28 09:49:27 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -25,6 +25,8 @@ RC_MAPS=/etc/rc_keymaps
 UDEV_KEYMAPS=/lib/udev/rc_keymaps 
 KEYMAPS=/etc/rc_keymaps
 SYS_RC=/sys/class/rc
+RADIOLIB=/var/lib/radiod
+REMOTE_CONTROL=${RADIOLIB}/remote_control
 ERRORS=(0)
 LYNX=/usr/bin/lynx
 CMARK=/usr/bin/cmark
@@ -35,10 +37,15 @@ LOGDIR=${DIR}/logs
 LOG=${LOGDIR}/install_ir.log
 DOCS_DIR=${DIR}/docs
 REMOTES_DIR=${DIR}/remotes
+SCRIPTS_DIR=${DIR}/scripts
 
 IR_GPIO=9   
 DT_OVERLAY=""
 REMOTE_LED=0
+
+# Display colours
+orange='\033[33m'
+default='\033[39m'
 
 # Get OS release ID
 function release_id
@@ -103,8 +110,8 @@ fi
 
 config_changed=0
 
-sudo rm -f ${LOG}
 mkdir -p ${LOGDIR}
+sudo rm -f ${LOG}
 
 # In Bookworm (Release ID 12) the configuration has been moved to /boot/firmware/config.txt
 if [[ $(release_id) -ge 12 ]]; then
@@ -117,14 +124,16 @@ while [ ${run}  == 1 ]
 do
     ans=0
     ans=$(whiptail --title "Configure IR Remote Control?" --menu "Choose your option" 15 75 9 \
-    "1" "Run IR Remote Control configuration?" \
+    "1" "Install and configure IR Remote Control configuration?" \
     "2" "Test remote control (Stops IR event daemon)" \
     "3" "IR Remote Control confguration and status" \
     "4" "Flash IR activity LED" \
     "5" "Start ireventd daemon" \
     "6" "Stop ireventd daemon" \
     "7" "IR event daemon (ireventd) status" \
-    "8" "Tutorial: Creating an IR remote control definition" 3>&1 1>&2 2>&3)
+    "8" "Create an IR remote control definition" \
+    "9" "Select IR remote control definition" \
+    3>&1 1>&2 2>&3)
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -188,6 +197,20 @@ do
         sudo systemctl status ireventd.service
 
     elif [[ ${ans} == '8' ]]; then
+        clear
+        ${DIR}/create_keymap.py
+        echo -n "Press enter to continue: "
+        read x
+        
+    elif [[ ${ans} == '9' ]]; then
+        clear
+        ${SCRIPTS_DIR}/select_ir_remote.sh ${FLAGS}
+        echo "Reboot the Raspberry Pi or run the following command:"
+        printf "${orange}sudo systemctl restart ireventd radiod${default}"
+        echo -n "Press enter to continue: "
+        read x
+        
+    elif [[ ${ans} == '10' ]]; then
         DOC="${DOCS_DIR}/create_ir_remote"
         MD_DOC=${DOC}.md
         if [[ -f ${MD_DOC} ]]; then
@@ -303,41 +326,9 @@ do
     selection=$?
 done
 
-# Select remote control definition <file>.toml 
-num=1
-lines=()
-names=()
-# Build a list of available .toml files
-for toml in ${REMOTES_DIR}/*.toml
-do
-    toml=$(basename $toml)
-    names+=($toml)
-    lines+=("\"$num\" \"${toml}\"" )
-    let "num += 1"
-done
-
-# Display toml file selection menu using whiptail
-selection=1
-while [ $selection != 0 ]
-do
-    ans=0
-    ans=$(whiptail --title "Select IR remote control definition" --menu "Choose file" 15 75 9 \
-    ${lines[@]} \
-    3>&1 1>&2 2>&3)
-
-    exitstatus=$?
-    if [[ $exitstatus != 0 ]]; then
-        exit 0
-    fi
-
-    # Setup toml file name
-    idx=$(printf '%d' $ans)
-    idx=$((idx-49))
-    TOML_FILE=${names[idx]}
-
-    whiptail --title "${TOML_FILE} selected" --yesno "Is this correct?" 10 60
-    selection=$?
-done
+# Select the IR remote control definition (toml file)
+${SCRIPTS_DIR}/select_ir_remote.sh  
+TOML_FILE=$(cat ${REMOTE_CONTROL})
 
 # Display configuration changes
 config_changed=1
@@ -363,10 +354,6 @@ echo ${DT_OVERLAY} | tee -a ${LOG}
 sudo sed -i -e "0,/^remote_led/{s/remote_led.*/remote_led=${REMOTE_LED}/}" ${CONFIG}
 echo "Configured remote_led=${REMOTE_LED} in ${CONFIG}" | tee -a ${LOG}
 
-# Configure the keymap parameter with the selected <file>.toml definition 
-sudo sed -i -e "0,/^keytable/{s/keytable.*/keytable=${TOML_FILE}/}" ${CONFIG}
-echo "Configured keytable=${TOML_FILE} in ${CONFIG}" | tee -a ${LOG}
-
 # Find device name for the "gpio_ir_recv" overlay
 IR_DEV=$(find_device "gpio_ir_recv")
 
@@ -377,27 +364,24 @@ if [[ -f  ${UDEV_KEYMAPS}/rc6_mce.toml ]]; then
     echo ${CMD} | tee -a ${LOG}
     ${CMD}
     if [[ $? -ne '0' ]]; then       # Do not seperate from above
-        echo "Failed to copy keymaps" | tee -a ${LOG}
+        echo "Failed to copy ${UDEV_KEYMAPS}/rc6_mce.toml to ${KEYMAPS}" | tee -a ${LOG}
         ERRORS=$(($ERRORS+1))
     fi
 fi
 
-# Copy selected toml file to /etc/rc_keymaps
-CMD="sudo cp -f ${REMOTES_DIR}/${TOML_FILE} ${KEYMAPS}/."
-echo ${CMD} | tee -a ${LOG}
-${CMD}
-CMD="sudo ir-keytable -c -w ${KEYMAPS}/${TOML_FILE}"
-echo ${CMD} | tee -a ${LOG}
-${CMD}
-
 echo "" | tee -a ${LOG}
 # Install evdev
-CMD="sudo apt-get -y install ir-keytable python3-evdev evtest"
+PKGS="ir-keytable python3-evdev evtest"
+CMD="sudo apt-get -y install ${PKGS}"
 echo ${CMD} | tee -a ${LOG}
 ${CMD}
 if [[ $? -ne '0' ]]; then       # Do not seperate from above
-    echo "Failed to copy keymaps" | tee -a ${LOG}
+    echo "Failed to install ${PKGS}" | tee -a ${LOG}
     ERRORS=$(($ERRORS+1))
+else
+    CMD="sudo apt -y autoremove"
+    echo ${CMD} | tee -a ${LOG}
+${CMD}
 fi
 
 # Enable ireventd.service service
@@ -412,24 +396,16 @@ fi
 echo "" |  tee -a ${LOG}
 
 if [[ ${ERRORS} > 0 ]]; then
-    echo "There was ${ERRORS} errors(s)" | tee -a ${LOG}
+    echo "ERROR: There was ${ERRORS} error(s)" | tee -a ${LOG}
+    echo "Configuration of Kernel Events FAILED" |  tee -a ${LOG}
+else
+    echo "Configuration of Kernel Events completed OK" | tee -a ${LOG}
+    echo "" |  tee -a ${LOG}
+    echo "Reboot the Raspberry Pi or run the following command:"
+    printf "${orange}sudo systemctl restart ireventd radiod${default}"
+    echo "" |  tee -a ${LOG}
+    echo "" |  tee -a ${LOG}
 fi
-
-# Print configuration instructions
-echo "" |  tee -a ${LOG}
-echo "Configuration of Kernel Event completed OK" |  tee -a ${LOG}
-echo "Reboot the system and then run the following " |  tee -a ${LOG}
-echo "to configure your IR remote control" |  tee -a ${LOG}
-echo "    sudo ir-keytable -v -t -p  rc-5,rc-5-sz,jvc,sony,nec,sanyo,mce_kbd,rc-6,sharp,xmpir-keytable" |  tee -a ${LOG}
-echo "" |  tee -a ${LOG}
-echo "Create myremote.toml using the scan codes from the ir-keytable program output" |  tee -a ${LOG}
-echo "See the examples in directory ${REMOTES_DIR}"  |  tee -a ${LOG}
-echo "Then copy your configuration file (myremote.toml) to  ${RC_MAPS}" |  tee -a ${LOG}
-echo "    sudo cp myremote.toml ${RC_MAPS}/." |  tee -a ${LOG}
-echo "or use the radio-config and select the IR remote control menu to configure this" 
-echo "" |  tee -a ${LOG}
-echo "Reboot the Raspberry Pi " |  tee -a ${LOG}
-echo "" |  tee -a ${LOG}
 echo "A log of this run will be found in ${LOG}"
 
 exit 0

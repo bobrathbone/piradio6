@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: luma_class.py,v 1.37 2002/01/21 06:45:41 bob Exp $
+# $Id: luma_class.py,v 1.38 2024/11/25 10:17:29 bob Exp $
 # This class drives the SH1106 controller for the 128x64 pixel TFT
 # It requirs the I2C dtoverlay to be loaded. The I2C address is normally 0x37
 #

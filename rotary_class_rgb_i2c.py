@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi RGB I2C Rotary Encoder Class
-# $Id: rotary_class_rgb_i2c.py,v 1.16 2002/01/01 10:22:06 bob Exp $
+# $Id: rotary_class_rgb_i2c.py,v 1.17 2024/11/25 10:17:30 bob Exp $
 #
 # Author : Bob Rathbone and Lubos Ruckl (Czech republic)
 # Site   : http://www.bobrathbone.com

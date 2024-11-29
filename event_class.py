@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.27 2002/01/23 09:42:06 bob Exp $
+# $Id: event_class.py,v 1.28 2024/11/25 10:17:29 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

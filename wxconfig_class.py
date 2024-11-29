@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Weather Program Configuration Class
-# $Id: wxconfig_class.py,v 1.9 2002/01/21 07:04:01 bob Exp $
+# $Id: wxconfig_class.py,v 1.10 2024/11/25 10:17:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

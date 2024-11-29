@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.13 2002/02/03 09:37:44 bob Exp $
+# $Id: lcd_class.py,v 1.14 2024/11/25 10:17:29 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #

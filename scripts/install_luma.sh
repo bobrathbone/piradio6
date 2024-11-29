@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script
-# $Id: install_luma.sh,v 1.1 2002/02/24 14:42:37 bob Exp $
+# $Id: install_luma.sh,v 1.3 2024/11/28 12:32:03 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -30,6 +30,7 @@ fi
 LOGDIR=${DIR}/logs
 LOG=${LOGDIR}/install_luma.log
 DOCS_DIR=${DIR}/docs
+EXTERNALLY_MANAGED="/usr/lib/python3.11/EXTERNALLY-MANAGED"
 
 OS_RELEASE=/etc/os-release
 
@@ -69,9 +70,12 @@ echo "Using ${DIR}" | tee -a ${LOG}
 
 # Install dependicies
 if [[ $(release_id) -ge 12 ]]; then
-    sudo mv /usr/lib/python3.11/EXTERNALLY-MANAGED /usr/lib/python3.11/EXTERNALLY-MANAGED.old
+    if [[ -f  ${EXTERNALLY_MANAGED} ]]; then
+        sudo mv ${EXTERNALLY_MANAGED} ${EXTERNALLY_MANAGED}.old
+    fi
     sudo apt-get -y install libtiff5-dev | tee -a ${LOG}   # Bookworm or later
 else
+    # Bullseye
     sudo apt-get -y install libtiff5 | tee -a ${LOG}      # Bullseye
 fi
 
@@ -81,6 +85,11 @@ sudo apt-get -y install libfreetype6-dev liblcms2-dev libopenjp2-7 | tee -a ${LO
 sudo -H pip3 install --upgrade luma.oled | tee -a ${LOG}
 sudo pip3 install pathlib | tee -a ${LOG}
 sudo pip3 install luma.core | tee -a ${LOG}
+
+# Restor Pip virtual environment
+if [[ $(release_id) -ge 12 ]] && [[ -f  ${EXTERNALLY_MANAGED}.old ]]; then
+    sudo mv ${EXTERNALLY_MANAGED}.old ${EXTERNALLY_MANAGED}
+fi
 
 echo "A log of these changes has been written to ${LOG}"
 # End of script

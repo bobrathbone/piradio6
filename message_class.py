@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet language Class
-# $Id: message_class.py,v 1.5 2002/01/19 14:25:32 bob Exp $
+# $Id: message_class.py,v 1.6 2024/11/25 10:17:29 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

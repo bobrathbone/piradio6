@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Button Push Button Class
-# $Id: test_events.py,v 1.3 2002/02/19 16:23:27 bob Exp $
+# $Id: test_events.py,v 1.4 2024/11/25 10:17:30 bob Exp $
 #
 # IR remote tester
 # Assumes device already configured with ir-keytable

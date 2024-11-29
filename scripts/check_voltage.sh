@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Raspberry Pi Voltage and temperature check 
-# $Id: check_voltage.sh,v 1.1 2002/02/24 14:42:36 bob Exp $
+# $Id: check_voltage.sh,v 1.2 2024/11/25 10:16:08 bob Exp $
 #
 # Author:Dave Hartbull Paraphraser 
 # Website: https://gist.github.com/Paraphraser/

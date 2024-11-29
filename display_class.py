@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.81 2002/01/23 07:39:03 bob Exp $
+# $Id: display_class.py,v 1.82 2024/11/25 10:17:29 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone

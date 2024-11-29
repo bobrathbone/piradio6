@@ -2,7 +2,7 @@
 #set -x
 #set -B
 # Raspberry Pi Internet Radio setup script
-# $Id: setup.sh,v 1.14 2002/02/06 13:36:54 bob Exp $
+# $Id: setup.sh,v 1.15 2024/11/25 10:17:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

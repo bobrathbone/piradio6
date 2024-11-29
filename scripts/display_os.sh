@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi display  OS configuration for analysis
-# $Id: display_os.sh,v 1.1 2002/02/24 14:42:37 bob Exp $
+# $Id: display_os.sh,v 1.2 2024/11/25 10:16:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This class drives the Sitronix ST7789 controller and 240x240 pixel TFT
 #
-# $Id: st7789tft_class.py,v 1.21 2002/01/01 13:37:48 bob Exp $
+# $Id: st7789tft_class.py,v 1.22 2024/11/25 10:17:30 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #

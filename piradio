@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.104 2002/02/24 19:53:56 bob Exp $
+# $Id: piradio,v 1.110 2024/11/29 09:47:17 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is the 64 bit version
 # Source: <source package name; defaults to package name>
@@ -64,9 +64,11 @@ Files:  radiod.py /usr/share/radio/
     button_class.py /usr/share/radio/
     rotary_class.py /usr/share/radio/
     rotary_class_rgb.py /usr/share/radio/
+    rotary_class_rgb_i2c.py /usr/share/radio/
     rotary_switch_class.py /usr/share/radio/
     rotary_class_alternative.py /usr/share/radio/
     create_stations.py /usr/share/radio/
+    create_keymap.py /usr/share/radio/ 
     radio_class.py /usr/share/radio/
     lcd_class.py /usr/share/radio/
     i2c_class.py /usr/share/radio/
@@ -80,16 +82,19 @@ Files:  radiod.py /usr/share/radio/
     radio_daemon.py /usr/share/radio/
     wiring.py /usr/share/radio/
     test_gpios.py /usr/share/radio/
+    docs/config_tutorial.md /usr/share/radio/docs
     docs/station_playlist.md /usr/share/radio/docs
     docs/media_playlist.md /usr/share/radio/docs
     docs/pair_bluetooth_device.md /usr/share/radio/docs
     docs/create_ir_remote.md /usr/share/radio/docs
+    docs/network_configuration.md /usr/share/radio/docs
     scripts/configure_audio_device.sh /usr/share/radio/scripts/
     scripts/install_wm8960.sh /usr/share/radio/scripts/
     scripts/install_luma.sh /usr/share/radio/scripts/
     scripts/configure_radio.sh /usr/share/radio/scripts/
     scripts/configure_audio.sh /usr/share/radio/scripts/
     scripts/configure_ir_remote.sh /usr/share/radio/scripts/
+    scripts/select_ir_remote.sh /usr/share/radio/scripts
     scripts/diagnostics.sh /usr/share/radio/scripts/
     scripts/display_config.sh /usr/share/radio/scripts/
     scripts/display_wifi.sh /usr/share/radio/scripts/
@@ -128,9 +133,7 @@ Files:  radiod.py /usr/share/radio/
     smbus2/smbus2.py /usr/share/radio/smbus2
     README /usr/share/radio/
     build.sh /usr/share/radio/
-    build64.sh /usr/share/radio/
     smbus2/__init__.py /usr/share/radio/smbus2
-    piradio64 /usr/share/radio/
     smbus2/smbus2.py /usr/share/radio/smbus2
     remotes/myremote.toml /usr/share/radio/remotes
     remotes/mini.toml /usr/share/radio/remotes

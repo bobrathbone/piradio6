@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_pcf8574.py,v 1.8 2002/02/05 10:43:13 bob Exp $
+# $Id: lcd_i2c_pcf8574.py,v 1.9 2024/11/25 10:17:29 bob Exp $
 #
 # PCF8574 I2C LCD Backpack LCD class
 # Use this program to test I2C Backpack LCD wiring

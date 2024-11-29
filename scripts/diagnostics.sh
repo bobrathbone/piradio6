@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: diagnostics.sh,v 1.1 2002/02/24 14:42:36 bob Exp $
+# $Id: diagnostics.sh,v 1.2 2024/11/25 10:01:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -28,6 +28,7 @@ NODAEMON_LOG=${DIR}/logs/radiod_nodaemon.log
 TEMPFILE=/tmp/output
 CMARK=/usr/bin/cmark
 LYNX=/usr/bin/lynx
+SCRIPTS_DIR=${DIR}/scripts
 
 function build_report
 {
@@ -135,7 +136,7 @@ do
         elif [[ ${ans} == '2' ]]; then
             TITLE="Operating System details"
             build_report "${TITLE}"
-            ${DIR}/display_os.sh  > ${TEMPFILE}
+            ${SCRIPTS_DIR}/display_os.sh  > ${TEMPFILE}
 
         elif [[ ${ans} == '3' ]]; then > ${TEMPFILE}
             TITLE="Raspberry Pi model details"
@@ -149,12 +150,12 @@ do
         elif [[ ${ans} == '5' ]]; then
             TITLE="WiFi configuration details"
             build_report "${TITLE}"
-            ${DIR}/display_wifi.sh > ${TEMPFILE}
+            ${SCRIPTS_DIR}/display_wifi.sh > ${TEMPFILE}
 
         elif [[ ${ans} == '6' ]]; then
             TITLE="Full configuration details"
             build_report "${TITLE}"
-            ${DIR}/display_config.sh > ${TEMPFILE}
+            ${SCRIPTS_DIR}/display_config.sh > ${TEMPFILE}
 
         elif [[ ${ans} == '7' ]]; then
             TITLE="/etc/radiod.conf parameter settings"

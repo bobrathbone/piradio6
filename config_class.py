@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.116 2002/02/23 10:42:53 bob Exp $
+# $Id: config_class.py,v 1.118 2024/11/26 06:47:56 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -117,6 +117,7 @@ class Configuration:
     _station_names = LIST # Station names from playlist names or STREAM
     _update_playlists = False  # Allow update of playlists by external clients
     _mute_action = 0      # MPD action on mute, 1=pause, 2=stop, 0=volume off only
+    _codecs = 'mp3 ogg flac wav wma aac'    # Radio stream Codecs
     MuteActions =  ['Pause','Stop']  # Text for above _mute_action
 
     # Rotary encoder parameters
@@ -295,7 +296,7 @@ class Configuration:
                     next
 
                 elif option == 'codecs':
-                    next
+                    self.codecs = parameter
 
                 elif option == 'volume_range':
                     range = 100
@@ -1706,6 +1707,14 @@ class Configuration:
             self._volume_rgb_i2c = int(parameter,16)
 
     @property
+    def codecs(self):
+        return self._codecs
+
+    @codecs.setter
+    def codecs(self, parameter):
+        self._codecs = parameter
+
+    @property
     def channel_rgb_i2c(self):
         return self._channel_rgb_i2c
 
@@ -1791,6 +1800,7 @@ if __name__ == '__main__':
     print ("Volume increment (volume_increment):", config.volume_increment)
     print ("Mute action (mute_action):",config.MuteActions[config.mute_action])
     print ("Audio out(audio_out):",config.audio_out)
+    print ("Stream codecs(codecs):",config.codecs)
     print ("Audio Configuration locked(audio_config_locked):",TrueFalse2yn(config.audio_config_locked))
     print ("Bluetooth device (bluetooth_device):", config.bluetooth_device)
 

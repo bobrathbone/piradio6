@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-# $Id: install_airplay.sh,v 1.1 2002/02/24 14:42:37 bob Exp $
+# $Id: install_airplay.sh,v 1.2 2024/11/25 10:16:08 bob Exp $
 # Raspberry Pi Internet Radio - Install Airplay
 # This script installs and configures Airplay (shairport)
 #

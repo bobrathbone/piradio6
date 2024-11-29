@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio Class
-# $Id: constants.py,v 1.33 2002/02/10 17:23:05 bob Exp $
+# $Id: constants.py,v 1.34 2024/11/25 10:17:29 bob Exp $
 #
 #
 # Author : Bob Rathbone

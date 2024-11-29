@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.2 2002/02/24 16:31:38 bob Exp $
+# $Id: configure_radio.sh,v 1.7 2024/11/28 12:02:01 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -21,7 +21,6 @@
 # If -s flag specified (See piradio.postinst script)
 FLAGS=$1
 
-SERVICE=/lib/systemd/system/radiod.service
 BINDIR="\/usr\/share\/radio\/"  # Used for sed so \ needed
 DIR=/usr/share/radio
 SCRIPTS=${DIR}/scripts
@@ -187,7 +186,7 @@ if [[ ${FLAGS} != "-s" ]]; then
         "6" "Documents" \
         "7" "Edit configuration files" \
         "8" "Install/configure drivers and software components" \
-        "9" "Start/Stop/Configure radio daemons" 3>&1 1>&2 2>&3) 
+        "9" "Start/Stop/Status radio daemons" 3>&1 1>&2 2>&3) 
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -226,54 +225,75 @@ if [[ ${FLAGS} != "-s" ]]; then
 fi
 
 if [[ ${COMPONENTS} == 1 ]]; then
-    ans=$(whiptail --title "Install software and driver components" --menu "Choose your option" 15 75 9 \
-    "1" "Install IR remote control" \
-    "2" "Install Web Interface" \
-    "3" "Install Airplay (shairport-sync)" \
-    "4" "Install Icecast" \
-    "5" "Install Speech facility" \
-    "6" "Install Luma OLED/TFT driver" \
-    "7" "Install a Bluetooth audio device" \
-    3>&1 1>&2 2>&3) 
+    run_components=1
+    while [ $run_components == 1 ]
+    do
+        SCRIPT=""
+        SUDO=""
+        ans=$(whiptail --title "Install software and driver components" --menu "Choose your option" 15 75 9 \
+        "1" "Install IR remote control" \
+        "2" "Install Web Interface" \
+        "3" "Install Airplay (shairport-sync)" \
+        "4" "Install Icecast" \
+        "5" "Install Speech facility" \
+        "6" "Install Luma OLED/TFT driver" \
+        3>&1 1>&2 2>&3) 
 
-    exitstatus=$?
-    if [[ $exitstatus != 0 ]]; then
+        exitstatus=$?
+        if [[ $exitstatus != 0 ]]; then
+            exit 0
+
+        elif [[ ${ans} == '1' ]]; then
+            SCRIPT="configure_ir_remote.sh"
+            DESC="Install IR remote control"
+
+        elif [[ ${ans} == '2' ]]; then
+            SCRIPT="install_web_interface.sh"
+            DESC="Install Web Interface"
+
+        elif [[ ${ans} == '3' ]]; then
+            SCRIPT="install_airplay.sh"
+            DESC="Install Airplay"
+
+        elif [[ ${ans} == '4' ]]; then
+            SCRIPT="install_streaming.sh"
+            DESC="Install Icecast"
+            SUDO="sudo"
+
+        elif [[ ${ans} == '5' ]]; then
+            SCRIPT="configure_speech.sh"
+            DESC="Install Speech facility"
+
+        elif [[ ${ans} == '6' ]]; then
+            SCRIPT="install_luma.sh"
+            DESC="Install Luma OLED/TFT driver"
+        fi
+
+        ## To do
+        ## ${DIR}/install_ssd1306.sh ${FLAGS}
+        #exit 0
+        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
+
+        selection=$? 
+        if [[ ${selection} == 0 ]]; then # Do not separate from above
+            run_components=0
+        fi
+    done
+
+    if [[ ${SCRIPT} != "" ]]; then
+        ${SUDO} ${SCRIPTS}/${SCRIPT} ${FLAGS}
         exit 0
-
-    elif [[ ${ans} == '1' ]]; then
-        ${SCRIPTS}/configure_ir_remote.sh ${FLAGS}
-
-    elif [[ ${ans} == '2' ]]; then
-        ${SCRIPTS}/install_web_interface.sh ${FLAGS}
-
-    elif [[ ${ans} == '3' ]]; then
-        ${SCRIPTS}/install_airplay.sh  ${FLAGS}
-
-    elif [[ ${ans} == '4' ]]; then
-        sudo ${SCRIPTS}/install_streaming.sh ${FLAGS}
-
-    elif [[ ${ans} == '5' ]]; then
-        ${SCRIPTS}/configure_speech.sh ${FLAGS}
-
-    elif [[ ${ans} == '6' ]]; then
-        ${SCRIPTS}/install_luma.sh ${FLAGS}
-
-    elif [[ ${ans} == '7' ]]; then
-        ${SCRIPTS}/configure_bluetooth.sh ${FLAGS}
-
     fi
-
-    ## To do
-    ## ${DIR}/install_ssd1306.sh ${FLAGS}
-    exit 0
 fi
 
 if [[ ${DAEMONS} == 1 ]]; then
     run_daemons=1
     while [ $run_daemons == 1 ]
     do
+        CTL_C=0
         SERVICE=""
         ACTION="status"
+
         ans=$(whiptail --title "Select operation" --menu "Choose your option" 16 75 10 \
         "1" "Start radio daemon " \
         "2" "Stop radio daemon " \
@@ -329,20 +349,27 @@ if [[ ${DAEMONS} == 1 ]]; then
         elif [[ ${ans} == '10' ]]; then
             SERVICE=ireventd.service 
             ACTION=status
+            CTL_C=1
         fi
 
         # If SERVICE defined carry out the required action
         if [[ ${SERVICE} != "" ]]; then 
             clear
-            echo "Press Ctl-C to exit"
-            echo "==================="
-            echo
+            if [[ ${CTL_C} == 1 ]]; then
+                echo "Enter Ctrl-C to continue"
+                echo "========================"
+                echo
+            fi
             cmd="sudo systemctl ${ACTION} ${SERVICE}" 
             echo ${cmd}
-            if  [[ ${ACTION} == "status" ]]; then
-                ${cmd} 
-            else
-                ${cmd} &
+            ${cmd} 
+            if [[ $? == 0 ]]; then
+                echo "Command executed OK"
+            fi
+            echo
+            if [[ ${CTL_C} == 0 ]]; then
+                echo -n "Press enter to continue: "
+                read key
             fi
         fi
     done

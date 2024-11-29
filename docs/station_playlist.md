@@ -3,7 +3,7 @@ Station list - Source list for radio stations streams
 
 File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
 
-To display document use **radio-config **
+To display document use **radio-config**
 
 Information, Documents and Diagnostics --> Update radio stations playlist**
 
@@ -57,13 +57,13 @@ Instructions  to create playlists
 =================================
 
 - Edit the /var/lib/radiod/stationlist file 
-- Run the create_stations.sh script (or select from menu) to create the MPD playlist
+- Run the create_stations.py script (or select from menu) to create the MPD playlist
 - Restart radiod with the following instruction or reboot
 ```
 sudo systemctl restart radiod 
 ```
 
-The **create_stations.sh** script creates the **/var/lib/mpd/playlists/Radio.m3u** playlist file
+The **create_stations.py** script creates the **/var/lib/mpd/playlists/Radio.m3u** playlist file
 
 Files
 =====
@@ -76,16 +76,17 @@ Files
 
 **/var/lib/mpd/music** Location of media files for either a USB stick or a Network share
 
-Running the create_stations program from the command line 
+Running the create_stations.py program from the command line 
 =========================================================
-Usually you will call the create_stations program from radio-config 
+Usually you will call the create_stations program from **radio-config**. 
+Select option 3 **Update radio stations playlist**
 
 **radio-config --> Update radio stations playlist**
 
-However there may be occasions that you want to run the create_stations.sh program from the command line or in a script. First change to the /usr/share/radio directory and then run create_stations.sh
+However there may be occasions that you want to run the create_stations.py program from the command line or in a script. First change to the **/usr/share/radio** directory and then run **create_stations.py**
 
 ```
-cd /usr/share/radio
+cd /usr/share/radio/
 ./create_stations.py
 
 This program can only be run as root user or using sudo

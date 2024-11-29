@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: create_keymap.py,v 1.3 2002/02/26 17:03:42 bob Exp $
+# $Id: create_keymap.py,v 1.4 2024/11/25 10:17:29 bob Exp $
 """
 Script to capture remote control key presses and generate a TOML file.
 Modified by: Bob Rathbone  (bob@bobrathbone.com)

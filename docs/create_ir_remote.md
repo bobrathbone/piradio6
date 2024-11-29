@@ -1,6 +1,58 @@
-Creating an IR remote control definition
-========================================
-If you are using the Raspberry Pi Mini IR Remote Control you can skip this tutorial. Run the following command:
+
+If you are using the Raspberry Pi Mini IR Remote Control you can skip this tutorial. Run the following command: There are two methods:
+
+
+1) Use the radio-config utility and select **Create an IR remote control definition**
+2) Create an IR remote control definition (.toml) file manually
+
+Method 1: Create an IR remote control definition using radio-config
+===================================================================
+1) Run **radio-config** from the command line
+2) Select **8 Install/configure drivers and software components** 
+3) Select **Install IR remote control** from the Install Software menu
+4) select **Create an IR remote control definition** from the Remote Control menu
+
+You will be asked to enter name for your remote control such as 'myremote'. You can choose any name you wish.
+
+Enter the name for your remote control: **myremote**
+
+Please press the button on your remote control for key: KEY_OK
+
+Press the OK key on your remote control. 
+0x833341 = "KEY_OK" #protocol ="nec"
+Repeat for every key identififier requested
+
+The key identifiers  are:
+'KEY_OK','KEY_VOLUMEUP','KEY_VOLUMEDOWN','KEY_CHANNELUP','KEY_CHANNELDOWN',
+'KEY_MENU','KEY_NUMERIC_0','KEY_NUMERIC_1','KEY_NUMERIC_2',
+'KEY_NUMERIC_3','KEY_NUMERIC_4', 'KEY_NUMERIC_5','KEY_NUMERIC_6',
+'KEY_NUMERIC_7','KEY_NUMERIC_8','KEY_NUMERIC_9', 'KEY_UP','KEY_DOWN',
+'KEY_LEFT','KEY_RIGHT','KEY_EXIT'
+
+When finished the following will be displayed:
+
+File '/usr/share/radio/remotes/myremote.toml' has been written.
+
+Press enter to continue:
+
+Back in the IR remote control menu select:
+
+**Select IR remote control definition (keytable)*
+
+```
+"1" "eeremote.toml"
+"2" "mini.toml"                               │
+"3" "myremote.toml"
+```
+
+The program will the copy myremote.toml to the /etc/rc_keymaps directory
+
+Reboot the Raspberry Pi
+
+Method 2: Manual creation of an IR remote control definition
+============================================================
+
+Run the following command:
 
 ```
 $ ir-keytable
@@ -92,7 +144,7 @@ variant = "nec"
 0x833373 = "KEY_EXIT"
 ```
 
-The name field should be myremote. The protocol should be that shown above (necx in this example). Assign the scan code for each key as show in the above event.  The variant field is normally the same as the protocol field but this will be indicated in the event output if it is different. There is an example myremote.toml file in the /usr/share/radio/remotes directory.
+The name field be any name that you like for example **myremote*. The protocol should be that shown above (necx in this example). Assign the scan code for each key as show in the above event.  The variant field is normally the same as the protocol field but this will be indicated in the event output if it is different. There is an example myremote.toml file in the /usr/share/radio/remotes directory.
 
 **Note:** There wasn’t a necx protocol. The nearest one was nec so this was used.
 

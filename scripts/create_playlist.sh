@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.1 2002/02/24 14:42:36 bob Exp $
+# $Id: create_playlist.sh,v 1.7 2024/11/26 16:32:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -38,9 +38,11 @@ MAX_SIZE=5000
 SDCARD="sdcard"
 USBDRIVE="usbdrive"
 CONFIG=/etc/radiod.conf
-CODECS="mp3 ogg flac wav"
+CODECS="mp3 ogg flac wav aac"
 USR=$(logname)
 LOCATION="/home/${USR}/Music"
+RECORDINGS_DIR="/home/${USR}/Recordings"
+RECORDINGS="recordings"
 
 # Find device name of USB stick (Assumes that dev=/dev/sdX)
 find_usb_device(){
@@ -91,19 +93,6 @@ make_name(){
     echo $name
 }
 
-# Stop the radio and mpd
-CMD="sudo systemctl stop radiod.service"
-echo ${CMD};${CMD}
-CMD="sudo systemctl stop mpd.service"
-echo ${CMD};${CMD}
-
-sleep 2
-
-# If the above fails check pid
-rpid=$(cat /var/run/radiod.pid >/dev/null 2>&1)
-if [[ $? == 0 ]]; then  # Don't seperate from above
-        sudo kill -TERM ${rpid}
-fi
 ans=0
 selection=1
 while [ $selection != 0 ]
@@ -112,7 +101,9 @@ do
      "1" "From USB stick" \
      "2" "From network share" \
      "3" "From SD card" \
-     "4" "From USB Disk Drive" 3>&1 1>&2 2>&3)
+     "4" "From USB Disk Drive" \
+     "5" "Recordings" \
+     3>&1 1>&2 2>&3)
 
      exitstatus=$?
      if [[ $exitstatus != 0 ]]; then
@@ -187,6 +178,12 @@ do
         PLAYLIST="USB_Drive"
         SUBDIR=${USBDRIVE}
 
+     elif [[ ${ans} == '5' ]]; then
+        DESC="Recordings directory selected"
+        PLAYLIST="Recordings"
+        SUBDIR=${RECORDINGS}
+        LOCATION=${RECORDINGS_DIR}
+
      else
         DESC="User interface in ${CONFIG} unchanged"
         echo ${DESC}
@@ -198,8 +195,7 @@ do
 done
 
 # Soft link SD card music location to /var/lib/mpd/music/sdcard
-echo "${SUBDIR} == ${SDCARD} or ${USBDRIVE}"
-if [[ ${SUBDIR} == ${SDCARD} || ${SUBDIR} == ${USBDRIVE} ]]; then
+if [[ ${SUBDIR} == ${SDCARD} || ${SUBDIR} == ${USBDRIVE} || ${SUBDIR} == ${RECORDINGS} ]]; then
     file_exists=0
     while [[ file_exists -eq 0 ]]
     do
@@ -292,8 +288,7 @@ if [[ $? == 0 ]]; then  # Do not seperate from above line
         CODECS=${NAMES[1]#'"'}  # Remove first '"'
         CODECS=${CODECS%'"'}    # Remove last '"'
     fi
-    echo "X ${CODECS}"
-        IFS=${SAVEIFS}
+    IFS=${SAVEIFS}
 fi
 
 for codec in ${CODECS}
@@ -316,13 +311,13 @@ ${CMD}
 echo "Processing ${FILTERS}"
 if [[ ${FILTERS} != "" ]];then
     cat /dev/null > /tmp/${PLAYLIST}.${EXT}
-    # Split filters into seperate lines
-        filters=$(echo ${FILTERS} | tr "|" "\n")
-    
-        echo "${filters}" |
+    # Split filters into separate lines
+    filters=$(echo ${FILTERS} | tr "|" "\n")
+
+    echo "${filters}" |
     while read filter
-        do
-                echo "Processing filter \"${filter}\""
+    do
+        echo "Processing filter \"${filter}\""
 
         # Process filter beginning with /
         if [[ ${filter:0:1} == "/" ]];then
@@ -336,7 +331,7 @@ fi
 
 # Get directory size
 if [[ ${VERBOSE} == "-v" ]];then
-    cat  /tmp/${PLAYLIST}
+    cat  /tmp/${PLAYLIST}.${EXT}
 fi
 
 echo
@@ -369,7 +364,7 @@ if [[ ${size} -gt ${MAX_SIZE} ]];then
     # Copy new playlists to MPD playlist directory
     for file in ${PLAYLIST}*
     do
-        CMD="mv ${file} ${MPD_PLAYLISTS}/${file}.${EXT}"
+        CMD="mv ${file} ${MPD_PLAYLISTS}/\"${file}.${EXT}\""
         echo  ${CMD}; ${CMD}
     done
     
@@ -379,24 +374,15 @@ else
     echo  ${CMD}; ${CMD}
 fi
 
-# Update the mpd database
-CMD="sudo systemctl start mpd.service"
-echo ${CMD};${CMD}
-if [[ $? -ne 0 ]];then
-    echo "Error Failed to start Music Mlayer Daemon"
-else
-    CMD="mpc stop"
-    echo ${CMD};${CMD}
+CMD="systemctl status mpd"
+echo  ${CMD}; ${CMD}  >/dev/null 2>&1
+if [[ $? == 0 ]]; then
     CMD="mpc update ${SUBDIR}"
+    echo ${CMD};${CMD}
+    CMD="mpc load ${PLAYLIST}"
     echo ${CMD};${CMD}
 fi
 
-CMD="sudo systemctl start radiod.service"
-echo ${CMD};${CMD}
-if [[ $? -ne 0 ]];then
-    echo "Error Failed to start radio"
-    exit 1
-fi
 exit 0
 
 # End of script

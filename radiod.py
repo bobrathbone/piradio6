@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.146 2002/02/11 07:25:39 bob Exp $
+# $Id: radiod.py,v 1.149 2024/11/27 06:26:42 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -299,9 +299,9 @@ class MyDaemon(Daemon):
                 # Keep MPD connection alive
                 radio.ping()
 
-                # Recover from no Internet connection
-                #if len(ipaddr) < 1:
-                ipaddr = radio.get_ip()
+                # Recover from no Internet connection 
+                if len(ipaddr) < 1 and source_type == radio.source.RADIO:
+                    ipaddr = radio.get_ip()
 
                 # When volume switches or rotary encoder operated display
                 # message scrolling is suppressed for a few seconds to speed
@@ -631,6 +631,7 @@ def handleSourceEvent(event,display,radio,menu):
             handleMenuChange(display,radio,menu,message)
     else:
          handleRadioEvent(event,display,radio,menu)
+    time.sleep(0.25)     # Prevent skipping
 
 # Handle search events
 def handleSearchEvent(event,display,radio,menu):

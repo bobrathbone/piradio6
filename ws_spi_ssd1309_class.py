@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-# $Id: ws_spi_ssd1309_class.py,v 1.16 2002/01/22 19:42:08 bob Exp $
+# $Id: ws_spi_ssd1309_class.py,v 1.17 2024/11/25 10:17:30 bob Exp $
 # This class drives the waveshare SSD1309 OLED with SPI interface
 # It requires the SPI dtoverlay to be loaded. 
 #

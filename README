@@ -16,13 +16,15 @@ from the command line
 
 Version 7.9 release notes
 -------------------------
-Release 9 November 2024 - Build 2 (Beta) 
+Release 27 November 2024 - Build 3 (Beta) 
 1) Prevent radio program from crashing if no IP network and no media to load
 2) Support for the Waveshare 1.5 and 2.42-Inch SPI interface OLEDs added
 3) New configuration parameter ky040_r1_fitted added to set KY040 switch (SW) pullup resistor
 4) New check_voltage.sh script added to check CPU and RAM voltage, temperature etc
 5) Radio configuration now calls most other scripts from a top level menu
 6) New parameter no_internet_switch yes/no to switch to MEDIA if no Internet for the radio
+7) New create_keymap.py script to create IR remote control keymaps
+8) Creating Media playlists no longer needs to stop the radio
 
 Version 7.8 release notes
 -------------------------

@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: display_docs.sh,v 1.2 2002/02/24 16:31:38 bob Exp $
+# $Id: display_docs.sh,v 1.6 2024/11/29 07:35:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -9,7 +9,6 @@
 # Display HTML documents in the /usr/share/radio/docs directory
 # These are created from .md (markdown) documents using cmark 
 # 
-#
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
@@ -21,6 +20,12 @@
 
 FLAGS=$1
 DIR=/usr/share/radio
+
+if [[ ${FLAGS} == '-t' ]]; then 
+    cd ../
+    DIR=$(pwd)
+fi
+
 DOCS_DIR=${DIR}/docs
 DOC=""
 LYNX=/usr/bin/lynx
@@ -41,9 +46,9 @@ ans=$(whiptail --title "Select document to display" --menu "Choose document" 15 
 "2" "Creating Media playlists" \
 "3" "How to pair a Bluetooth device" \
 "4" "Creating an IR remote control definition" \
-"5" "Document 5" \
-"6" "Document 6" \
-"7" "Document 7" 3>&1 1>&2 2>&3)
+"5" "Network configuration and roaming" \
+"6" "Configuration tutorial (/etc/radiod.conf)" \
+3>&1 1>&2 2>&3)
 
 exitstatus=$?
 if [[ $exitstatus != 0 ]]; then
@@ -62,10 +67,10 @@ elif [[ ${ans} == '4' ]]; then
     DOC=${DOCS_DIR}/create_ir_remote
 
 elif [[ ${ans} == '5' ]]; then
-    DOC=${DOCS_DIR}/station_playlist
+    DOC=${DOCS_DIR}/network_configuration
 
 elif [[ ${ans} == '6' ]]; then
-    DOC=${DOCS_DIR}/station_playlist
+    DOC=${DOCS_DIR}/config_tutorial
 fi
 
 MD_DOC=${DOC}.md
@@ -74,7 +79,7 @@ echo "${LYNX} ${HTML_DOC}"
 
 # Create and display requested html document
 if [[ -f ${MD_DOC} ]]; then
-    ${CMARK} ${MD_DOC} > ${HTML_DOC}
+    ${CMARK} --hardbreaks ${MD_DOC} > ${HTML_DOC}
     ${LYNX} ${HTML_DOC}
 else
     echo "Error: Document ${MD_DOC} not found"

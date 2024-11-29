@@ -1,7 +1,7 @@
 Creating Media playlists
 ========================
 
-To create a Media Playlist select option **4 Create media playlists** from the **radio-config** menu. This will give you four options.
+To create a Media Playlist select option **4 Create media playlists** from the **radio-config** menu. This will give you five options.
 
 ```
 Create playlist
@@ -9,6 +9,7 @@ Create playlist
 2 From network share
 3 From SD card
 4 From USB Disk Drive
+5 Recordings 
 ```
 
 Files
@@ -23,8 +24,11 @@ Usually you will call the create_stations program from radio-config
 
 **radio-config --> Update radio stations playlist**
 
-However there may be occasions that you want to run the create_stations.sh program from the command line or in a script. First populate the media with music files and then run create_playlist.sh
+However there may be occasions that you want to run the **create_playlist.sh** program from the command line or in a script. First populate the media with music files and then run **create_playlist.sh** 
+
 
 ```
 cd /usr/share/radio
-./create_stations.sh
+./create_stations.py
+```
+

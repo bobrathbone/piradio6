@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Weather station class
-# $Id: weather2.py,v 1.13 2002/01/21 07:04:01 bob Exp $
+# $Id: weather2.py,v 1.14 2024/11/25 10:17:30 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : https://www.bobrathbone.com/

@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.13 2002/02/23 18:00:32 bob Exp $
+# $Id: build.sh,v 1.17 2024/11/25 10:17:29 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -17,8 +17,7 @@ GRP=$(id -g -n ${USR})
 PKGDEF=piradio
 PKG=radiod
 VERSION=$(grep ^Version: ${PKGDEF} | awk '{print $2}')
-ARCH=$(grep ^Architecture: ${PKGDEF} | awk '{print $2}')
-DEBPKG=${PKG}_${VERSION}_${ARCH}.deb
+#ARCH=$(grep ^Architecture: ${PKGDEF} | awk '{print $2}')
 BUILDLOG=build.log
 OS_RELEASE=/etc/os-release
 EQUIVS=/usr/bin/equivs-build
@@ -36,13 +35,22 @@ if [[ "$EUID" -eq 0 ]];then
     exit 1
 fi
 
-# Check if this machine is 32-bit
+getconf LONG_BIT
+# Check if this machine is 32 or 64-bit
 BIT=$(getconf LONG_BIT)
-if [[ ${BIT} != "32" ]]; then
-    echo "This build will only run on a 32-bit system."
-    echo "This is a ${BIT}-bit system. Use build64.sh script."
-    exit 1
+if [[ ${BIT} == "64" ]]; then
+    echo "64-bit system."
+    ARCH="arm64"
+elif [[ ${BIT} == "32" ]]; then
+    echo "32-bit system."
+    ARCH="armhf"
 fi
+
+cp -f ${PKGDEF} ${PKGDEF}.save
+
+DEBPKG=${PKG}_${VERSION}_${ARCH}.deb
+echo "Buiding ${DEBPKG}"
+sudo sed -i -e "0,/^Architecture:/{s/^Architecture:.*/Architecture: ${ARCH}/}" ${PKGDEF} 
 
 # We need Rasbian Buster (Release 10) or later
 VERSION_ID=$(grep VERSION_ID ${OS_RELEASE})
@@ -90,6 +98,9 @@ if [[ ${ans} == 'y' ]]; then
 	    echo "Package ${DEBPKG} has errors" | tee -a ${BUILDLOG}
 	fi
 fi
+
+# Prevent CVS from updating package file every time this is run
+mv ${PKGDEF}.save ${PKGDEF}
 
 echo
 echo "Now install the ${DEBPKG} package with the following command:"

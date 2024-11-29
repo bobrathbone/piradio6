@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: patch.sh,v 1.47 2002/02/07 16:24:14 bob Exp $
+# $Id: patch.sh,v 1.48 2024/11/25 10:17:29 bob Exp $
 # Patching script for the Raspberry PI radio
 export LC_ALL=C
 
