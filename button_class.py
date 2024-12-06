@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.11 2023/09/27 13:11:59 bob Exp $
+# $Id: button_class.py,v 1.12 2024/12/06 10:51:33 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -109,9 +109,7 @@ if __name__ == "__main__":
     down_switch = config.getSwitchGpio("down_switch")
     up_switch = config.getSwitchGpio("up_switch")
     menu_switch = config.getSwitchGpio("menu_switch")
-    aux_switch1 = config.getSwitchGpio("aux_switch1")
-    aux_switch2 = config.getSwitchGpio("aux_switch2")
-    aux_switch3 = config.getSwitchGpio("aux_switch3")
+    record_switch = config.getSwitchGpio("record_switch")
 
     print("Left switch GPIO", left_switch)
     print("Right switch GPIO", right_switch)
@@ -119,9 +117,7 @@ if __name__ == "__main__":
     print("Up switch GPIO", up_switch)
     print("Down switch GPIO", down_switch)
     print("Menu switch GPIO", menu_switch)
-    print("Aux switch 1 GPIO", aux_switch1)
-    print("Aux switch 2 GPIO", aux_switch2)
-    print("Aux switch 3 GPIO", aux_switch3)
+    print("Record switch GPIO", record_switch)
     print("Pull Up/Down resistors", pullupdown[config.pull_up_down])
 
     Button(left_switch, interrupt, log, config.pull_up_down)
@@ -130,9 +126,7 @@ if __name__ == "__main__":
     Button(down_switch, interrupt, log, config.pull_up_down)
     Button(up_switch, interrupt, log, config.pull_up_down)
     Button(menu_switch, interrupt, log, config.pull_up_down)
-    Button(aux_switch1, interrupt, log, config.pull_up_down)
-    Button(aux_switch2, interrupt, log, config.pull_up_down)
-    Button(aux_switch3, interrupt, log, config.pull_up_down)
+    Button(record_switch, interrupt, log, config.pull_up_down)
 
     try:
         while True:

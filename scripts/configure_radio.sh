@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.7 2024/11/28 12:02:01 bob Exp $
+# $Id: configure_radio.sh,v 1.10 2024/12/05 15:46:09 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -183,7 +183,7 @@ if [[ ${FLAGS} != "-s" ]]; then
         "3" "Update radio stations playlist" \
         "4" "Create media playlists" \
         "5" "Diagnostics and Information" \
-        "6" "Documents" \
+        "6" "Documents and Tutorials" \
         "7" "Edit configuration files" \
         "8" "Install/configure drivers and software components" \
         "9" "Start/Stop/Status radio daemons" 3>&1 1>&2 2>&3) 
@@ -230,13 +230,15 @@ if [[ ${COMPONENTS} == 1 ]]; then
     do
         SCRIPT=""
         SUDO=""
+        CMD=""
         ans=$(whiptail --title "Install software and driver components" --menu "Choose your option" 15 75 9 \
-        "1" "Install IR remote control" \
+        "1" "Install/Configure IR remote control" \
         "2" "Install Web Interface" \
         "3" "Install Airplay (shairport-sync)" \
         "4" "Install Icecast" \
         "5" "Install Speech facility" \
         "6" "Install Luma OLED/TFT driver" \
+        "7" "Install recording utility (streamripper)" \
         3>&1 1>&2 2>&3) 
 
         exitstatus=$?
@@ -267,6 +269,10 @@ if [[ ${COMPONENTS} == 1 ]]; then
         elif [[ ${ans} == '6' ]]; then
             SCRIPT="install_luma.sh"
             DESC="Install Luma OLED/TFT driver"
+
+        elif [[ ${ans} == '7' ]]; then
+            CMD="sudo apt-get install streamripper"
+            DESC="Install recording (streamripper)"
         fi
 
         ## To do
@@ -280,7 +286,11 @@ if [[ ${COMPONENTS} == 1 ]]; then
         fi
     done
 
-    if [[ ${SCRIPT} != "" ]]; then
+    # Install component
+    if [[ ${CMD} != "" ]]; then
+        ${CMD} 
+        exit 0
+    elif [[ ${SCRIPT} != "" ]]; then
         ${SUDO} ${SCRIPTS}/${SCRIPT} ${FLAGS}
         exit 0
     fi

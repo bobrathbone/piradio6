@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.149 2024/11/27 06:26:42 bob Exp $
+# $Id: radiod.py,v 1.159 2024/12/06 10:51:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -80,14 +80,15 @@ def signalCrash(signal,frame):
 
 def displayStopped():
     pid = os.getpid()
-    log.message("Radio stopped, PID " + str(pid), log.INFO)
+    msg = message.get('stopped')
+    log.message(msg+ " PID  " + str(pid), log.INFO)
     radio.setInterrupt()
     display.clear()
     display.out(2,"")
     if display.getLines() > 2:
         display.out(3,"")
         display.out(4,"")
-    display.out(1,"Radio stopped")
+    display.out(1,msg)
 
 # Signal SIGTERM handler
 def signalHandler(signal,frame):
@@ -101,7 +102,8 @@ def signalHandler(signal,frame):
     displayStopped()
     radio.stop()
     statusLed.set(StatusLed.CLEAR)
-    print ("\nRadio stopped")
+    msg = message.get('stopped')
+    print ("\n" + msg)
     sys.exit(0)
 
 # No interrupt
@@ -300,6 +302,7 @@ class MyDaemon(Daemon):
                 radio.ping()
 
                 # Recover from no Internet connection 
+                source_type = radio.getSourceType()
                 if len(ipaddr) < 1 and source_type == radio.source.RADIO:
                     ipaddr = radio.get_ip()
 
@@ -313,6 +316,9 @@ class MyDaemon(Daemon):
                     display.noScrolling(True)
     
                 displayBacklight(radio,menu,display)
+
+                # Check if streamripper is rocording
+                self.recording = radio.isRecording()
 
                 # This delay is important and should be more than switch bounce times
                 time.sleep(0.025)
@@ -380,7 +386,7 @@ def handleEvent(event,display,radio,menu):
     if event_type == event.ALARM_FIRED:
         wakeup(radio,menu)
 
-    # If both up and down pessed together convert
+    # If both up and down pressed together convert
     # to menu pressed (if no separate menu switch eg. Pirate Audio ST7789TFT)
     elif (event_type == event.UP_SWITCH or event_type == event.DOWN_SWITCH) \
             and displayType == radio.config.ST7789TFT:
@@ -558,18 +564,13 @@ def handleRadioEvent(event,display,radio,menu):
         handleMenuChange(display,radio,menu,message)
         display.refreshVolumeBar()
 
-    elif event_type == event.AUX_SWITCH1:
-        log.message('AUX switch 1 DOWN', log.DEBUG)
-
-    elif event_type == event.AUX_SWITCH2:
-        log.message('AUX switch 2 DOWN', log.DEBUG)
-
-    elif event_type == event.AUX_SWITCH3:
-        log.message('AUX switch 3 DOWN', log.DEBUG)
+    elif event_type == event.RECORD_BUTTON:
+        log.message('RECORD_BUTTON event received', log.DEBUG)
+        radio.handleRecordKey(event_type)
 
     elif event_type == event.PLAYLIST_CHANGED:
         log.message('event PLAYLIST_CHANGED', log.DEBUG)
-        print('PLAYLIST_CHANGED event recieved')
+        print('PLAYLIST_CHANGED event received')
         radio.handlePlaylistChange()
 
     elif event_type == event.SHUTDOWN:
@@ -631,7 +632,6 @@ def handleSourceEvent(event,display,radio,menu):
             handleMenuChange(display,radio,menu,message)
     else:
          handleRadioEvent(event,display,radio,menu)
-    time.sleep(0.25)     # Prevent skipping
 
 # Handle search events
 def handleSearchEvent(event,display,radio,menu):
@@ -663,9 +663,9 @@ def handleSearchEvent(event,display,radio,menu):
             displayCurrent(display,radio,message)
         else:
             handleMenuChange(display,radio,menu,message)
-
     else:
          handleRadioEvent(event,display,radio,menu)
+    time.sleep(0.06) # Prevent skipping
 
 # Handle menu stepthrough
 def handleMenuChange(display,radio,menu,message):
@@ -870,8 +870,12 @@ def changeOption(event, display, radio, menu):
         else:
             radio.decrementTimer()
 
-    elif option_index == menu.OPTION_WIFI:
-        radio.toggleOptionValue(option_index)
+    elif option_index == menu.OPTION_RECORD_DURATION:
+        if event_type == event.RIGHT_SWITCH:
+            inc = 5
+        else:
+            inc = -5
+        radio.incrementRecordDuration(inc)
 
     elif option_index == menu.OPTION_RELOADLIB:
         if radio.toggleOptionValue(option_index):
@@ -916,7 +920,7 @@ def displayStartup(display,radio):
     display.out(1,msg + " " + version)
     if nlines > 2:
         display.out(2,"Radio PID " + str(pid))
-        display.out(3,"Waiting for network")
+        display.out(3,message.get("waiting_for_network"))
         msg = message.get('mpd_version')
         display.out(4, msg + " " + radio.getMpdVersion())
     else:
@@ -927,8 +931,6 @@ def displayStartup(display,radio):
 # Display time
 def displayTimeDate(display,radio,message):
     msg = message.get('date_time')
-   #if msg != display.saved_time:
-    #display.saved_time = msg
     
     width = display.getWidth()
 
@@ -940,16 +942,22 @@ def displayTimeDate(display,radio,message):
 
     # If streaming add the streaming indicator
     if radio.getStreaming() and width > 16:
-        streaming = '*'
+        streaming = '+'
     else:
         streaming = ''
+
+    # If recording add the recording indicator
+    if radio.isRecording():
+        recording_ind = '*'
+    else:
+        recording_ind = ''
+
     dtype = config.getDisplayType()
-    
 
     # Display time/date double size if using oled_class
     if dtype == config.OLED_128x64:
         display.setFontScale(2)
-    display.out(message.getLine(),msg + streaming)
+    display.out(message.getLine(),msg + recording_ind + streaming)
     if dtype == config.OLED_128x64:
         display.setFontScale(1)
 
@@ -1077,9 +1085,8 @@ def displayOptions(display,radio,menu,message):
     elif option_index == menu.OPTION_TIMER:
         text = message.getTimerText(option_value)
 
-    elif option_index == menu.OPTION_WIFI:
-        text = message.toYesNo(option_value)
-        sText = text
+    elif option_index == menu.OPTION_RECORD_DURATION:
+        text = option_value
 
     else:
         # Default handling of on/off options such as random,repeat etc

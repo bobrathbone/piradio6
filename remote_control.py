@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: remote_control.py,v 1.24 2023/02/08 19:59:27 bob Exp $
+# $Id: remote_control.py,v 1.25 2024/12/01 10:22:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
-# This program uses LIRC (Linux Infra Red Control) and python-pylirc
-# For Raspbian Buster run:
-#   apt-get install lirc python-pylirc
-#
-# Note: This program cannot be converted Python 3 as pylirc2 is not yet available 
 #
 # For Raspbian Jessie run:
 #   apt-get install lirc python-lirc

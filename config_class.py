@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.118 2024/11/26 06:47:56 bob Exp $
+# $Id: config_class.py,v 1.119 2024/12/06 10:51:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -235,9 +235,7 @@ class Configuration:
              "right_switch": 15,
              "up_switch": 24,
              "down_switch": 23,
-             "aux_switch1": 0,
-             "aux_switch2": 0,
-             "aux_switch3": 0,
+             "record_switch": 17,
            }
 
     # Pull up/down resistors (For button class only)

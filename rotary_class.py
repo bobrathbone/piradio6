@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.23 2024/11/25 10:17:30 bob Exp $
+# $Id: rotary_class.py,v 1.24 2024/12/02 07:30:26 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -268,7 +268,7 @@ if __name__ == "__main__":
     from config_class import Configuration
     config = Configuration()
 
-    print("Test rotary encoder Class")
+    print("Test standard rotary encoder Class")
 
     # Get configuration
     left_switch = config.getSwitchGpio("left_switch")

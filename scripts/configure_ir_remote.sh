@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.9 2024/11/28 09:49:27 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.10 2024/11/30 16:34:38 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -156,6 +156,7 @@ do
         echo
         echo "Press Ctl-C to end test"
         ${DIR}/test_events.py 
+        echo
 
     elif [[ ${ans} == '3' ]]; then
         clear
@@ -207,6 +208,7 @@ do
         ${SCRIPTS_DIR}/select_ir_remote.sh ${FLAGS}
         echo "Reboot the Raspberry Pi or run the following command:"
         printf "${orange}sudo systemctl restart ireventd radiod${default}"
+        echo ''
         echo -n "Press enter to continue: "
         read x
         

@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.110 2024/11/29 09:47:17 bob Exp $
+# $Id: piradio,v 1.112 2024/12/06 09:32:18 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is the 64 bit version
 # Source: <source package name; defaults to package name>
@@ -62,6 +62,7 @@ Files:  radiod.py /usr/share/radio/
     source_class.py /usr/share/radio/
     display_current.py /usr/share/radio/
     button_class.py /usr/share/radio/
+    record.py /usr/share/radio/
     rotary_class.py /usr/share/radio/
     rotary_class_rgb.py /usr/share/radio/
     rotary_class_rgb_i2c.py /usr/share/radio/
@@ -88,6 +89,7 @@ Files:  radiod.py /usr/share/radio/
     docs/pair_bluetooth_device.md /usr/share/radio/docs
     docs/create_ir_remote.md /usr/share/radio/docs
     docs/network_configuration.md /usr/share/radio/docs
+    docs/record_radio.md /usr/share/radio/docs
     scripts/configure_audio_device.sh /usr/share/radio/scripts/
     scripts/install_wm8960.sh /usr/share/radio/scripts/
     scripts/install_luma.sh /usr/share/radio/scripts/

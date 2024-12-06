@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.31 2024/11/25 10:17:29 bob Exp $
+# $Id: ireventd.py,v 1.35 2024/12/04 11:41:14 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -52,6 +52,7 @@ key_maps = '/etc/rc_keymaps'
 sys_rc = '/sys/class/rc'
 rc_device = ''
 
+recording = False
 
 # Signal SIGTERM handler
 def signalHandler(signal,frame):
@@ -59,6 +60,16 @@ def signalHandler(signal,frame):
     pid = os.getpid()
     log.message("Remote control stopped, PID " + str(pid), log.INFO)
     sys.exit(0)
+
+# User signal SIGUSR1/2 used to indicate if recording active
+def sigUser(signal,frame):
+    global recording
+    if signal == 10:
+        recording = True
+        GPIO.output(remote_led, True)
+    elif signal == 12:
+        recording = False
+        GPIO.output(remote_led, False)
 
 # Daemon class
 class RemoteDaemon(Daemon):
@@ -81,6 +92,8 @@ class RemoteDaemon(Daemon):
         log.message(progcall, log.DEBUG)
         log.message('Remote control running pid ' + str(os.getpid()), log.INFO)
         signal.signal(signal.SIGHUP,signalHandler)
+        signal.signal(signal.SIGUSR1,sigUser)
+        signal.signal(signal.SIGUSR2,sigUser)
 
         msg = "Using IR kernel events architecture"
         print(msg)
@@ -196,7 +209,10 @@ class RemoteDaemon(Daemon):
             # See https://python-evdev.readthedocs.io/en/latest/apidoc.html#evdev.events.InputEvent
             if event.type == ecodes.EV_KEY:
                 if remote_led > 0:
-                    GPIO.output(remote_led, True)
+                    if recording: 
+                        GPIO.output(remote_led, False)
+                    else:
+                        GPIO.output(remote_led, True)
 
                 # Or use categorize. This is more useful if we want to write a function to
                 # return a text representation of the button press on a key down
@@ -226,8 +242,14 @@ class RemoteDaemon(Daemon):
                         reply = self.udpSend(keycode)
                         print(reply)
 
+                    if 'KEY_RECORD' in keycode :
+                        time.sleep(2)
+
                 if remote_led > 0:
-                    GPIO.output(remote_led, False)
+                    if recording: 
+                        GPIO.output(remote_led, True)
+                    else:
+                        GPIO.output(remote_led, False)
 
     # Listener  routine
     def listener(self,irin):
@@ -332,7 +354,7 @@ def usageSend():
     print(("Usage: %s send <KEY>" % sys.argv[0]))
     print ("Where <KEY> is a valid IR_KEY")
     print ("   KEY_VOLUMEUP,KEY_VOLUMEDOWN,KEY_CHANNELUP,KEY_CHANNELDOWN,KEY_MENU")
-    print ("   KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK,KEY_INFO,KEY_MUTE")
+    print ("   KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK,KEY_INFO,KEY_MUTE,KEY_RECORD")
     print ("   PLAY_n Where n is the station or track number. E.g. PLAY_9 or PLAY_176 ")
     sys.exit(2)
 

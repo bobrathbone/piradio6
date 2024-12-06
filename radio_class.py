@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.153 2024/11/25 13:42:14 bob Exp $
+# $Id: radio_class.py,v 1.168 2024/12/05 15:35:46 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -29,6 +29,8 @@ from time import strftime
 from os import stat
 from pwd import *
 import pdb
+import subprocess
+import signal
 
 from constants import __version__
 from constants import *
@@ -42,6 +44,7 @@ from language_class import Language
 from source_class import Source
 from volume_class import Volume
 from playlist_class import Playlist
+from record import Recorder
 import mpd
 
 # MPD files
@@ -61,6 +64,11 @@ MixerVolumeFile = RadioLibDir + "/mixer_volume"
 MixerIdFile = RadioLibDir + "/mixer_volume_id"
 BoardRevisionFile = RadioLibDir + "/boardrevision"
 
+# Recording PID details
+PidDir = '/var/run/radio_record'
+record_pidfile = PidDir + '/record.pid'
+ireventd_pidfile = '/var/run/ireventd.pid'
+
 Icecast = "/usr/bin/icecast2"
 
 # Option values
@@ -68,6 +76,7 @@ RandomSettingFile = RadioLibDir + "/random"
 TimerFile = RadioLibDir + "/timer" 
 AlarmFile = RadioLibDir + "/alarm" 
 StreamFile = RadioLibDir + "/streaming"
+RecordingDurationFile = RadioLibDir + "/recording"
 
 log = None
 language = None
@@ -86,11 +95,13 @@ MPD_EMPTY_PLAYLIST = 5
 ON = True
 OFF = False
 
-
+# Radio class
 class Radio:
     translate = None    # Translate object
     spotify = None      # Spotify object
     server = None
+    ir_pid = -1         # IR event daemon process pid
+    record_pid = -1     # Recording process pid
 
     client = mpd.MPDClient()    
     volume = 0
@@ -165,7 +176,6 @@ class Radio:
 
     # Radio options
     reloadlib = False   # Reload music library yes/no
-    setup_wifi = False  # Set up wifi
 
     # Clock and timer options
     timer = 0     # Timer on
@@ -176,6 +186,8 @@ class Radio:
     alarmType = ALARM_OFF   # Alarm on
     alarmTime = "0:7:00"    # Alarm time default type,hours,minutes
     alarmTriggered = False  # Alarm fired
+
+    recordDuration = "1:25" # Record duration in hours:minutes
 
     stationTitle = ''       # Radio station title
     stationName = ''        # Radio station name
@@ -190,8 +202,11 @@ class Radio:
 
     pingTime = 0        # Reduce amount of pings
     pingDelay = 15      # Delay between pings in seconds
+    recordTime = 0      # Reduce amount of recording checks
+    recordDelay = 4     # Delay between recording checks in seconds
 
     connected = False   # Connection status
+    recording = False   # Recording station
 
     # Configuration files in /var/lib/radiod 
     ConfigFiles = {
@@ -205,6 +220,7 @@ class Radio:
         AlarmFile: "0:07:00", 
         StreamFile: "off", 
         RandomSettingFile: 0,
+        RecordingDurationFile: "1:05",   # Hours:Minutes
         }
 
     # Error strings 
@@ -274,7 +290,14 @@ class Radio:
         for file in self.ConfigFiles:
             value = self.ConfigFiles[file]
             if not os.path.isfile(file) or os.path.getsize(file) == 0:
-                self.execCommand ("echo " + str(value) + " > " + file)
+                f = open(file,'w')
+                f.write(str(value))
+                f.close()
+
+        # Create pid run directory for the record program
+        if not os.path.isdir(PidDir):
+            os.mkdir(PidDir)
+            os.chown(PidDir, self.uid, self.gid)
 
         # Link /var/lib/mpd/music/media to /media/<user>
         cmd = "rm -f /var/lib/mpd/music/media"
@@ -357,6 +380,92 @@ class Radio:
                 time.sleep(0.5)
         return ipaddr
 
+    def handleRecordKey(self,key):
+        print(key,"received")
+        
+        if not self.recording:
+            self.ir_pid = self.getPid(ireventd_pidfile)
+            try:
+                # This causes the IR daemon to switch on the activity LED
+                os.kill(int(self.ir_pid), signal.SIGUSR1)
+            except:
+                pass
+
+        source_type = self.source.getType()
+        if os.path.isfile(record_pidfile):
+            f = open(record_pidfile,'r')
+            pid = f.read()
+            f.close()
+            try:
+                os.kill(int(pid), signal.SIGHUP)
+            except Exception as e:
+                print(str(e))
+            time.sleep(2)
+            os.remove(record_pidfile)
+            msg = "Stopped recording %s" % self.stationName
+        elif source_type == self.source.RADIO:
+            cmd = "/usr/share/radio/record.py"
+            params = "--duration=1:00"
+            try:
+                print(cmd,params)
+                subprocess.Popen([cmd,params],shell=True)
+                msg = "Started recording %s" % self.stationName
+            except Exception as e:
+                print(str(e))
+        else:
+            msg = "Record request ignored - Not listening to a radio stream"
+
+        print(msg)
+        log.message(msg, log.INFO)
+
+    # If recording station, signal the ireventd to switch on activity LED
+    def isRecording(self):
+        now = time.time()
+        if now > self.recordTime + self.recordDelay:
+            self.recordTime = now
+            self.ir_pid = self.getPid(ireventd_pidfile)
+
+            # Is the IR remote control daemon running
+            if self.ir_pid > 0:
+                record_pid = self.getPid(record_pidfile)
+                if record_pid != self.record_pid:
+                    self.record_pid = record_pid 
+                    if self.record_pid < 1:
+                        log.message("Recording has stopped",log.DEBUG)
+                        self.recording = False
+                    else:
+                        log.message("Recording is running PID " + str(self.record_pid),log.DEBUG)
+                        self.recording = True
+
+                if self.record_pid > 1:
+                    try:
+                        # This causes the IR daemon to switch on the activity LED
+                        os.kill(int(self.ir_pid), signal.SIGUSR1)
+                    except:
+                        pass
+                else:
+                    try:
+                        # This causes the IR daemon to switch off the activity LED
+                        os.kill(int(self.ir_pid), signal.SIGUSR2)
+                    except:
+                        print(str(e))
+                        pass
+
+        return self.recording
+
+    # Get the pid from a pidfile
+    def getPid(self,pidfile):
+        pid = -1
+        if os.path.isfile(pidfile):
+            try:
+                f = open(pidfile,'r')
+                pid = f.read()
+                f.close()
+            except Exception as e:
+                print(str(e))
+                pass
+        return int(pid)
+
     # Call back routine for the IR remote and Web Interface
     def remoteCallback(self):
         key = self.server.getData()
@@ -392,6 +501,9 @@ class Radio:
 
         elif key == 'KEY_EXIT' or key == 'KEY_POWER':
             self.event.set(self.event.SHUTDOWN)
+
+        elif key == 'KEY_RECORD':
+            self.handleRecordKey(key)
 
         # These messages come from the Web CGI script
         elif key == 'MEDIA':
@@ -690,27 +802,6 @@ class Radio:
         pid = self.getStoredInteger("/var/run/mpd/pid",0)   
         self.execCommand("sudo systemctl stop mpd.socket")
         self.execCommand("sudo systemctl stop mpd.service")
-
-        """ 
-        # Wait until MPD stopped
-        count = 10
-        while pid != 0:
-            log.message('radio.stopMpdDaemon: Waiting for MPD to stop', log.DEBUG)
-            pid = self.getStoredInteger("/var/run/mpd/pid",0)   
-            time.sleep(1)
-            count -= 1
-            if count < 1:
-                break   
-
-        # Has MPD stopped
-        if pid == 0:
-            log.message('radio.stopMpdDaemon: MPD stopped', log.DEBUG)
-        else:
-            # Kill it as a last resort
-            log.message('radio.stopMpdDaemon: Failed to stop MPD', log.ERROR)
-            if pid > 1:
-                self.execCommand("sudo kill -9 " + str(pid))
-        """ 
         return pid
 
     # Scroll up and down between stations/tracks
@@ -1122,14 +1213,14 @@ class Radio:
         value = None
 
         if option_index == self.menu.OPTION_RANDOM:
-            randomValue = int(self.execCommand("cat " + RandomSettingFile) )
+            randomValue = int(self.getStoredParameter(RandomSettingFile))
             value = self.convertToTrueFalse(randomValue)    
 
         elif option_index == self.menu.OPTION_TIMER:
-            value = int(self.execCommand("cat " + TimerFile) )
+            value = int(self.getStoredParameter(TimerFile))
 
         elif option_index == self.menu.OPTION_ALARM:
-            value = self.execCommand("cat " + AlarmFile)
+            value = self.getStoredParameter(AlarmFile)
 
         if value == None:
             value = False
@@ -1273,7 +1364,7 @@ class Radio:
         hours = int(sHours)
         minutes = int(sMinutes)
         self.alarmTime = '%d:%d:%02d' % (self.alarmType,hours,minutes)
-        self.storeAlarm(self.alarmTime)
+        self.storeParameter(AlarmFile,self.alarmTime)
 
         return self.alarmType
 
@@ -1294,7 +1385,7 @@ class Radio:
         if hours >= 24:
             hours = 0
         self.alarmTime = '%d:%d:%02d' % (self.alarmType,hours,minutes)
-        self.storeAlarm(self.alarmTime)
+        self.storeParameter(AlarmFile,self.alarmTime)
         return '%d:%02d' % (hours,minutes) 
 
     # Decrement alarm time
@@ -1308,7 +1399,7 @@ class Radio:
         if hours < 0:
             hours = 23
         self.alarmTime = '%d:%d:%02d' % (self.alarmType,hours,minutes)
-        self.storeAlarm(self.alarmTime)
+        self.storeParameter(AlarmFile,self.alarmTime)
         return '%d:%02d' % (hours,minutes) 
 
     # Fire alarm if current hours/mins matches time now
@@ -1345,21 +1436,76 @@ class Radio:
 
     # Get the stored alarm value
     def getStoredAlarm(self):
-        alarmValue = '' 
-        if os.path.isfile(AlarmFile):
-            try:
-                alarmValue = self.execCommand("cat " + AlarmFile)
-            except ValueError:
-                alarmValue = "0:7:00"
-        else:
-            log.message("Error reading " + AlarmFile, log.ERROR)
+        alarmValue = self.getStoredParameter(AlarmFile)
+        if alarmValue == None:
+            alarmValue = "0:7:00"
         return alarmValue
 
-    # Store alarm time in alarm file
-    def storeAlarm(self,alarmString):
-        self.execCommand ("echo " + alarmString + " > " + AlarmFile)
-        return
+    # Store a parameter in /var/lib/radiod/<file>
+    def storeParameter(self,file,parameter):
+        ret = False
+        try:
+            f = open(file,'w')
+            f.write(parameter)
+            f.close()
+            ret = True
+        except Exception as e:
+            print(str(e))
+            log.message(str(e), log.ERROR)
+        return ret
 
+    # Get parameter stored in /var/lib/radiod/<file>
+    def getStoredParameter(self,file):
+        parameter = None
+        try:
+            f = open(file,'r')
+            parameter = f.read()
+            f.close()
+        except Exception as e:
+            print(str(e))
+            log.message(str(e), log.ERROR)
+        return parameter
+
+    # Get the record duration
+    def getRecordDuration(self):
+        return self.recordDuration
+        
+    # Increment recording duration time
+    def incrementRecordDuration(self,inc):
+        hours_max = 11
+        max = hours_max * 60
+        duration = self.recordDuration.split(':')
+        hours = int(duration[0])
+        minutes = int(duration[1]) + hours * 60
+
+        # If under a minute inc/dec by 1
+        if hours < 1 and minutes < 10:
+            if inc < 0:
+                inc = -1
+            else :
+                inc = 1
+        elif hours > 4:
+            if inc < 0:
+                inc = -15
+            else :
+                inc = 15
+
+        minutes += inc
+
+        if minutes > max:
+            minutes = 1
+        elif minutes <= 0:
+            minutes = max
+        hours = int(minutes / 60)
+        minutes = minutes % 60
+
+        sDuration = '%d:%02d' % (hours,minutes)
+        self.recordDuration = sDuration
+        self.storeParameter(RecordingDurationFile,sDuration)
+        print(sDuration)
+        return sDuration
+
+    # Get the alarm type
     # Get the actual alarm time
     def getAlarmTime(self):
         sType,sHours,sMinutes = self.alarmTime.split(':')
@@ -1390,19 +1536,8 @@ class Radio:
     def getStoredStreaming(self):
         streamValue = "off" 
         streaming = False
-        if os.path.isfile(StreamFile):
-            try:
-                streamValue = self.execCommand("cat " + StreamFile)
-            except ValueError:
-                streamValue = "off"
-        else:
-            log.message("Error reading " + StreamFile, log.ERROR)
-
-        if streamValue == "on":
-            streaming = True    
-        else:
-            streaming = False   
-
+        streamValue = self.getStoredParameter(StreamFile)
+        streaming = self.convertToTrueFalse(streamValue)
         return streaming
 
     # Toggle streaming on off
@@ -2486,10 +2621,6 @@ class Radio:
             value = self.toggle(self.reloadlib)
             self.reloadlib = value
 
-        elif option_index == self.menu.OPTION_WIFI:
-            value = self.toggle(self.setup_wifi)
-            self.setup_wifi = value
-
         elif option_index == self.menu.OPTION_STREAMING:
             value = self.toggle(self.streaming)
             self.streaming = value  
@@ -2545,9 +2676,6 @@ class Radio:
         elif option_index == self.menu.OPTION_RELOADLIB:
             value = self.reloadlib
 
-        elif option_index == self.menu.OPTION_WIFI:
-            value = self.setup_wifi
-
         elif option_index == self.menu.OPTION_STREAMING:
             value = self.streaming
 
@@ -2560,6 +2688,9 @@ class Radio:
 
         elif option_index == self.menu.OPTION_TIMER:
             value = self.getTimerCountdown()
+
+        elif option_index == self.menu.OPTION_RECORD_DURATION:
+            value = self.getRecordDuration()
 
         else:   
             value = False

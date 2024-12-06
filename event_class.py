@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.28 2024/11/25 10:17:29 bob Exp $
+# $Id: event_class.py,v 1.29 2024/12/06 10:51:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -39,9 +39,7 @@ mute_button = None
 up_button = None
 down_button = None
 menu_button = None
-aux_button1 = None
-aux_button2 = None
-aux_button3 = None
+record_button = None
 
 # If no interrupt required
 def no_interrupt():
@@ -92,12 +90,10 @@ class Event():
     # PLAY COMMAND
     PLAY = 21
 
-    AUX_SWITCH1 = 22
-    AUX_SWITCH2 = 23
-    AUX_SWITCH3 = 24
+    RECORD_BUTTON = 22
 
     # Shutdown radio
-    SHUTDOWN = 25
+    SHUTDOWN = 23
 
     # Alternate event names (easier to understand code )
     VOLUME_UP = RIGHT_SWITCH
@@ -113,8 +109,7 @@ class Event():
               'MENU_BUTTON_UP', 'ALARM_FIRED', 'TIMER_FIRED', 'KEY_LANGUAGE',
               'KEY_INFO', 'ROTARY_SWITCH_CHANGE', 'MPD_CLIENT_CHANGE', 
               'LOAD_RADIO', 'LOAD_MEDIA', 'LOAD_PLAYLIST', 'LOAD_AIRPLAY', 
-              'LOAD_SPOTIFY','PLAYLIST_CHANGED','PLAY','AUX_BUTTON1',
-              'AUX_BUTTON2','AUX_BUTTON3','SHUTDOWN',
+              'LOAD_SPOTIFY','PLAYLIST_CHANGED','PLAY','RECORD_BUTTON','SHUTDOWN',
              ]
 
     encoderEventNames = [ 'NONE', 'CLOCKWISE', 'ANTICLOCKWISE',
@@ -127,9 +122,7 @@ class Event():
     up_switch = 24
     down_switch = 23
     menu_switch = 17
-    aux_switch1 = 0
-    aux_switch2 = 0
-    aux_switch3 = 0
+    record_switch = 27
 
     rotary_switch_value = 0
 
@@ -246,14 +239,8 @@ class Event():
                     self.event_triggered = True
                     break
 
-        elif event == self.aux_switch1:
-            self.event_type = self.AUX_SWITCH1
-
-        elif event == self.aux_switch2:
-            self.event_type = self.AUX_SWITCH2
-
-        elif event == self.aux_switch3:
-            self.event_type = self.AUX_SWITCH3
+        elif event == self.record_button:
+            self.event_type = self.RECORD_BUTTON
 
         else:
             self.event_triggered = False
@@ -360,6 +347,14 @@ class Event():
 
         return pressed
 
+    # Record button
+    def recordButtonPressed(self):
+        global record_button
+        pressed = False
+        if down_button != None:
+            pressed =  record_button.pressed()
+        return pressed
+
     def getConfiguration(self):
         userInterfaces = ["Rotary encoders", "Buttons", "Touchscreen",
                   "Cosmic controller", "Piface CAD"]
@@ -378,9 +373,7 @@ class Event():
         self.down_switch = self.config.getSwitchGpio("down_switch")
         self.up_switch = self.config.getSwitchGpio("up_switch")
         self.menu_switch = self.config.getSwitchGpio("menu_switch")
-        self.aux_switch1 = self.config.getSwitchGpio("aux_switch1")
-        self.aux_switch2 = self.config.getSwitchGpio("aux_switch2")
-        self.aux_switch3 = self.config.getSwitchGpio("aux_switch3")
+        self.record_switch = self.config.getSwitchGpio("record_switch")
         return
 
     # Configure rotary switch (not rotary encoders!)
@@ -488,7 +481,7 @@ class Event():
     def setButtonInterface(self):
         from button_class import Button
         global left_button,right_button,mute_button  
-        global up_button,down_button,menu_button 
+        global up_button,down_button,menu_button,record_button
 
         # Get pull up/down resistor configuration
         up_down = self.config.pull_up_down
@@ -501,12 +494,8 @@ class Event():
         up_button = Button(self.up_switch,self.button_event,log,pull_up_down=up_down)
         mute_button = Button(self.mute_switch,self.button_event,log,pull_up_down=up_down)
         menu_button = Button(self.menu_switch,self.button_event,log,pull_up_down=up_down)
-        if self.aux_switch1 > 0:
-            aux_button1 = Button(self.aux_switch1,self.button_event,log,pull_up_down=up_down)
-        if self.aux_switch2 > 0:
-            aux_button2 = Button(self.aux_switch2,self.button_event,log,pull_up_down=up_down)
-        if self.aux_switch3 > 0:
-            aux_button3 = Button(self.aux_switch3,self.button_event,log,pull_up_down=up_down)
+        if self.record_button > 0:
+            record_button = Button(self.record_button,self.button_event,log,pull_up_down=up_down)
         return
 
     # Set up IQAudio cosmic controller interface

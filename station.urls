@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.40 2024/11/25 10:19:27 bob Exp $
+# $Id: station.urls,v 1.41 2024/12/06 09:32:18 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -43,6 +43,7 @@
 # Different bitrates are available by replacing 96000 :
 # 48000 = 48k, 96000 = 96k
 # UK only: 128000 = 128k, 320000 = 320k
+# See https://en.everybodywiki.com/List_of_BBC_radio_stream_URLs
 
 # UK stations
 [Caroline Pirate] http://sc3.radiocaroline.net:8030/listen.m3u8

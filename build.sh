@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.17 2024/11/25 10:17:29 bob Exp $
+# $Id: build.sh,v 1.18 2024/11/29 12:21:56 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -31,11 +31,12 @@ default='\033[39m'
 
 # Check we are not running as sudo
 if [[ "$EUID" -eq 0 ]];then
-    echo "Run this script as user pi and not sudo/root"
+    echo "Run this script as user ${USR} and not sudo/root"
     exit 1
 fi
 
-getconf LONG_BIT
+echo "Building radiod package $(date)"
+
 # Check if this machine is 32 or 64-bit
 BIT=$(getconf LONG_BIT)
 if [[ ${BIT} == "64" ]]; then
@@ -44,6 +45,9 @@ if [[ ${BIT} == "64" ]]; then
 elif [[ ${BIT} == "32" ]]; then
     echo "32-bit system."
     ARCH="armhf"
+else
+    echo "Cannot determine Architecture. Using 64-bit"
+    ARCH="arm64"
 fi
 
 cp -f ${PKGDEF} ${PKGDEF}.save
