@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.119 2024/12/06 10:51:33 bob Exp $
+# $Id: config_class.py,v 1.120 2024/12/06 15:32:58 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -267,13 +267,17 @@ class Configuration:
 
     # Initialisation routine
     def __init__(self):
-        log.init('radio')
-        if not os.path.isfile(ConfigFile) or os.path.getsize(ConfigFile) == 0:
-            log.message("Missing configuration file " + ConfigFile, log.ERROR)
-        else:
-            self.getConfig()
+        try:
+            log.init('radio')
+            if not os.path.isfile(ConfigFile) or os.path.getsize(ConfigFile) == 0:
+                log.message("Missing configuration file " + ConfigFile, log.ERROR)
+            else:
+                self.getConfig()
 
-        return
+        except configparser.ParsingError as e:
+            print("FATAL ERROR:")
+            print(str(e))
+            sys.exit(1)
 
     # Get configuration options from /etc/radiod.conf
     def getConfig(self):
@@ -1932,7 +1936,8 @@ if __name__ == '__main__':
 
     print ("\n==========================================")
     print(str(lines) + " active lines found in /etc/radiod.conf")
-    print ("==========================================")
+    print ("==========================================\n")
+
 # End of __main__
 
 # set tabstop=4 shiftwidth=4 expandtab

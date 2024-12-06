@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.168 2024/12/05 15:35:46 bob Exp $
+# $Id: radio_class.py,v 1.169 2024/12/06 15:50:53 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -322,7 +322,7 @@ class Radio:
     # Set up Alsa mixer ID file
     def setMixerId(self,MixerIdFile):
         dir = os.path.dirname(__file__)
-        cmd = "sudo " + dir + "/set_mixer_id.sh  >/dev/null 2>&1"
+        cmd = "sudo " + dir + "/scripts/set_mixer_id.sh  >/dev/null 2>&1"
         log.message(cmd, log.DEBUG)
         self.execCommand(cmd)
 
@@ -695,7 +695,7 @@ class Radio:
         if not self.config.audio_config_locked:
             if len(audio_out) > 1 and audio_out != 'bluetooth':
                 dir = os.path.dirname(__file__)
-                self.execCommand(dir + '/configure_audio_device.sh 2>&1 >/dev/null')
+                self.execCommand(dir + '/scripts/configure_audio_device.sh 2>&1 >/dev/null')
 
         # Set up mixer ID file hardware ID in mpd.conf and /etc/asound
         # Run set_mixer_id.sh script each startup as this might change

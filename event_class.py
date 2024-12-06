@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.29 2024/12/06 10:51:33 bob Exp $
+# $Id: event_class.py,v 1.30 2024/12/06 17:30:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -25,6 +25,7 @@ from rotary_class_alternative import RotaryEncoderAlternative
 from rotary_class_rgb import RotaryEncoderRgb
 from log_class import Log
 from rotary_switch_class import RotarySwitch
+import RPi.GPIO as GPIO
 import pdb
 
 log = Log()
@@ -39,7 +40,6 @@ mute_button = None
 up_button = None
 down_button = None
 menu_button = None
-record_button = None
 
 # If no interrupt required
 def no_interrupt():
@@ -239,7 +239,7 @@ class Event():
                     self.event_triggered = True
                     break
 
-        elif event == self.record_button:
+        elif event == self.record_switch:
             self.event_type = self.RECORD_BUTTON
 
         else:
@@ -349,10 +349,10 @@ class Event():
 
     # Record button
     def recordButtonPressed(self):
-        global record_button
+        global record_switch
         pressed = False
         if down_button != None:
-            pressed =  record_button.pressed()
+            pressed =  record_switch.pressed()
         return pressed
 
     def getConfiguration(self):
@@ -408,8 +408,9 @@ class Event():
 
         elif self.user_interface == self.config.COSMIC_CONTROLLER:
             self.setCosmicInterface()
+
+        self.setRecordButton()
                 
-        return 
 
     # Set up rotary encoders interface
     def setRotaryInterface(self):
@@ -481,7 +482,7 @@ class Event():
     def setButtonInterface(self):
         from button_class import Button
         global left_button,right_button,mute_button  
-        global up_button,down_button,menu_button,record_button
+        global up_button,down_button,menu_button
 
         # Get pull up/down resistor configuration
         up_down = self.config.pull_up_down
@@ -494,9 +495,15 @@ class Event():
         up_button = Button(self.up_switch,self.button_event,log,pull_up_down=up_down)
         mute_button = Button(self.mute_switch,self.button_event,log,pull_up_down=up_down)
         menu_button = Button(self.menu_switch,self.button_event,log,pull_up_down=up_down)
-        if self.record_button > 0:
-            record_button = Button(self.record_button,self.button_event,log,pull_up_down=up_down)
-        return
+
+    # Set up the record button
+    def setRecordButton(self):
+        global record_switch
+        if self.record_switch > 0:
+            from button_class import Button
+            up_down = self.config.pull_up_down
+            #record_button = Button(self.record_switch,self.button_event,log,pull_up_down=up_down)
+            record_button = Button(self.record_switch,self.button_event,log,GPIO.PUD_DOWN)
 
     # Set up IQAudio cosmic controller interface
     def setCosmicInterface(self):
