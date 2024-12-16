@@ -10,13 +10,11 @@ See http://www.musicpd.org/
 Use "sudo apt-get install mpd mpc python3-mpd" to install the Music Player Daemon (MPD)
 This software uses the python3-mpd library. See https://packages.debian.org/sid/python3-mpd
 
-To configure the radio software and components run: 
-radio-config
-from the command line
+To configure the radio software and components run: radio-config from the command line
 
-Version 7.9 release notes
+Version 8.0 release notes
 -------------------------
-Release 3 December 2024 - Build 6 (Beta) 
+Release 10 December 2024 - Build 1 (Beta) 
 1) Prevent radio program from crashing if no IP network and no media to load
 2) Support for the Waveshare 1.5 and 2.42-Inch SPI interface OLEDs added
 3) New configuration parameter ky040_r1_fitted added to set KY040 switch (SW) pullup resistor
@@ -29,233 +27,15 @@ Release 3 December 2024 - Build 6 (Beta)
 10) New record radio stations function added (record.py) using streamripper
 11) Streaming indicator after the date changed from '*' to '+'. '*' is recording indicator
 12) Recording switches on the activity led if the IR event daemon (ireventd.py) is running
-13) A phisical record function switch can now be added (Normally using GPIO 27)
-
-Version 7.8 release notes
--------------------------
-Release 7 October 2024 - Build 13 
-
-1) Grove v5 RGB I2C LCD added (lcd_i2c_jhd1313_sgm31323.py) integrated into configurator
-2) Amend display_class to use colour definitions in /etc/radiod.conf for jhd1313_sgm31323 LCD
-3) RGB I2C Rotary encoders now use the interrupt pin on the encoders themselves 
-4) New parameter news_color added for RSS menu display (News feeds etc)
-5) New weather2.py program added which uses a secondary display instead of the radio display 
-6) Display basic configuration in volume_class.py if called directly
-7) Improved volume control speed 
-8) Parameters font_size and font_name added for TFT displays to radiod.conf
-9) Improved RGB backlight  handling routines. In mute mode always show mute colour
-10) Amend st7789_class used by Pimoroni Pirate audio to use new ST7789 TFT code
-11) Bit rate displayed on line 5 of the Pirate Audio Radio (ST7789 display)
-12) IR event daemon - improvement to send command message responses (OK, Invalid key etc.)
-13) Standard rotary class step size (half/full) configured in radio configuration program
-14) WM8960 install_wm8960.sh script configures necessary parameters in /boot/firmware/config.txt 
-15) Correct rotary_class_rgb_i2c.py test routine (volume showing 'channel' event)
-16) Reduce number of unecessary OLED screen updates to improve performance
-17) Add the user to the audio group (Not always added)
-18) Display version and build number in the radio information display screen
-19) Script to display just OS details (display_os.sh) added to build
-20) Correct the audio configuration installation script for the HiFiBerry DAC 400
-21) Don't display IPv6 IP addresses in the information screen
-22) Support gradio and vgradio under X-Windows wayfire and labwc backend
-
-Version 7.7 release notes
--------------------------
-Release 13 July 2024 - Build 16 
-
-1) Support for Raspberry Pi model 5 (RPi/GPIO.py GPIO calls conversion to LGPIO calls)
-2) GPIO interface to LGPIO libraries added in sub-directory RPi/
-3) Added Raspberry Pi Model selectiom to Configure Radio script to enable/disable GPIO converter 
-4) Playlist now sorted before use so that media tracks are stepped through alphabetically.
-5) ssd1306_class.py Correct indent error and add instructions for Adafruit-ssd1306 module
-6) Improved installation procedure for the Waveshare WM8960 DAC sound card
-7) Correct problem of MPD being denied access to /home/pi/Music. ACL implemented.
-8) Made IR event device name for gpio-ir configurable in /etc/radiod.conf (event_device)
-9) Added support for RPi Audio output cards (RPi DigiAmp+, Rpi DacPro etc). 
-10) Change to airplay_class.py to display meta information in Airplay module
-11) Amend RPi/GPIO.py to correct GPIO initialisation error on latest version of Bookworm
-12) Correct detection of IR event class /sys/class/rc/rc0....6 in the IR event daemon
-13) Correct mute button not doing an MPD client PAUSE in volume_class.py
-14) Corrected Alarm function not restoring volume setting. MPD client ping implemented
-15) Implemented RPI_REVISION in GPIOconverter (RPi/GPIO.py)
-16) Remove /usr/share/Music directory creation - Now uses /home/$USER/Music
-17) Include Debian package definition files for the build.sh and build64.sh scripts
-18) Remove smbus2 sub-directory - No longer required
-19) Correct calling weather.py program example (Working on Bullseye only)
-20) Rotary encoder step size now configurable in /etc/radiod.conf rotary_step_size=full/half
-21) Correct threading error in Display class (display_class.py)
-22) Ignore button UP events in the STANDARD and ALTERNATIVE rotary classes
-23) Correct menu step through not working if alarm feature set 
-24) Driver for the Grove v5 RGB I2C LCD added (lcd_i2c_jhd1313_sgm31323.py)
-25) Removed change 8) above. IR event device name now dynamically determined by software
-
-Version 7.6 release notes
--------------------------
-28 November 2023 
-
-1) New version for bookworm OS
-2) Prevent gradio.py from crashing if missing background wallpaper
-3) Remove all LIRC components and configuration. Only ir-keytable supported. 
-4) Bookworm uses .config/lxsession/LXDE/autostart for starting Graphic radio
-5) Add HiFiberry DAC 400 (berrydac400.dbto) to configure_audio.sh
-6) display_config.sh now logs to /usr/share/radio/logs/config.log
-6) piradio.postinst now logs playlist creation to /usr/share/radio/logs/playlists.log
-7) Test routine in event_class.py now prints event number and name
-8) New SH1106 SPI OLED driver added (Used by 1.3" OLED Display HAT for RPi)
-9) Faulty logging corrected in the UDP server class (udp_server_class.py)
-10) Correct un-encoded "NOTOK" message in udp_server_class.py
-11) Added support for three auxilary switches
-12) Prevent display from flashing during startup
-13) Support for the WM8960 DAC
-14) alsamixer settings restored on startup (volume_class.py)
-15) Convert setup.sh for 64-bit configuration
-16) Replace corrupt /etc/mpd.conf with /usr/share/radio/mpd.conf
-17) Prevent LCD routines from being accessed if LCD not configured
-18) Added Waveshare WM8960 DAC install script (install_wm8960.sh)
-19) Restore alsa mixer settings (alsa-state/alsa-store not working in Bookworm)
-20) display_config.sh displays X-Windows protocol (wayland or X11)
-21) radiod build - New instruction to display build number. For example 7.6.9
-
-Version 7.5 release notes
--------------------------
-Release 7th July 2023 
-
-1) Corrected Pimoroni Pirate Radio button settings
-2) Corrected create_stations.py --delete_old not working 
-3) Corrected corrupt /etc/mpd.conf.orig
-4) Prevent i2s-mmap being configured twice in /boot/config.txt
-5) Use language file for radiod and MPD versions text
-6) Added additional RPi models to the display_model.py utility
-7) Added timedatectl timesync-status
-8) /etc/mpd.conf bind_to_address="127.0.0.1" (Prevent binding to IPv6 ::1)
-9) Support for bluetooth devices added to Bullseye (pulseaudio-module-bluetooth)
-10) No longer need #<station name> at the end of the station URL in the stationlist file
-11) Added code to display volume on pHat Beat (pivumeter_class.py)
-12) Allow any user with sudo permissions to install the software
-13) Use ir-keytable to set up IR Remote Control
-14) Numeric keys on IR Remote Control can be used to select station or track
-15) Old /var/log/radio.log removed . See /var/log/radiod/radio.log
-16) configure_ir_remote.sh now logs to /usr/share/radio/logs/install_ir.log
-17) New 64 bit version radiod_7.5_arm64.deb (Beta) 
-
-Version 7.4 release notes
--------------------------
-1) Runs on either Raspberry Pi OS Bullseye or Buster. 
-2) Music Player Daemon (MPD) version 0.22.6 installed as default
-3) The web interface uses php7.4 (Buster uses php7.3)
-4) O!MPD uses version new 2.2 of the radiod web interface
-5) Corrected new playlist load failure (playlist_class.py)
-6) IR Remote control software (lirc) converted to Python3 on Bullseye
-7) Remove unused HD44780/U labels in translation class
-8) Correct error when loading new playlist
-9) Correct incorrect mute display when restoring volume with an external mpd client
-10) Display Wi-Fi power management mode in display_wifi.sh
-11) Correct source display name for Spotify and Airplay  (remove underscores)
-12) Raspotify is now only supported on Bullseye. Support for it has been  withdrawn on Buster. 
-13) DRM VC4 V3D driver (dtoverlay vc4-kms-v3d) sound configuration supported 
-14) CGI scripts for the Radio Web Interface converted to Python3
-15) Support for PiFace CAD(2) hardware re-introduced
-16) Re-configuration of MPD and ALSA to reduce popping sound when changing channels  
-17) Link Quality added to display_wifi.sh script
-
-Version 7.3 release notes 
--------------------------
-18th November 2021
-
-THIS VERSION ONLY RUNS ON ON RASPBERRY PI BUSTER OS AND NOT THE NEW BULLSEYE VERSION.
-THIS MEANS THAT YOU CANNOT USE RASPBERRY PI IMAGER SOFTWARE DOWNLOAD BUSTER
-YOU HAVE TO DOWNLOAD BUSTER FROM RASPBERRY PI ARCHIVES AND THEN USE IMAGER TO CREATE THE SDCARD 
-FULL DETAILS HOW TO DO THIS ARE SHOWN IN THE VERSION 7.3 CONSTRUCTORS GUIDE.
-VERSION 7.4 TO SUPPORT BULLSEYE HAS NOW BEEN RELEASED 
-
-1) Add LUMA support for SSD1306, SSD1309, SSD1325, SSD1331, SH1106 and WS0010 OLEDs
-2) Support added for creating a bootable USB 3.0 Hard Disk Drive
-3) Add creation of playlist from Music directory on a USB Disk Drive.
-4) Implement flipping screen vertically fo ST7789 OLED class (Pirate Audio)
-5) Display equalizer.cmd configuration file in display_config.sh script
-6) The equalizer.cmd file moved to /var/lib/radiod
-7) Shutdown button added to gradio and vgradio (See display_shutdown_button in radiod.conf)
-8) Force language translation off (override translate_lcd setting) for OLEDs
-	- unless romanize=yes
-9) Correct Adafruit Speaker Bonnet installation failure (Do not install pulseaudio)
-10) Correct Mixer controls USB command in display_config.sh. Added display MPD playlists
-11) If icecast2 installed it now uses systemd to start/stop it instead of System V initd
-12) Icecast streaming can now be enabled and disabled in the full feature graphical version
-13) Identify playlist type by contents rather than file name 
-	(No need for '_' at beginning of file name). Existing playlists renamed during installation
-14) Update playlist if changed by an external client such as OMP!D
-15) Added driver for Grove JHD1313 RGB 2x16 LCD
-16) New playlists_class.py added to allow update of MPD playlists from external MPD clients
-17) Added update_stationlist.py script to re-create stationlist file from MPD playlists 
-18) New /etc/crontab.daily/radiod script added to run update_stationlist.py and 
-    create_stations.py daily if update_playlists=yes found in /etc/radiod.conf
-19) New rotary_class_rgb.py added to support RGB Rotary encoders
-20) New rotary_class_rgb_i2c.py added to support I2C RGB Rotary encoders
-21) New utility rgb_set_i2c_address.py added for I2C RGB Rotary encoders
-22) Button class and all rotary encoder classes now run in a thread
-23) Shutdown command shutdown_parameter added (Default "sudo shutdown -h now")
-24) Configuration display programs now display parameters as Yes/No instead of True/False
-25) Added Raspberry Pi Zero 2 W with 1GHz 64-bit Arm Cortex-A53 quad core CPU
-26) Correct display not unmuting when volume changed by external clients
-
-Version 7.2 release notes 
--------------------------
-26th July 2021
-1) Add Compute Model and 8GB 4B to display_model.py
-2) Correct report of X-Windows detected if Lite OS installed
-3) Correct remote control configuration display error
-4) Correct DAC overlay not being configured in /boot/config.txt if called from configure_radio.sh
-5) Alternative rotary class, remove sudo requirement and edge detection set to BOTH
-6) Comitup WiFi roaming dropped due to problems
-7) New parameter rotary_gpio_pullup=up/off to disable internal pullups for KY-040 rotary encoders
-8) Correct crash in the test routine of event_class.py
-9) Support for Sitronix SSD1306 128x64 monochrome tft with I2C interface 
-10) Virtual rewrite of configuration class to give consistant labels
-11) New display_wifi.sh script to display details of current Wi-Fi connection
-12) Added network information to display_config.sh and display_wifi.sh
-13) Button and Rotary encoder interfaces now run in their own thread
-14) Correct not playing MEDIA on start-up if no IP network available
-15) Don't add comment to /boot/cmdline.txt as it is causing boot failure
-16) Configure I2C using configuration script instead of raspi-config (takes two attempts)
-17) Correct Spotify/Airplay not unmuting correctly (Only volume change would unmute)  
-18) Improve Graphic screens scrolling in particular RSS display
-19) Integrity check of /boot/config.txt added. Make sure it isn't null
-20) Support for Waveshare 2.8 and 3.5-inch TFTs added
-
-Version 7.1 release notes 
--------------------------
-2nd April 2021
-1) Use MPD socket listener (mpd.socket) to handle client requests
-2) Correction to UDP client/server for Remote control software
-3) remote_control.py amended to send valid KEYs to the radio daemon
-4) Correction to select source in web interface
-5) Correction to shoutcast playlist selection in web interface
-6) Added internet_timeout setting for Internet check in /etc/radiod.conf
-7) set_mixer_id.sh uses audio_out setting in radiod.conf to select correct audio card
-8) Correct crash in full feature graphic radio when selecting playlists
-9) Store volume in /var/lib/radiod/volume if changed by an external client
-10) Set locale to LC_ALL=C in scripting relying upon English messages
-11) New parameter audio_config_locked add to prevent dynamic update of audio configuration
-12) New parameter --input_file=<station.urls> in create_stations.py program
-13) get_shoutcast.py converted to Python 3
-14) Correction to select source "Internal Server Error" in web interface
-
-Version 7.0 release notes  (Compared to version 6.15)
--------------------------
-28th January 2021
-1) Major release - All Python code converted to Python 3
-2) MPD interface now uses python3-mpd instead of python-mpd
-3) Improved audio device section including PCM5102A devices
-4) Improve reconnection to stream after Internet connection restored
-5) Prevent duplicate log messages
-6) Add wiring scheme display to display configuration script (display_config.sh)
-7) Internet check added (Prevent skipping if Internet connection lost)
-8) Improved error messages (Bad stations, time outs etc.)
+13) A physical record function switch can now be added (Normally using GPIO 27)
+14) All support for 26-pin GPIO header Raspberry Pi's removed
 
 Manuals
 -------
-Version 7.x
+Version 8.x
 https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio.pdf
 https://bobrathbone.com/raspberrypi/documents/RPi%20Radio%20beginners%20guide.pdf
+https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Radio%20Technical%20Reference.pdf
 
 Vintage radio
 https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Vintage%20Radio.pdf
@@ -264,7 +44,7 @@ https://bobrathbone.com/raspberrypi/documents/Raspberry%20PI%20Vintage%20Radio%2
 GitHub
 ------
 Source available from GitHub
-Version 7.x see:  https://github.com/bobrathbone/piradio6
+Version 8.x see:  https://github.com/bobrathbone/piradio6
 Run ./setup.sh from the command line to create the radiod package
 
 Licenses

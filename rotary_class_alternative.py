@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: rotary_class_alternative.py,v 1.12 2024/12/06 10:51:33 bob Exp $
+# $Id: rotary_class_alternative.py,v 1.13 2024/12/08 07:01:18 bob Exp $
 #
 # Raspberry Pi Alternative Rotary Encoder Class
 # Certain Rotary Encoders will not work with the current version of the Rotary class.
@@ -57,6 +57,7 @@ class RotaryEncoderAlternative:
         try:
             # The following lines enable the internal pull-up resistors
             # on version 2 (latest) boards
+            gpio = self.button
             if pinA > 0 and pinB > 0:
                 GPIO.setup(self.pinA, GPIO.IN, pull_up_down=GPIO.PUD_UP)
                 GPIO.setup(self.pinB, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -64,7 +65,6 @@ class RotaryEncoderAlternative:
                 GPIO.add_event_detect(self.pinA, GPIO.BOTH, callback=self.switch_event)
                 GPIO.add_event_detect(self.pinB, GPIO.BOTH, callback=self.switch_event)
             if button > 0:
-                gpio = self.button
                 if ky040_r1_fitted:
                     GPIO.setup(self.button, GPIO.IN, pull_up_down=GPIO.PUD_OFF)
                 else:

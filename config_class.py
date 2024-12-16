@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.120 2024/12/06 15:32:58 bob Exp $
+# $Id: config_class.py,v 1.122 2024/12/15 12:51:41 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -235,7 +235,7 @@ class Configuration:
              "right_switch": 15,
              "up_switch": 24,
              "down_switch": 23,
-             "record_switch": 17,
+             "record_switch": 27,
            }
 
     # Pull up/down resistors (For button class only)
@@ -1255,11 +1255,9 @@ class Configuration:
 
     @scroll_speed.setter
     def scroll_speed(self, value):
-        if value < 0.001:
-            value = 0.001   
-        if value > 0.5:
-            value = 0.5
-        self._scroll_speed = value
+        if value > 0.6:
+            value = 0.6
+        self._scroll_speed = float(value)
 
     # Get airplay option (True or false)
     @property

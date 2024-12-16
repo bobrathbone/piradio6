@@ -166,7 +166,15 @@ The switch settings are the GPIO settings for each switch nd must match your wir
 **down_switch=23**
 **left_switch=14**
 **right_switch=15**
-**pull_up_down=down**
+
+# Record button normally uses GPIO 27 (physical pin 13) if LCD, TFT or OLED displays
+# configured. If using Waveshare 2.4" or 1.5" SPI displays set this to GPIO05 (pin 29)
+**record_switch=27**
+
+# Pull GPIO up/down internal resistors. Only set. Only set to up if using first model
+# Raspberry Pi's and the switches have been wired GPIOx --> Switch --> 0V(GND)
+# Set to 'none' if external resistors have been wired. Default: up
+**pull_up_down=up**
 
 Display types
 -------------

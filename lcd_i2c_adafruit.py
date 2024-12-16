@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_adafruit.py,v 1.6 2021/09/30 08:03:28 bob Exp $
+# $Id: lcd_i2c_adafruit.py,v 1.7 2024/12/15 12:51:42 bob Exp $
 #
 # I2C Adafruit I2C backback driver
 # Adapted from RpiLcdBackpack from Paul Knox-Kennedy
@@ -131,8 +131,6 @@ class Lcd_i2c_Adafruit:
     # Initialise
     def __init__(self,code_page=0x0):
         self.code_page = code_page
-        self.scroll_speed = config.scroll_speed
-        self.setScrollSpeed(self.scroll_speed)
         return
 
     # Initialisation routine
@@ -279,12 +277,14 @@ class Lcd_i2c_Adafruit:
             self.lcd_line4 = self.LCD_LINE_4a
 
     # Set Scroll line speed - Best values are 0.2 and 0.3
-    # Limit to between 0.08 and 0.6
+    # Limit to between 0.05 and 0.9. 0=use default
     def setScrollSpeed(self,speed):
-        if speed < 0.08:
-                speed = 0.08
-        elif speed > 0.6:
-                speed = 0.6
+        if speed == float(0):
+            speed = self.scroll_speed
+        if speed < 0.05:
+            speed = 0.05
+        elif speed > 0.9:
+            speed = 0.9
         self.scroll_speed = speed
         return self.scroll_speed
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_pcf8574.py,v 1.9 2024/11/25 10:17:29 bob Exp $
+# $Id: lcd_i2c_pcf8574.py,v 1.10 2024/12/15 12:51:42 bob Exp $
 #
 # PCF8574 I2C LCD Backpack LCD class
 # Use this program to test I2C Backpack LCD wiring
@@ -108,8 +108,6 @@ class Lcd_i2c_pcf8574:
     # __init__
     def __init__(self):
         self._backlight = self.LCD_BACKLIGHT
-        self.scroll_speed = config.scroll_speed
-        self.setScrollSpeed(self.scroll_speed)
 
     # Initialisation routine
     def init(self,busnum=1,address=0x27,code_page=0):
@@ -275,12 +273,14 @@ class Lcd_i2c_pcf8574:
         return
 
     # Set Scroll line speed - Best values are 0.2 and 0.3
-    # Limit to between 0.08 and 0.6
+    # Limit to between 0.05 and 0.9. 0=use default
     def setScrollSpeed(self,speed):
-        if speed < 0.08:
-                speed = 0.08
-        elif speed > 0.6:
-                speed = 0.6
+        if speed == float(0):
+            speed = self.scroll_speed
+        if speed < 0.05:
+            speed = 0.05
+        elif speed > 0.9:
+            speed = 0.9
         self.scroll_speed = speed
         return self.scroll_speed
 

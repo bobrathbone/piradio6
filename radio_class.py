@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.169 2024/12/06 15:50:53 bob Exp $
+# $Id: radio_class.py,v 1.178 2024/12/11 08:37:33 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -30,7 +30,9 @@ from os import stat
 from pwd import *
 import pdb
 import subprocess
+from subprocess import check_output
 import signal
+import threading
 
 from constants import __version__
 from constants import *
@@ -264,6 +266,7 @@ class Radio:
         self.event = event
         
         self.setupConfiguration()
+        self.recordDuration = self.getStoredParameter(RecordingDurationFile)
 
         # Mount all media drives
         self.unmountAll()
@@ -381,21 +384,23 @@ class Radio:
         return ipaddr
 
     def handleRecordKey(self,key):
-        print(key,"received")
-        
-        if not self.recording:
-            self.ir_pid = self.getPid(ireventd_pidfile)
+        t = threading.Thread(target=self._RecordKey,args=(key,))
+        t.daemon = True
+        t.start()
+
+    def _RecordKey(self,key):
+        self.ir_pid = self.getPid(ireventd_pidfile)
+        if not self.recording and self.ir_pid > 1:
             try:
                 # This causes the IR daemon to switch on the activity LED
                 os.kill(int(self.ir_pid), signal.SIGUSR1)
             except:
+                log("IR event daemon (ireventd.py) not running", log.WARNING)
                 pass
 
         source_type = self.source.getType()
-        if os.path.isfile(record_pidfile):
-            f = open(record_pidfile,'r')
-            pid = f.read()
-            f.close()
+        pid = self.getPid(record_pidfile)
+        if pid > 1:
             try:
                 os.kill(int(pid), signal.SIGHUP)
             except Exception as e:
@@ -403,15 +408,17 @@ class Radio:
             time.sleep(2)
             os.remove(record_pidfile)
             msg = "Stopped recording %s" % self.stationName
+
         elif source_type == self.source.RADIO:
-            cmd = "/usr/share/radio/record.py"
-            params = "--duration=1:00"
+            params = "--omit_incomplete"
+            cmd = "/usr/share/radio/record.py %s" % params
             try:
-                print(cmd,params)
-                subprocess.Popen([cmd,params],shell=True)
+                subprocess.run(cmd,shell=True,check=True, capture_output=True,encoding='utf-8')
                 msg = "Started recording %s" % self.stationName
             except Exception as e:
                 print(str(e))
+                pass
+            
         else:
             msg = "Record request ignored - Not listening to a radio stream"
 
@@ -423,21 +430,22 @@ class Radio:
         now = time.time()
         if now > self.recordTime + self.recordDelay:
             self.recordTime = now
+
+            # Is record running
+            record_pid = self.getPid(record_pidfile)
+            if record_pid != self.record_pid:
+                self.record_pid = record_pid 
+                if self.record_pid < 1:
+                    log.message("Recording has stopped",log.DEBUG)
+                    self.recording = False
+                else:
+                    log.message("Recording is running PID " + str(self.record_pid),log.DEBUG)
+                    self.recording = True
+
+            # If  IR remote control daemon is running switch IR activity LED on/off
             self.ir_pid = self.getPid(ireventd_pidfile)
-
-            # Is the IR remote control daemon running
-            if self.ir_pid > 0:
-                record_pid = self.getPid(record_pidfile)
-                if record_pid != self.record_pid:
-                    self.record_pid = record_pid 
-                    if self.record_pid < 1:
-                        log.message("Recording has stopped",log.DEBUG)
-                        self.recording = False
-                    else:
-                        log.message("Recording is running PID " + str(self.record_pid),log.DEBUG)
-                        self.recording = True
-
-                if self.record_pid > 1:
+            if self.ir_pid > 1:
+                if self.recording:
                     try:
                         # This causes the IR daemon to switch on the activity LED
                         os.kill(int(self.ir_pid), signal.SIGUSR1)
@@ -455,7 +463,7 @@ class Radio:
 
     # Get the pid from a pidfile
     def getPid(self,pidfile):
-        pid = -1
+        pid = 0
         if os.path.isfile(pidfile):
             try:
                 f = open(pidfile,'r')
@@ -1502,7 +1510,6 @@ class Radio:
         sDuration = '%d:%02d' % (hours,minutes)
         self.recordDuration = sDuration
         self.storeParameter(RecordingDurationFile,sDuration)
-        print(sDuration)
         return sDuration
 
     # Get the alarm type

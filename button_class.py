@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Button Push Button Class
-# $Id: button_class.py,v 1.12 2024/12/06 10:51:33 bob Exp $
+# $Id: button_class.py,v 1.14 2024/12/11 08:37:33 bob Exp $
 #
 # Author: Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -23,7 +23,7 @@ GPIO.setmode(GPIO.BCM)
 
 class Button:
 
-    def __init__(self,button,callback,log,pull_up_down=GPIO.PUD_DOWN):
+    def __init__(self,button,callback,log,pull_up_down):
         t = threading.Thread(target=self._run,args=(button,callback,log,pull_up_down,))
         t.daemon = True
         t.start()
@@ -117,8 +117,8 @@ if __name__ == "__main__":
     print("Up switch GPIO", up_switch)
     print("Down switch GPIO", down_switch)
     print("Menu switch GPIO", menu_switch)
-    print("Record switch GPIO", record_switch)
     print("Pull Up/Down resistors", pullupdown[config.pull_up_down])
+    print("Record switch GPIO", record_switch,"Pull Up")
 
     Button(left_switch, interrupt, log, config.pull_up_down)
     Button(right_switch, interrupt, log, config.pull_up_down)
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     Button(down_switch, interrupt, log, config.pull_up_down)
     Button(up_switch, interrupt, log, config.pull_up_down)
     Button(menu_switch, interrupt, log, config.pull_up_down)
-    Button(record_switch, interrupt, log, config.pull_up_down)
+    Button(record_switch, interrupt, log, UP) # Always resistors pulled high
 
     try:
         while True:

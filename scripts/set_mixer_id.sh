@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: set_mixer_id.sh,v 1.2 2024/11/25 10:16:09 bob Exp $
+# $Id: set_mixer_id.sh,v 1.3 2024/12/06 15:50:53 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -109,7 +109,7 @@ echo | tee ${LOG}
 echo $0 $(date) | tee -a ${LOG}
 
 # Get audio out setting, headphones, HDMI, DAC etc.
-AUDIO_OUT=$(grep "audio_out=" ${CONFIG})
+AUDIO_OUT=$(grep -i "audio_out=" ${CONFIG})
 if [[ $? == 0 ]]; then
     arry=(${AUDIO_OUT//=/ })
     DEVICE=${arry[1]}

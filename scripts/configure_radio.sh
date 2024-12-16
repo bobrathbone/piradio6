@@ -1,13 +1,13 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.10 2024/12/05 15:46:09 bob Exp $
+# $Id: configure_radio.sh,v 1.13 2024/12/14 17:24:47 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
 # This program is used during installation to set up which
-# radio daemon and peripherals are to be used
+# radio daemon and peripherals are to be used. For 40-pin Raspberry Pi's only
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
@@ -69,7 +69,9 @@ declare -i PI_MODEL=0  # 0=Undefined 5=Model 5 4=Model 4 or less
 # Wiring type and schemes
 BUTTON_WIRING=0 # 0 Not used or SPI/I2C, 1=Buttons, 2=Rotary encoders, 3=PHat BEAT
 LCD_WIRING=0    # 0 not used, 1=standard LCD wiring, 
+
 GPIO_PINS=0 # 0 Not configured, 1=40 pin wiring,2=26 pin,3=I2C Rotary
+
 PULL_UP_DOWN=0  # Pull up/down resistors 1=Up, 0=Down
 USER_INTERFACE=0    # 0 Not configured, 1=Buttons, 2=Rotary encoders, 3=HDMI/Touch-screen
             # 4=IQaudIO(I2C), 5=Pimoroni pHAT(SPI), 6=Adafruit RGB(I2C),
@@ -239,6 +241,7 @@ if [[ ${COMPONENTS} == 1 ]]; then
         "5" "Install Speech facility" \
         "6" "Install Luma OLED/TFT driver" \
         "7" "Install recording utility (streamripper)" \
+        "8" "Install Alsa equalizer software" \
         3>&1 1>&2 2>&3) 
 
         exitstatus=$?
@@ -271,8 +274,12 @@ if [[ ${COMPONENTS} == 1 ]]; then
             DESC="Install Luma OLED/TFT driver"
 
         elif [[ ${ans} == '7' ]]; then
-            CMD="sudo apt-get install streamripper"
+            SCRIPT="install_recording.sh"
             DESC="Install recording (streamripper)"
+
+        elif [[ ${ans} == '8' ]]; then
+            SCRIPT="install_equalizer.sh"
+            DESC="Install Alsa equalizer"
         fi
 
         ## To do
@@ -457,42 +464,6 @@ do
 done
 echo ${DESC} | tee -a ${LOG}
 
-# Select the wiring type (40 or 26 pin) if not already specified
-if [[ ${GPIO_PINS} == "0" ]]; then
-    ans=0
-    selection=1 
-    while [ $selection != 0 ]
-    do
-        ans=$(whiptail --title "Select wiring version" --menu "Choose your option" 15 75 9 \
-        "1" "40 pin version wiring" \
-        "2" "26 pin version wiring" \
-        "3" "Do not change configuration" 3>&1 1>&2 2>&3) 
-
-        exitstatus=$?
-        if [[ $exitstatus != 0 ]]; then
-            exit 0
-        fi
-
-        if [[ ${ans} == '1' ]]; then
-            DESC="40 pin version selected"
-            GPIO_PINS=1
-
-        elif [[ ${ans} == '2' ]]; then
-            DESC="26 pin version selected"
-            GPIO_PINS=2
-
-        else
-            DESC="Wiring configuration in ${CONFIG} unchanged"  
-            echo ${DESC} | tee -a ${LOG}
-        fi
-
-        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
-        selection=$?
-    done
-    echo ${DESC} | tee -a ${LOG}
-fi
-
-
 # Select the user interface (Buttons or Rotary encoders)
 ans=0
 selection=1 
@@ -523,7 +494,8 @@ do
     elif [[ ${ans} == '2' ]]; then
         DESC="Rotary encoders selected"
         USER_INTERFACE=2
-        BUTTON_WIRING=2
+        BUTTON_WIRING=1
+        GPIO_PINS=1
         PULL_UP_DOWN=1
 
     elif [[ ${ans} == '3' ]]; then
@@ -577,40 +549,8 @@ do
     selection=$?
 done
 
+PULL_UP_DOWN=1
 # Check how push-buttons are wired
-if [[ ${USER_INTERFACE} == "1" ]]; then
-    ans=0
-    selection=1 
-    while [ $selection != 0 ]
-    do
-        ans=$(whiptail --title "How are the push buttons wired?" --menu "Choose your option" 15 75 9 \
-        "1" "GPIO --> Button --> +3.3V - Original wiring scheme" \
-        "2" "GPIO --> Button --> GND(0V) - Alternative wiring scheme" \
-        "3" "Do not change configuration" 3>&1 1>&2 2>&3) 
-
-        exitstatus=$?
-        if [[ $exitstatus != 0 ]]; then
-            exit 0
-        fi
-
-        if [[ ${ans} == '1' ]]; then
-            DESC="Buttons wired to +3.3V (GPIO low to high)"
-            PULL_UP_DOWN=0
-
-        elif [[ ${ans} == '2' ]]; then
-            DESC="Buttons wired to GND(0V) (GPIO high to low)"
-            PULL_UP_DOWN=1
-
-        else
-            DESC="Wiring configuration in ${CONFIG} unchanged"  
-            echo ${DESC} | tee -a ${LOG}
-        fi
-
-        whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
-        selection=$?
-    done
-    echo ${DESC} | tee -a ${LOG}
-fi
 
 # Configure pull-up resistors for type of rotary encoder
 if [[ ${USER_INTERFACE} == "2" ]]; then
@@ -656,7 +596,7 @@ if [[ ${USER_INTERFACE} == "2" ]]; then
         elif [[ ${ans} == '5' ]]; then
             DESC="Configuring I2C rotary encoders with RGB LEDs"
             ROTARY_CLASS="rgb_i2c_rotary"
-            GPIO_PINS=3
+            GPIO_PINS=2
 
         elif [[ ${ans} == '6' ]]; then
             DESC="Standard rotary encoders alternative driver"
@@ -673,42 +613,6 @@ if [[ ${USER_INTERFACE} == "2" ]]; then
     done
     echo ${DESC} | tee -a ${LOG}
 fi
-
-
-# Configure the down switch (24 pin wiring)
-if [[ ${GPIO_PINS} == "2" ]]; then
-    ans=0
-    selection=1 
-    while [ $selection != 0 ]
-    do
-        ans=$(whiptail --title "How is the down switch wired?" --menu "Choose your option" 15 75 9 \
-        "1" "GPIO 10 - Physical pin 19 (Select this if using a DAC)" \
-        "2" "GPIO 18 - Physical pin 12 (Old wiring configuration)" \
-        "3" "Do not change configuration" 3>&1 1>&2 2>&3) 
-
-        exitstatus=$?
-        if [[ $exitstatus != 0 ]]; then
-            exit 0
-        fi
-
-        if [[ ${ans} == '1' ]]; then
-            DESC="Down switch -> GPIO 10 - Physical pin 19"
-            DOWN_SWITCH=10
-
-        elif [[ ${ans} == '2' ]]; then
-            DESC="Down switch -> GPIO 18 - Physical pin 12"
-            DOWN_SWITCH=18
-
-        else
-            DESC="Down switch configuration in ${CONFIG} unchanged" 
-            echo ${DESC} | tee -a ${LOG}
-        fi
-
-        whiptail --title "${DESC} " --yesno "Is this correct?" 10 60
-        selection=$?
-    done
-fi 
-
 
 # Select the display type
 ans=0
@@ -1503,16 +1407,7 @@ if [[ ${DISPLAY_TYPE} == "LCD" ]]; then
         sudo sed -i -e "0,/^lcd_data5/{s/lcd_data5.*/lcd_data5=6/}" ${CONFIG}
         sudo sed -i -e "0,/^lcd_data6/{s/lcd_data6.*/lcd_data6=12/}" ${CONFIG}
         sudo sed -i -e "0,/^lcd_data7/{s/lcd_data7.*/lcd_data7=13/}" ${CONFIG}
-    else
-        echo "LCD pinouts configured for 26 pin wiring" | tee -a ${LOG}
-        sudo sed -i -e "0,/^lcd_select/{s/lcd_select.*/lcd_select=7/}" ${CONFIG}
-        sudo sed -i -e "0,/^lcd_enable/{s/lcd_enable.*/lcd_enable=8/}" ${CONFIG}
-        sudo sed -i -e "0,/^lcd_data4/{s/lcd_data4.*/lcd_data4=27/}" ${CONFIG}
-        sudo sed -i -e "0,/^lcd_data5/{s/lcd_data5.*/lcd_data5=22/}" ${CONFIG}
-        sudo sed -i -e "0,/^lcd_data6/{s/lcd_data6.*/lcd_data6=23/}" ${CONFIG}
-        sudo sed -i -e "0,/^lcd_data7/{s/lcd_data7.*/lcd_data7=24/}" ${CONFIG}
     fi
-
 else
     # LCD not connected 
     echo "LCD pinouts disabled" | tee -a ${LOG}
@@ -1524,8 +1419,10 @@ else
     sudo sed -i -e "0,/^lcd_data7/{s/lcd_data7.*/lcd_data7=0/}" ${CONFIG}
 fi
 
+echo "BUTTON_WIRING  ${BUTTON_WIRING}"
+
 # Configure buttons and rotary encoders
-if [[ ${BUTTON_WIRING} == "1" || ${BUTTON_WIRING} == "2" ]]; then
+if [[ ${BUTTON_WIRING} == "1" || ${BUTTON_WIRING} == "3" ]]; then
 
     if [[ ${GPIO_PINS} == "1" ]]; then
         echo "Configuring 40 Pin wiring"  | tee -a ${LOG}
@@ -1536,7 +1433,7 @@ if [[ ${BUTTON_WIRING} == "1" || ${BUTTON_WIRING} == "2" ]]; then
         sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=14/}" ${CONFIG}
         sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=15/}" ${CONFIG}
 
-    elif [[ ${GPIO_PINS} == "3" ]]; then
+    elif [[ ${GPIO_PINS} == "2" ]]; then
         echo "Configuring RGB I2C encoder Pin wiring"  | tee -a ${LOG}
         sudo sed -i -e "0,/^menu_switch=/{s/menu_switch=.*/menu_switch=17/}" ${CONFIG}
         sudo sed -i -e "0,/^mute_switch/{s/mute_switch.*/mute_switch=4/}" ${CONFIG}
@@ -1544,14 +1441,6 @@ if [[ ${BUTTON_WIRING} == "1" || ${BUTTON_WIRING} == "2" ]]; then
         sudo sed -i -e "0,/^down_switch/{s/down_switch.*/down_switch=0/}" ${CONFIG}
         sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=0/}" ${CONFIG}
         sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=0/}" ${CONFIG}
-    else
-        echo "Configuring 26 Pin wiring"  | tee -a ${LOG}
-        sudo sed -i -e "0,/^menu_switch=/{s/menu_switch=.*/menu_switch=25/}" ${CONFIG}
-        sudo sed -i -e "0,/^mute_switch/{s/mute_switch.*/mute_switch=4/}" ${CONFIG}
-        sudo sed -i -e "0,/^up_switch/{s/up_switch.*/up_switch=17/}" ${CONFIG}
-        sudo sed -i -e "0,/^down_switch/{s/down_switch.*/down_switch=${DOWN_SWITCH}/}" ${CONFIG}
-        sudo sed -i -e "0,/^left_switch/{s/left_switch.*/left_switch=14/}" ${CONFIG}
-        sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=15/}" ${CONFIG}
     fi
 
 # Configure the cosmic controller (40 pin only)
@@ -1758,7 +1647,7 @@ fi
 
 # Install config-parser if running Bullseye
 PKG="python-configparser"
-if [[ $(release_id) -le 12 ]]; then
+if [[ $(release_id) -le 11 ]]; then
         echo "Installing ${PKG} package" | tee -a ${LOG}
         sudo apt-get -y install ${PKG}
 fi

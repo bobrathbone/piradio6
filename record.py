@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: record.py,v 1.24 2024/12/06 09:32:18 bob Exp $
+# $Id: record.py,v 1.36 2024/12/12 07:39:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -21,9 +21,11 @@ import time
 from time import strftime
 import re
 import subprocess
+from subprocess import check_output
 import getpass
 import pwd
 import stat
+import signal
 
 from pwd import *
 from os import stat
@@ -62,7 +64,10 @@ class Recorder:
     Urls = ()
     Names = ()
 
-    def __init__(self):
+    log = None
+
+    def __init__(self,logit):
+        log = logit
         self._getStations()
         self.usr = getpwuid(stat("/usr/share/radio").st_uid).pw_name
         self.grp = self.usr  # Temporary only
@@ -79,8 +84,8 @@ class Recorder:
             self.currentsong = client.currentsong()
         except Exception as e:
             print(str(e)) 
-            print("Music player daemon not running!")
-            print("Start radio (or MPD) and re-run program")
+            log.message("Record: Music player daemon not running!",log.DEBUG)
+            log.message("Record: Start radio (or MPD) and re-run program",log.DEBUG)
             sys.exit(1)
 
     # Get current station playing from MPD
@@ -88,7 +93,9 @@ class Recorder:
         self.name = str(self.currentsong.get("name"))
         self.url = str(self.currentsong.get("file"))
         if not re.match('^http',self.url):
-            print("Error: You can only record RADIO streams - Exiting")
+            msg = "Record: You can only record RADIO streams - Exiting"
+            print(msg)
+            log.message(msg,log.ERROR)
             sys.exit(1)
 
     def check_url(self,url):
@@ -104,10 +111,11 @@ class Recorder:
         return self.pid
 
     def del_pid(self):
-        os.remove(pidfile)
+        if os.path.exists(pidfile):
+            os.remove(pidfile)
 
     # Start recording - duration in minutes
-    def start(self,duration=10,log=log):
+    def start(self,duration=10):
         duration = duration * 60 # Convert to seconds
 
         if not os.path.exists(directory):
@@ -122,7 +130,7 @@ class Recorder:
         print(cmd)
         log.message(cmd,log.DEBUG)
         try:
-            result = subprocess.run(cmd, shell=True, check=True, capture_output=True, 
+            subprocess.run(cmd, shell=True, check=True, capture_output=True, 
                      encoding='utf-8')
 
             uid = pwd.getpwnam(owner).pw_uid
@@ -135,11 +143,19 @@ class Recorder:
                     os.chown(os.path.join(root,dir), uid, gid)
                 for file in files:  
                     os.chown(os.path.join(root,file), uid, gid)
-        
+
+            result = "streamripper succesfully executed"
+     
+        except Exception as e:   
+            result = "Record: streamripper exited due to user request"
+            log.message(result,log.DEBUG)
+            return(msg)
+            
         except KeyboardInterrupt:
             print("\nCtrl-C pressed - Exiting")
             self.del_pid()
             sys.exit(0)
+
         self.del_pid()
         return result
 
@@ -174,7 +190,8 @@ class Recorder:
 
     # Get station details by ID number from stationlist
     def getStation(self,id):
-        print("getStation", id)
+        msg = "Record: getStation " + str(id)
+        log.message(msg,log.DEBUG)
         leng = len(self.Stations)
         if id < 1 or id > leng:
             station = (id,"Invalid station number, must be between 1 and " + str(leng),'')
@@ -207,6 +224,7 @@ class Recorder:
                         f.close()
                     except Exception as e:
                         print(str(e))
+                        log.message(e,log.ERROR)
             if found:
                 break
 
@@ -225,6 +243,8 @@ class Recorder:
             status = client.status()
             client.update()
             client.load(RecordingsPlaylist) 
+            client.close()
+            client.disconnect()
         except Exception as e:
             print(str(e)) 
             sys.exit(1)
@@ -244,39 +264,59 @@ def getOwner(path):
 class Playlist:
     
     usr = getpass.getuser()  
-    #playlist_file = "/tmp/Recordings.m3u"
     playlist_file = MpdPlaylists + "/Recordings.m3u"
 
     def __int__():
         return
 
     # Create playlist omit_incomplete=True/False omit incomplete tracks
-    def create(self,omit_incomplete=False):
+    def create(self,omit_incomplete=False,cleanup=False):
         owner = getOwner('/usr/share/radio')
         directory = '/home/' + owner + '/Recordings' 
-        msg = "Processing recordings directory " + directory
+        msg = "Record: Processing recordings directory " + directory
         print(msg)
         log.message(msg, log.DEBUG)
+
+        if omit_incomplete:
+            msg = "Record: Ommiting incomplete recordings from playlist %s" % self.playlist_file
+        else:
+            msg = "Record: Including incomplete recordings in playlist %s" % self.playlist_file
+        print(msg)
+        log.message(msg, log.DEBUG)
+
         count = 0
 
         f = open(self.playlist_file,'w')
         for path, subdirs, files in os.walk(directory):
             for name in files:
+                omit = False
                 track = os.path.join(path, name)
-                track = track.replace("/home/pi/Recordings/","recordings/")
-                #track = track.replace("/home/root/Recordings/","recordings/")
-                #print(track)
+                orig_track  = track
+                track = track.replace("/home/" + owner + "/Recordings/","recordings/")
                 if "/incomplete/" in track and omit_incomplete:
+                    omit = True
+
+                # Omit tracks containing time stamp eg. (08-30)
+                if re.search("\([0-9]", track) and re.search("[0-9]\)", track):
+                    omit = True
+
+                if cleanup and omit:
+                    os.remove(orig_track)
+
+                if omit:
                     continue
+                print(track)
                 f.write(track + '\n')
+
                 count += 1
         f.close()
-        msg = "%d tracks written to %s" % (count,self.playlist_file)
+
+        msg = "Record: %d tracks written to %s" % (count,self.playlist_file)
         print(msg)
         log.message(msg, log.INFO)
 
     # Get owner of the installed package
-    def getOwnerX(self,path):
+    def getOwnerXX(self,path):
         stat = os.stat(path)
         uid = stat.st_uid
         owner = pwd.getpwuid(uid).pw_name
@@ -287,10 +327,12 @@ class Playlist:
 def usage(max):
     print("\nUsage:", sys.argv[0], "--station_id=<station number> --duration=<duration>")
     print("                 --omit_incomplete --playlist_only --directory=<directory>")
+    print("                 --cleanup")
     print("\nWhere <station number> is the number of the radio stream to record")
-    print("      If --station_id is ommited the currently playing station will be recorded")
+    print("      --station_id if ommited the currently playing station will be recorded")
     print("      --omit_incomplete skip incomplete tracks when creating the playlist")
     print("      --playlist_only Only create playlist from the recordings directory. No recording")
+    print("      --cleanup Remove incomplete tracks from the /home/<user>/Recordings directory")
     print("      <directory> is the location for recorded files. default /home/<user>/Recordings") 
     print("      <duration> is the length of time to record in hours:minutes") 
     print("                 Maximum recording time allowed", int(max/60), "hours", "\n")
@@ -313,7 +355,8 @@ if __name__ == "__main__":
     import getpass
     from time import strftime
 
-    msg = "Recording started"
+    pid = os.getpid()
+    msg = sys.argv[0] + " running, pid " + str(pid)
     log.message(msg, log.INFO)
 
     station_id = 0  # Radio station number
@@ -323,12 +366,13 @@ if __name__ == "__main__":
     omit_incomplete = False
     playlist_only = False
     load_playlist = True
+    cleanup = False
 
     RadioLibDir = "/var/lib/radiod"
     RecordingDurationFile = RadioLibDir + "/recording"
 
     if os.getuid() != 0:
-        print ("This program can only be run as root user or using sudo")
+        print("This program can only be run as root user or using sudo")
         usage(max_duration)
         sys.exit(1)
 
@@ -345,7 +389,23 @@ if __name__ == "__main__":
             duration = '0:02'
         return duration
 
+    # Signal handler
+    def signalHandler(sig,frame):
+        if sig == signal.SIGHUP:
+            msg = "Record: Received signal SIGHUP"
+            print(msg)
+            log(msg,log.DEBUG)
+            pid = int(check_output(["pidof","streamripper"]))
+            if pid > 0:
+                msg = "Record: Sending HUP to %d" % pid
+                log(msg,log.DEBUG)
+                os.kill(pid, signal.SIGHUP)
+    
     args = sys.argv[1:]
+    msg = "Record: args %s" % args
+    print(msg)
+    log.message(args, log.DEBUG)
+
     for arg in args:
         params = arg.split('=')
         if len(params) == 2:
@@ -372,12 +432,14 @@ if __name__ == "__main__":
         elif params[0] == '--playlist_only' or arg == '-p':
             playlist_only = True
 
+        elif params[0] == '--cleanup' or arg == '-c':
+            cleanup = True
+
         else: 
             usage(max_duration)
             sys.exit(0)
 
-    log.message(args, log.DEBUG)
-
+    signal.signal(signal.SIGHUP,signalHandler)
     if len(duration) < 1:
         duration = getDurationFile()
 
@@ -394,7 +456,7 @@ if __name__ == "__main__":
     if playlist_only:
         # Don't record - only make playlist
         playlist = Playlist()
-        playlist.create(omit_incomplete)
+        playlist.create(omit_incomplete,cleanup)
         sys.exit(0)
 
     print("Directory",directory)
@@ -404,19 +466,17 @@ if __name__ == "__main__":
     else:
         print("Record current station")
 
-    record = Recorder()
+    record = Recorder(log)
 
     # Record requested station
     if station_id != 0: 
         station=record.getStation(station_id)
         print(station)
-        msg = "Recording station %s" % station[1]
+        msg = "Record: Recording station %s" % station[1]
         log.message(msg, log.INFO)
         print(station)
-        result = record.start(minutes,log)
-        print(result)
+        result = record.start(minutes)
         log.message(result,log.DEBUG)
-
         name = record.name
 
     else:
@@ -425,13 +485,14 @@ if __name__ == "__main__":
         name = record.select(station_id)    # 0 = Default to the current station
         time.sleep(3)
         record.getCurrent()
-        msg = "Recording: %s, url: %s" % (name,record.url)
+        msg = "Record: Recording %s, url: %s" % (name,record.url)
         print(msg)
         log.message(msg,log.DEBUG)
         result = record.start(minutes)
         print(result)
+        log.message(result,log.DEBUG)
 
-    msg = "Finished recording %s" % name
+    msg = "Record: Finished recording %s" % name
     print(msg)
     log.message(msg,log.DEBUG)
 
@@ -439,11 +500,16 @@ if __name__ == "__main__":
     playlist = Playlist()
     playlist.create(omit_incomplete)
 
-    if load_playlist:
-        msg = "Loading %s playlist" % RecordingsPlaylist
+    if load_playlist or cleanup:
+        msg = "Record: Loading %s playlist" % RecordingsPlaylist
         print(msg)
         log.message(msg,log.INFO)
         record.load(directory)
+
+    msg = sys.argv[0] + " succesfully completed, pid " + str(pid)
+    print(msg)
+    log.message(msg, log.INFO)
+    sys.exit(0)
 
 # End of test routine
 # :set tabstop=4 shiftwidth=4 expandtab

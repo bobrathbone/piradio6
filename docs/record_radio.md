@@ -90,5 +90,9 @@ Create a playlist from /home/<usr>/Recordings in /var/lib/mpd/playlists/Recordin
 Normally the recording process will omit incomplete tracks when called from the radio software. When using the **record.py** program, this isn't the case. To omit incomplete recordings you need to specify **--omit_incomplete** otherwise all partial tracks will be recorded.
 **sudo ./record.py --station_id=17 --duration=0:15 --omit_incomplete**
 
+**Logging**
+**=======**
+Logging output will be found **/var/log/radiod/radio.log**
+
 End of Tutorial
 

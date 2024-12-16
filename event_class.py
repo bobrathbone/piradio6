@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.30 2024/12/06 17:30:00 bob Exp $
+# $Id: event_class.py,v 1.34 2024/12/12 07:39:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,6 +24,7 @@ from rotary_class import RotaryEncoder
 from rotary_class_alternative import RotaryEncoderAlternative
 from rotary_class_rgb import RotaryEncoderRgb
 from log_class import Log
+from constants import *
 from rotary_switch_class import RotarySwitch
 import RPi.GPIO as GPIO
 import pdb
@@ -40,6 +41,7 @@ mute_button = None
 up_button = None
 down_button = None
 menu_button = None
+record_button = None
 
 # If no interrupt required
 def no_interrupt():
@@ -139,6 +141,7 @@ class Event():
         self.getConfiguration()
         self.setInterface()
         self.setupRotarySwitch()
+        self.setRecordButton()
         return
 
     # Call back routine for the volume control knob
@@ -203,11 +206,21 @@ class Event():
 
         return self.event_type
 
+    # This is the record button to start streamripper
+    def record_button_event(self,event):
+        msg = "Record button event:" + str(event)
+        log.message(msg, log.DEBUG)
+        while record_button.pressed():
+            time.sleep(0.1)
+        self.event_type = self.RECORD_BUTTON
+        self.event_triggered = True
+        return self.event_type
+
     # Call back routine button events (Not rotary encoder buttons)
     def button_event(self,event):
         global up_switch,down_switch
-
-        log.message("Button event:" + str(event), log.DEBUG)
+        msg = "Button event:" + str(event)
+        log.message(msg, log.DEBUG)
         self.event_triggered = True
 
         # Convert button event to standard events
@@ -238,10 +251,6 @@ class Event():
                     self.event_type = self.SHUTDOWN
                     self.event_triggered = True
                     break
-
-        elif event == self.record_switch:
-            self.event_type = self.RECORD_BUTTON
-
         else:
             self.event_triggered = False
         return
@@ -409,8 +418,6 @@ class Event():
         elif self.user_interface == self.config.COSMIC_CONTROLLER:
             self.setCosmicInterface()
 
-        self.setRecordButton()
-                
 
     # Set up rotary encoders interface
     def setRotaryInterface(self):
@@ -496,14 +503,12 @@ class Event():
         mute_button = Button(self.mute_switch,self.button_event,log,pull_up_down=up_down)
         menu_button = Button(self.menu_switch,self.button_event,log,pull_up_down=up_down)
 
-    # Set up the record button
+    # Set up the record button (This is always from high to low when pressed)
     def setRecordButton(self):
-        global record_switch
+        global record_button
         if self.record_switch > 0:
             from button_class import Button
-            up_down = self.config.pull_up_down
-            #record_button = Button(self.record_switch,self.button_event,log,pull_up_down=up_down)
-            record_button = Button(self.record_switch,self.button_event,log,GPIO.PUD_DOWN)
+            record_button = Button(self.record_switch,self.record_button_event,log,UP)
 
     # Set up IQAudio cosmic controller interface
     def setCosmicInterface(self):
@@ -554,7 +559,8 @@ if __name__ == "__main__":
             if event.detected():
                 type = event.getType()
                 name = event.eventNames[int(type)]
-                print("Event %d %s" % (type,name))
+                if type != event.NO_EVENT:
+                    print("Event %d %s" % (type,name))
                 event.clear()
             else:
                 time.sleep(0.01)

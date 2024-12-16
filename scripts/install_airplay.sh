@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-# $Id: install_airplay.sh,v 1.2 2024/11/25 10:16:08 bob Exp $
+# $Id: install_airplay.sh,v 1.3 2024/12/11 11:06:15 bob Exp $
 # Raspberry Pi Internet Radio - Install Airplay
 # This script installs and configures Airplay (shairport)
 #
@@ -47,7 +47,7 @@ do
     clear
     while [ $selection != 0 ]
     do
-        ans=$(whiptail --title "Airplay installation & confuration" --menu "Choose your option" 15 75 9 \
+        ans=$(whiptail --title "Airplay installation & configuration" --menu "Choose your option" 15 75 9 \
         "1" "Install Airplay software (shairport-sync)" \
         "2" "Display shairport-sync service status" \
         "3" "Enable shairport-sync service" \

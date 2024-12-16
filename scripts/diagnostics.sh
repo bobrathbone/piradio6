@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: diagnostics.sh,v 1.2 2024/11/25 10:01:37 bob Exp $
+# $Id: diagnostics.sh,v 1.5 2024/12/13 17:50:57 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,6 +24,7 @@ if [[ ${FLAGS} == "-t" ]]; then
     DIR=$(pwd)
 fi
 
+LOGDIR=${DIR}/logs
 NODAEMON_LOG=${DIR}/logs/radiod_nodaemon.log
 TEMPFILE=/tmp/output
 CMARK=/usr/bin/cmark
@@ -58,9 +59,10 @@ do
         "1" "Run the radio in diagnostic mode (nodaemon)" \
         "2" "Test rotary encoders" \
         "3" "Test push buttons" \
-        "4" "Test configured display" \
-        "5" "Test GPIOs" \
-        "6" "Display Radio and OS configuration" 3>&1 1>&2 2>&3)
+        "4" "Test events layer" \
+        "5" "Test configured display" \
+        "6" "Test GPIOs" \
+        "7" "Display Radio and OS configuration" 3>&1 1>&2 2>&3)
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -69,10 +71,10 @@ do
     elif [[ ${ans} == '1' ]]; then
         sudo systemctl stop radiod.service
         echo "Press Ctrl-C to exit diagnostic mode"
-        echo "radiod.py nodaemon diagnostic log, $(date) " > ${NODAEMON_LOG}
-        sudo ${DIR}/radiod.py nodaemon 2>&1 >> ${NODAEMON_LOG}
-        echo >> ${NODAEMON_LOG}
-        echo "A log of this run has been recorded ${NODAEMON_LOG}"
+        echo "radiod.py nodaemon diagnostic log, $(date)" | tee  ${NODAEMON_LOG}
+        sudo ${DIR}/radiod.py nodaemon 2>&1 | tee -a ${NODAEMON_LOG}
+        echo | tee -a ${NODAEMON_LOG}
+        echo "A log of this run has been recorded in ${NODAEMON_LOG}"
         echo "A compressed tar file has been saved in ${NODAEMON_LOG}.tar.gz"
         echo "Send ${NODAEMON_LOG}.tar.gz to bob@bobrathbone.com if required"
         echo "Press enter to continue: "
@@ -94,17 +96,23 @@ do
     elif [[ ${ans} == '4' ]]; then
         sudo systemctl stop radiod.service
         echo "Press Ctrl-C to exit diagnostic mode"
-        sudo ${DIR}/display_class.py
+        sudo ${DIR}/event_class.py
         exit 0
 
     elif [[ ${ans} == '5' ]]; then
+        sudo systemctl stop radiod.service
+        echo "Press Ctrl-C to exit diagnostic mode"
+        sudo ${DIR}/display_class.py
+        exit 0
+
+    elif [[ ${ans} == '6' ]]; then
         sudo systemctl stop radiod.service
         echo "Press Ctrl-C to exit diagnostic mode"
         echo "Test Rotary encoders and buttons "
         sudo ${DIR}/test_gpios.py --pull_up
         exit 0
 
-    elif [[ ${ans} == '6' ]]; then
+    elif [[ ${ans} == '7' ]]; then
         INFO=1
     fi
 

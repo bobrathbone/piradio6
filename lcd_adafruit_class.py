@@ -4,7 +4,7 @@
 # LCD class for  Adafruit RGB-backlit LCD plate for Raspberry Pi.
 # Adapted by Bob Rathbone from code by Adafruit Industries.  MIT license.
 # Amended for version 6.0 and later of the Rathbone Internet Radio
-# $Id: lcd_adafruit_class.py,v 1.4 2021/05/11 17:41:45 bob Exp $
+# $Id: lcd_adafruit_class.py,v 1.5 2024/12/15 12:51:42 bob Exp $
 
 # Original code based on code from lrvick and LiquidCrystal.
 # lrvic - https://github.com/lrvick/raspi-hd44780/blob/master/hd44780.py
@@ -185,10 +185,6 @@ class Adafruit_lcd(i2c):
         self.write(self.LCD_DISPLAYCONTROL | self.LCD_FUNCTIONSET | self.code_page)
 
         self.write(self.LCD_RETURNHOME)
-
-        self.scroll_speed = config.scroll_speed
-        self.setScrollSpeed(self.scroll_speed)
-
 
     # ----------------------------------------------------------------------
     # Write operations
@@ -425,14 +421,16 @@ class Adafruit_lcd(i2c):
         return
 
     # Set Scroll line speed - Best values are 0.2 and 0.3
-    # Limit to between 0.08 and 0.6
+    # Limit to between 0.05 and 0.9. 0=use default
     def setScrollSpeed(self,speed):
-            if speed < 0.08:
-                    speed = 0.08
-            elif speed > 0.6:
-                    speed = 0.6
-            self.scroll_speed = speed
-            return self.scroll_speed
+        if speed == float(0):
+            speed = self.scroll_speed
+        if speed < 0.05:
+            speed = 0.05
+        elif speed > 0.9:
+            speed = 0.9
+        self.scroll_speed = speed
+        return self.scroll_speed
 
     # Get the LCD width in characters
     def getWidth(self):

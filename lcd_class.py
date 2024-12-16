@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.14 2024/11/25 10:17:29 bob Exp $
+# $Id: lcd_class.py,v 1.15 2024/12/15 12:51:42 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -104,7 +104,7 @@ class Lcd:
 
     width = LCD_WIDTH
     # If display can support umlauts set to True else False
-    scroll_speed = 0.2       # Default scroll speed
+    scroll_speed = 0.35   # Default scroll speed
 
     def __init__(self):
         return
@@ -116,7 +116,6 @@ class Lcd:
         if revision == 1:
             self.lcd_data4 = LCD_D4_21  #REMOVE
             gpios['lcd_data4'] = LCD_D4_21
-        
 
         # Get LCD configuration connects including self.lcd_data4
         gpios['lcd_select'] = config.getLcdGpio("lcd_select")
@@ -164,8 +163,7 @@ class Lcd:
             GPIO.setup(self.lcd_data7, GPIO.OUT) # DB7
 
             self.lcd_init()
-            self.scroll_speed = config.scroll_speed
-            self.setScrollSpeed(self.scroll_speed)
+
         return
 
     # Initialise the display
@@ -298,7 +296,7 @@ class Lcd:
         # Small delay before scrolling
         if not skip:
             for i in range(0, 10):
-                time.sleep(self.scroll_speed)
+                time.sleep(0.2)
                 if interrupt():
                     skip = True
                     break
@@ -312,23 +310,25 @@ class Lcd:
                     skip = True
                     break
                 else:
-                    time.sleep(self.scroll_speed)
+                    time.sleep(self.scroll_speed) 
 
         # Small delay before exiting
         if not skip:
             for i in range(0, 10):
-                time.sleep(self.scroll_speed)
+                time.sleep(0.2)
                 if interrupt():
                     break
         return
 
     # Set Scroll line speed - Best values are 0.2 and 0.3
-    # Limit to between 0.08 and 0.6
+    # Limit to between 0.05 and 0.9. 0=use default
     def setScrollSpeed(self,speed):
-        if speed < 0.08:
-            speed = 0.08
-        elif speed > 0.6:
-            speed = 0.6
+        if speed == float(0):
+            speed = self.scroll_speed
+        if speed < 0.05:
+            speed = 0.05
+        elif speed > 0.9:
+            speed = 0.9
         self.scroll_speed = speed
         return self.scroll_speed
 
