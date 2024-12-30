@@ -25,7 +25,7 @@ When you press the 'Record' button the IR remote activity LED will flash for abo
 08:30 06/12/2024*
 ```
 
-The recordings are stored in the /home/<user>/Recordings directory where <user> is the name of the user (usually 'pi') that installed the software. At the end of the recording process the record program creates the /var/lib/mpd/playlists/Recordings.m3u playlist and loads it into the radio's database.
+The recordings are stored in the **/home/\<user\>**/Recordings directory where **\<user\>** is the name of the user (usually 'pi') that installed the software. At the end of the recording process the record program creates the /var/lib/mpd/playlists/Recordings.m3u playlist and loads it into the radio's database.
 
 Playing back a recording
 ========================
@@ -33,7 +33,7 @@ Playing back a recording
 2. Use the Channel UP/DOWN buttons or knob to select the **Recordings** playlist
 3. Press the 'Menu' to start playing the recorded stations
 
-**Note:** that all selected radio stations are recorded into the /home/<user>/Recordings directory where <user> is noramally 'pi'. However, each radio station is recorded into its own directory using the station name. You can select which **recorded** radio station or track you want to listen to in the search menu.
+**Note:** that all selected radio stations are recorded into the **/home/\<user\>/Recordings** directory where **\<user\>** is noramally 'pi'. However, each radio station is recorded into its own directory using the station name. You can select which **recorded** radio station or track you want to listen to in the search menu.
 
 1. Press the 'Menu' button from either the remote control or on the radio **once** to select the **Search** menu
 2. Use the 'Channel' buttons or knob to select each track 
@@ -64,11 +64,13 @@ This program can only be run as root user or using sudo
 
 Usage: ./record.py --station_id=<station number> --duration=<duration>
                  --omit_incomplete --playlist_only --directory=<directory>
+                 --cleanup
 
 Where <station number> is the number of the radio stream to record
-      If --station_id is ommited the currently playing station will be recorded
+      --station_id if ommited the currently playing station will be recorded
       --omit_incomplete skip incomplete tracks when creating the playlist
       --playlist_only Only create playlist from the recordings directory. No recording
+      --cleanup Remove incomplete tracks from the /home/<user>/Recordings directory
       <directory> is the location for recorded files. default /home/<user>/Recordings
       <duration> is the length of time to record in hours:minutes
                  Maximum recording time allowed 12 hours
@@ -89,6 +91,9 @@ Create a playlist from /home/<usr>/Recordings in /var/lib/mpd/playlists/Recordin
 
 Normally the recording process will omit incomplete tracks when called from the radio software. When using the **record.py** program, this isn't the case. To omit incomplete recordings you need to specify **--omit_incomplete** otherwise all partial tracks will be recorded.
 **sudo ./record.py --station_id=17 --duration=0:15 --omit_incomplete**
+
+You can also cleanup the Recordings directory  
+**sudo ./record.py --playlist_only --omit_incomplete --cleanup**
 
 **Logging**
 **=======**

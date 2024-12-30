@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.35 2024/12/04 11:41:14 bob Exp $
+# $Id: ireventd.py,v 1.37 2024/12/21 10:26:47 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -52,6 +52,9 @@ key_maps = '/etc/rc_keymaps'
 sys_rc = '/sys/class/rc'
 rc_device = ''
 
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)      # Disable warnings
+
 recording = False
 
 # Signal SIGTERM handler
@@ -64,10 +67,10 @@ def signalHandler(signal,frame):
 # User signal SIGUSR1/2 used to indicate if recording active
 def sigUser(signal,frame):
     global recording
-    if signal == 10:
+    if signal == 10 and remote_led > 0:
         recording = True
         GPIO.output(remote_led, True)
-    elif signal == 12:
+    elif signal == 12 and remote_led > 0:
         recording = False
         GPIO.output(remote_led, False)
 
@@ -76,7 +79,7 @@ class RemoteDaemon(Daemon):
 
     keytable = config.keytable
     keytable = 'myremote.toml'
-    ir_device = 'rc0'	# Can be rc0, rc1, rc2, rc4 - Run ir-keytable to see
+    ir_device = 'rc0'	# Can be rc0, rc1, rc2, rc4 - Run ir-keytable to see actual
     play_number = 0
     timer_running = False
     timer = None
@@ -99,12 +102,9 @@ class RemoteDaemon(Daemon):
         print(msg)
         log.message(msg, log.DEBUG)
 
-
         remote_led = config.remote_led
         if remote_led > 0:
             print("Flashing LED on GPIO", remote_led)
-            GPIO.setwarnings(False)      # Disable warnings
-            GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
             GPIO.setup(remote_led, GPIO.OUT)  # Output LED
             self.flash_led(remote_led)
         else:
@@ -301,8 +301,6 @@ class RemoteDaemon(Daemon):
         log.init('radio')
         remote_led = config.remote_led
         if remote_led > 0:
-            GPIO.setwarnings(False)      # Disable warnings
-            GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
             GPIO.setup(remote_led, GPIO.OUT)  # Output LED
             self.flash_led(remote_led)
         return

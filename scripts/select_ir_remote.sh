@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: select_ir_remote.sh,v 1.5 2024/11/28 09:49:27 bob Exp $
+# $Id: select_ir_remote.sh,v 1.7 2024/12/21 10:34:42 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -27,6 +27,34 @@ CONFIG=/etc/radiod.conf
 KEYMAPS=/etc/rc_keymaps
 RADIOLIB=/var/lib/radiod
 REMOTE_CONTROL=${RADIOLIB}/remote_control
+SYS_RC=/sys/class/rc
+
+# Returns the device name for the "gpio_ir_recv" overlay (rc0...rc6)
+function find_device()
+{
+    sname=$1
+    found=0
+    for x in 0 1 2 3 4 6
+    do
+        for y in 0 1 2 3 4 5 6
+        do
+            if [[ -f ${SYS_RC}/rc${x}/input${y}/name ]]; then
+                name=$(cat ${SYS_RC}/rc${x}/input${y}/name)
+                if [[ ${name} == ${sname} ]]; then
+                    echo "rc${x}"
+                    found=1
+                    break
+                fi
+            fi
+        done
+        if [[ ${found} == 1 ]]; then
+            break
+        fi
+    done
+}
+
+# Find device name for the "gpio_ir_recv" overlay
+IR_DEV=$(find_device "gpio_ir_recv")
 
 mkdir -p ${LOGDIR}
 
@@ -71,12 +99,14 @@ do
 done
 
 # Log to install_ir.log
-echo "Select IR remote control definition" | tee -a  ${LOG}
+echo "Select IR remote control definition $(date)" | tee -a  ${LOG}
 # Copy selected toml file to /etc/rc_keymaps
 CMD="sudo cp -f ${REMOTES_DIR}/${TOML_FILE} ${KEYMAPS}/."
 echo ${CMD} | tee -a ${LOG}
 ${CMD}
-CMD="sudo ir-keytable -c -w ${KEYMAPS}/${TOML_FILE}" 
+
+
+CMD="sudo ir-keytable -s ${IR_DEV} -c -w ${KEYMAPS}/${TOML_FILE}" 
 echo ${CMD} | tee -a ${LOG}
 ${CMD} 
 

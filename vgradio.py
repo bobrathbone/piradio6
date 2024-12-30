@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.48 2021/09/14 09:01:00 bob Exp $
+# $Id: vgradio.py,v 1.51 2024/12/17 10:05:55 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -25,6 +25,7 @@ import pdb
 import signal
 import socket
 import subprocess
+import pwd
 from time import strftime
 
 # Pygame controls
@@ -214,6 +215,10 @@ def handleEvent(radio,radioEvent):
         else:
             radio.mute()
         time.sleep(0.5)     # Prevent unmute
+
+    elif event_type == radioEvent.RECORD_BUTTON:
+        log.message('RECORD_BUTTON event received', log.DEBUG)
+        radio.handleRecordKey(event_type)
 
     elif event_type == radioEvent.MPD_CLIENT_CHANGE:
         log.message("radioEvent Client Change",log.DEBUG)
@@ -724,6 +729,10 @@ if __name__ == "__main__":
         os.environ['DISPLAY']
     except:
         print("This program requires an X-Windows desktop")
+        sys.exit(1)
+
+    if pwd.getpwuid(os.geteuid()).pw_uid > 0:
+        print("This program must be run with sudo or root permissions!")
         sys.exit(1)
 
     # Do not override locale settings

@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.113 2024/12/12 07:39:00 bob Exp $
+# $Id: piradio,v 1.118 2024/12/21 11:14:51 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is the 64 bit version
 # Source: <source package name; defaults to package name>
@@ -10,7 +10,7 @@ Homepage: http://www.bobrathbone.com
 Standards-Version: 4.0.0
 
 Package: radiod
-Version: 7.9
+Version: 8.0
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 
@@ -83,6 +83,7 @@ Files:  radiod.py /usr/share/radio/
     radio_daemon.py /usr/share/radio/
     wiring.py /usr/share/radio/
     test_gpios.py /usr/share/radio/
+    test_events.py /usr/share/radio/
     docs/config_tutorial.md /usr/share/radio/docs
     docs/station_playlist.md /usr/share/radio/docs
     docs/media_playlist.md /usr/share/radio/docs
@@ -90,6 +91,7 @@ Files:  radiod.py /usr/share/radio/
     docs/create_ir_remote.md /usr/share/radio/docs
     docs/network_configuration.md /usr/share/radio/docs
     docs/record_radio.md /usr/share/radio/docs
+    docs/wifi_notes.md /usr/share/radio/docs
     scripts/configure_audio_device.sh /usr/share/radio/scripts/
     scripts/install_wm8960.sh /usr/share/radio/scripts/
     scripts/install_luma.sh /usr/share/radio/scripts/
@@ -112,10 +114,10 @@ Files:  radiod.py /usr/share/radio/
     scripts/configure_bluetooth.sh /usr/share/radio/scripts/
     scripts/create_playlist.sh /usr/share/radio/scripts/
     scripts/install_recording.sh /usr/share/radio/scripts/
+    scripts/copy_html_docs.sh /usr/share/radio/scripts/
     station.urls /usr/share/radio/
     voice.dist /usr/share/radio/
     lircrc.dist  /usr/share/radio/
-    remote_control.py  /usr/share/radio/
     get_shoutcast.py  /usr/share/radio/
     rc_daemon.py  /usr/share/radio/
     udp_server_class.py /usr/share/radio/
@@ -166,9 +168,7 @@ Files:  radiod.py /usr/share/radio/
     radiod.conf /usr/share/radio/
     mpd.conf /usr/share/radio/
     radiod.service /lib/systemd/system/
-    irradiod.service /lib/systemd/system/
     ireventd.service /lib/systemd/system/
-    irradiod.py /usr/share/radio/
     ireventd.py  /usr/share/radio/
     ir_daemon.py  /usr/share/radio/
     ws_spi_ssd1309_class.py /usr/share/radio/

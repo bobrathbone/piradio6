@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: diagnostics.sh,v 1.5 2024/12/13 17:50:57 bob Exp $
+# $Id: diagnostics.sh,v 1.6 2024/12/19 11:36:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -30,6 +30,7 @@ TEMPFILE=/tmp/output
 CMARK=/usr/bin/cmark
 LYNX=/usr/bin/lynx
 SCRIPTS_DIR=${DIR}/scripts
+DOCS_DIR=${DIR}/docs
 
 function build_report
 {
@@ -191,6 +192,12 @@ do
             echo '```' >> ${TEMPFILE}.md
             cat ${TEMPFILE} >> ${TEMPFILE}.md
             echo '```' >> ${TEMPFILE}.md
+
+            # Display WiFi notes
+            if [[ ${ans} == '5' ]]; then
+                cat ${DOCS_DIR}/wifi_notes.md >> ${TEMPFILE}.md
+            fi
+
             ${CMARK} ${TEMPFILE}.md > ${TEMPFILE}.html
             #clear
             ${LYNX}  ${TEMPFILE}.html

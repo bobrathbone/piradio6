@@ -63,4 +63,5 @@ vol: Vol
 volume:  Volume
 wait: Please wait
 waiting_for_spotify_client: Waiting for Spotify client
+waiting_for_network: Waiting for network
 yes: yes

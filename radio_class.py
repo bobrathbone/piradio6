@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.178 2024/12/11 08:37:33 bob Exp $
+# $Id: radio_class.py,v 1.179 2024/12/16 19:15:43 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -389,7 +389,9 @@ class Radio:
         t.start()
 
     def _RecordKey(self,key):
+        global log
         self.ir_pid = self.getPid(ireventd_pidfile)
+        print("PID", self.ir_pid)
         if not self.recording and self.ir_pid > 1:
             try:
                 # This causes the IR daemon to switch on the activity LED
@@ -455,7 +457,7 @@ class Radio:
                     try:
                         # This causes the IR daemon to switch off the activity LED
                         os.kill(int(self.ir_pid), signal.SIGUSR2)
-                    except:
+                    except Exception as e:
                         print(str(e))
                         pass
 

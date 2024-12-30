@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Remote Control Class
-# $Id: rc_daemon.py,v 1.17 2023/06/21 05:54:50 bob Exp $
+# $Id: rc_daemon.py,v 1.18 2024/12/21 11:21:13 bob Exp $
 # 
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
@@ -10,7 +10,7 @@
 # Site   : http://www.bobrathbone.com
 #
 # This is the daemon class for the IR remote control
-# It is called frome remote_control.py .py
+# It is called frome ireventd.py
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #

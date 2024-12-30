@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.10 2024/11/30 16:34:38 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.13 2024/12/21 10:22:26 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -155,7 +155,7 @@ do
         sudo systemctl stop ireventd.service
         echo
         echo "Press Ctl-C to end test"
-        ${DIR}/test_events.py 
+        ${DIR}/test_events.py --raw
         echo
 
     elif [[ ${ans} == '3' ]]; then
@@ -176,7 +176,9 @@ do
         read x
 
     elif [[ ${ans} == '4' ]]; then
+        sudo systemctl stop ireventd.service
         sudo ${DIR}/ireventd.py flash
+        sudo systemctl start ireventd.service
 
     elif [[ ${ans} == '5' ]]; then
         clear
@@ -196,6 +198,8 @@ do
         clear
         echo "Press Ctl-C to exit status screen"
         sudo systemctl status ireventd.service
+        echo -n "Press enter to continue: "
+        read x
 
     elif [[ ${ans} == '8' ]]; then
         clear
@@ -291,8 +295,8 @@ selection=1
 while [ $selection != 0 ]
 do
     ans=$(whiptail --title "Configure remote activity LED" --menu "Choose your option" 15 75 9 \
-    "1" "Default GPIO 11 (pin 23) or 26-pin GPIO header" \
-    "2" "All 40-pin designs using DAC sound card GPIO 16 (pin 36)" \
+    "1" "Default GPIO 11 (pin 23) for 26-pin GPIO header or HiFiBerry DAC" \
+    "2" "All 40-pin designs using all other DAC sound cards GPIO 16 (pin 36)" \
     "3" "Adafruit plate  GPIO 13 (pin 33)" \
     "4" "IQaudIO Cosmic Controller GPIO 14 (pin 8)" \
     "5" "No remote activity LED or manually configure" \

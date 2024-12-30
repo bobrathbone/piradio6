@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Raspberry Pi Button Push Button Class
-# $Id: test_events.py,v 1.4 2024/11/25 10:17:30 bob Exp $
+# Raspberry Pi test remote control kernel events
+# $Id: test_events.py,v 1.6 2024/12/20 14:23:58 bob Exp $
 #
 # IR remote tester
 # Assumes device already configured with ir-keytable
@@ -23,18 +23,70 @@ import pdb
 import sys 
 import os 
 
+raw = False
+info = False
+sys_rc = '/sys/class/rc'
+rc_device = ''
+
+def usage():
+    print("Usage: %s <--help> <--raw>|<--config>" % (sys.argv[0]))
+    print("Where --help    This help text")
+    print("      --raw     Display raw codes")
+    print("      --config  Display configuration only")
+    sys.exit(0)
+
+if len(sys.argv) >= 2:
+    if '--help' == sys.argv[1] or '-h' == sys.argv[1]:
+        usage()
+    elif '--config' == sys.argv[1] or '-c' == sys.argv[1]:
+        info = True
+    elif '--raw' == sys.argv[1] or '-r' == sys.argv[1]:
+        raw = True
+    else:
+        usage()
+
+# Returns the device name for the "gpio_ir_recv" overlay (rc0...rc6)
+# Used to load ir_keytable
+def get_ir_device(sName):
+    global rc_device
+    found = False
+    for x in range(7):
+        name = ''
+        device = ''
+        for y in range(7):
+            file = sys_rc + '/rc' + str(x) + '/input' + str(y) + '/name'
+            if os.path.isfile (file):
+                try:
+                    f = open(file, "r")
+                    name = f.read()
+                    name = name.strip()
+                    if (sName == name):
+                        device = 'rc' + str(x)
+                        rc_device = sys_rc + '/rc' + str(x)
+                        found = True
+                        break
+                    f.close()
+                except Exception as e:
+                    print(str(e))
+        if found:
+            break
+
+    return device
+
 devices = [InputDevice(path) for path in list_devices()]
 # Define IR input as defined in /boot/config.txt
 irin = None
 for device in devices:
-    print(device.path, device.name, device.phys)
     if(device.name=="gpio_ir_recv"):
+        print(device.path, device.name, device.phys)
         irin = device
 
 if(irin == None):
     print("Unable to find IR input device, exiting")
     exit(1)
 
+rc_device = get_ir_device('gpio_ir_recv')
+print("Kernel event device " +  rc_device)
 print("IR input device found at", irin.path)
 
 config1_txt = "/boot/firmware/config.txt"
@@ -52,12 +104,21 @@ with open(config_txt, 'r') as f:
             line = line.rstrip()
             print(line)
 
+# Configuration information only
+if info:
+    sys.exit(0)
+
 # Read events and return string
 def readInputEvent(device):
     try:
         print("Press Ctl-C to end events test")
         print("Waiting for IR events")
+        if raw:
+            print("Listening in raw mode")
+
         for event in device.read_loop():
+            if raw:
+                print(event)
             # Event returns sec, usec (combined with .), type, code, value
             # Type 01 or ecodes.EV_KEY is a keypress event
             # A value of  0 is key up, 1 is key down, 2 is repeat key

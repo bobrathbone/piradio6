@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio podcast utility
-# $Id: create_podcasts.py,v 1.1 2024/12/05 19:51:09 bob Exp $
+# $Id: create_podcasts.py,v 1.2 2024/12/17 19:53:39 bob Exp $
 #
 # See Raspberry PI Radio constructors manual for instructions
 #
@@ -18,8 +18,9 @@
 
 import os
 import sys
+import pdb
 #import urllib2
-from urllib.request import urlopen
+import urllib.request, urllib.error, urllib.parse
 import unicodedata
 
 from xml.dom.minidom import parseString
@@ -147,6 +148,7 @@ if __name__ == "__main__":
     errorCount = 0    # Errors
     warningCount = 0    # Warnings
     processedCount = 0      # Processed station count
+    data = ""
 
     # Set up playlist directory 
     if not os.path.exists(PlsDirectory):
@@ -206,11 +208,12 @@ if __name__ == "__main__":
 
         # Get the published URL to the stream file
         try:
-            file = urllib2.urlopen(url)
-            data = file.read()
-            file.close()
-        except:
+            request = urllib.request.Request(url)
+            response = urllib.request.urlopen(request)
+            data = response.read().decode('utf-8')
+        except Exception as e:
             print("Error: Failed to retrieve ", url)
+            print(str(e))
             errorCount += 1
             continue
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Web Interface
-# $Id: install_web_interface.sh,v 1.2 2024/11/25 10:16:09 bob Exp $
+# $Id: install_web_interface.sh,v 1.4 2024/12/19 14:07:42 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -26,6 +26,7 @@ LOG=${LOGDIR}/install_web.log
 USER=$(logname)
 GRP=$(id -g -n ${USER})
 OS_RELEASE=/etc/os-release
+SCRIPTS_DIR=${DIR}/scripts
 
 # Get OS release ID
 function release_id
@@ -114,6 +115,9 @@ sudo mysql --execute="SELECT PASSWORD('raspberry')" | tee -a ${LOG}
 sudo mysql --execute="GRANT USAGE ON *.* TO 'pi'@'localhost' IDENTIFIED BY PASSWORD '*1844F2B11CCAEF3B31F573A1384F608BB6DE3DF9'" | tee -a ${LOG}
 sudo mysql --execute="GRANT ALL PRIVILEGES ON ompd.* TO 'pi'@'localhost'"| tee -a ${LOG}
 sudo mysql --execute="FLUSH PRIVILEGES" | tee -a ${LOG}
+
+# Convert md files (Tutorials) to html and copy them to /var/www/html/docs
+sudo  ${SCRIPTS_DIR}/copy_html_docs.sh | tee -a ${LOG}
 
 echo "A log of these changes has been written to ${LOG}"
 exit 0
