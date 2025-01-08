@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.82 2024/11/25 10:17:29 bob Exp $
+# $Id: display_class.py,v 1.83 2024/12/27 13:43:59 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -340,11 +340,14 @@ class Display:
     # Set font size
     def setFontSize(self,size):
         displayType = config.getDisplayType()
-        if displayType == config.OLED_128x64 and size != self.saved_font_size:
+        if displayType == config.OLED_128x64:
             screen.setFontSize(size)
-            self.saved_font_size = size
-        else:
-            screen.setFontSize(size)
+
+    # Set font scale
+    def setFontScale(self,scale):
+        displayType = config.getDisplayType()
+        if displayType == config.OLED_128x64:
+            screen.setFontScale(scale)
 
     # Set font name
     def setFontName(self,name):

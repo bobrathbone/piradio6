@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: diagnostics.sh,v 1.6 2024/12/19 11:36:37 bob Exp $
+# $Id: diagnostics.sh,v 1.7 2024/12/29 12:34:09 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -27,7 +27,7 @@ fi
 LOGDIR=${DIR}/logs
 NODAEMON_LOG=${DIR}/logs/radiod_nodaemon.log
 TEMPFILE=/tmp/output
-CMARK=/usr/bin/cmark
+CMARK="/usr/bin/cmark --hardbreaks"
 LYNX=/usr/bin/lynx
 SCRIPTS_DIR=${DIR}/scripts
 DOCS_DIR=${DIR}/docs

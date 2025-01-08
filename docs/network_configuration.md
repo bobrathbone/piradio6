@@ -17,11 +17,10 @@ lo        Interface doesn't support scanning.
 ```
 
 This will display all available Wi-Fi access points available in your immediate vicinity. You will of course only be able to connect to those networks that you have a password for. 
-Bullseye OS network configuration
 
-**BULLSEYE**
-**--------**
-Edit the /etc/wpa_supplicant/wpa_supplicant.conf configuration file and add a second network definition. 
+Bullseye OS network configuration using network manager
+=======================================================
+Edit the **/etc/wpa_supplicant/wpa_supplicant.conf** configuration file and add a second network definition. 
 
 
 ```
@@ -44,20 +43,15 @@ network={
  
 ```
 
-Bookwork OS network configuration using network manager
+Bookworm OS network configuration using network manager
 =======================================================
-
-**BOOKWORM**
-**--------**
-Bookworm doesn’t use wpa_suplicant.conf but now uses Network Manager using the following nmcli commands. 
+**Bookworm** does not use wpa_suplicant.conf but now uses Network Manager using the following nmcli commands. 
 
 
-```
-sudo nmcli radio wifi on
-sudo nmcli dev wifi connect <wifi-ssid> password "<network-password>"
-```
+**sudo nmcli radio wifi on**
+**sudo nmcli dev wifi connect <wifi-ssid> password "<network-password>"**
 
-Each Wi-Fi network has a separate config file in /etc/NetworkManager/system-connections/ in a well configured system these will have a 256bit WPA PSK rather than a plain text passphrase.
+Each Wi-Fi network has a separate config file in **/etc/NetworkManager/system-connections/** in a well configured system these will have a 256bit WPA PSK rather than a plain text passphrase.
 
 
 ```
@@ -88,7 +82,7 @@ Where SSID is the name of the second Wi-Fi access point (router or repeater) and
 
 **sudo nmcli dev wifi connect TP-Link_D7D4 password "89157405"**
 
-The above command if successful will create a file called in TP-Link_D7D4.nmconnection in the directory **/etc/NetworkManager/system-connections/** as shown in the following example.
+The above command if successful will create a file called in **TP-Link_D7D4.nmconnection** in the directory **/etc/NetworkManager/system-connections/** as shown in the following example.
 
 
 ```

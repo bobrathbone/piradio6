@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_bluetooth.sh,v 1.2 2024/11/25 10:16:08 bob Exp $
+# $Id: configure_bluetooth.sh,v 1.5 2025/01/07 17:43:28 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -35,7 +35,7 @@ fi
 DOCS_DIR=${DIR}/docs
 DOC=""
 LYNX=/usr/bin/lynx
-CMARK=/usr/bin/cmark
+CMARK="/usr/bin/cmark --hardbreaks" 
 OS_RELEASE=/etc/os-release
 ASOUND_CONF=/etc/asound.conf
 ASOUND_CONF_DIST=${DIR}/asound/asound.conf.dist.blue
@@ -50,7 +50,7 @@ PA_PLAY=/usr/bin/paplay
 #WAV=/usr/share/sounds/alsa/Front_Center.wav
 WAV=${DIR}/asound/piano.wav
 APLAY="aplay -q -D bluealsa:SRV=org.bluealsa,PROFILE=a2dp,DEV="
-
+BIT=$(getconf LONG_BIT)     # 32 or 64-bit archtecture
 
 
 # Get OS release ID
@@ -246,10 +246,22 @@ do
             sudo cp ${ASOUND_CONF_DIST} ${ASOUND_CONF}
         
             # Configure /etc/mpd.conf 
-            sudo sed -i -e "0,/^\sname/{s/\sname.*/\tname\t\t\"${BT_NAME}\"/}" ${MPDCONFIG}
-            sudo sed -i -e "0,/^\stype/{s/\stype.*/\ttype\t\t\"alsa\"/}" ${MPDCONFIG}
-            sudo sed -i -e "0,/^#\sdevice\s/{s/^#\sdevice/\tdevice/}" ${MPDCONFIG}
-            sudo sed -i -e "0,/^\sdevice\s/{s/^\sdevice.*/\tdevice\t\t\"bluealsa\"/}" ${MPDCONFIG}
+            sudo cp ${DIR}/mpd.conf ${MPDCONFIG}
+
+            # The mpd configuration is different for 32-bit and 64-bit archictectures
+            echo "Configuring ${MPDCONFIG} for ${BIT}-bit system"
+
+            sudo sed -i -e "0,/^\sname/{s/\sname.*/\tname\t\t\"${NAME}\"/}" ${MPDCONFIG}
+            if [[ ${BIT} == "64" ]]; then
+                sudo sed -i -e "0,/^\stype/{s/\stype.*/\ttype\t\t\"alsa\"/}" ${MPDCONFIG}
+                sudo sed -i -e "0,/^#\s*device\s/{s/^#\s*device/\tdevice/}" ${MPDCONFIG}
+                sudo sed -i -e "0,/^\sdevice\s/{s/^\sdevice.*/\tdevice\t\t\"bluealsa\"/}" ${MPDCONFIG}
+            else
+                sudo sed -i -e "0,/^\stype/{s/\stype.*/\ttype\t\t\"pipe\"/}" ${MPDCONFIG}
+                sudo sed -i -e "0,/^#\sdevice\s/{s/^#\sdevice/\tdevice/}" ${MPDCONFIG}
+                sudo sed -i -e "0,/^\sdevice\s/{s/^\sdevice.*/\tcommand\t\t\"aplay -D bluealsa -f cd\"/}" ${MPDCONFIG}
+                sudo sed -i -e "0,/^#\s*mixer_device\s/{s/^#\s*mixer_device.*/\tformat\t\t\"44100:16:2\"/}" ${MPDCONFIG}
+            fi
 
             # /etc/asound.conf
             sudo sed -i -e "0,/device <btdevice>/{s/device <btdevice>/device \"${BT_DEVICE}\"/g}" ${ASOUND_CONF}
@@ -265,14 +277,16 @@ do
             sudo sed -i -e "0,/^audio_out=/{s/^audio_out=.*/audio_out=\"bluetooth\"/}" ${CONFIG}
             grep -i "audio_out="  ${CONFIG} | tee -a ${LOG}
             exit_message
+
         else 
             echo "Error: No paired bluetooth devices found" | tee -a ${LOG}
             echo "First check that you have installed the Bluetooth software" 
             echo "Then run Bluetooth Shell and scan and pair a device" 
             echo "See Tutorial - How to pair a Bluetooth device for help"
-            echo -n "Enter to continue: "
-            read x
         fi
+
+        echo -n "Enter to continue: "
+        read x
 
     elif [[ ${STATUS} == 1 ]]; then
         BT_NAME=$(echo ${PAIRED} | awk '{print $3}')

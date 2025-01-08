@@ -16,7 +16,7 @@ Files
 =====
 **/var/lib/mpd/playlists** Location of MPD playlists
 
-**/var/lib/mpd/playlists/<name>** Where <name>of media playlist such as **USB_Stck.m3u**
+**/var/lib/mpd/playlists/<name>** Where <name>of media playlist such as **USB_Stick.m3u**
 
 Running the create_playlist program from the command line
 =========================================================
@@ -32,3 +32,4 @@ cd /usr/share/radio
 ./create_stations.py
 ```
 
+End of configuration tutorial

@@ -15,3 +15,5 @@ WiFi Link Quality Notes
 **-90 dBm** It is very unlikely that you will be able to connect or make use of any services with this signal strength. The radio cannot operate reliably at this level.
 
 If the signal strength is poor, try re-positioning the radio nearer the router or use a repeater (TP-Link or similar). Position away from radiators or other large metal objects such as fridges and freezers.
+
+End of notes

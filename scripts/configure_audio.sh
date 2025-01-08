@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.2 2024/11/25 10:16:08 bob Exp $
+# $Id: configure_audio.sh,v 1.4 2025/01/07 17:32:19 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -31,6 +31,7 @@ if [[ ${FLAGS} == "-t" ]]; then
 fi
 LOGDIR=${DIR}/logs
 LOG=${LOGDIR}/audio.log
+SCRIPTS_DIR=${DIR}/scripts
 
 SKIP_PKG_CHANGE=$1
 SCRIPT=$0
@@ -233,6 +234,7 @@ do
         NAME="HDMI audio"
         TYPE=${HDMI}
         NUMID=3
+        USE_PULSE=0
 
     elif [[ ${ans} == '3' ]]; then
         DESC="USB PnP DAC"
@@ -645,7 +647,7 @@ elif [[ ${TYPE} == ${BLUETOOTH} ]]; then
     # Install Bluetooth packages 
     if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
         echo "Installing Bluetooth packages" | tee -a ${LOG}
-        ${DIR}/configure_bluetooth.sh 
+        ${SCRIPTS_DIR}/configure_bluetooth.sh 
     else
         no_install "Bluetooth"
     fi

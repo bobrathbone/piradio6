@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: display_docs.sh,v 1.7 2024/12/06 09:32:18 bob Exp $
+# $Id: display_docs.sh,v 1.9 2025/01/05 11:05:01 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -29,15 +29,16 @@ fi
 DOCS_DIR=${DIR}/docs
 DOC=""
 LYNX=/usr/bin/lynx
-CMARK=/usr/bin/cmark
+CMARK_EXE=/usr/bin/cmark
+CMARK="${CMARK_EXE} --hardbreaks"
 
 # Install cmark if not yet installed
-if [[ ! -f ${CMARK} ]]; then
+if [[ ! -x ${CMARK_EXE} ]]; then
     sudo apt-get -y install cmark
 fi
 
 # Install lynx if not yet installed
-if [[ ! -f ${LYNX} ]]; then
+if [[ ! -x ${LYNX} ]]; then
     sudo apt-get -y install lynx
 fi
 

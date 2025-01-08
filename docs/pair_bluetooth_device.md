@@ -120,3 +120,4 @@ aplay -D bluealsa:SRV=org.bluealsa,DEV=00:75:58:41:B1:25,PROFILE=a2dp /usr/share
 **Note:** The above is all one line. Substitute the above Bluetooth address with your own address. 
 If things are working correctly, a spoken “Front Center” should be heard from the Bluetooth device.
  
+End of tutorial

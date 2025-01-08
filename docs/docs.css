@@ -1,0 +1,46 @@
+/* CSS for docs directory */
+
+*{margin-left:5;padding:0;}
+body{background:#1a1a1a url(/background.jpg);color:#333;font:76% Georgia,Times New Roman,serif;}
+p{line-height:1.4em;margin-bottom:12px;font-size:1.4em;}
+a{color:#00006f;}
+a:hover{color:#333;}
+h1{color:#00006f;font-family:Georgia,serif;font-size:2.4em;}
+h2{color:#00006f;font-family:Georgia,serif;font-size:2.2em;font-weight:400;margin:0 0 10px 0;}
+h3{color:#00006f;font-family:Georgia,serif;font-size:1.6em;font-weight:400;margin:0 0 8px;}
+ul,ol,dl{margin:0 0 20px 20px; padding:0;}
+li{padding-bottom:5px;font-size:1.4em;color:#00006f;}
+strong{padding-bottom:5px;font-size:16px;color:#B22222;}
+
+code{line-height:1.2em;margin-bottom:18px;font-size:1.8em;color:#00006f;}
+
+table, th, td {
+  border: 1px solid;
+}
+
+button{font-size:1.4em;}
+
+#documents {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#documents td, #documents th {
+  border: 1px solid #ddd;
+  padding: 8px;
+  font-size:16px;
+}
+
+#documents tr:nth-child(even){background-color: #f2f2f2;}
+
+#documents tr:hover {background-color: #ddd;}
+
+#documents th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #00006f;
+  color: white;
+}
+

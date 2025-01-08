@@ -5,7 +5,7 @@ File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
 
 To display document use **radio-config**
 
-Information, Documents and Diagnostics --> Update radio stations playlist**
+Information, Documents and Diagnostics --> **Update radio stations playlist**
 
 Format of the stationlist file
 ==============================
@@ -98,3 +98,4 @@ Usage: sudo ./create_stations.py [--delete_old] [--no_delete] [--input_file=<inp
                --help     Display help message
 ```
 
+End of tutorial

@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.13 2024/12/14 17:24:47 bob Exp $
+# $Id: configure_radio.sh,v 1.18 2025/01/05 11:05:01 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,6 +24,10 @@ FLAGS=$1
 BINDIR="\/usr\/share\/radio\/"  # Used for sed so \ needed
 DIR=/usr/share/radio
 SCRIPTS=${DIR}/scripts
+
+# Display colours
+orange='\033[33m'
+default='\033[39m'
 
 # Development directory
 if [[ ! -d ${DIR} ]];then
@@ -49,6 +53,9 @@ LOG=${LOGDIR}/install.log
 NODAEMON_LOG=${LOGDIR}/radiod_nodaemon.log
 SPLASH="bitmaps\/raspberry-pi-logo.bmp" # Used for sed so \ needed
 MANAGE_PIP=/usr/lib/python3.11/EXTERNALLY-MANAGED 
+FFMPEG=/usr/bin/ffmpeg
+X_INSTALLED='no'   # 'yes' = X-Windows installed
+WALLPAPER==/usr/share/rpd-wallpaper
 
 # X-Window parameters
 LXSESSION=""    # Start desktop radio at boot time
@@ -136,10 +143,18 @@ function no_install
     echo
     echo "WARNING!"
     echo "You cannot configure $1 during the initial installation" | tee -a ${LOG}
-    echo "Finish installing the radio package first then run radio-config from the command line"
-    echo "Press enter to continue: "
+    printf "Finish installing the radio package first then run ${orange}radio-config${default}"
+    echo 
+    echo "from the command line and reconfigure $1"
+    echo -n "Press enter to continue: "
     read x
 }
+
+# Check if X-Windows installed
+dpkg -l | grep xserver-xorg-core 2>&1 >/dev/null
+if [[ $? == 0 ]]; then
+    X_INSTALLED="yes"
+fi
 
 # Create log directory
 sudo mkdir -p ${LOGDIR}
@@ -404,6 +419,7 @@ echo "$0 configuration log, $(date) " | tee ${LOG}
 echo "Using ${DIR}" | tee -a ${LOG}
 echo "Configuring radio for $(codename) OS " | tee -a ${LOG}
 echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
+echo "X-Windows installed ${X_INSTALLED}"  | tee -a ${LOG}
 
 # Copy the distribution configuration
 ans=$(whiptail --title "Replace your configuration file ?" --menu "Choose your option" 15 75 9 \
@@ -612,6 +628,36 @@ if [[ ${USER_INTERFACE} == "2" ]]; then
         selection=$?
     done
     echo ${DESC} | tee -a ${LOG}
+fi
+
+# Install ioe-python
+if [[ ${ROTARY_CLASS} == "rgb_i2c_rotary" ]]; then 
+    if [[ ${FLAGS} != "-s" ]]; then
+        if [[ ! -x /usr/bin/git ]]; then
+            sudo apt-get install git
+        fi
+        echo "Answer Y to questions about creating a virtual environment for this script if asked"
+        echo "Answer N to questions about installing documentation and examples"
+        echo -n "Enter to continue "
+        read y
+        echo "Installing Pimoroni ioe-python" | tee -a ${LOG}
+        git clone https://github.com/pimoroni/ioe-python        
+        cd ioe-python/
+        ./install.sh
+        cd -
+    else
+        no_install "I2C rotary encoders with RGB LEDs"
+        exit 1
+    fi
+    
+    # Link ioexpander to site-packages 
+    if [[ $(release_id) -ge 12 ]]; then
+        sudo ln -s ~/.virtualenvs/pimoroni/lib/python3.11/site-packages/ioexpander \
+                   /usr/lib/python3.11/dist-packages/ioexpander fi
+    else
+        sudo ln -s ~/.virtualenvs/pimoroni/lib/python3.9/site-packages/ioexpander \
+                   /usr/lib/python3.9/dist-packages/ioexpander
+    fi
 fi
 
 # Select the display type
@@ -944,7 +990,7 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
         "2" "Hex 0x27 (PCF8574 devices)" \
         "3" "Hex 0x37 (PCF8574 devices alternative address)" \
         "4" "Hex 0x3F (PCF8574 devices 2nd alternative address)" \
-        "5" "Hex 0x3C (Cosmic controller/Sitronix SSD1306/LUMA devices)" \
+        "5" "Hex 0x3C (Olimex OLED/Cosmic controller/Sitronix SSD1306/LUMA devices)" \
         "6" "Hex 0x3e (Grove JHD1313 LCD with RGB AIP31068L/SGM31323 controller)" \
         "7" "Manually configure i2c_address in ${CONFIG}" \
         "8" "Do not change configuration" 3>&1 1>&2 2>&3) 
@@ -1002,6 +1048,7 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
 fi
 
 # Select the display type (Lines and Width)
+echo "Configuring display type ${DISPLAY_TYPE}" | tee -a ${LOG}
 if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
     ans=0
     selection=1 
@@ -1061,6 +1108,16 @@ elif [[ ${DISPLAY_TYPE} =~ "WS_SPI_SSD1309" ]]; then
         sudo sed -i 's/^dtparam=spi=.*$/dtparam=spi=on/'  ${BOOTCONFIG}
     else
         no_install "Waveshare SPI SSD1309 display"
+        exit 0
+    fi
+
+elif [[ ${DISPLAY_TYPE} == "OLED_128x64" ]]; then
+    if [[ ${FLAGS} != "-s" ]]; then
+        PKGS="libffi-dev build-essential libi2c-dev i2c-tools python3-dev"
+        echo "Installing ${PKGS} " | tee -a ${LOG} 
+        sudo apt-get -y install ${PKGS} 
+    else
+        no_install "Olimex OLED 128x64"
         exit 0
     fi
 
@@ -1389,6 +1446,9 @@ fi
 if [[ ${I2C_ADDRESS} != "0x00" ]]; then
     echo "Configuring I2C address to ${I2C_ADDRESS} (i2c_address)" 
     sudo sed -i -e "0,/^i2c_address/{s/i2c_address.*/i2c_address=${I2C_ADDRESS}/}" ${CONFIG}
+    if [[ ! -x /usr/sbin/i2cdetect ]]; then
+        sudo apt -y install i2c-tools
+    fi
 fi
 
 # Configure I2C address for RGB LEDs with coulor backlight
@@ -1650,6 +1710,20 @@ PKG="python-configparser"
 if [[ $(release_id) -le 11 ]]; then
         echo "Installing ${PKG} package" | tee -a ${LOG}
         sudo apt-get -y install ${PKG}
+fi
+
+# Install X-windows components
+if [[ ${X_INSTALLED} == 'yes' ]]; then
+
+    # Install ffmpeg (Used for X-Windows programs)
+    if [[ ! -x ${FFMPEG} ]]; then
+        sudo apt-get -y install ffmpeg
+    fi
+
+    if [[ ! -x ${WALLPAPER} ]]; then
+        sudo apt-get -y install rpd-wallpaper
+    fi
+
 fi
 
 # Configure audio device

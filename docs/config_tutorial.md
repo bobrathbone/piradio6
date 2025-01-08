@@ -33,7 +33,7 @@ Set date format, US format =  %H:%M %m/%d/%Y
 To display timezone use %Z  dateformat=%H:%M %Z %d/%m/%Y
 **dateformat=%H:%M %d/%m/%Y**
 
-# Volume range 10, 20, 25, 50 or 100. Volume display text or blocks.
+Volume range 10, 20, 25, 50 or 100. Volume display text or blocks.
 **volume_range=20**
 **volume_display=blocks**
 
@@ -109,7 +109,7 @@ I2C addresses for displays using the I2C interface.
 Some i2c displays such as Grove I2C RGB have a separate interface for colour
 The Grove RGB jhd1313_sgm31323 LCD uses address 0x30 and is set in **i2c_rgb_address**. 
 The i2c_bus is 1 except for the first RPi models. Do not change 
-Use the **i2cdetect -y 1** command to display I2C addresses bing used
+Use the **i2cdetect -y 1** command to display I2C addresses being used
 
 ```
      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
@@ -167,13 +167,13 @@ The switch settings are the GPIO settings for each switch nd must match your wir
 **left_switch=14**
 **right_switch=15**
 
-# Record button normally uses GPIO 27 (physical pin 13) if LCD, TFT or OLED displays
-# configured. If using Waveshare 2.4" or 1.5" SPI displays set this to GPIO05 (pin 29)
+The Record button normally uses GPIO 27 (physical pin 13) if LCD, TFT or OLED displays
+configured. If using Waveshare 2.4" or 1.5" SPI displays set this to GPIO05 (pin 29)
 **record_switch=27**
 
-# Pull GPIO up/down internal resistors. Only set. Only set to up if using first model
-# Raspberry Pi's and the switches have been wired GPIOx --> Switch --> 0V(GND)
-# Set to 'none' if external resistors have been wired. Default: up
+Pull GPIO up/down internal resistors. Only set. Only set to up if using first model
+Raspberry Pi's and the switches have been wired GPIOx --> Switch --> 0V(GND)
+Set to 'none' if external resistors have been wired. Default: up
 **pull_up_down=up**
 
 Display types

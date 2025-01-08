@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.122 2024/12/15 12:51:41 bob Exp $
+# $Id: config_class.py,v 1.124 2024/12/26 10:29:04 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

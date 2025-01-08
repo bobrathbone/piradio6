@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.13 2024/12/21 10:22:26 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.14 2024/12/29 12:34:09 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -29,7 +29,7 @@ RADIOLIB=/var/lib/radiod
 REMOTE_CONTROL=${RADIOLIB}/remote_control
 ERRORS=(0)
 LYNX=/usr/bin/lynx
-CMARK=/usr/bin/cmark
+CMARK="/usr/bin/cmark --hardbreaks"
 
 FLAGS=$1
 DIR=/usr/share/radio

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: record.py,v 1.36 2024/12/12 07:39:00 bob Exp $
+# $Id: record.py,v 1.37 2025/01/07 12:34:56 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -325,7 +325,7 @@ class Playlist:
 # End of Playlist class
 
 def usage(max):
-    print("\nUsage:", sys.argv[0], "--station_id=<station number> --duration=<duration>")
+    print("\nUsage: sudo ",sys.argv[0],"--station_id=<station number> --duration=<duration>")
     print("                 --omit_incomplete --playlist_only --directory=<directory>")
     print("                 --cleanup")
     print("\nWhere <station number> is the number of the radio stream to record")

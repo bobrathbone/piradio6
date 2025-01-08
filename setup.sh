@@ -2,7 +2,7 @@
 #set -x
 #set -B
 # Raspberry Pi Internet Radio setup script
-# $Id: setup.sh,v 1.15 2024/11/25 10:17:30 bob Exp $
+# $Id: setup.sh,v 1.17 2024/12/22 14:50:24 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -96,13 +96,8 @@ if [[ ! -f ${HOME_DIR}/.vimrc ]]; then
     echo "retab " >> ${HOME_DIR}/.vimrc
 fi
 
-# Check if this machine is 64-bit
-BIT=$(getconf LONG_BIT)
-if [[ $BIT == "64" ]]; then
-    ./build64.sh
-else
-    ./build.sh
-fi
+# Build software
+./build.sh
 
 # End of setup script
 
