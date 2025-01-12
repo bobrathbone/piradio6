@@ -1,8 +1,16 @@
-
-The auto start file in ~/.config/lxsession/LXDE-pi needs
-the following line to be added to the end of the autostart file
+The following line to be added to the end of the autostart file
 
 @sudo /usr/share/radio/gradio.py
 
+There are two versions of the autostart file
+For Bullseye or earlier 
+the autostart file is ~/.config/lxsession/LXDE-pi/autostart
+
+For Bookworm or later 
+the autostart file is ~/.config/lxsession/LXDE/autostart
+
 This starts the graphical version of the radio 
-See example autostart file in this directory
+See example autostart files in this directory
+
+LXDE.autostart      Bookworm or later
+LXDE-pi.autostart   Bullseye or earlier
