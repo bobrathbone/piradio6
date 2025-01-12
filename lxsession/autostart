@@ -1,5 +1,0 @@
-@lxpanel --profile LXDE-pi
-@pcmanfm --desktop --profile LXDE-pi
-@xscreensaver -no-splash
-@point-rpi
-@sudo /usr/share/radio/gradio.py
