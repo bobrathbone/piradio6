@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.120 2025/01/07 17:05:41 bob Exp $
+# $Id: piradio,v 1.121 2025/01/08 16:44:28 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is the 64 bit version
 # Source: <source package name; defaults to package name>
@@ -111,6 +111,7 @@ Files:  radiod.py /usr/share/radio/
     scripts/install_streaming.sh /usr/share/radio/scripts/
     scripts/edit_files.sh /usr/share/radio/scripts/
     scripts/install_airplay.sh /usr/share/radio/scripts/
+    scripts/install_spotify.sh /usr/share/radio/scripts/
     scripts/install_web_interface.sh /usr/share/radio/scripts/
     scripts/configure_speech.sh /usr/share/radio/scripts/
     scripts/configure_bluetooth.sh /usr/share/radio/scripts/

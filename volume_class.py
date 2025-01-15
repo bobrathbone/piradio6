@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.30 2024/08/09 10:51:36 bob Exp $
+# $Id: volume_class.py,v 1.33 2025/01/15 13:43:36 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -31,6 +31,7 @@ RadioLibDir = "/var/lib/radiod"
 VolumeFile = RadioLibDir + "/volume"    # MPD volume level
 MixerVolumeFile = RadioLibDir + "/mixer_volume"  # Alsa mixer file
 MixerIdFile = RadioLibDir + "/mixer_volume_id"  # Alsa mixer volume ID 
+AudioOutFile = RadioLibDir + "/audio_out_card"
 
 log = None
 
@@ -40,6 +41,7 @@ class Volume:
     mixer_volume = 0    # Alsa Mixer volume level
     mixer_preset = 90   # Alsa mixer preset level (When MPD volume used)
     mixer_volume_id = 0 # Alsa mixer ID 
+    audio_out_card = 0  # Audio device card number (From aplay -l)
     speech_volume = 0   # Speech volume level
     OK=0            # Volume status OK
     ERROR=1         # Error status
@@ -58,12 +60,12 @@ class Volume:
         log = logging
         self.mixer_volume_id = self.getMixerVolumeID()
         self.mixer_preset = config.mixer_preset
+        self.audio_out_card = self.getAudioCard()
     
         # Set up initial volume
         vol = self._getStoredVolume()
         self.speech_volume = vol
         self.audio_device = self.config.audio_out
-
 
         # Are we using bluetooth?
         if self.audio_device == "bluetooth":
@@ -128,6 +130,7 @@ class Volume:
         elif volume < 0:
             volume = 0
         source_type = self.source.getType()
+        log.message("volume.set  source_type=" + str(source_type), log.DEBUG)
 
         if source_type == self.source.AIRPLAY or source_type == self.source.SPOTIFY:
             self.mixer_volume = self._setMixerVolume(volume,store)
@@ -160,17 +163,22 @@ class Volume:
 
         return self.volume
         
-    # Set the Mixer volume level
+    # Set the Mixer volume level 
     def _setMixerVolume(self,volume,store):
         
-        # Restore alsamixer settings (Restore Waveshare DAC headphone mixer setting)
-
         if self.mixer_volume_id > 0: 
             log.message("volume._setMixerVolume " + str(volume), log.DEBUG) 
-            cmd = "sudo amixer " + self.mixer_device + " cset numid=" + str(self.mixer_volume_id) \
-                                  + " " + str(volume) + "%"
+            cmd = "sudo amixer -c" + str(self.audio_out_card) + " " + self.mixer_device\
+                  + " cset numid=" + str(self.mixer_volume_id) + " " + str(volume) + "%"
             log.message(cmd, log.DEBUG)
             self.execCommand(cmd)
+
+            x = self.config.audio_out
+            if  self.config.audio_out == 'wm8960soundcard':
+                # Set headphone volume on Waveshare wm8960 DAC
+                cmd = "sudo amixer -c" + str(self.audio_out_card) + " " + self.mixer_device\
+                      + " cset numid=11 " + str(volume) + "%"
+                self.execCommand(cmd)
 
             self.mixer_volume = volume
             
@@ -178,7 +186,7 @@ class Volume:
                 self._storeMixerVolume(volume)  
         return self.mixer_volume
 
-    # Store the vloume in /var/lib/radiod
+    # Store the volume in /var/lib/radiod
     def storeVolume(self,volume):
         source_type = self.source.getType()
         if source_type == self.source.AIRPLAY or source_type == self.source.SPOTIFY:
@@ -244,6 +252,11 @@ class Volume:
         self.mixer_volume_id = self.getStoredInteger(MixerIdFile,0)
         return self.mixer_volume_id
 
+    # Get audio device card number
+    def getAudioCard(self):
+        self.audio_out_card = self.getStoredInteger(AudioOutFile,0)
+        return self.audio_out_card
+
     # Increase volume using configiuration range value
     def increase(self):
         increment = int(100/self.config.volume_range)
@@ -269,20 +282,6 @@ class Volume:
         value = float(self.get()/float(100)) * float(self.config.volume_range)
         return int(value)
 
-    # Get the integer value stored in /var/lib/radiod
-    # filename is the name any file in the lib directory
-    # default_value is the value to be returned if the file read fails
-    def getStoredInteger(self,filename,default_value):
-        if os.path.isfile(filename):
-            try:
-                    value = int(self.execCommand("cat " + filename) )
-            except ValueError:
-                    value = int(default_value)
-        else:
-            log.message("Error reading " + filename, log.ERROR)
-            value = int(default_value)
-        return value
-
     # Mute the volume (Do not store volume setting in /var/lib/radio)
     def mute(self):
         source_type = self.source.getType()
@@ -301,6 +300,22 @@ class Volume:
             except:
                 pass
         return
+
+    # Get the integer value stored in /var/lib/radiod by storeIntegerValue()
+    # filename is the name any file in the lib directory
+    # default_value is the value to be returned if the file read fails
+    def getStoredInteger(self,filename,default_value):
+        if os.path.isfile(filename):
+            try:
+                fp = open(filename, "r")
+                value = int(fp.read())
+                fp.close()
+            except ValueError:
+                value = int(default_value)
+        else:
+            log.message("Error reading " + filename, log.ERROR)
+            value = int(default_value)
+        return value
 
     # Unmute the volume
     def unmute(self):
@@ -354,9 +369,11 @@ def displayFile(filename):
         return s
 
 if __name__ == "__main__":
-
+    from volume_class import Volume 
     from time import strftime
-    
+    from config_class import Configuration
+    config = Configuration()
+
     dateformat = "%H:%M %d/%m/%Y"
     sDate = strftime(dateformat)
     print("Volume class configuration %s" % sDate)
@@ -364,6 +381,7 @@ if __name__ == "__main__":
     print("VolumeFile " + VolumeFile + " = " + displayFile(VolumeFile))
     print("MixerVolumeFile " + MixerVolumeFile + " = " + displayFile(MixerVolumeFile))
     print("MixerIdFile " + MixerIdFile + " = " + displayFile(MixerIdFile))
+    print("Audio out device = " + config.audio_out)
 
 # End of script
 

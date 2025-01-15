@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio - Install Waveshare WM8960 DAC driver
-# $Id: install_wm8960.sh,v 1.2 2024/11/25 10:16:09 bob Exp $
+# $Id: install_wm8960.sh,v 1.5 2025/01/13 10:09:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -19,6 +19,7 @@ LOGDIR=${DIR}/logs
 mkdir -p ${LOGDIR}
 LOG=${LOGDIR}/wm8960.log
 BOOTCONFIG="/boot/firmware/config.txt"
+WM8960_CONF_DIR=/etc/wm8960-soundcard
 
 # we create a dir with this version to ensure that 'dkms remove' won't delete
 # the sources during kernel updates
@@ -65,18 +66,18 @@ if [[ ${BIT} == "32" ]]; then
     fi
 fi
 
-# Disable VC4 KMS V3D audio
-grep "^dtoverlay=vc4-kms-v3d" ${BOOTCONFIG} >/dev/null 2>&1
-if [[ $? == 0 ]]; then
-    echo "Disabling VC4 KMS V3D audio in ${BOOTCONFIG}" | tee -a ${LOG}
-    sed -i -e "0,/^dtoverlay=vc4-kms-v3d/{s/dtoverlay.*/#dtoverlay=vc4-kms-v3d/}" ${BOOTCONFIG} 
+# Install git download the archive
+if [[ -d ${WM8960_CONF_DIR} ]];then
+    echo "Waveshare software is already installed"  | tee -a ${LOG}
+    echo -n "Uninstall first - Press enter to continue: "
+    read a
+    exit 0
 fi
 
 echo "Disable on-board audio" | tee -a ${LOG}
 sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 
-# Install git download the archive
 sudo apt-get -y install git 
 echo "Cloning https://github.com/waveshare/WM8960-Audio-HAT" | tee -a ${LOG}
 rm -rf WM8960-Audio-HAT

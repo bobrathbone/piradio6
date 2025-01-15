@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.4 2025/01/07 17:32:19 bob Exp $
+# $Id: configure_audio.sh,v 1.6 2025/01/10 17:24:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -52,10 +52,11 @@ AUDIO_INTERFACE="alsa"
 LIBDIR=/var/lib/radiod
 PIDFILE=/var/run/radiod.pid
 PULSEAUDIO=/usr/bin/pulseaudio
-SPOTIFY_CONFIG=/etc/default/raspotify
+SPOTIFY_CONFIG=/etc/raspotify/conf
 MIXER_ID_FILE=${LIBDIR}/mixer_volume_id
 PULSE_PA=/etc/pulse/default.pa
 OS_RELEASE=/etc/os-release
+AUDIO_OUT_CARD=${LIBDIR}/audio_out_card
 
 # Waveshare WM8960 DAC alsamixer commands
 WM8960_ALSA_STORE="sudo alsactl store --file  /etc/wm8960-soundcard/wm8960_asound.state"
@@ -164,13 +165,6 @@ if [[ $(release_id) -ge 12 ]]; then
 fi
 
 echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
-
-# Location of raspotify configuration file has changed in Bullseye
-if [[ $(release_id) -ge 11 ]]; then
-    SPOTIFY_CONFIG=/etc/raspotify/conf
-else
-    SPOTIFY_CONFIG=/etc/default/raspotify
-fi
 
 # Add the user to the audio group 
 sudo usermod -G audio -a $USER
@@ -434,7 +428,7 @@ if [[ ${TYPE} == ${WM8960} ]]; then
         exit 0
     else
         echo "Installing WM8960 packages" | tee -a ${LOG}
-        ${DIR}/install_wm8960.sh 
+        sudo ${SCRIPTS_DIR}/install_wm8960.sh 
     fi
 
     status=$(dkms status wm8960-soundcard)  
@@ -485,7 +479,11 @@ if [[ ${ADJ_ALSA} == '1' ]]; then
     read ans
     if [[ ${ans} == 'y' ]]; then
         sudo ${ALSA_RESTORE} | tee -a ${LOG}
-        /usr/bin/alsamixer | tee -a ${LOG}
+        CARD=0
+        if [[ -f ${AUDIO_OUT_CARD} ]]; then
+            CARD=$(cat ${AUDIO_OUT_CARD})
+        fi 
+        /usr/bin/alsamixer -c${CARD} | tee -a ${LOG}
         if [[ $? == 0 ]]; then  # Do not separate from above
             echo "Saving alsamixer settings" | tee -a ${LOG}
             sudo ${WM8960_ALSA_STORE} | tee -a ${LOG}
@@ -596,7 +594,7 @@ else
     echo "Configuring ${MPDCONFIG} for ${AUDIO_INTERFACE} support" | tee -a ${LOG}
 fi
 
-# Select HDMI name ether "HDMI" (Buster/Bullseye) or "vc4hdmi" (Bullseye)
+# Select HDMI name ether "HDMI" (Bullseye/Bookworm) or "vc4hdmi" (Bullseye)
 # Also setup audio_out parameter in the config file
 echo "Configuring ${NAME} as output" | tee -a ${LOG}
 
@@ -809,31 +807,6 @@ echo "${DESC} configured" | tee -a ${LOG}
 cmd="sudo echo 0 > ${MIXER_ID_FILE}"
 echo ${cmd} | tee -a ${LOG}
 ${cmd}
-
-# Configure Spotify if installed  
-if [[ -f ${SPOTIFY_CONFIG} ]]; then
-    # Save original configuration
-    if [[ ! -f ${SPOTIFY_CONFIG}.orig ]]; then
-        sudo cp ${SPOTIFY_CONFIG} ${SPOTIFY_CONFIG}.orig
-    fi
-    echo '' | tee -a ${LOG}
-    echo "Configuring Spotify (raspotify)" | tee -a ${LOG}
-    echo "-------------------------------" | tee -a ${LOG}
-    spotify_device=${DEVICE} 
-    if [[ ${DEVICE} =~ bluetooth ]]; then
-        spotify_device="btdevice"
-    fi
-    OPTIONS="OPTIONS=\"--device ${spotify_device}\" "
-    echo ${OPTIONS} | tee -a ${LOG}
-
-    # Check if configured
-    grep "^OPTIONS=" ${SPOTIFY_CONFIG}
-    if [[ $? != 0 ]]; then
-        echo "OPTIONS not found"
-        sudo sed -i -e '/^#OPTIONS=/a OPTIONS=' ${SPOTIFY_CONFIG}
-    fi
-    sudo sed -i -e "0,/^OPTIONS.*$/{s/OPTIONS.*/${OPTIONS}/}" ${SPOTIFY_CONFIG}
-fi 
 
 echo '' | tee -a ${LOG}
 if [[ ${OVERLAY_LOADED}} != 1 && ${DTOVERLAY} != "" ]]; then

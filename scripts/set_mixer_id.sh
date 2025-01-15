@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: set_mixer_id.sh,v 1.3 2024/12/06 15:50:53 bob Exp $
+# $Id: set_mixer_id.sh,v 1.4 2025/01/09 21:12:23 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -49,6 +49,7 @@ BOOTCONFIG_2=/boot/firmware/config.txt
 OS_RELEASE=/etc/os-release
 LIBDIR=/var/lib/radiod
 LIB_MIXERID=${LIBDIR}/mixer_volume_id
+AUDIO_OUT_CARD=${LIBDIR}/audio_out_card
 LIB_HDMI=${LIBDIR}/hdmi
 MIXERID=0
 SAVEIFS=${IFS}
@@ -121,6 +122,8 @@ if [[ ${DEVICE} =~ bluetooth ]]; then
 else
     echo "Card ${CARD} ${DEVICE}" | tee -a ${LOG}
 fi
+echo ${CARD} > ${AUDIO_OUT_CARD}
+echo "Wrote audio out card number ${CARD} to ${AUDIO_OUT_CARD}"
 
 # Find the play ID for the volume control
 for control in ${CONTROLS}

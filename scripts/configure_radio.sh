@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.18 2025/01/05 11:05:01 bob Exp $
+# $Id: configure_radio.sh,v 1.22 2025/01/15 12:38:40 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -257,6 +257,7 @@ if [[ ${COMPONENTS} == 1 ]]; then
         "6" "Install Luma OLED/TFT driver" \
         "7" "Install recording utility (streamripper)" \
         "8" "Install Alsa equalizer software" \
+        "9" "Install Spotify (librespot)" \
         3>&1 1>&2 2>&3) 
 
         exitstatus=$?
@@ -295,6 +296,10 @@ if [[ ${COMPONENTS} == 1 ]]; then
         elif [[ ${ans} == '8' ]]; then
             SCRIPT="install_equalizer.sh"
             DESC="Install Alsa equalizer"
+
+        elif [[ ${ans} == '9' ]]; then
+            SCRIPT="install_spotify.sh"
+            DESC="Install Spotify (librespot)"
         fi
 
         ## To do
@@ -682,7 +687,8 @@ do
     "14" "Waveshare 2.42\" OLED with SPI interface" \
     "15" "Waveshare 1.5\" OLED with SPI interface" \
     "16" "No display used/Pimoroni Pirate radio" \
-    "17" "Do not change display type" 3>&1 1>&2 2>&3) 
+    "17" "Waveshare I2C 40-character 2-line LCD (PCF8574)" \
+    "18" "Do not change display type" 3>&1 1>&2 2>&3) 
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -823,6 +829,14 @@ do
         DWIDTH=0
         DESC="No display used"
 
+    elif [[ ${ans} == '17' ]]; then
+        DISPLAY_TYPE="LCD_I2C_PCF8574"
+        DESC="Waveshare 40-character 2-line LCD"
+        DLINES=2
+        DWIDTH=40
+        SCROLL_SPEED="0.1" 
+        I2C_REQUIRED=1
+
     else
         DESC="Display type unchanged"
         echo ${DESC} | tee -a ${LOG}
@@ -833,8 +847,8 @@ do
     selection=$?
 done 
 
-# Create "check_luma.py"
-cat >check_luma.py << EOF
+# Create "/tmp/check_luma.py"
+cat >/tmp/check_luma.py << EOF
 import luma.core
 EOF
 
@@ -987,7 +1001,7 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
     do
         ans=$(whiptail --title "Select I2C hex address" --menu "Choose your option" 15 75 9 \
         "1" "Hex 0x20 (Adafruit devices)" \
-        "2" "Hex 0x27 (PCF8574 devices)" \
+        "2" "Hex 0x27 (PCF8574 devices) including 40-character LCD" \
         "3" "Hex 0x37 (PCF8574 devices alternative address)" \
         "4" "Hex 0x3F (PCF8574 devices 2nd alternative address)" \
         "5" "Hex 0x3C (Olimex OLED/Cosmic controller/Sitronix SSD1306/LUMA devices)" \
@@ -1059,7 +1073,8 @@ if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
         "2" "Four line 16 character LCD" \
         "3" "Two line 16 character LCD/PiFace CAD" \
         "4" "Two line 8 character LCD" \
-        "5" "Do not change display type" 3>&1 1>&2 2>&3) 
+        "5" "Two line 40 character LCD" \
+        "6" "Do not change display type" 3>&1 1>&2 2>&3) 
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -1081,6 +1096,10 @@ if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
         elif [[ ${ans} == '4' ]]; then
             DESC="Two line 8 character LCD" 
             DLINES=2;DWIDTH=8
+
+        elif [[ ${ans} == '5' ]]; then
+            DESC="Two line 40 character LCD" 
+            DLINES=2;DWIDTH=40
 
         else
             echo "Wiring configuration in ${CONFIG} unchanged"   | tee -a ${LOG}

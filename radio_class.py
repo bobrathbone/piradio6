@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.179 2024/12/16 19:15:43 bob Exp $
+# $Id: radio_class.py,v 1.181 2025/01/12 14:55:17 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -324,32 +324,12 @@ class Radio:
 
     # Set up Alsa mixer ID file
     def setMixerId(self,MixerIdFile):
-        dir = os.path.dirname(__file__)
-        cmd = "sudo " + dir + "/scripts/set_mixer_id.sh  >/dev/null 2>&1"
-        log.message(cmd, log.DEBUG)
-        self.execCommand(cmd)
-
-    # Do we need to update the mixer ID
-    # If it doesn't exist or the id is 0 then update
-    def needMixerUpdate(self,MixerIdFile):
-        id = 0
-        update = False
         audio_out = self.config.audio_out
-        if audio_out == 'bluetooth':
-            update = False
-
-        elif os.path.isfile(MixerIdFile):
-            id = self.getStoredInteger(MixerIdFile,0)   
-            if id < 1:
-                update = True
-            else:
-                if not self.config.audio_config_locked:
-                    update = True
-        else:
-            update = True
-
-        log.message("radio.setMixerId for  %s %s " % (audio_out,str(update)), log.DEBUG)
-        return update
+        if audio_out != 'bluetooth':
+            dir = os.path.dirname(__file__)
+            cmd = "sudo " + dir + "/scripts/set_mixer_id.sh  >/dev/null 2>&1"
+            log.message(cmd, log.DEBUG)
+            self.execCommand(cmd)
 
     # Get IP address 
     def get_ip(self):
@@ -710,8 +690,7 @@ class Radio:
         # Set up mixer ID file hardware ID in mpd.conf and /etc/asound
         # Run set_mixer_id.sh script each startup as this might change
         # when connecting and disconnecting HDMIs. Likewise the card number
-        if self.needMixerUpdate(MixerIdFile):
-            self.setMixerId(MixerIdFile)
+        self.setMixerId(MixerIdFile)
 
         # Set-up Playlist callback
         self.setupPlaylistCallback()
@@ -1580,7 +1559,7 @@ class Radio:
         output_id = 2
         self.streaming = False
         if os.path.isfile(Icecast):
-            self.execMpcCommand("disable " + str(output_id))
+            self.execMpcCommand("disable " + str(output_id) + " >/dev/null 2>&1")
             self.execCommand("service icecast2 stop")
             self.storeStreaming("off")
             self.streamingStatus()

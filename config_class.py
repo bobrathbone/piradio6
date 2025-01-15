@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.124 2024/12/26 10:29:04 bob Exp $
+# $Id: config_class.py,v 1.125 2025/01/14 06:27:14 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -105,6 +105,7 @@ class Configuration:
     _font_size = 11         # Font size (TFT displays only)
     _font_name = "DejaVuSansMono.ttf"  # Font name (TFT displays only)
     _scroll_speed = float(0.3)   # Display scroll speed (0.01 to 0.3)
+    _scrolling = True       # Scroll messages True/False
     _airplay = False     # Use airplay
     _mixer_preset = 0    # Mixer preset volume (0 disable setting as MPD controls it)
     _audio_out=""        # Audio device string such as headphones, HDMI or DAC
@@ -459,6 +460,9 @@ class Configuration:
                         self.scroll_speed = float(parameter)
                     except:
                         self.invalidParameter(ConfigFile,option,parameter)
+
+                elif 'scrolling' in option:
+                    self.scrolling = parameter
 
                 elif 'codepage' in option:
                     try:
@@ -1259,6 +1263,15 @@ class Configuration:
             value = 0.6
         self._scroll_speed = float(value)
 
+    # Get scrolling setting
+    @property
+    def scrolling(self):
+        return self._scrolling
+
+    @scrolling.setter
+    def scrolling(self, parameter):
+        self._scrolling = self.convertYesNo(parameter)
+
     # Get airplay option (True or false)
     @property
     def airplay(self):
@@ -1863,6 +1876,7 @@ if __name__ == '__main__':
     print ("TFT display font name (font_name):", config.font_name)
     print ("TFT display font size (font_size):", config.font_size)
     print ("Scroll speed (scroll_speed):", config.scroll_speed)
+    print ("Scrolling enabled (scrolling):", TrueFalse2yn(config.scrolling))
     print ("Mixer Volume Preset (config.mixer_preset):", config.mixer_preset)
     print('')
     print ("Translate LCD characters (translate_lcd):", TrueFalse2yn(config.translate_lcd))

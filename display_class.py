@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.83 2024/12/27 13:43:59 bob Exp $
+# $Id: display_class.py,v 1.87 2025/01/15 12:27:36 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -88,7 +88,7 @@ class Display:
 
         self.i2c_bus = config.i2c_bus
         scroll_speed = config.scroll_speed
-        #i2c_interface = False
+        self.width = config.display_width
 
         # Set up font code page. If 0 use codepage in font file
                 # If > 1 override with the codepage parameter in configuration file
@@ -117,6 +117,7 @@ class Display:
             screen.init(address = i2c_address,busnum=self.i2c_bus,
                     code_page=self.code_page)
             screen.setScrollSpeed(scroll_speed)
+            screen.setWidth(self.width)
             i2c_interface = True
 
         elif dtype == config.LCD_I2C_JHD1313:
@@ -363,16 +364,20 @@ class Display:
         screen.drawSplash(image,delay)
 
     # Send string to display if it has not already been displayed
-    def out(self,line,message,interrupt=no_interrupt):
+    def out(self,line,message,interrupt=no_interrupt,rssfeed=False):
         global screen
         index = line-1
-
         leng = len(message)
-        if self._no_scrolling:
+
+        # scrolling=yes/no in /etc/radiod.conf permanently switches scrolling on/off
+        # _no_scrolling is temporary to improve performance during volume change operation
+
+        if self._no_scrolling or not config.scrolling:
             if self.isOLED():
                 leng = self.getChars()
             else:
-                leng = self.width
+                if not rssfeed:
+                    leng = self.width
             message = message[0:leng]
 
         if leng < 1:

@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.163 2024/12/09 19:29:04 bob Exp $
+# $Id: radiod.py,v 1.169 2025/01/15 12:27:36 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -252,10 +252,8 @@ class MyDaemon(Daemon):
 
                 elif menu_mode == menu.MENU_TIME:
                     displayTimeDate(display,radio,message)
-                    if radio.muted():
-                        displayVolume(display,radio)
-                    else:
-                        displayCurrent(display,radio,message)
+                    displayCurrent(display,radio,message)
+                    displayVolume(display,radio)
 
                 elif menu_mode == menu.MENU_SEARCH:
                     displaySearch(display,menu,message)
@@ -716,6 +714,7 @@ def handleMenuChange(display,radio,menu,message):
 
         radio.source.cycleType(radio.source.RADIO)
         radio.setReload(True)
+        radio.getDisplayVolume()    # XXXXXXXXXX
 
     if menu_mode != menu.MENU_SLEEP:
         display_mode = menu.mode()
@@ -928,7 +927,7 @@ def displayStartup(display,radio):
 
     time.sleep(1)
 
-# Display time
+# Display time and if width > 40 chars display station/artist name
 def displayTimeDate(display,radio,message):
     msg = message.get('date_time')
     
@@ -957,7 +956,25 @@ def displayTimeDate(display,radio,message):
     # Display time/date double size if using oled_class
     if dtype == config.OLED_128x64:
         display.setFontScale(2)
-    display.out(message.getLine(),msg + recording_ind + streaming)
+    
+    if width >= 40: 
+        sourceType = radio.getSourceType()
+        if sourceType == radio.source.RADIO:
+            search_name = radio.getSearchName()
+            if len(msg + " " + search_name) > width:
+                msg = msg[:5]
+            msg = msg + " " + search_name 
+            display.out(1,msg[:width])
+
+        elif sourceType == radio.source.MEDIA:
+            artist = radio.getCurrentArtist()
+            if len(msg + " " + artist) > width:
+                msg = msg[:5]
+            msg = msg + " " + artist 
+            display.out(1,msg[:width])
+    else:
+        display.out(message.getLine(),msg + recording_ind + streaming)
+
     if dtype == config.OLED_128x64:
         display.setFontScale(1)
 
@@ -1149,7 +1166,7 @@ def displayRss(display,radio,message,rss):
         display.out(2,name[0:dwidth],interrupt)
 
     if display.getDelay() == 0:
-        display.out(line,rss_line[0:lwidth],interrupt)
+        display.out(line,rss_line[0:lwidth],interrupt,rssfeed=True)
     else:
         displayVolume(display, radio)
 
@@ -1357,8 +1374,24 @@ def displayCurrent(display,radio,message):
             elif len(errorString) > 0:
                 display.out(2,errorString[0:lwidth],interrupt)
             else:
-                details = station + ': ' + name
-                display.out(2,details[0:lwidth],interrupt)
+                lwidth = display.getWidth()
+
+                # Support for 40 character LCDs
+                if lwidth >= 40:
+
+                    if radio.muted():
+                        details = message.get('muted')
+                    else:
+                        details = title
+                        if len(title) < 1 :
+                            sStation = message.get('station')
+                            title = message.get('no_information')
+                            current_id = radio.getCurrentID()
+                            details = sStation + " " + str(current_id) + ": " + title
+                    display.out(2,details,interrupt)
+                else:
+                    details = station + ': ' + name
+                    display.out(2,details[0:lwidth],interrupt)
 
     elif sourceType == radio.source.MEDIA:
         # If no playlist then try reloading library
@@ -1382,8 +1415,13 @@ def displayCurrent(display,radio,message):
             if display.getDelay() > 0:
                 displayVolume(display, radio)
             else:
-                details = artist + ': ' + title
-                display.out(2,details[0:lwidth],interrupt)
+                lwidth = display.getWidth()
+                # 40 character LCD
+                if lwidth >= 40:
+                    details = title
+                else:
+                    details = artist + ': ' + title
+                display.out(2,details,interrupt)
 
     elif sourceType == radio.source.AIRPLAY:
         displayVolume(display, radio)
@@ -1467,6 +1505,7 @@ def displaySpotify(display,radio):
 def displayVolume(display,radio):
     menu_mode = menu.mode()
     # Display volume only if not in Info mode
+    _displayVolume(display,radio)
     if menu_mode != menu.MENU_INFO or display.getDelay() > 0:
         if display.isOLED():
             _displayOledVolume(display,radio)

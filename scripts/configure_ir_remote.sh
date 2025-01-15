@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.14 2024/12/29 12:34:09 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.15 2025/01/08 08:51:13 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -29,7 +29,8 @@ RADIOLIB=/var/lib/radiod
 REMOTE_CONTROL=${RADIOLIB}/remote_control
 ERRORS=(0)
 LYNX=/usr/bin/lynx
-CMARK="/usr/bin/cmark --hardbreaks"
+CMARK_BIN=/usr/bin/cmark
+CMARK="${CMARK_BIN} --hardbreaks"
 
 FLAGS=$1
 DIR=/usr/share/radio
@@ -99,7 +100,7 @@ if [[ ${REL_ID} -lt 10 ]]; then
 fi
 
 # Install cmark if not yet installed
-if [[ ! -f ${CMARK} ]]; then
+if [[ ! -f ${CMARK_BIN} ]]; then
     sudo apt-get -y install cmark
 fi
 
