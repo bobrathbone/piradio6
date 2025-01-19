@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.87 2025/01/15 12:27:36 bob Exp $
+# $Id: display_class.py,v 1.88 2025/01/18 14:18:24 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -41,7 +41,8 @@ class Display:
     saved_font_size = 1
     saved_time = ''         # Prevent unecessary diplay of time
 
-    delay = 0  # Delay (volume) display for n cycles (2 line displays or volume display)
+    delayTime = 0  # Delay (volume) display in seconds (2 line displays or volume display)
+    delayStart = time.time()  # Delay staert time 
 
     # The Adafruit RGB plate has buttons otherwis False
     has_buttons = False
@@ -427,19 +428,24 @@ class Display:
         for i in range(0, self.lines):
             self.lineBuffer.insert(i,'')    
         self.saved_volume = 0
-        return
 
-    # Set get delay cycles ( Used for temporary message displays)
-    def setDelay(self,cycles):
-        self.delay = cycles
-        return self.delay
+    # Set delay seconds ( Used for temporary message displays)
+    def setDelay(self,seconds):
+        self.delayTime = seconds
+        self.delayStart = time.time()
+        return self.delayTime
 
     # Used to display changed volume on 2 line displays
-    def getDelay(self):
-        return self.delay
+    def checkDelay(self):
+        now = time.time()
+        active = True
+        if now > self.delayStart + self.delayTime:
+            self.delayTime = 0
+            active = False
+        return active
 
     # Count down volume display delay on 2 line displays
-    def decrementDelay(self):
+    def XXXXdecrementDelay(self):
         self.delay -= 1
         if self.delay < 0:
             self.delay = 0

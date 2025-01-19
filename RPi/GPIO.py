@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi RPi.GPIO interception package
-# $Id: GPIO.py,v 1.14 2002/01/03 14:41:25 bob Exp $
+# $Id: GPIO.py,v 1.15 2025/01/19 10:45:00 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -20,6 +20,8 @@ import lgpio
 import time
 import re
 import pdb
+import os
+import sys
 
 IGNORE_WARNINGS = True  # Set to False for debugging GPIO code. See GPIO.setwarnings
 
@@ -57,17 +59,21 @@ callbacks = {}
 edges = ['NONE','RISING_EDGE','FALLING_EDGE','BOTH_EDGES']
 
 # The Raspberry Pi Model 5 uses the RP1 chip (4). Try to open first
-try:
-    chip = lgpio.gpiochip_open(4)
-except Exception as e:
-    pass
-
-# Earlier Raspberry Pi 4b,3B etc uses SOC chip  for I/O (0). 
-try:
-    chip = lgpio.gpiochip_open(0)
-except Exception as e:
-    print ("Fatal error: %s" % (str(e)))
-    exit(1) 
+if os.path.exists("/proc/device-tree/aliases/gpio4"):
+    try:
+        chip = lgpio.gpiochip_open(4)
+        #print("Using RP1 chip",4,hex(chip))
+    except Exception as e:
+        print ("Fatal error: %s" % (str(e)))
+        sys.exit(1) 
+else:
+    # Earlier Raspberry Pi 4b,3B etc uses SOC chip  for I/O (0). 
+    try:
+        chip = lgpio.gpiochip_open(0)
+        #print("Using chip",0,hex(chip))
+    except Exception as e:
+        print ("Fatal error: %s" % (str(e)))
+        sys.exit(1) 
 
 # Set mode BCM (GPIO numbering) or BOARD (Pin numbering)
 def setmode(mode=BCM):
@@ -203,7 +209,7 @@ class PWMInstance:
 
 # LGPIO information 
 if __name__ == '__main__':
-    gpio=4
+    gpio=14
     info = lgpio.gpio_get_chip_info(chip)
     print("Chip",hex(chip),info)
     line_info = lgpio.gpio_get_line_info(chip, gpio)

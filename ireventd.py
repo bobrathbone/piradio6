@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.37 2024/12/21 10:26:47 bob Exp $
+# $Id: ireventd.py,v 1.39 2025/01/19 11:03:55 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

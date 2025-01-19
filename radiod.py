@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.169 2025/01/15 12:27:36 bob Exp $
+# $Id: radiod.py,v 1.173 2025/01/19 10:45:38 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -134,7 +134,7 @@ def interrupt():
     # Rapid display of media play progress and time
     else:
         if source_type == radio.source.MEDIA:
-            if display.getDelay() > 0:
+            if display.checkDelay():
                 displayVolume(display, radio)
             else:
                 if menu_mode != menu.MENU_INFO:
@@ -252,8 +252,10 @@ class MyDaemon(Daemon):
 
                 elif menu_mode == menu.MENU_TIME:
                     displayTimeDate(display,radio,message)
-                    displayCurrent(display,radio,message)
-                    displayVolume(display,radio)
+                    if display.checkDelay():
+                        displayVolume(display,radio)
+                    else:
+                        displayCurrent(display,radio,message)
 
                 elif menu_mode == menu.MENU_SEARCH:
                     displaySearch(display,menu,message)
@@ -272,10 +274,13 @@ class MyDaemon(Daemon):
                         menu.set(menu.MENU_TIME) # Skip RSS
 
                 elif menu_mode == menu.MENU_INFO:
-                    if display.getDelay() > 0:
+                    if display.checkDelay():
                         displayVolume(display, radio)
                     else:
                         displayInfo(display,radio,message)
+                    # This delay is important. DDon't remove or
+                    # button/encoder events will be missed
+                    time.sleep(0.025)
 
                 elif menu_mode == menu.MENU_SLEEP:
                     displaySleep(display,radio)
@@ -307,19 +312,16 @@ class MyDaemon(Daemon):
                 # When volume switches or rotary encoder operated display
                 # message scrolling is suppressed for a few seconds to speed
                 # up the volume change operation.
-                d = display.decrementDelay()
-                if d < 1:
-                    display.noScrolling(False)
-                else:    
+                if display.checkDelay():
                     display.noScrolling(True)
+                else:    
+                    display.noScrolling(False)
     
                 displayBacklight(radio,menu,display)
 
-                # Check if streamripper is rocording
+                # Check if streamripper is recording
                 self.recording = radio.isRecording()
 
-                # This delay is important and should be more than switch bounce times
-                time.sleep(0.025)
 
             except KeyboardInterrupt:
                 print ("Stopped")
@@ -450,7 +452,7 @@ def handleRadioEvent(event,display,radio,menu):
     nlines = display.getLines()
     displayType = display.getDisplayType()
 
-    vDelay = 60
+    vDelay = 2.5  # Display volume for n seconds on two line displays if volume changed
 
     log.message('handleRadioEvent ' + str(event_type) + ' ' + event_name, log.DEBUG)
 
@@ -605,7 +607,6 @@ def handleRadioEvent(event,display,radio,menu):
     # Display volume
     if volume_change:
         display.setDelay(vDelay)
-        #displayVolume(display,radio)
 
 # Handle source menu selection event
 def handleSourceEvent(event,display,radio,menu):
@@ -1000,13 +1001,14 @@ def displaySearch(display,menu,message):
             display.out(2,current_artist[0:50],interrupt)
             display.out(3,current_track,interrupt)
 
-            if display.getDelay() > 0:
+            if display.checkDelay():
                 displayVolume(display, radio)
             else:
                 display.out(4,radio.getProgress(),interrupt)
                 message.speak(str(index+1) + ' ' +  current_artist[0:50])
         else:
-            if display.getDelay() > 0 and source_type != radio.source.MEDIA:
+            ##if display.checkDelay() and source_type != radio.source.MEDIA:
+            if display.checkDelay():
                 displayVolume(display, radio)
             else:
                 info = current_artist[0:50] + ': ' + current_track
@@ -1026,12 +1028,13 @@ def displaySearch(display,menu,message):
             displayVolume(display, radio)
             message.speak(str(index+1) + ' ' +  search_station[0:50])
         else:
-            if display.getDelay() > 0:
+            if display.checkDelay():
                 displayVolume(display, radio)
             else:
                 display.out(2,search_station[0:30],interrupt)
                 message.speak(str(index+1) + ' ' +  search_station[0:50])
 
+    time.sleep(0.025)   # Important otherwise we miss interrupts
     newMenu = False
 
 # Display the source menu
@@ -1050,12 +1053,13 @@ def displaySource(display,radio,menu,message):
         display.out(3, station ,interrupt)
         displayVolume(display, radio)
     else:
-        if display.getDelay() > 0:
+        if display.checkDelay():
             displayVolume(display, radio)
         else:
             display.out(2, sSource, no_interrupt)
 
     message.speak(sSource)
+    time.sleep(0.025)   # Important otherwise we miss interrupts
     newMenu = False
 
 # Display backlight colours for screens with RGB colours
@@ -1131,6 +1135,7 @@ def displayOptions(display,radio,menu,message):
 
 # Display the RSS feed
 def displayRss(display,radio,message,rss):
+    #pdb.set_trace()
     global newMenu,save_rss_line
     lwidth = None
     dwidth = display.getWidth() 
@@ -1140,9 +1145,8 @@ def displayRss(display,radio,message,rss):
     source_type = radio.getSourceType()
     displayTimeDate(display,radio,message)
 
-
     nLines = display.getLines()
-    if display.getDelay() == 0:
+    if not display.checkDelay():
         rss_line = rss.getFeed()
         save_rss_line = rss_line
     else:
@@ -1165,10 +1169,10 @@ def displayRss(display,radio,message,rss):
             name = radio.getSearchName()
         display.out(2,name[0:dwidth],interrupt)
 
-    if display.getDelay() == 0:
-        display.out(line,rss_line[0:lwidth],interrupt,rssfeed=True)
-    else:
+    if display.checkDelay():
         displayVolume(display, radio)
+    else:
+        display.out(line,rss_line[0:lwidth],interrupt,rssfeed=True)
 
     if len(rss_line) <= dwidth:
         time.sleep(0.5)
@@ -1192,13 +1196,12 @@ def displayInfo(display,radio,message):
     version = radio.getVersion()
     build = radio.getBuild()
     nlines = display.getLines()
-    #msg = message.get('radio_version') + ' ' + version
     msg = message.get('radio_version') + ' ' + build
     
     display.out(1, msg, interrupt )
 
     if nlines > 2:
-        if display.getDelay() > 0:
+        if display.checkDelay():
             displayVolume(display, radio)
         else:
             msg = 'Hostname: ' + socket.gethostname()
@@ -1369,7 +1372,7 @@ def displayCurrent(display,radio,message):
                 display.out(5,msg)
         else:
             # For 2 lines display volume if changed
-            if display.getDelay() > 0:
+            if display.checkDelay():
                 displayVolume(display, radio)
             elif len(errorString) > 0:
                 display.out(2,errorString[0:lwidth],interrupt)
@@ -1406,13 +1409,13 @@ def displayCurrent(display,radio,message):
             display.out(2,artist[0:lwidth],interrupt)
             display.out(3,title[0:lwidth],interrupt)
 
-            if display.getDelay() > 0:
+            if display.checkDelay():
                 displayVolume(display, radio)
             else:
                 display.out(4,radio.getProgress()[0:lwidth],interrupt)
 
         else:
-            if display.getDelay() > 0:
+            if display.checkDelay():
                 displayVolume(display, radio)
             else:
                 lwidth = display.getWidth()
@@ -1490,9 +1493,8 @@ def displaySpotify(display,radio):
             hostname = socket.gethostname()
             display.out(2,"Spotify: " + hostname,interrupt)
             display.out(3,info,interrupt)
-            #display.out(4,"Volume:Use spotify")
         else:
-            if display.getDelay() > 0:
+            if display.checkDelay():
                 displayVolume(display, radio)
                 time.sleep(0.1)
             else:
@@ -1506,7 +1508,7 @@ def displayVolume(display,radio):
     menu_mode = menu.mode()
     # Display volume only if not in Info mode
     _displayVolume(display,radio)
-    if menu_mode != menu.MENU_INFO or display.getDelay() > 0:
+    if menu_mode != menu.MENU_INFO or display.checkDelay():
         if display.isOLED():
             _displayOledVolume(display,radio)
         else:
