@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.88 2025/01/18 14:18:24 bob Exp $
+# $Id: display_class.py,v 1.89 2025/01/20 14:29:25 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -120,6 +120,7 @@ class Display:
             screen.setScrollSpeed(scroll_speed)
             screen.setWidth(self.width)
             i2c_interface = True
+            self._mute_line = config.display_lines
 
         elif dtype == config.LCD_I2C_JHD1313:
             from PIL import ImageColor

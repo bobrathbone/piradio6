@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.181 2025/01/12 14:55:17 bob Exp $
+# $Id: radio_class.py,v 1.182 2025/01/20 09:41:20 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -439,6 +439,7 @@ class Radio:
                         os.kill(int(self.ir_pid), signal.SIGUSR2)
                     except Exception as e:
                         print(str(e))
+                        os.remove(ireventd_pidfile)
                         pass
 
         return self.recording

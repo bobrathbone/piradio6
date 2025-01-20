@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.173 2025/01/19 10:45:38 bob Exp $
+# $Id: radiod.py,v 1.174 2025/01/20 14:30:50 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -140,7 +140,7 @@ def interrupt():
                 if menu_mode != menu.MENU_INFO:
                     display.out(4,radio.getProgress())
         else:
-            # Display time every during every interrupt checkn for
+            # Display time every during every interrupt check for
             # fast display of time configured with seconds 
             if menu_mode == menu.MENU_TIME or menu_mode == menu.MENU_RSS:
                 displayTimeDate(display,radio,message)
@@ -278,9 +278,6 @@ class MyDaemon(Daemon):
                         displayVolume(display, radio)
                     else:
                         displayInfo(display,radio,message)
-                    # This delay is important. DDon't remove or
-                    # button/encoder events will be missed
-                    time.sleep(0.025)
 
                 elif menu_mode == menu.MENU_SLEEP:
                     displaySleep(display,radio)
@@ -322,6 +319,9 @@ class MyDaemon(Daemon):
                 # Check if streamripper is recording
                 self.recording = radio.isRecording()
 
+                # This delay is important. DDon't remove or
+                # button/encoder events will be missed
+                time.sleep(0.025)
 
             except KeyboardInterrupt:
                 print ("Stopped")
@@ -1034,7 +1034,6 @@ def displaySearch(display,menu,message):
                 display.out(2,search_station[0:30],interrupt)
                 message.speak(str(index+1) + ' ' +  search_station[0:50])
 
-    time.sleep(0.025)   # Important otherwise we miss interrupts
     newMenu = False
 
 # Display the source menu
@@ -1059,7 +1058,6 @@ def displaySource(display,radio,menu,message):
             display.out(2, sSource, no_interrupt)
 
     message.speak(sSource)
-    time.sleep(0.025)   # Important otherwise we miss interrupts
     newMenu = False
 
 # Display backlight colours for screens with RGB colours
