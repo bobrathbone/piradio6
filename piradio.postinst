@@ -1,7 +1,7 @@
 #!/bin/bash 
 #set -e
 # Radio daemon post install script
-# $Id: piradio.postinst,v 1.25 2024/11/26 09:54:32 bob Exp $
+# $Id: piradio.postinst,v 1.26 2025/01/20 19:39:28 bob Exp $
 # Support for Pulseaudio added
 
 # Version 7.5 onwards allows any user with sudo permissions to install the software
@@ -69,6 +69,7 @@ fi
 sudo chown -R ${USR}:${GRP} ${DIR}
 sudo chmod +x ${DIR}/*.py
 sudo chmod +x ${DIR}/*.sh
+sudo chmod +x ${DIR}/scripts/*.sh
 
 # Create configuration file in /etc
 if [[ ! -f   ${CONFIGFILE} ]]; then
