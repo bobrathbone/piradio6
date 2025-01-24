@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Web Interface
-# $Id: install_web_interface.sh,v 1.6 2025/01/07 19:35:06 bob Exp $
+# $Id: install_web_interface.sh,v 1.7 2025/01/23 11:46:48 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -93,13 +93,13 @@ echo "Installing MariaDB database" | tee -a ${LOG}
 if [[ $(release_id) -ge 12 ]]; then
     sudo apt-get -y install php8.2-gd php8.2-mbstring mariadb-server php-mysql | tee -a ${LOG}
     sudo apt-get -y install php8.2-curl | tee -a ${LOG}
-    rm -f radiodweb_3.1_arm64.deb*
+    rm -f radiodweb_3.2_arm64.deb*
     if [[ ${BIT} == "64" ]]; then
         wget http://bobrathbone.com/raspberrypi/packages/radiodweb_3.2_arm64.deb | tee -a ${LOG}
-        sudo dpkg -i radiodweb_3.1_arm64.deb | tee -a ${LOG}
+        sudo dpkg -i radiodweb_3.2_arm64.deb | tee -a ${LOG}
     else
         wget http://bobrathbone.com/raspberrypi/packages/radiodweb_3.2_armhf.deb | tee -a ${LOG}
-        sudo dpkg -i radiodweb_3.1_armhf.deb | tee -a ${LOG}
+        sudo dpkg -i radiodweb_3.2_armhf.deb | tee -a ${LOG}
     fi
 else
     sudo apt-get -y install php7.4-gd php7.4-mbstring mariadb-server php-mysql | tee -a ${LOG}

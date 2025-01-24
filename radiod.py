@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.174 2025/01/20 14:30:50 bob Exp $
+# $Id: radiod.py,v 1.182 2025/01/23 19:12:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -268,8 +268,10 @@ class MyDaemon(Daemon):
 
                 elif menu_mode == menu.MENU_RSS:
                     if display.hasScreen():
-                        displayRss(display,radio,message,rss)
-                        displayVolume(display,radio)
+                        if display.checkDelay():
+                            displayVolume(display,radio)
+                        else:
+                            displayRss(display,radio,message,rss)
                     else:
                         menu.set(menu.MENU_TIME) # Skip RSS
 
@@ -715,7 +717,6 @@ def handleMenuChange(display,radio,menu,message):
 
         radio.source.cycleType(radio.source.RADIO)
         radio.setReload(True)
-        radio.getDisplayVolume()    # XXXXXXXXXX
 
     if menu_mode != menu.MENU_SLEEP:
         display_mode = menu.mode()
@@ -1389,10 +1390,11 @@ def displayCurrent(display,radio,message):
                             title = message.get('no_information')
                             current_id = radio.getCurrentID()
                             details = sStation + " " + str(current_id) + ": " + title
-                    display.out(2,details,interrupt)
                 else:
                     details = station + ': ' + name
-                    display.out(2,details[0:lwidth],interrupt)
+                    if radio.muted():
+                        details = message.get('muted')
+                display.out(2,details,interrupt)
 
     elif sourceType == radio.source.MEDIA:
         # If no playlist then try reloading library
@@ -1505,7 +1507,6 @@ def displaySpotify(display,radio):
 def displayVolume(display,radio):
     menu_mode = menu.mode()
     # Display volume only if not in Info mode
-    _displayVolume(display,radio)
     if menu_mode != menu.MENU_INFO or display.checkDelay():
         if display.isOLED():
             _displayOledVolume(display,radio)

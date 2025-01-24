@@ -4,7 +4,6 @@ Author : Bob Rathbone
 Site   : http://www.bobrathbone.com
 Email  : bob@bobrathbone.com
 
-
 This program uses  Music Player Daemon 'mpd', its client 'mpc' and the python3-mpd library
 See http://www.musicpd.org/
 Use "sudo apt-get install mpd mpc python3-mpd" to install the Music Player Daemon (MPD)
@@ -14,7 +13,7 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.0 release notes
 -------------------------
-Release 14 January 2025 - Build 3 (Beta) 
+Release 15 January 2025 - Build 4 (Beta) 
 1) Prevent radio program from crashing if no IP network and no media to load
 2) Support for the Waveshare 1.5 and 2.42-Inch SPI interface OLEDs added
 3) New configuration parameter ky040_r1_fitted added to set KY040 switch (SW) pullup resistor
