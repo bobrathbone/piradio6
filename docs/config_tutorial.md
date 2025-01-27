@@ -214,6 +214,10 @@ LCD GPIO connections for 40 pin version of the radio
 **lcd_data6=12**
 **lcd_data7=13**
 
+Scroll oversize messages on the display (default yes). Set to no to prevent 
+scrolling except for RSS news feed display which will always be scrolled
+**scrolling=yes**
+
 Display Scroll speed 0.001 to 0.02 seconds. 0 = Use default
 **scroll_speed=0**
 

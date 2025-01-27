@@ -45,11 +45,11 @@ network={
 
 Bookworm OS network configuration using network manager
 =======================================================
-**Bookworm** does not use wpa_suplicant.conf but now uses Network Manager using the following nmcli commands. 
+**Bookworm** does not use wpa_suplicant.conf but now uses Network Manager using the following **nmcli** commands. 
 
 
 **sudo nmcli radio wifi on**
-**sudo nmcli dev wifi connect <wifi-ssid> password "<network-password>"**
+**sudo nmcli dev wifi connect \<wifi-ssid\> password "\<network-password\>"**
 
 Each Wi-Fi network has a separate config file in **/etc/NetworkManager/system-connections/** in a well configured system these will have a 256bit WPA PSK rather than a plain text passphrase.
 

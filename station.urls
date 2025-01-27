@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.41 2024/12/06 09:32:18 bob Exp $
+# $Id: station.urls,v 1.43 2025/01/25 06:55:15 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -15,35 +15,22 @@
 # In general it is always better to define a title
 #
 # Some sites that you can use are:
+#   https://www.radio-browser.info
 #   http://www.radiomap.eu 
 #   http://www.internet-radio.com  
 #   http://www.radio-locator.com
-#   http://bbcstreams.com/ 
 #
 # Then run create_playlists.py in the /home/pi/radio directory to create PLS files
 
 # Name of playlist file
 (Radio)
+[BBC - Radio 1] http://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/hls/nonuk/pc_hd_abr_v2/ak/bbc_radio_one.m3u8
 # United Kingdom (Full list available at https://gist.github.com/bpsib/67089b959e4fa898af69fea59ad74bc3)
-[BBC - Radio 1] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_one/bbc_radio_one.isml/bbc_radio_one-audio%3d96000.norewind.m3u8
 [BBC - Radio 2] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_two/bbc_radio_two.isml/bbc_radio_two-audio%3d96000.norewind.m3u8
 [BBC - Radio 3] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_three/bbc_radio_three.isml/bbc_radio_three-audio%3d96000.norewind.m3u8
-[BBC - Radio 4] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_fourfm/bbc_radio_fourfm.isml/bbc_radio_fourfm-audio%3d96000.norewind.m3u8
-[BBC - Radio 5 live] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_five_live/bbc_radio_five_live.isml/bbc_radio_five_live-audio%3d96000.norewind.m3u8
-[BBC - Radio 6 Music] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_6music/bbc_6music.isml/bbc_6music-audio%3d96000.norewind.m3u8
-[BBC - Radio 1Xtra] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_1xtra/bbc_1xtra.isml/bbc_1xtra-audio%3d96000.norewind.m3u8
-[BBC - Radio 4 Extra] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_four_extra/bbc_radio_four_extra.isml/bbc_radio_four_extra-audio%3d96000.norewind.m3u8
-[BBC - Radio 5 Live sports extra (UK only)] http://as-hls-uk-live.akamaized.net/pool_904/live/uk/bbc_radio_five_live_sports_extra/bbc_radio_five_live_sports_extra.isml/bbc_radio_five_live_sports_extra-audio%3d96000.norewind.m3u8
-[BBC - Radio 6 music] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_6music/bbc_6music.isml/bbc_6music-audio%3d96000.norewind.m3u8
-[BBC - Radio Asian Network] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_asian_network/bbc_asian_network.isml/bbc_asian_network-audio%3d96000.norewind.m3u8
+[BBC - Radio 4] http://lstn.lv/bbcradio.m3u8?station=bbc_radio_fourfm%22&bitrate=320000%22
+[BBC - Radio 6 Music] http://lstn.lv/bbcradio.m3u8?station=bbc_6music%22&bitrate=320000%22
 [BBC - BBC World Service] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_world_service.m3u8
-
-# The above streams are worldwide so sports commentary, etc may not be available. For UK restricted content,
-# replace -ww- and /ww/ with -uk- and /uk/.
-# Different bitrates are available by replacing 96000 :
-# 48000 = 48k, 96000 = 96k
-# UK only: 128000 = 128k, 320000 = 320k
-# See https://en.everybodywiki.com/List_of_BBC_radio_stream_URLs
 
 # UK stations
 [Caroline Pirate] http://sc3.radiocaroline.net:8030/listen.m3u8
@@ -120,14 +107,12 @@
 [Antenne Bayern Oldies but Goldies] http://www.antenne.de/webradio/channels/oldies-but-goldies.m3u
 [Antenne Bayern 80er -Kulthits] http://mp3channels.webradio.antenne.de/80er-kulthits
 [Antenne Bayern 90er -Hits] http://mp3channels.webradio.antenne.de/90er-hits
-[Ballermann Radio Top 100] https://ppr.mahobi.de/pool-position-radio.mp3
 [89.0 RTL] http://stream.89.0rtl.de/live/mp3-128/stream.89.0rtl.de/play.m3u
 [104,6 RTL] http://stream.104.6rtl.com/rtl-live/mp3-192/listenlive/play.m3u
 [WDR Live1] http://www.wdr.de/wdrlive/media/einslive.m3u
 
 # Country music
 [Nashville FM] http://server-10.stream-server.nl:8300/listen.pls
-[Swiss country] http://www.countryradio.ch/assets/files/listen.pls
 
 # Jazz stations
 [181.FM Classical Jazz] http://icyrelay.181.fm/181-classicaljazz_128k.mp3
@@ -139,6 +124,11 @@
 
 # France
 [Radio France] http://direct.franceinter.fr/live/franceinter-midfi.mp3
+[France Musique] http://icecast.radiofrance.fr/francemusique-hifi.aac
+[France International] https://icecast.radiofrance.fr/franceinter-hifi.aac 
+[RTL France] https://live.m6radio.quortex.io/webpHJPXnXrN7B6J7Q8mcqmxP/grouprtl/national/long/audio-64000/index.m3u8
+[France Musique Classique Plus] http://icecast.radiofrance.fr/francemusiqueclassiqueplus-hifi.aac
+[France Musique La Jazz] http://icecast.radiofrance.fr/francemusiquelajazz-hifi.aac
 
 # Slovenian stations
 [80's Radio] http://streams.80s80s.de/web/mp3-192/streams.80s80s.de
@@ -154,7 +144,6 @@
 [Easy hits Florida HD] http://airspectrum.cdnstream1.com:8116/1649_192.m3u
 
 # Norwegian stations
-[Radio Nova Oslo] http://stream.radionova.no/fm993.mp3.m3u
 [Ariel Radio] https://streams.radio.co/sf069f3c03/listen
 
 # Finnish stations
@@ -205,7 +194,9 @@
 [Hobart local radio] http://live-radio01.mediahubaustralia.com/7LRW/mp3/
 
 # Poland
+[Radio Poland] https://stream85.polskieradio.pl/pr5/pr5.sdp/playlist.m3u8
 [Disco radio] http://stream.rcs.revma.com:80/cvswvmyewzzuv
+[Polskie Radio Bialystok] http://stream4.nadaje.com:15476/radiobialystok
 
 #(Air traffic)
 # Live_ATC (Uncomment to try)

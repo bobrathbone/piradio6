@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.23 2025/01/24 13:55:37 bob Exp $
+# $Id: configure_radio.sh,v 1.24 2025/01/27 07:04:52 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -259,6 +259,7 @@ if [[ ${COMPONENTS} == 1 ]]; then
         "8" "Install Alsa equalizer software" \
         "9" "Install Spotify (librespot)" \
         "10" "Install FLIRC IR remote control (X-Windows)" \
+        "11" "Install PiFace CAD (Bullseye only)" \
         3>&1 1>&2 2>&3) 
 
         exitstatus=$?
@@ -305,6 +306,10 @@ if [[ ${COMPONENTS} == 1 ]]; then
         elif [[ ${ans} == '10' ]]; then
             SCRIPT="install_flirc.sh"
             DESC="Install FLIRC (X-Windows)"
+
+        elif [[ ${ans} == '11' ]]; then
+            SCRIPT="install_pifacecad.sh"
+            DESC="Install PiFace CAD (Bullseye only)"
         fi
 
         ## To do
