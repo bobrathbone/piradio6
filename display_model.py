@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-$Id: display_model.py,v 1.13 2024/05/28 11:29:11 bob Exp $
+$Id: display_model.py,v 1.14 2025/01/28 10:05:33 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -68,6 +68,7 @@ model_data = {
     'a32082': ('3B', '1.2', 1024, 'Sony UK (Japan)', 'Quad Core 1.2MHz, Onboard WiFi and Bluetooth 4.1'),
     'a220a0': ('CM3', '1.0', 1024, 'Embest', 'Quad Core 1.2MHz, Compute module DDR2 SODIMM connector '),
     'a22100': ('CM3+', '1.0', 1024, 'Sony', 'Quad Core 1.2MHz, Compute module DDR2 SODIMM connector '),
+    '902120': ('Zero 2W', '1.0','512MB', 'Sony UK', '64 bit 1.0GHz quad core, Bluetooth 4.2, USB 2.0'),
     '900061': ('CM', '1.1', 512, 'Embest', 'Compute module DDR2 SODIMM connector'),
     '900091': ('A+', '1.1', 512, 'Sony UK', ''),
     '902120': ('Zero 2 W', '1.0', 512, 'Sony UK', '1GHz 64-bit quad core, Onboard WiFi and Bluetooth 4.1'),
@@ -96,9 +97,11 @@ model_data = {
     'c03115': ('4B', '1.4','4GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03130': ('400', '1.0','4GB', 'Sony UK', '64-bit 1.8GHz quad core, Bluetooth 5, USB 2/3'),
     'c04170': ('5', '1.0','4GB', 'Sony UK', '64-bit 2.4GHz quad core + VideoCore VII GPU, Bluetooth 5, USB 2/3'),
-    'd04170': ('5', '1.0','8GB', 'Sony UK', '64-bit 2.4GHz quad core + VideoCore VII GPU, Bluetooth 5, USB 2/3'),
+    'd04170': ('5', '1.0','4GB', 'Sony UK', '64-bit 2.4GHz quad core + VideoCore VII GPU, Bluetooth 5, USB 2/3'),
+    'd04171': ('5', '1.0','8GB', 'Sony UK', '64-bit 2.4GHz quad core + VideoCore VII GPU, Bluetooth 5, USB 2/3'),
     'd03115': ('4B', '1.5','8GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5.0, USB 2/3'),
-    '902120': ('Zero 2W', '1.0','512MB', 'Sony UK', '64 bit 1.0GHz quad core, Bluetooth 4.2, USB 2.0'),
+    'd04190': ('500', '1.0','8GB', 'Sony UK', '64 bit 2.4GHz quad core, Bluetooth 5.0, USB 2/3'),
+    'e04171': ('5', '1.0','16GB', 'Sony UK', '64-bit 2.4GHz quad core + VideoCore VII GPU, Bluetooth 5, USB 2/3'),
 }
 
 

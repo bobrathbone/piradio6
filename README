@@ -13,7 +13,7 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.0 release notes
 -------------------------
-Release 15 January 2025 - Build 4 (Beta) 
+Release 28 January 2025 - Build 5 (Beta) 
 1) Prevent radio program from crashing if no IP network and no media to load
 2) Support for the Waveshare 1.5 and 2.42-Inch SPI interface OLEDs added
 3) New configuration parameter ky040_r1_fitted added to set KY040 switch (SW) pullup resistor
