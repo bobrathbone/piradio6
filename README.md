@@ -8,7 +8,6 @@ Runs on
 - Raspberry Pi Zero
 - Raspberry Pi 3 B+
 - Raspberry Pi 4 B
-- Raspberry Pi Pico
 - Raspberry Pi Zero 2 W
 - Raspberry Pi 400 Kit
 - Raspberry Pi 5
