@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.89 2025/01/20 14:29:25 bob Exp $
+# $Id: display_class.py,v 1.92 2025/01/31 17:18:02 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -16,6 +16,7 @@
 import pdb
 import os,sys
 import time,pwd
+import threading
 from config_class import Configuration
 from log_class import Log
 
@@ -41,8 +42,8 @@ class Display:
     saved_font_size = 1
     saved_time = ''         # Prevent unecessary diplay of time
 
-    delayTime = 0  # Delay (volume) display in seconds (2 line displays or volume display)
-    delayStart = time.time()  # Delay staert time 
+    t = None    # Threading Timer
+    volume_delay = False    # If True display volume bar on line 2 of dual line display
 
     # The Adafruit RGB plate has buttons otherwis False
     has_buttons = False
@@ -430,27 +431,21 @@ class Display:
             self.lineBuffer.insert(i,'')    
         self.saved_volume = 0
 
-    # Set delay seconds ( Used for temporary message displays)
-    def setDelay(self,seconds):
-        self.delayTime = seconds
-        self.delayStart = time.time()
-        return self.delayTime
+    # Timer function for two line volume display
+    def timerFired(self):
+        self.volume_delay = False
 
-    # Used to display changed volume on 2 line displays
-    def checkDelay(self):
-        now = time.time()
-        active = True
-        if now > self.delayStart + self.delayTime:
-            self.delayTime = 0
-            active = False
-        return active
+    def setTimer(self,delay=2.5):
+        if self.t != None:
+            self.t.cancel()
+        self.volume_delay = True
+        self.t=threading.Timer(delay,self.timerFired)
+        self.t.start()
 
-    # Count down volume display delay on 2 line displays
-    def XXXXdecrementDelay(self):
-        self.delay -= 1
-        if self.delay < 0:
-            self.delay = 0
-        return self.delay
+    def cancelTimer(self):
+        if self.t != None:
+            self.t.cancel()
+        self.volume_delay = False
 
     # Check to see if the display has buttons
     def hasButtons(self):
