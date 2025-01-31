@@ -16,20 +16,20 @@ Files
 =====
 **/var/lib/mpd/playlists** Location of MPD playlists
 
-**/var/lib/mpd/playlists/<name>** Where <name>of media playlist such as **USB_Stick.m3u**
+**/var/lib/mpd/playlists/<name>** Where \<name\> is the name of media playlist such as **USB_Stick.m3u** or **Radio.m3u**
 
-Running the create_playlist program from the command line
-=========================================================
-Usually you will call the create_stations program from radio-config
-
-**radio-config --> Update radio stations playlist**
-
-However there may be occasions that you want to run the **create_playlist.sh** program from the command line or in a script. First populate the media with music files and then run **create_playlist.sh** 
-
+**/var/lib/mpd/music** Actual location of music files pointed to by soft links.
+For example **media** points to **/media/pi** which is the mount point for the USB stick
 
 ```
-cd /usr/share/radio
-./create_stations.py
+$ ls -la
+lrwxrwxrwx 1 root root     9 Jan 30 19:46 media -> /media/pi
+lrwxrwxrwx 1 root root    19 Jan  8 07:12 recordings -> /home/pi/Recordings
+lrwxrwxrwx 1 root root    14 Nov 26 07:40 sdcard -> /home/pi/Music
+lrwxrwxrwx 1 root root     6 Jan 30 19:46 share -> /share
+lrwxrwxrwx 1 root root    14 Jan 25 09:24 usbdrive -> /home/pi/Music
 ```
+Music on stored on the SD card or a USB SSD drive is usually stored in the **/home/pi/Music** directory.
 
 End of configuration tutorial
+=============================

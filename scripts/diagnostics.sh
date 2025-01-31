@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: diagnostics.sh,v 1.7 2024/12/29 12:34:09 bob Exp $
+# $Id: diagnostics.sh,v 1.8 2025/01/31 12:05:07 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -28,6 +28,7 @@ LOGDIR=${DIR}/logs
 NODAEMON_LOG=${DIR}/logs/radiod_nodaemon.log
 TEMPFILE=/tmp/output
 CMARK="/usr/bin/cmark --hardbreaks"
+CMARK_EXE="/usr/bin/cmark"
 LYNX=/usr/bin/lynx
 SCRIPTS_DIR=${DIR}/scripts
 DOCS_DIR=${DIR}/docs
@@ -44,7 +45,7 @@ if [[ ! -d ${DIR} ]];then
 fi
 
 # Install cmark if not yet installed
-if [[ ! -f ${CMARK} ]]; then
+if [[ ! -f ${CMARK_EXE} ]]; then
     sudo apt-get -y install cmark
 fi
 

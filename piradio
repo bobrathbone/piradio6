@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.123 2025/01/25 11:42:17 bob Exp $
+# $Id: piradio,v 1.125 2025/01/31 14:31:33 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is the 64 bit version
 # Source: <source package name; defaults to package name>
@@ -79,6 +79,7 @@ Files:  radiod.py /usr/share/radio/
     lcd_piface_class.py /usr/share/radio/
     lcd_i2c_jhd1313.py /usr/share/radio/
     lcd_i2c_jhd1313_sgm31323.py /usr/share/radio/
+    LICENSE /usr/share/radio/license
     no_display.py /usr/share/radio/
     radio_daemon.py /usr/share/radio/
     wiring.py /usr/share/radio/
@@ -92,6 +93,7 @@ Files:  radiod.py /usr/share/radio/
     docs/network_configuration.md /usr/share/radio/docs
     docs/record_radio.md /usr/share/radio/docs
     docs/wifi_notes.md /usr/share/radio/docs
+    docs/running_diagnostics.md /usr/share/radio/docs
     docs/index.html /usr/share/radio/docs
     docs/docs.css /usr/share/radio/docs
     scripts/configure_audio_device.sh /usr/share/radio/scripts/

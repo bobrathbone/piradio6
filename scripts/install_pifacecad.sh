@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: install_pifacecad.sh,v 1.4 2025/01/26 09:25:18 bob Exp $
+# $Id: install_pifacecad.sh,v 1.5 2025/01/27 14:13:42 bob Exp $
 # Raspberry Pi Internet Radio - Install PiFace CAD
 # This script installs and configures PiFace CAD display 
 # See https://github.com/piface/pifacecad?tab=readme-ov-file
@@ -23,6 +23,7 @@ LOGDIR=${DIR}/logs
 SCRIPTS_DIR=${DIR}/scripts
 LOG=${LOGDIR}/install_piface_cad.log
 OS_RELEASE=/etc/os-release
+BOOTCONFIG=/boot/config.txt
 
 # Get OS release ID
 function release_id
@@ -93,6 +94,15 @@ echo "Cleanup - Removing python-lirc, pifacecommon, pifacecad in ${DIR}" | tee -
 sudo rm -rf ${DIR}/python-lirc
 sudo rm -rf ${DIR}/pifacecommon
 sudo rm -rf ${DIR}/pifacecad
+
+# Check to see if ir-keytable and gpio-ir configured
+echo | tee -a ${LOG}
+grep "dtoverlay=gpio-ir,gpio_pin=25" ${BOOTCONFIG} | tee -a ${LOG}
+if [[ $? == '0' ]]; then
+    echo "The above statement in ${BOOTCONFIG} indicates that the IR remote control"
+    echo "software is configured. This is not compatable with PiFace CAD and should" 
+    echo "be removed from ${BOOTCONFIG} or commented out " 
+fi
 
 echo | tee -a ${LOG}
 echo "PiFace CAD installation complete" | tee -a ${LOG}

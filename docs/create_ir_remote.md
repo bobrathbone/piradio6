@@ -1,20 +1,23 @@
 
+Creating an IR remote control definition
+=======================================
 If you are using the Raspberry Pi Mini IR Remote Control you can skip this tutorial. Run the following command: There are two methods:
 
 
 1) Use the radio-config utility and select **Create an IR remote control definition**
 2) Create an IR remote control definition (.toml) file manually
 
-Method 1: Create an IR remote control definition using radio-config
-===================================================================
+## Method 1: Create an IR remote control definition using radio-config
 1) Run **radio-config** from the command line
-2) Select **8 Install/configure drivers and software components** 
-3) Select **Install IR remote control** from the Install Software menu
-4) select **Create an IR remote control definition** from the Remote Control menu
+2) Select option **8 Install/configure drivers and software components** 
+3) Select option **1 Install/Configure IR remote control** from the Install Software menu
+4) Select option **1 Install IR Remote Control software** 
+5) Once the IR software has been installed return to the **Configure IR Remote Control** menu (step 1 and 2 above)
+6) Select option **9 Create an IR remote control definition** from the Remote Control menu
 
 You will be asked to enter name for your remote control such as 'myremote'. You can choose any name you wish.
 
-Enter the name for your remote control: **myremote**
+Enter the name for your remote control: **myremote**. Any name can be used - No spaces or special characters.
 
 Please press the button on your remote control for key: KEY_OK
 
@@ -27,7 +30,7 @@ The key identifiers  are:
 'KEY_MENU','KEY_NUMERIC_0','KEY_NUMERIC_1','KEY_NUMERIC_2',
 'KEY_NUMERIC_3','KEY_NUMERIC_4', 'KEY_NUMERIC_5','KEY_NUMERIC_6',
 'KEY_NUMERIC_7','KEY_NUMERIC_8','KEY_NUMERIC_9', 'KEY_UP','KEY_DOWN',
-'KEY_LEFT','KEY_RIGHT','KEY_EXIT'
+'KEY_LEFT','KEY_RIGHT','KEY_EXIT','KEY_RECORD',
 
 When finished the following will be displayed:
 
@@ -35,9 +38,9 @@ File '/usr/share/radio/remotes/myremote.toml' has been written.
 
 Press enter to continue:
 
-Back in the IR remote control menu select:
+Back in the IR remote control menu select (Steps 1 and 2 above):
 
-**Select IR remote control definition (keytable)*
+Select option **9 Select IR remote control definition**
 
 ```
 "1" "eeremote.toml"
@@ -45,13 +48,14 @@ Back in the IR remote control menu select:
 "3" "myremote.toml"
 ```
 
-The program will the copy myremote.toml to the /etc/rc_keymaps directory
+The program will the copy the selected toml file to the **/etc/rc_keymaps** directory
 
-Reboot the Raspberry Pi
+Exit the menu and reboot the Raspberry Pi
+```
+$ sudo reboot
+```
 
-Method 2: Manual creation of an IR remote control definition
-============================================================
-
+## Method 2: Manual creation of an IR remote control definition
 Run the following command:
 
 ```
@@ -108,8 +112,7 @@ Now press a button on the remote control such as Volume Up. This will display th
 228.564098: event type EV_SYN(0x00).
 ```
 
-Example remote control definition - myremote.toml 
-=================================================
+## Example remote control definition - myremote.toml 
 
 Now create file called myremote.toml as shown in the example below. The scancode in the above example is for KEY_VOLUMEUP.The name can be anything you wish, but it must end in the toml extension. 
 Note that you can use another name but it must end in **.toml**. Whatever name that you use it must amend the **keytable** parameter in **/etc/radiod.conf** configuration file (See later)
@@ -148,7 +151,7 @@ The name field be any name that you like for example **myremote*. The protocol s
 
 **Note:** There wasn’t a necx protocol. The nearest one was nec so this was used.
 
-**Note:** The remote-control power on/off button must be called KEY_EXIT and not KEY_POWER. If KEY_POWER is us used the event system issues its own system shutdown command instead of letting the radio decide the exit action, either system shutdown or stop radio. See the exit_action parameter in /etc/radiod.conf file.
+**Note:** The remote-control power on/off button must be called KEY_EXIT and not KEY_POWER. If KEY_POWER is us used the event system issues its own system shutdown command instead of letting the radio decide the exit action, either system shutdown or stop radio. See the exit_action parameter in **/etc/radiod.conf** file.
 
 Now write the new remote-control definition (myremote.toml) to the key table:
 
@@ -160,8 +163,7 @@ Wrote 11 keycode(s) to driver
 Protocols changed to rc-5
 ```
 
-Display the new table
-=====================
+## Display the new table
 
 Run the ir-keytable command with the -r flag 
 ```
@@ -215,9 +217,8 @@ Copy the newly created myremote.toml to /etc/rc_keymaps/
 $ sudo cp myremote.toml /etc/rc_keymaps/myremote.toml
 ```
 
-Radio program keytable parameter
-================================
-The radio program uses the keytable parameter in /etc/radiod.conf file to decide which IR remote control definition to load. 
+## Radio program keytable parameter
+The radio program uses the keytable parameter in **/etc/radiod.conf** file to decide which IR remote control definition to load. 
 
 ```
 # ireventd daemon keytable name

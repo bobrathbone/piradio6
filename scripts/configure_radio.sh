@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.24 2025/01/27 07:04:52 bob Exp $
+# $Id: configure_radio.sh,v 1.28 2025/01/28 09:40:48 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -607,6 +607,8 @@ if [[ ${USER_INTERFACE} == "2" ]]; then
 
         if [[ ${ans} == '1' ]]; then
             DESC="Configuring standard rotary encoders"
+            ROTARY_STEP_SIZE="half"
+            ROTARY_HAS_RESISTORS=0
 
         elif [[ ${ans} == '2' ]]; then
             DESC="Configuring rotary encoders (eg. KY-040) with resistor R1 omitted"
@@ -957,50 +959,16 @@ fi
 
 if [[ ${SPI_REQUIRED} != 0 ]]; then
     echo | tee -a ${LOG}
-    echo "The chosen display (${DESC}) requires the" | tee -a ${LOG}
-    echo "SPI kernel module to be loaded at boot time." | tee -a ${LOG}
-    echo "The program will call the raspi-config program" | tee -a ${LOG}
-    echo "Select the following options on the next screens:" | tee -a ${LOG}
-    echo "   5 Interfacing options" | tee -a ${LOG}
-    echo "   P4 Enable/Disable automatic loading of SPI kernel module" | tee -a ${LOG}
-    echo; echo -n "Press enter to continue: "
-    read ans
-
-    exitstatus=$?
-    if [[ $exitstatus != 0 ]]; then
-        exit 0
-    fi
+    echo "Enabling the SPI kernel module" | tee -a ${LOG}
+    sudo dtparam spi=on
 
     # Enable the SPI kernel interface 
     sudo sed -i 's/^#dtparam=spi=.*$/dtparam=spi=on/'  ${BOOTCONFIG}
     sudo sed -i 's/^dtparam=spi=.*$/dtparam=spi=on/'  ${BOOTCONFIG}
-    ans=0
-    ans=$(whiptail --title "Enable SPI interface" --menu "Choose your option" 15 75 9 \
-    "1" "Enable SPI Kernel Interface " \
-    "2" "Do not change configuration" 3>&1 1>&2 2>&3) 
-
-    # Configure SPI interface for PiFace CAD or ST7889 TFT
-    if [[ ${ans} == '1' ]]; then
-        sudo raspi-config
-    else
-        echo "SPI configuration unchanged"   | tee -a ${LOG}
-    fi
-
-    if [[ ${PIFACE_REQUIRED} == '1' ]]; then
-        echo "The selected interface requires the PiFace CAD Python library" | tee -a ${LOG}
-        echo "It is necessary to install the python-pifacecad library" | tee -a ${LOG}
-        echo "After this program finishes carry out the following command:" | tee -a ${LOG}
-        echo "   sudo apt-get -y install python-pifacecad" | tee -a ${LOG}
-        echo "and reboot the system." | tee -a ${LOG}
-        echo; echo -n "Press enter to continue: "
-        read ans
-    fi
-fi
-
-
-if [[ ${SPI_REQUIRED} != 0 ]]; then
-    echo "$DESC requires the SPI interface"
-    echo "Use sudo raspi-config to enable SPI"
+else
+    echo "Disabling the SPI kernel module" | tee -a ${LOG}
+    sudo dtparam spi=off
+    sudo sed -i 's/^dtparam=spi=.*$/dtparam=spi=off/'  ${BOOTCONFIG}
 fi
 
 if [[ ${I2C_REQUIRED} != 0 ]]; then
@@ -1060,15 +1028,17 @@ if [[ ${I2C_REQUIRED} != 0 ]]; then
         selection=$?
     done
 
-        # Update boot config
-        echo "Enabling I2C interface in ${BOOTCONFIG}" | tee -a ${LOG}
-        sudo sed -i -e "0,/^\#dtparam=i2c_arm/{s/\#dtparam=i2c_arm.*/dtparam=i2c_arm=yes/}" ${BOOTCONFIG}
-        grep -q ^i2c-dev ${ETCMODULES}
-        if [[ $? -ne 0 ]]; then
-            param=i2c-dev
-            echo "Adding ${param} to  ${ETCMODULES}"
-            echo $param | sudo tee -a ${ETCMODULES} > /dev/null
-        fi
+    # Update boot config
+    echo "Enabling I2C interface in ${BOOTCONFIG}" | tee -a ${LOG}
+    dtparam=i2c_arm=on
+    sudo sed -i -e "0,/^\#dtparam=i2c_arm/{s/\#dtparam=i2c_arm.*/dtparam=i2c_arm=yes/}" ${BOOTCONFIG}
+    sudo sed -i -e "0,/^\dtparam=i2c_arm/{s/\dtparam=i2c_arm.*/dtparam=i2c_arm=yes/}" ${BOOTCONFIG}
+    grep -q ^i2c-dev ${ETCMODULES}
+    if [[ $? -ne 0 ]]; then
+        param=i2c-dev
+        echo "Adding ${param} to  ${ETCMODULES}"
+        echo $param | sudo tee -a ${ETCMODULES} > /dev/null
+    fi
 fi
 
 # Select the display type (Lines and Width)
@@ -1618,6 +1588,7 @@ fi
 echo "Disable dtoverlay=i2s-mmap in ${BOOTCONFIG}" 
 sudo sed -i -e "0,/^dtoverlay=i2s-mmap/{s/^dtoverlay=i2s-mmap.*/#dtoverlay=i2s-mmap/}" ${BOOTCONFIG}
 
+
 # Force fsck file system check
 grep -q "fsck.mode=force" ${CMDLINE}
 if [[ $? -ne 0 ]]; then
@@ -1629,6 +1600,10 @@ fi
 #####################
 # Summarise changes #
 #####################
+echo | tee -a ${LOG}
+echo "Boot configuration ${BOOTCONFIG} settings" | tee -a ${LOG}
+echo "----------------------------------------------" | tee -a ${LOG}
+grep "^dtoverlay" ${BOOTCONFIG} | tee -a ${LOG}
 
 echo | tee -a ${LOG}
 echo "Changes written to ${CONFIG}" | tee -a ${LOG}

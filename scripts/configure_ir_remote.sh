@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.15 2025/01/08 08:51:13 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.16 2025/01/31 09:09:38 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -125,7 +125,7 @@ while [ ${run}  == 1 ]
 do
     ans=0
     ans=$(whiptail --title "Configure IR Remote Control?" --menu "Choose your option" 15 75 9 \
-    "1" "Install and configure IR Remote Control configuration?" \
+    "1" "Install IR Remote Control software" \
     "2" "Test remote control (Stops IR event daemon)" \
     "3" "IR Remote Control confguration and status" \
     "4" "Flash IR activity LED" \

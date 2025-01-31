@@ -1,11 +1,9 @@
 Station list - Source list for radio stations streams
 =====================================================
 
-File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
+File: **/var/lib/radiod/stationlist** (Don't use station.urls - distribution only)
 
-To display document use **radio-config**
-
-Information, Documents and Diagnostics --> **Update radio stations playlist**
+To display tutorial run **radio-config** then select **Information, Documents and Diagnostics** --> **Update radio stations playlist**
 
 Format of the stationlist file
 ==============================
@@ -13,20 +11,26 @@ Format of the stationlist file
 To use this file add the URL that points to either an asx or pls file
 The format is:
 
-
 ```
   (<playlist>)
   [<title>] http://<url>
 ```
 
-The (<playlist>) parameter groups the following station definitions into one playlist
-For example (BBC Stations) creates a playlist called BBC_Stations.m3u
+The (\<playlist\>) parameter groups the following station definitions into one playlist
+For example **(BBC Stations)** creates a playlist called **BBC_Stations.m3u**
+
+You can define multiple playlists in the **stationlist** file for example:
+(UK stations)
+:
+
+(Dutch stations)
+:
 
 **Note:** Play lists are terminated with a blank line
 
 The title paramter is the name you want to display on the screen when you select a station 
 
-Some sites that you can use are:
+Some sites that you can use to find station URLs are:
 ```
   http://www.radiomap.eu
   http://www.internet-radio.com
@@ -79,7 +83,7 @@ Files
 Running the create_stations.py program from the command line 
 =========================================================
 Usually you will call the create_stations program from **radio-config**. 
-Select option 3 **Update radio stations playlist**
+Select option **3 Update radio stations playlist**
 
 **radio-config --> Update radio stations playlist**
 
@@ -97,5 +101,8 @@ Usage: sudo ./create_stations.py [--delete_old] [--no_delete] [--input_file=<inp
                --input_file=<input_file>  Use alternative input file
                --help     Display help message
 ```
+So run the following to update the radio stations playlist.
+**sudo ./create_stations.py**
 
 End of tutorial
+===============
