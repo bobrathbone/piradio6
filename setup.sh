@@ -2,7 +2,7 @@
 #set -x
 #set -B
 # Raspberry Pi Internet Radio setup script
-# $Id: setup.sh,v 1.17 2024/12/22 14:50:24 bob Exp $
+# $Id: setup.sh,v 1.18 2025/02/12 12:28:03 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -55,7 +55,6 @@ echo "Radio package set-up script - $(date)"
 
 echo "Installing build tools ${BUILD_TOOLS}" 
 sudo apt-get -y install ${BUILD_TOOLS}
-
 if [[ $? -ne 0 ]]; then
     echo "Installation of  ${BUILD_TOOLS} failed - Aborting"
     exit 1
@@ -70,6 +69,9 @@ if [[ ! -f ${MPD} ]]; then
         exit 1
     fi
 fi
+
+echo "Setting execute bit on all executables (*.py *.sh)" 
+sudo chmod -R +x *.py *.sh
 
 REL_ID=$(release_id)
 echo "Installing other required packages"
