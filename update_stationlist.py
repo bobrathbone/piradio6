@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio create stationlist
-# $Id: update_stationlist.py,v 1.3 2021/09/18 04:32:59 bob Exp $
+# $Id: update_stationlist.py,v 1.4 2025/02/12 11:26:56 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -20,6 +20,7 @@ import pdb,os,sys,time,pwd
 from time import strftime
 from playlist_class import Playlist
 from source_class import Source
+from config_class import Configuration
 from shutil import copyfile
 
 # MPD files
@@ -29,8 +30,10 @@ RadioLibDir = "/var/lib/radiod"
 Stationlist = RadioLibDir + "/stationlist"
 tmpfile = "/tmp/stationlist"
 
-PL = Playlist('Radio')
 source = Source()
+config = Configuration()
+
+PL = Playlist('Radio',config)
 
 # Create a list of RADIO playlists from the MPD playlists directory
 def getRadioPlaylists():

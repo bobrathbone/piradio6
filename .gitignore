@@ -1,0 +1,4 @@
+# Git ignore
+.pyc
+podcasts.dist
+create_podcasts.py
