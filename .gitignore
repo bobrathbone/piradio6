@@ -1,4 +1,16 @@
 # Git ignore
 .pyc
-podcasts.dist
 create_podcasts.py
+podcasts.dist
+test_alsa.py
+test_gpio.py
+test_mpc_events.py
+test_lirc.py
+test_rgb.py
+test_stations.urls
+test_urls.urls
+weather2.py
+weather2.service
+ws_epaper_class.py
+wxconfig
+CVS/
