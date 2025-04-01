@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.24 2024/12/02 07:30:26 bob Exp $
+# $Id: rotary_class.py,v 1.25 2025/02/14 12:41:34 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -221,13 +221,9 @@ class RotaryEncoder:
             self.callback(self.BUTTONDOWN)
         return
 
-    # Get a button state - returns 1 or 0
-    def getButtonState(self, button):
-        return  GPIO.input(button)
-
     def buttonPressed(self,button):
         time.sleep(0.05)
-        state = self.getButtonState(button) 
+        state = GPIO.input(button)
         if state == 1:
             pressed = False
         else:

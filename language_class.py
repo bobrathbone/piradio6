@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: language_class.py,v 1.4 2022/11/26 12:27:07 bob Exp $
+# $Id: language_class.py,v 1.5 2025/02/16 12:53:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -53,6 +53,7 @@ class Language:
         'starting_airplay': 'Starting Airplay',
         'starting_spotify': 'Starting Spotify',
         'waiting_for_spotify_client': 'Waiting for Spotify client',
+        'waiting_for_network': 'Waiting for network',
         'radio_stations' : 'Radio stations',
         'media_library': 'Media library',
         'updatng_media': 'Updating media',

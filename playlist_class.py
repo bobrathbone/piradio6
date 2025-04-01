@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: playlist_class.py,v 1.31 2023/08/28 09:35:33 bob Exp $
+# $Id: playlist_class.py,v 1.33 2025/03/01 10:06:37 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -40,10 +40,10 @@ class Playlist:
     config = None
 
     _name = "Radio"  # Default playlist name
-    _searchlist = []
     _size = 0   # Playlist size
     _type = 0   # Playlist type RADIO or MEDIA
-    _plist = []
+    _plist = [] # This is the playlist from the MPD client (See "mpc playlist")
+    _searchlist = []  # This is the searchlist and is different from plist if RADIO type
 
     def __init__(self,name,config):
         self.config = config
@@ -73,23 +73,6 @@ class Playlist:
     def size(self):
         return self._size
 
-    # Update the current playlist. This is called from the top level radio 
-    # program in response to a PLAYLIST_CHANGED event
-    def update(self,client):
-        playlist_name = self.getName(CurrentPlaylistName)
-        if self._type == RADIO:
-            newlist = self.createNewRadioPlaylist(self._plist)
-        else:
-            newlist = self.createNewMediaPlaylist(self._plist)
-
-        if len(newlist) > 0:
-            self.writePlaylistFile(playlist_name,newlist)
-            self._searchlist = self.createSearchList(client)
-        else:
-            # Protect playlist file if something goes wrong with client playlist
-            print("No records found in new playlist %s" % playlist_name)
-        return self._searchlist
-
     # Get the current playlist name from the radio lib directory
     def getName(self,filename):
         f = open(filename,"r")
@@ -116,7 +99,7 @@ class Playlist:
             line = line.strip('file: ')
             count += 1
             try:
-                if line.startswith("http"):
+                if line.startswith("http"):     # checks http: and https:
     
                     if '#' in line:
                         x = line.split('#')
@@ -126,13 +109,15 @@ class Playlist:
                         url = line 
                         name = "Radio Station %s" % count
 
+                    url = line 
                     newlist.append("#EXTM3U")
                     newlist.append("#EXTINF:-1," + name)
-                    newlist.append(url + '#' + name)
+                    # newlist.append(url + '#' + name)
+                    newlist.append(url)
             except Exception as e:
                 print ("failed on line",count)
                 continue
-
+        #for line in newlist:
         return newlist
 
     # Write the new RADIO playlist to the MPD playlist directory 
@@ -228,6 +213,10 @@ class Playlist:
     def searchlist(self):
         return self._searchlist
 
+    @searchlist.setter
+    def searchlist(self,list):
+        self._searchlist = list
+
     # See if the current playlist has been changed by an external client
     def changed(self,client):
         playlist_changed = False
@@ -302,6 +291,10 @@ class Playlist:
             print("playlist.type: " + str(e))
 
         return playlist_type
+
+    @property
+    def PlaylistName(self):
+        return CurrentPlaylistName
 
     # Playlist type attribute
     @property

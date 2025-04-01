@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.34 2024/12/12 07:39:00 bob Exp $
+# $Id: event_class.py,v 1.39 2025/02/15 14:14:18 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -124,7 +124,7 @@ class Event():
     up_switch = 24
     down_switch = 23
     menu_switch = 17
-    record_switch = 27
+    record_switch = 0
 
     rotary_switch_value = 0
 
@@ -149,8 +149,8 @@ class Event():
         global volumeknob
         self.event_type = self.NO_EVENT
 
-        encoderEventName = " " + self.getEncoderEventName(event)
-        log.message("Volume event:" + str(event) + encoderEventName, log.DEBUG)
+        encoderEventName = self.getEncoderEventName(event)
+        log.message("Volume event:" + str(event) + ' ' + encoderEventName, log.DEBUG)
 
         self.event_triggered = True
 
@@ -176,8 +176,8 @@ class Event():
         self.event_type = self.NO_EVENT
         self.event_triggered = True
 
-        encoderEventName = " " + self.getEncoderEventName(event)
-        log.message("Tuner event:" + str(event) + encoderEventName, log.DEBUG)
+        encoderEventName = self.getEncoderEventName(event)
+        log.message("Tuner event:" + str(event) + ' ' + encoderEventName, log.DEBUG)
 
         if event == RotaryEncoder.CLOCKWISE:
             self.event_type = self.CHANNEL_UP
@@ -471,6 +471,16 @@ class Event():
             volumeknob.run(True)
             tunerknob.run(True)
     
+        elif self.config.rotary_class == self.config.ROTARY_GPIOZERO:
+            from rotary_class_gpiozero  import RotaryEncoderClass
+            log.message("event.setInterface RotaryEncoder ROTARY_GPIOZERO", log.DEBUG)
+
+            volumeknob = RotaryEncoderClass(self.left_switch, self.right_switch,
+                    self.mute_switch,self.volume_event)
+
+            tunerknob = RotaryEncoderClass(self.down_switch, self.up_switch,
+                    self.menu_switch,self.tuner_event) 
+
         if self.config.rotary_class == self.config.RGB_I2C_ROTARY:
             msg = "Volume knob i2c address %s, mute switch %s interrupt_pin %d" \
                     % (hex(volume_i2c),self.mute_switch,volume_interrupt_pin)

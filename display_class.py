@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: display_class.py,v 1.92 2025/01/31 17:18:02 bob Exp $
+# $Id: display_class.py,v 1.95 2025/03/08 11:55:00 bob Exp $
 # Raspberry Pi display routines
 #
 # Author : Bob Rathbone
@@ -207,6 +207,7 @@ class Display:
             self.has_buttons = False # Use standard button ineterface
             self._isOLED = True
             self._mute_line = 5
+            screen.setScrollSpeed(scroll_speed)
 
         elif dtype == config.SSD1306:
             from ssd1306_class import SSD1306
@@ -257,10 +258,19 @@ class Display:
             self._mute_line = 5
             screen.drawFrame()  # Specific to this display
 
+        elif dtype == config.LCD_GPIOZERO:
+            from lcd_class_gpiozero import Lcd
+            screen = Lcd()
+            screen.setWidth(config.display_width)
+            screen.init(code_page = self.code_page)
+            screen.setScrollSpeed(scroll_speed)
+            self._mute_line = config.display_lines
+
         else:
             # Default LCD
             from lcd_class import Lcd
             screen = Lcd()
+            screen.setWidth(config.display_width)
             screen.init(code_page = self.code_page)
             screen.setScrollSpeed(scroll_speed)
             self._mute_line = config.display_lines

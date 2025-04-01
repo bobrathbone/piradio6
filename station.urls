@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.43 2025/01/25 06:55:15 bob Exp $
+# $Id: station.urls,v 1.47 2025/03/04 08:21:28 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -10,27 +10,27 @@
 # For example (BBC Stations) creates a playlist called BBC_Stations.pls
 # Note: Play lists are terminated with a blank line
 # 
-# The (stream) parameter is optional and indicates this is a direct stream link
-#
-# In general it is always better to define a title
-#
 # Some sites that you can use are:
+#   https://garfnet.org.uk/cms/tables/radio-frequencies/internet-radio-player/
 #   https://www.radio-browser.info
 #   http://www.radiomap.eu 
 #   http://www.internet-radio.com  
 #   http://www.radio-locator.com
+#   https://en.everybodywiki.com/List_of_BBC_radio_stream_URLs
 #
-# Then run create_playlists.py in the /home/pi/radio directory to create PLS files
+# Then run create_stations.py in the /home/pi/radio directory to create playlist files
 
 # Name of playlist file
 (Radio)
+# BBC stations (UK) See: https://en.everybodywiki.com/List_of_BBC_radio_stream_URLs
 [BBC - Radio 1] http://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/hls/nonuk/pc_hd_abr_v2/ak/bbc_radio_one.m3u8
 # United Kingdom (Full list available at https://gist.github.com/bpsib/67089b959e4fa898af69fea59ad74bc3)
-[BBC - Radio 2] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_two/bbc_radio_two.isml/bbc_radio_two-audio%3d96000.norewind.m3u8
-[BBC - Radio 3] http://as-hls-ww-live.akamaized.net/pool_904/live/ww/bbc_radio_three/bbc_radio_three.isml/bbc_radio_three-audio%3d96000.norewind.m3u8
-[BBC - Radio 4] http://lstn.lv/bbcradio.m3u8?station=bbc_radio_fourfm%22&bitrate=320000%22
-[BBC - Radio 6 Music] http://lstn.lv/bbcradio.m3u8?station=bbc_6music%22&bitrate=320000%22
+[BBC - Radio 2] http://as-hls-ww-live.akamaized.net/pool_74208725/live/ww/bbc_radio_two/bbc_radio_two.isml/bbc_radio_two-audio%3d96000.norewind.m3u8
+[BBC - Radio 3] http://as-hls-ww-live.akamaized.net/pool_23461179/live/ww/bbc_radio_three/bbc_radio_three.isml/bbc_radio_three-audio%3d96000.norewind.m3u8 
+[BBC - Radio 4] http://as-hls-ww-live.akamaized.net/pool_55057080/live/ww/bbc_radio_fourfm/bbc_radio_fourfm.isml/bbc_radio_fourfm-audio%3d96000.norewind.m3u8
+[BBC - Radio 6 Music] http://as-hls-ww-live.akamaized.net/pool_81827798/live/ww/bbc_6music/bbc_6music.isml/bbc_6music-audio%3d96000.norewind.m3u8
 [BBC - BBC World Service] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_world_service.m3u8
+[BBC - Asia Network] http://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/hls/nonuk/pc_hd_abr_v2/ak/bbc_asian_network.m3u8
 
 # UK stations
 [Caroline Pirate] http://sc3.radiocaroline.net:8030/listen.m3u8
@@ -92,7 +92,7 @@
 # Swiss Rumanch
 [Radio RTR] http://stream.srg-ssr.ch/m/rr/aacp_96
 
-# Thematic
+# Swiss Classic
 [Radio Swiss Classic (fr)] http://stream.srg-ssr.ch/m/rsc_fr/aacp_96
 [Radio Swiss Classic (de)] http://stream.srg-ssr.ch/m/rsc_de/aacp_96
 [Radio Swiss Classic (it)] http://stream.srg-ssr.ch/m/rsc_it/aacp_96
@@ -122,13 +122,19 @@
 [181.fm - BeBop Jazz ] http://icyrelay.181.fm/181-bebop_128k.mp3
 [181.fm - Fusion Jazz] http://icyrelay.181.fm/181-fusionjazz_128k.mp3
 
-# France
+# France see https://fmstream.org/index.php?c=F for more
 [Radio France] http://direct.franceinter.fr/live/franceinter-midfi.mp3
 [France Musique] http://icecast.radiofrance.fr/francemusique-hifi.aac
 [France International] https://icecast.radiofrance.fr/franceinter-hifi.aac 
 [RTL France] https://live.m6radio.quortex.io/webpHJPXnXrN7B6J7Q8mcqmxP/grouprtl/national/long/audio-64000/index.m3u8
 [France Musique Classique Plus] http://icecast.radiofrance.fr/francemusiqueclassiqueplus-hifi.aac
 [France Musique La Jazz] http://icecast.radiofrance.fr/francemusiquelajazz-hifi.aac
+[France Inter] http://direct.franceinter.fr/live/franceinter-midfi.mp3
+[France Culture] http://direct.franceculture.fr/live/franceculture-midfi.mp3
+[France Musique] https://direct.francemusique.fr/live/francemusique-midfi.mp3 
+[Radio Classique] https://radioclassique.ice.infomaniak.ch/radioclassique-high.mp3
+[FIP Bordeaux] https://direct.fipradio.fr/live/fipbordeaux-midfi.mp3
+[Crooner Radio Elvis Presley] http://croonerradio_elvispresley.ice.infomaniak.ch/croonerradio-elvispresley-midfi.mp3
 
 # Slovenian stations
 [80's Radio] http://streams.80s80s.de/web/mp3-192/streams.80s80s.de
@@ -143,9 +149,6 @@
 [181.FM Rock 181] http://relay.181.fm:8008
 [Easy hits Florida HD] http://airspectrum.cdnstream1.com:8116/1649_192.m3u
 
-# Norwegian stations
-[Ariel Radio] https://streams.radio.co/sf069f3c03/listen
-
 # Finnish stations
 [Steel FM] http://ice6.securenetsystems.net/STEELFM.m3u
 
@@ -155,6 +158,7 @@
 [P2 Musik] http://http-live.sr.se/p2musik-mp3-192
 [Classical 102] http://tuner.classical102.com:80/
 [Radio Svizzera Classica] http://stream.srg-ssr.ch/rsc_it/mp3_128.m3u
+[ABC Classic] http://icepool.silvacast.com/KLASSIK1.mp3
 
 # Chill out
 [Lounge-radio.com-Swiss made] http://live.streamhosting.ch:80
@@ -182,7 +186,6 @@
 [Chill] http://media-ice.musicradio.com/ChillMP3.m3u
 
 # Russian and Ukranian radio stations
-[Старое радио] http://195.91.237.50:8000/ices128
 [Russian nashe] http://nashe.streamr.ru:80/nashe-128.mp3
 [Радио Рекорд] http://radiorecord.hostingradio.ru/mdl96.aacp
 [Наше радіо] http://online.nasheradio.ua/NasheRadio_HD
@@ -190,7 +193,9 @@
 #[Гуляй Радио] http://online.radioplayer.ua/GuliayRadio_HD
 
 # Australia
+[ABC News] http://www.abc.net.au/res/streaming/audio/mp3/news_radio.pls
 [ABC classic] http://live-radio01.mediahubaustralia.com/2FMW/mp3/
+[ABC Country] http://www.abc.net.au/res/streaming/audio/mp3/abc_country.pls
 [Hobart local radio] http://live-radio01.mediahubaustralia.com/7LRW/mp3/
 
 # Poland
@@ -210,3 +215,6 @@
 #[Christmas songs] http://159.69.77.12:8056/listen.pls
 #[North pole radio] http://85.25.217.22:8050/listen.pls
 #[Forever Christmas] http://158.69.4.114:8064/listen.pls
+
+# Stations added in the Web interface or any other MPD client will be added to
+# the end of this file and will be added to the last playlist defined

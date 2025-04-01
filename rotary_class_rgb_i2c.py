@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi RGB I2C Rotary Encoder Class
-# $Id: rotary_class_rgb_i2c.py,v 1.17 2024/11/25 10:17:30 bob Exp $
+# $Id: rotary_class_rgb_i2c.py,v 1.18 2025/02/14 12:52:51 bob Exp $
 #
 # Author : Bob Rathbone and Lubos Ruckl (Czech republic)
 # Site   : http://www.bobrathbone.com
@@ -164,12 +164,8 @@ class RGB_I2C_RotaryEncoder:
             self.callback(event)
         return
 
-    # Get a button state - returns 1 or 0
-    def getButtonState(self, button):
-        return  GPIO.input(button)
-
     def buttonPressed(self,button):
-        state = self.getButtonState(button)
+        state = GPIO.input(button)
         if state == 1:
             pressed = False
         else:

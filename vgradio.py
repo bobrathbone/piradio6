@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.51 2024/12/17 10:05:55 bob Exp $
+# $Id: vgradio.py,v 1.52 2025/03/04 07:42:06 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1023,6 +1023,8 @@ if __name__ == "__main__":
             screen.fill(Color(0,0,0))
 
         pygame.display.flip()
+
+        radio.checkClientChange()
 
     # End of main while loop
 

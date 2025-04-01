@@ -3,6 +3,7 @@
 create_podcasts.py
 podcasts.dist
 test_alsa.py
+test_mysql.py
 test_gpio.py
 test_mpc_events.py
 test_lirc.py

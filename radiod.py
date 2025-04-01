@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.183 2025/01/28 11:32:55 bob Exp $
+# $Id: radiod.py,v 1.191 2025/03/01 10:06:37 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -144,6 +144,8 @@ def interrupt():
             # fast display of time configured with seconds 
             if menu_mode == menu.MENU_TIME or menu_mode == menu.MENU_RSS:
                 displayTimeDate(display,radio,message)
+
+    radio.checkClientChange()
 
     if display.hasButtons():
         display.checkButton()
@@ -321,6 +323,8 @@ class MyDaemon(Daemon):
                 # Check if streamripper is recording
                 self.recording = radio.isRecording()
 
+                radio.checkClientChange()
+
                 # This delay is important. DDon't remove or
                 # button/encoder events will be missed
                 time.sleep(0.025)
@@ -367,7 +371,7 @@ class MyDaemon(Daemon):
 
 # Pass events to the appropriate event handler 
 def handleEvent(event,display,radio,menu):
-    global ignoreEvent
+    global ignoreEvent,_volume
     event_type = event.getType()
     event_name = event.getName()
     menu_mode = menu.mode()
@@ -612,6 +616,7 @@ def handleRadioEvent(event,display,radio,menu):
 
 # Handle source menu selection event
 def handleSourceEvent(event,display,radio,menu):
+    global _volume
     display.cancelTimer() # Cancel delayed display of volume
     event_type = event.getType()
     radio.getSources()
@@ -629,6 +634,8 @@ def handleSourceEvent(event,display,radio,menu):
             loadSource(display,radio)
             menu.set(menu.MENU_TIME)
             radio.setReload(False)
+            if display.getLines() >= 4:
+                _volume = -1 # Force volume to be re-displayed on source change
         else:
             handleMenuChange(display,radio,menu,message)
     else:
@@ -755,6 +762,7 @@ def convertInfo(hostname,ip_addr):
 
 # Handle menu option events
 def handleOptionEvent(event,display,radio,menu):
+    global _volume
     event_type = event.getType()
     option_index = menu.getOption()
 
@@ -769,6 +777,8 @@ def handleOptionEvent(event,display,radio,menu):
 
     elif event_type == event.MENU_BUTTON_DOWN:
         handleMenuChange(display,radio,menu,message)
+        if display.getLines() >= 4:
+            _volume = -1
 
     else:
         handleRadioEvent(event,display,radio,menu)

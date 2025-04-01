@@ -1,18 +1,18 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.125 2025/01/31 14:31:33 bob Exp $
+# $Id: piradio,v 1.136 2025/03/09 16:52:21 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
-# This is the 64 bit version
+# This is both the 32-bit and 64-bit version
 # Source: <source package name; defaults to package name>
 Section: misc
 Priority: optional
 Homepage: http://www.bobrathbone.com
-Standards-Version: 4.0.0
 
 Package: radiod
 Version: 8.0
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
+Standards-Version: 4.7.0.2
 
 # Pre-Depends: <comma-separated list of packages>
 # Depends: <comma-separated list of packages>
@@ -22,7 +22,8 @@ Depends:  python3,python3-mpd,python3-rpi.gpio,mpd,mpc
 # Provides: <comma-separated list of packages>
 # Replaces: <comma-separated list of packages>
 # Architecture: all
-Architecture: armhf
+# Architecture: armhf
+Architecture: all
 
 # Copyright: <defaults to GPL2>
 # Changelog: <changelog file; defaults to a generic changelog>
@@ -48,6 +49,7 @@ Files:  radiod.py /usr/share/radio/
     oled_class.py /usr/share/radio/
     cosmic_class.py /usr/share/radio/
     st7789tft_class.py /usr/share/radio/
+    pivumeter_class.py /usr/share/radio/
     ssd1306_class.py /usr/share/radio/
     sh1106_class.py /usr/share/radio/
     sh1106_config.py /usr/share/radio/
@@ -68,10 +70,12 @@ Files:  radiod.py /usr/share/radio/
     rotary_class_rgb_i2c.py /usr/share/radio/
     rotary_switch_class.py /usr/share/radio/
     rotary_class_alternative.py /usr/share/radio/
+    rotary_class_gpiozero.py /usr/share/radio/
     create_stations.py /usr/share/radio/
     create_keymap.py /usr/share/radio/ 
     radio_class.py /usr/share/radio/
     lcd_class.py /usr/share/radio/
+    lcd_class_gpiozero.py /usr/share/radio/
     i2c_class.py /usr/share/radio/
     lcd_i2c_adafruit.py /usr/share/radio/
     lcd_i2c_pcf8574.py /usr/share/radio/
@@ -94,11 +98,13 @@ Files:  radiod.py /usr/share/radio/
     docs/record_radio.md /usr/share/radio/docs
     docs/wifi_notes.md /usr/share/radio/docs
     docs/running_diagnostics.md /usr/share/radio/docs
+    docs/shoutcast.md /usr/share/radio/docs
     docs/index.html /usr/share/radio/docs
     docs/docs.css /usr/share/radio/docs
     scripts/configure_audio_device.sh /usr/share/radio/scripts/
     scripts/install_wm8960.sh /usr/share/radio/scripts/
     scripts/install_luma.sh /usr/share/radio/scripts/
+    scripts/install_equalizer.sh /usr/share/radio/scripts/
     scripts/configure_radio.sh /usr/share/radio/scripts/
     scripts/configure_audio.sh /usr/share/radio/scripts/
     scripts/configure_ir_remote.sh /usr/share/radio/scripts/
@@ -141,12 +147,10 @@ Files:  radiod.py /usr/share/radio/
     oled/Font.py /usr/share/radio/oled/
     oled/Graphics.py /usr/share/radio/oled/
     oled/OLED.py /usr/share/radio/oled/
-    smbus2/__init__.py /usr/share/radio/smbus2
-    smbus2/smbus2.py /usr/share/radio/smbus2
     README /usr/share/radio/
     build.sh /usr/share/radio/
-    smbus2/__init__.py /usr/share/radio/smbus2
     smbus2/smbus2.py /usr/share/radio/smbus2
+    smbus2/__init__.py /usr/share/radio/smbus2
     remotes/myremote.toml /usr/share/radio/remotes
     remotes/mini.toml /usr/share/radio/remotes
     logrotate.d/radiod /etc/logrotate.d/

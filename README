@@ -13,7 +13,7 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.0 release notes
 -------------------------
-Release 28 January 2025 - Build 5 (Beta) 
+Release 1 April 2025 - Build 5 
 1) Prevent radio program from crashing if no IP network and no media to load
 2) Support for the Waveshare 1.5 and 2.42-Inch SPI interface OLEDs added
 3) New configuration parameter ky040_r1_fitted added to set KY040 switch (SW) pullup resistor
@@ -32,6 +32,10 @@ Release 28 January 2025 - Build 5 (Beta)
 16) Support for Waveshare I2C 2-line 40-character LCD display 
 17) New scrolling=yes/no configuration parameter to switch message scrolling on/off
 18) Volume control now adjusts both WM8960 soundcard Speaker and Headphone volume together
+19) Package build now produces a single build for both 32 and 64-bit installation
+20) Facility to add radio stations via Web Interface (O!MPD) implemented
+21) Scroll speed in the ST7789 screen class can now be set in /etc/radiod.conf 
+22) Improved IR remote control selection of radio stations and tracks
 
 Manuals
 -------

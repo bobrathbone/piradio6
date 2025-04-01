@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.27 2023/06/09 11:49:25 bob Exp $
+# $Id: create_stations.py,v 1.28 2025/03/12 11:56:01 bob Exp $
 #
 # Create playlist files from the following url formats
 #    iPhone stream files (.asx)
@@ -426,18 +426,6 @@ if len(sys.argv) > 1:
             stderr("Invalid parameter %s\n" % param)
             usage()
             sys.exit(1)
-
-# See if playlists being maintained by external clients
-if config.update_playlists:
-    print("Warning: The radio is configured to allow playlist updates by external clients")
-    print("so overwriting them with this program is disabled.")
-    print("See update_playlists=yes in /etc/radiod.conf (Add it if it is missing)")
-    if not forceUpdate:
-        print("Use the --force flag to override this restriction (Current playlists will be overwritten)")
-        print("Exiting program!")
-        sys.exit(0)
-    else:
-        print("The --force flag has been set to overwrite current playlists")
 
 # Create station URL list
 createList()

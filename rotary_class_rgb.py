@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class_rgb.py,v 1.3 2024/07/06 08:47:15 bob Exp $
+# $Id: rotary_class_rgb.py,v 1.4 2025/02/14 12:52:51 bob Exp $
 # Version to support RGB Rotary encoders with LEDs
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
@@ -207,12 +207,8 @@ class RotaryEncoderRgb:
             self.callback(event)
         return
 
-    # Get a button state - returns 1 or 0
-    def getButtonState(self, button):
-        return  GPIO.input(button)
-
     def buttonPressed(self,button):
-        state = self.getButtonState(button) 
+        state = GPIO.input(button)
         if state == 0:
             pressed = False
         else:

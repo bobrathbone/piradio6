@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.125 2025/01/14 06:27:14 bob Exp $
+# $Id: config_class.py,v 1.130 2025/02/28 15:32:39 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -60,13 +60,15 @@ class Configuration:
     LCD_I2C_JHD1313_SGM31323 = 13   # Grove 2x16 I2C RGB LCD & SGM31323 controllor 
                                     # for colour backlight
     WS_SPI_SSD1309 = 14 # Waveshare SPI SSD1309  OLED
+    LCD_GPIOZERO = 15   # LCD via GPIO pins using gpiozero calls
 
     display_type = LCD
     DisplayTypes = [ 'NO_DISPLAY','LCD', 'LCD_I2C_PCF8574', 
              'LCD_I2C_ADAFRUIT', 'LCD_ADAFRUIT_RGB', 
              'GRAPHICAL_DISPLAY', 'OLED_128x64', 
              'PIFACE_CAD','ST7789TFT','SSD1306','SH1106_SPI','LUMA',
-             'LCD_I2C_JHD1313','LCD_I2C_JHD1313_SGM31323','WS_SPI_SSD1309' ]
+             'LCD_I2C_JHD1313','LCD_I2C_JHD1313_SGM31323',
+             'WS_SPI_SSD1309','LCD_GPIOZERO',]
 
     # User interface ROTARY or BUTTONS
     ROTARY_ENCODER = 0
@@ -86,6 +88,7 @@ class Configuration:
     ALTERNATIVE = 1 # Select rotary_class_alternate.py
     RGB_ROTARY = 2  # Select rotary_class_rgb.py
     RGB_I2C_ROTARY = 3  # Select rotary_class_rgb_i2c.py
+    ROTARY_GPIOZERO = 4 # Rotary encoder using gpiozero interface
 
     # Configuration parameters accesible through @property and @<parameter>.setter
     # Radio parameters
@@ -236,7 +239,7 @@ class Configuration:
              "right_switch": 15,
              "up_switch": 24,
              "down_switch": 23,
-             "record_switch": 27,
+             "record_switch": 0,
            }
 
     # Pull up/down resistors (For button class only)
@@ -498,6 +501,9 @@ class Configuration:
                     if parameter == 'LCD':
                         self.display_type = self.LCD
 
+                    elif parameter == 'LCD_GPIOZERO':
+                        self.display_type = self.LCD_GPIOZERO
+
                     elif parameter == 'LCD_I2C_PCF8574':
                         self.display_type = self.LCD_I2C_PCF8574
 
@@ -560,6 +566,8 @@ class Configuration:
                         self.rotary_class = self.RGB_ROTARY
                     elif parameter == 'rgb_i2c_rotary':
                         self.rotary_class = self.RGB_I2C_ROTARY
+                    elif parameter == 'rotary_gpiozero':
+                        self.rotary_class = self.ROTARY_GPIOZERO
                     else:
                         self.rotary_class = self.STANDARD
 
@@ -569,8 +577,8 @@ class Configuration:
                     else:
                         self.rotary_gpio_pullup = GPIO.PUD_UP 
 
-                elif option == 'rotary_gpio_pullup':
-                    self.ky040_r1_fitted = convertYesNo(parameter)
+                elif option == 'ky040_r1_fitted':
+                    self.ky040_r1_fitted = self.convertYesNo(parameter)
 
                 elif option == 'rotary_step_size':
                     self.rotary_step_size = parameter
@@ -1850,7 +1858,7 @@ if __name__ == '__main__':
         print (menuswitch, config.getMenuSwitch(menuswitch))
     
     print('')
-    rclass = ['Standard', 'Alternative',  'rgb_rotary', 'rgb_i2c_rotary']
+    rclass = ['Standard', 'Alternative',  'rgb_rotary', 'rgb_i2c_rotary','encoder_gipiozero']
     print ("Rotary class:", config.rotary_class, rclass[config._rotary_class])
     rotary_pullup = "up {GPIO.PUD_UP}" 
     if  config.rotary_gpio_pullup == GPIO.PUD_OFF: 

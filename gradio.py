@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.64 2024/12/17 09:33:29 bob Exp $
+# $Id: gradio.py,v 1.65 2025/03/04 07:42:06 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1695,6 +1695,8 @@ if __name__ == "__main__":
 
         # Update display
         pygame.display.flip()
+
+        radio.checkClientChange()
 
     # End of while loop
 

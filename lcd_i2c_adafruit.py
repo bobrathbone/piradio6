@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # LCD test program for the lcd_i2c_class.py class
-# $Id: lcd_i2c_adafruit.py,v 1.7 2024/12/15 12:51:42 bob Exp $
+# $Id: lcd_i2c_adafruit.py,v 1.8 2025/03/09 16:25:27 bob Exp $
 #
 # I2C Adafruit I2C backback driver
 # Adapted from RpiLcdBackpack from Paul Knox-Kennedy
@@ -272,7 +272,7 @@ class Lcd_i2c_Adafruit:
     def setWidth(self,width):
         self.width = width
         # Adjust line offsets if 16 char display
-        if width is 16:
+        if width == 16:
             self.lcd_line3 = self.LCD_LINE_3a
             self.lcd_line4 = self.LCD_LINE_4a
 

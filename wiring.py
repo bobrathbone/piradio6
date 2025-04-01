@@ -4,7 +4,7 @@
 # This program produces a wiring diagram based on the 
 #      configuration in the /etc/radiod.conf file
 
-# $Id: wiring.py,v 1.7 2021/11/13 16:05:17 bob Exp $
+# $Id: wiring.py,v 1.8 2025/01/31 19:50:43 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -32,6 +32,7 @@ switch_labels = [ "left_switch",
           "up_switch",
           "GND_0V",
           "menu_switch",
+          "record_switch",
         ]
 
 switch_details = { "left_switch": 'A',
@@ -41,6 +42,7 @@ switch_details = { "left_switch": 'A',
            "down_switch": 'A',
            "up_switch": 'B',
            "menu_switch": '< GND 0V',
+           "record_switch": '< GND 0V',
          }
 
 lcd_labels = [  'lcd_data4',
@@ -90,7 +92,7 @@ def displaySwitch(config,params):
             if not params:
                 label = label.replace('_', ' ')
                 label = label.capitalize()
-            print(" %2.d\t%2.d <------> %-12s   %s" % (gpio, pin, label, rotary))
+            print(" %2.d\t%2.d <------> %-13s   %s" % (gpio, pin, label, rotary))
         except:
             print("Invalid GPIO", label + '=' + str(gpio))
     print()

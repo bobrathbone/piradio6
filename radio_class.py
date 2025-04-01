@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.182 2025/01/20 09:41:20 bob Exp $
+# $Id: radio_class.py,v 1.194 2025/03/12 19:17:22 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -10,6 +10,8 @@
 # This class uses  Music Player Daemon 'mpd' and the python3-mpd library
 # Use "apt-get install python3-mpd" to install the library
 # See: https://pypi.org/project/python-mpd2/
+# Also https://mpd.readthedocs.io/en/latest/protocol.html#command-reference 
+#      https://python-mpd2.readthedocs.io/en/latest/topics/commands.html
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
@@ -65,6 +67,7 @@ VolumeFile = RadioLibDir + "/volume"
 MixerVolumeFile = RadioLibDir + "/mixer_volume"
 MixerIdFile = RadioLibDir + "/mixer_volume_id"
 BoardRevisionFile = RadioLibDir + "/boardrevision"
+StationListFile = RadioLibDir + "/stationlist"
 
 # Recording PID details
 PidDir = '/var/run/radio_record'
@@ -130,6 +133,7 @@ class Radio:
     pivumeter = None
 
     source = None   # Source (radio,media,spotify and airplay)
+    source_type = 0  # Source type change check
     audio_error = False     # No sound device
     boardrevision = 2 # Raspberry board version type
     MpdVersion = '' # MPD version 
@@ -138,9 +142,7 @@ class Radio:
     mpdport = 6600  # MPD port number
     device_error_cnt = 0    # Device error causes an abort
     isMuted = False # Is radio state "pause" or "stop"
-    searchlist = [] # Search list (tracks or radio stations)
     current_id = 1  # Currently playing track or station
-    current_source = 0 # Current source (index in current_class.py)
     reload = False  # Reload radio stations or player playlists
     loading_DB = False  # Loading database
     artist = "" # Artist (Search routines)
@@ -371,7 +373,6 @@ class Radio:
     def _RecordKey(self,key):
         global log
         self.ir_pid = self.getPid(ireventd_pidfile)
-        print("PID", self.ir_pid)
         if not self.recording and self.ir_pid > 1:
             try:
                 # This causes the IR daemon to switch on the activity LED
@@ -525,7 +526,6 @@ class Radio:
                 self.mountAll()
                 playlistName = self.source.loadOmpdLibrary();
                 self.client.load(playlistName)
-                self.searchlist = self.PL.searchlist
                 log.message("Loaded O!MPD playlist " + playlistName, log.DEBUG)
             else:
                 self.playlistName = playlistName
@@ -817,7 +817,7 @@ class Radio:
         self.setSearchIndex(index)
         self.setLoadNew(True)
         name = self.getStationName(index)
-        if name.startswith("http:") and '#' in name: 
+        if name.startswith("http:") and '#' in name:   
             url,name = name.split('#')
         msg = "radio.getNext index " + str(index) + " "+ name
         log.message(msg, log.DEBUG)
@@ -1641,20 +1641,6 @@ class Radio:
             else:
                 currentid = int(pos) + 1
 
-            # Only update if the Current ID has changed by another client
-            if self.current_id != currentid:
-                log.message("radio.getCurrentID New ID " \
-                        + str(currentid) + " id:" + str(self.current_id),
-                         log.DEBUG)
-                self.current_id = currentid
-                # Write to current ID file
-                self.execCommand ("echo " + str(currentid) + " > " \
-                            + self.current_file)
-                self.search_index = self.current_id - 1
-                self.getIdError = False
-                self.event.set(self.event.MPD_CLIENT_CHANGE)
-                self.setInterrupt() 
-                
         except Exception as e:
             log.message("radio.getCurrentID: " + str(e),log.ERROR)
             if not self.getIdError:
@@ -1701,6 +1687,35 @@ class Radio:
             self.setInterrupt()
 
         return self.error
+
+    # Check if external client has change the source between RADIO and MEDIA
+    # It raises a MPD_CLIENT_CHANGE interrupt
+    def checkClientChange(self):
+        source_type = self.source.getType()
+        currentsong = self.client.currentsong()
+        file = currentsong.get("file")
+
+        if file != None:
+            if source_type == self.source.RADIO or source_type == self.source.MEDIA:
+                source_type = self.getStreamType(file) 
+
+                if self.source_type != source_type:
+                    self.source_type = source_type 
+                    self.source.setIndex(source_type)
+                    source_name = self.source.getTypeName()
+                    self.source.setType(source_type)
+                    self.event.set(self.event.MPD_CLIENT_CHANGE)
+                    log.message("checkClientChange to " + source_name, log.DEBUG)
+
+        self.checkAdded()
+
+    # Get source type RADIO or MEDIA 
+    def getStreamType(self,file):
+        if "http:" in file or "https:" in file:
+            source_type = self.source.RADIO
+        else:
+            source_type = self.source.MEDIA
+        return source_type
 
     # Get the progress of the currently playing track
     def getProgress(self):
@@ -1759,8 +1774,8 @@ class Radio:
         # Validity checks
         if new_id  <= 0:
             new_id = 1
-        elif new_id > len(self.searchlist):
-            new_id = len(self.searchlist)
+        elif new_id > len(self.PL.searchlist): 
+            new_id = len(self.PL.searchlist) 
 
         self.current_id = new_id
 
@@ -1772,6 +1787,58 @@ class Radio:
         self.execCommand ("echo " + str(self.current_id) + " > " + self.current_file)
 
         return self.current_id
+
+    # Check for playlist addition by Web interface
+    # Switch to newly added station
+    def checkAdded(self):
+        status = self.client.status()
+        pl_length = int(status.get("playlistlength"))
+        search_length = len(self.PL.searchlist)
+
+        # Switch to new song and add it to the searchlist 
+        if pl_length > search_length:
+            index = pl_length - 1
+            self.client.play(index)
+            time.sleep(0.5)   # Allow MPD to action station change
+            currentsong = self.getCurrentSong()
+            name = currentsong.get("name")
+            if name == None:
+                name = currentsong.get("title")
+            if name == None:
+                name = "Station %d" % pl_length
+            url = currentsong.get("file")
+
+            # Only allow new radio stations to be added and if update_playlists=yes
+            if url.startswith("http") and self.config.update_playlists:
+                self.addNewEntry(name,url)
+
+    # Add a new entry to searchlist, playlist and stationlist file
+    def addNewEntry(self,name,url):
+        self.PL.searchlist.append(name)
+        new_entry = "[%s] %s" % (name,url)
+        log.message("radio.addNewEntry " + new_entry, log.DEBUG)
+
+        # Update playlist in /var/lib/mpd/playlists
+        pl_name = self.PL.PlaylistName
+        # Get the playlist file name
+        with open(pl_name) as f:
+            pl_file = f.read()
+            pl_file = pl_file.strip() + '.m3u'
+            f.close
+
+        # Append new station to playlist file
+        pl_file = PlaylistsDirectory + '/' + pl_file
+        with open(pl_file, "a") as f:
+            f.write("#EXTM3U\n")
+            f.write("#EXTINF:-1," + name + '\n')
+            f.write(url + '\n')
+            f.close
+
+        
+        # Append new station to /var/lib/radiod/stationlist 
+        with open(StationListFile, "a") as f:
+            f.write("[%s] %s\n" % (name,url))
+            f.close
 
     # Get stats array
     def getStats(self):
@@ -2037,7 +2104,7 @@ class Radio:
             log.message("radio.getSources " + str(e), log.ERROR)
         return sources
 
-    # Load source. Either radio, media or airplay
+    # Load source. Either radio, media ,spotify or airplay
     def loadSource(self):
         # Get the source type radio,media or airplay
         sources = self.getSources()
@@ -2089,8 +2156,6 @@ class Radio:
                 self.startSpotify()
 
         if source_type == self.source.RADIO or source_type == self.source.MEDIA:
-            # Create a list for search
-            self.searchlist = self.PL.searchlist
             self.current_id = self.getStoredID(self.current_file)
             self.play(self.current_id)
 
@@ -2101,8 +2166,8 @@ class Radio:
         self.source_index = self.source.setNewType()
         self.source.setIndex(self.source_index)
         self.storeSource(self.source_index)
-        return
 
+    # Load playlist
     def loadPlaylist(self):
         source_type = self.source.getNewType()
         type_name  = self.source.getNewTypeName()
@@ -2126,7 +2191,8 @@ class Radio:
 
     def reloadCurrentPlaylist(self):
         log.message("Reloading current playlist", log.INFO)
-        plist = self.client.playlist()
+        playlist =  self.PL.createSearchList(self.client) 
+        return playlist
 
     # Update music library 
     def updateLibrary(self,force=False):
@@ -2205,10 +2271,10 @@ class Radio:
         log.message("radio.play " + str(id), log.DEBUG)
 
         new_id = id
-        if new_id > len(self.searchlist):
+        if new_id > len(self.PL.searchlist):   
             new_id = 1
         elif new_id < 1:
-            new_id = len(self.searchlist)
+            new_id = len(self.PL.searchlist) 
 
         # Check if RADIO or MEDIA
         sourceType = self.source.getType()
@@ -2335,22 +2401,21 @@ class Radio:
 
     # Get list of tracks or stations
     def getPlayList(self):
-        return self.searchlist
+        return self.PL.searchlist  
 
     # Get playlist length
     def getPlayListLength(self):
-        return len(self.searchlist)
+        return len(self.PL.searchlist)
 
     # Handle the PLAYLIST_CHANGED event and update the searchlist
     def handlePlaylistChange(self):
         log.message("radio.handlePlaylistChange", log.DEBUG)
-        self.searchlist = self.PL.update(self.client)
-        log.message("Created new searchlist " + str(len(self.searchlist)), 
-                        log.DEBUG)
+        self.PL.createSearchList(self.client)
+        log.message("Created new searchlist " + str(len(self.PL.searchlist)),log.DEBUG) 
         
     # Get the length of the current list
     def getListLength(self):
-        return len(self.searchlist) 
+        return len(self.PL.searchlist) 
 
     # Display artist True or False
     def displayArtist(self):
@@ -2377,8 +2442,8 @@ class Radio:
         else:
             stationName = "No tracks found"
         try:
-            if len(self.searchlist) > 0:
-                stationName = self.searchlist[index] 
+            if len(self.PL.searchlist) > 0: 
+                stationName = self.PL.searchlist[index] 
 
             if stationName != self.stationName and len(stationName) > 0:
                 log.message ("Station " + str(index+1) + ": " \
@@ -2390,10 +2455,10 @@ class Radio:
 
     # Get track name by Index
     def getTrackNameByIndex(self,index):
-        if len(self.searchlist) < 1:
+        if len(self.PL.searchlist) < 1: 
             track = "No tracks"
         else:
-            sections = self.searchlist[index].split(' - ')
+            sections = self.PL.searchlist[index].split(' - ')
             leng = len(sections)
             if leng > 1:
                 track = sections[1]
@@ -2405,12 +2470,12 @@ class Radio:
 
     # Get artist name by Index
     def getArtistName(self,index):
-        if len(self.searchlist) < 1:
+        if len(self.PL.searchlist) < 1:
             artist = "No playlists"
         else:
             artist = "Unknown artist"
             try:
-                sections = self.searchlist[index].split(' - ')
+                sections = self.PL.searchlist[index].split(' - ') 
                 leng = len(sections)
                 if leng > 1:
                     artist = sections[0]

@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.18 2024/11/29 12:21:56 bob Exp $
+# $Id: build.sh,v 1.19 2025/02/17 10:03:04 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -17,7 +17,6 @@ GRP=$(id -g -n ${USR})
 PKGDEF=piradio
 PKG=radiod
 VERSION=$(grep ^Version: ${PKGDEF} | awk '{print $2}')
-#ARCH=$(grep ^Architecture: ${PKGDEF} | awk '{print $2}')
 BUILDLOG=build.log
 OS_RELEASE=/etc/os-release
 EQUIVS=/usr/bin/equivs-build
@@ -37,24 +36,8 @@ fi
 
 echo "Building radiod package $(date)"
 
-# Check if this machine is 32 or 64-bit
-BIT=$(getconf LONG_BIT)
-if [[ ${BIT} == "64" ]]; then
-    echo "64-bit system."
-    ARCH="arm64"
-elif [[ ${BIT} == "32" ]]; then
-    echo "32-bit system."
-    ARCH="armhf"
-else
-    echo "Cannot determine Architecture. Using 64-bit"
-    ARCH="arm64"
-fi
-
-cp -f ${PKGDEF} ${PKGDEF}.save
-
-DEBPKG=${PKG}_${VERSION}_${ARCH}.deb
+DEBPKG=${PKG}_${VERSION}_all.deb
 echo "Buiding ${DEBPKG}"
-sudo sed -i -e "0,/^Architecture:/{s/^Architecture:.*/Architecture: ${ARCH}/}" ${PKGDEF} 
 
 # We need Rasbian Buster (Release 10) or later
 VERSION_ID=$(grep VERSION_ID ${OS_RELEASE})
@@ -69,7 +52,15 @@ if [[ ${ID} -lt 10 ]]; then
 fi
 IFS=${SAVEIFS}
 
-echo "Building package ${PKG} version ${VERSION}" | tee ${BUILDLOG}
+# Get architecture
+BIT=$(getconf LONG_BIT)     # 32 or 64-bit archtecture
+if [[ ${BIT} == 64 ]];then
+    ARCH=arm64
+else
+    ARCH=armhf
+fi
+
+echo "Building package ${PKG} version ${VERSION} Architecture ${BIT}-bit" | tee ${BUILDLOG}
 echo "from input file ${PKGDEF}" | tee -a ${BUILDLOG}
 echo "Update version and build number in constants.py as required"
 sudo chown ${USR}:${GRP} *.py *.cmd *.sh
@@ -102,9 +93,6 @@ if [[ ${ans} == 'y' ]]; then
 	    echo "Package ${DEBPKG} has errors" | tee -a ${BUILDLOG}
 	fi
 fi
-
-# Prevent CVS from updating package file every time this is run
-mv ${PKGDEF}.save ${PKGDEF}
 
 echo
 echo "Now install the ${DEBPKG} package with the following command:"

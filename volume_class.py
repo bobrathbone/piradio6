@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: volume_class.py,v 1.33 2025/01/15 13:43:36 bob Exp $
+# $Id: volume_class.py,v 1.34 2025/02/18 09:20:54 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -229,12 +229,6 @@ class Volume:
     def getStoredVolume(self):
         return self._getStoredVolume()
 
-    # Mixer volume file 
-    def restoreMpdMixerVolume(self):
-        self.mixer_preset = config.getMixerPreset()
-        self._setMixerVolume(self.mixer_preset,False)
-        return
-    
     # Get stored volume
     def _getStoredVolume(self):
         source_type = self.source.getType()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# $Id: luma_class.py,v 1.38 2024/11/25 10:17:29 bob Exp $
+# $Id: luma_class.py,v 1.40 2025/02/21 14:21:12 bob Exp $
 # This class drives the SH1106 controller for the 128x64 pixel TFT
 # It requirs the I2C dtoverlay to be loaded. The I2C address is normally 0x37
 #
@@ -180,20 +180,24 @@ class LUMA:
     # The update routine displays the buffered lines and volume
     def update(self):
         x = 0
-        with canvas(oled) as draw:
-            for i in range(self.nlines):
-                y = self.Lines[i]
-                text = self.TextLines[i]
-                draw.text((x,y),text,font=self.font,fill=255)
-            
-            # Display volume bar or mute message
-            # Any text in line buffer 4 overrides display of the volume bar
-            if self.nlines > 3 and len(self.TextLines[3]) > 1:
-                y = self.Lines[3]
-                text = self.TextLines[3]
-                draw.text((x,y),text[:self.nchars],font=self.font,fill=255)
-            else: 
-                self._volume(draw,self.iVolume)
+        try:
+            with canvas(oled) as draw:
+                for i in range(self.nlines):
+                    y = self.Lines[i]
+                    text = self.TextLines[i]
+                    draw.text((x,y),text,font=self.font,fill=255)
+                
+                # Display volume bar or mute message
+                # Any text in line buffer 4 overrides display of the volume bar
+                if self.nlines > 3 and len(self.TextLines[3]) > 1:
+                    y = self.Lines[3]
+                    text = self.TextLines[3]
+                    draw.text((x,y),text[:self.nchars],font=self.font,fill=255)
+                else: 
+                    self._volume(draw,self.iVolume)
+        except Exception as e:
+            print("ERROR:",str(e))
+            pass
 
     # Scroll line - interrupt() breaks out routine if True
     def _scroll(self,line,text,interrupt):

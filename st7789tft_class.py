@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This class drives the Sitronix ST7789 controller and 240x240 pixel TFT
 #
-# $Id: st7789tft_class.py,v 1.22 2024/11/25 10:17:30 bob Exp $
+# $Id: st7789tft_class.py,v 1.23 2025/03/08 11:55:00 bob Exp $
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
@@ -59,7 +59,7 @@ L2_fontSize = 35
 
 ## ST7789 TFT display class
 class ST7789:
-    scroll_speed = 0.001
+    scroll_speed = 0.15
     #        1  2  3  4  5  6
     TextLines = ['','','','','','']
 
@@ -235,6 +235,11 @@ class ST7789:
         self.drawRectangle((x1,y1,x2,y2), bgcolor)
         return
 
+    # Set the scroll speed. 0 = use default
+    def setScrollSpeed(self,scroll_speed):
+        if scroll_speed > 0:
+            self.scroll_speed = scroll_speed
+
     # Display volume bar on line 6
     def volume(self,vol):
         border = 2
@@ -348,7 +353,6 @@ if __name__ == '__main__':
     display.drawSplash(dir + "/images/raspberrypi.png",2)
     display.update
     display.drawSplash(dir + "/images/spotify.png",2)
-
 
     display.clear()
     while True:

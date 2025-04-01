@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.39 2025/01/19 11:03:55 bob Exp $
+# $Id: ireventd.py,v 1.41 2025/03/12 08:53:54 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -231,12 +231,14 @@ class RemoteDaemon(Daemon):
 
                         if self.play_number > 0:
                             self.play_number *= 10
-
                         self.play_number += playnum
-                        if not self.timer_running:
-                            self.timer = Timer(2, self.timerTask, args=None)
-                            self.timer.start()
-                            self.timer_running = True
+
+                        # Restart timer each key press
+                        if self.timer_running:
+                            self.timer.cancel()
+                        self.timer = Timer(2, self.timerTask, args=None)
+                        self.timer.start()
+                        self.timer_running = True
                     else:
                         print(keycode)
                         reply = self.udpSend(keycode)
