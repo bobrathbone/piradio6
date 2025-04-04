@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.194 2025/03/12 19:17:22 bob Exp $
+# $Id: radio_class.py,v 1.195 2025/03/14 14:58:24 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -510,10 +510,11 @@ class Radio:
         elif 'PLAY_' in key:    
             x = key.split('_')
             play_number = int(x[1])
-            self.event.set(self.event.play(play_number))
-            self.event.set(self.event.PLAY)
-            if self.volume.muted():
-                self.volume.unmute()
+            if play_number <= self.PL.size:
+                self.event.set(self.event.play(play_number))
+                self.event.set(self.event.PLAY)
+                if self.volume.muted():
+                    self.volume.unmute()
 
         elif 'PLAYLIST:' in key:    # This event comes from the Web interface
             key_array = key.split(':')

@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.191 2025/03/01 10:06:37 bob Exp $
+# $Id: radiod.py,v 1.193 2025/03/14 15:41:29 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -281,7 +281,7 @@ class MyDaemon(Daemon):
                     if display.volume_delay:
                         displayVolume(display, radio)
                     else:
-                        displayInfo(display,radio,message)
+                        displayInfo(display,radio,message,event)
 
                 elif menu_mode == menu.MENU_SLEEP:
                     displaySleep(display,radio)
@@ -578,6 +578,11 @@ def handleRadioEvent(event,display,radio,menu):
         log.message('event PLAYLIST_CHANGED', log.DEBUG)
         print('PLAYLIST_CHANGED event received')
         radio.handlePlaylistChange()
+
+    elif event_type == event.PLAY:  # From IR remote control
+        play_number = event.getPlayNumber()
+        radio.play(play_number)
+        menu.set(menu.MENU_TIME)
 
     elif event_type == event.SHUTDOWN:
         log.message('event SHUTDOWN', log.DEBUG)
@@ -1189,7 +1194,7 @@ def displayRss(display,radio,message,rss):
     newMenu = False
 
 # Display the information menu
-def displayInfo(display,radio,message):
+def displayInfo(display,radio,message,event):
     global newMenu
 
     displayType = display.getDisplayType()
@@ -1229,6 +1234,13 @@ def displayInfo(display,radio,message):
         display.out(5,msg)
 
     display.update()    
+
+    event_type = event.getType()
+    if event_type == event.PLAY:  # From IR remote control
+        play_number = event.getPlayNumber()
+        radio.play(play_number)
+        menu.set(menu.MENU_TIME)
+
     newMenu = False
 
 
