@@ -72,7 +72,8 @@ cd radio6
 ./setup.sh
 ```
 This will install all of the necessary packages for the development environment and then run **build.sh**. 
-The **setup.sh** script only needs to be run once. Subsequent builds can be done by just running the **./build.sh** script
+The **setup.sh** script only needs to be run once. Subsequent builds can be done by just running the **./build.sh** script.
+*Note:* The control file for the package build is called **piradio**
 ```
 ./build.sh
 ```
