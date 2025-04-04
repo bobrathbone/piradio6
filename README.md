@@ -59,6 +59,33 @@ Supported Hardware
 ## Other
 - IR remote control facility using TSOP382xx series sensor or FLIRC dongle
 
+Downloading and creating the radiod package
+===========================================
+To create the radiod Debian package log into the Raspberry Pi and clone the source tree from GitHub.
+```
+cd
+git clone https://github.com/bobrathbone/piradio6
+```
+Now change directory to **radio6** and run **setup.sh**
+```
+cd radio6
+./setup.sh
+```
+This will install all of the necessary packages for the development environment and then run **build.sh**. 
+The **setup.sh** script only needs to be run once. Subsequent builds can be done by just running the **./build.sh** script
+```
+./build.sh
+```
+Finally install the new package. 
+```
+sudo dpkg -i radiod_8.0_all.deb
+```
+This will install the **radiod** package and supporting files in the **/usr/share/radio** directory. 
+To configure the **radiod** package further run **radio-config** from the command line.
+```
+radio-config
+```
+
 Licences
 =====
 **radiod** is released under the
