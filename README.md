@@ -68,7 +68,7 @@ git clone https://github.com/bobrathbone/piradio6
 ```
 Now change directory to **radio6** and run **setup.sh**
 ```
-cd radio6
+cd piradio6
 ./setup.sh
 ```
 This will install all of the necessary packages for the development environment and then run **build.sh**. 
