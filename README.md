@@ -66,9 +66,10 @@ To create the radiod Debian package log into the Raspberry Pi and clone the sour
 cd
 git clone https://github.com/bobrathbone/piradio6
 ```
-Now change directory to **radio6** and run **setup.sh**
+Now change directory to **radio6** and make **setup.sh** executable then run it.
 ```
 cd piradio6
+chmod +x setup.sh
 ./setup.sh
 ```
 This will install all of the necessary packages for the development environment and then run **build.sh**. 
