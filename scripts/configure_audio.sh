@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.6 2025/01/10 17:24:33 bob Exp $
+# $Id: configure_audio.sh,v 1.13 2025/03/08 09:52:24 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -164,7 +164,23 @@ if [[ $(release_id) -ge 12 ]]; then
     BOOTCONFIG=${BOOTCONFIG_2}
 fi
 
-echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
+# Integrity check of /boot/[firmware/]config.txt
+declare -i lines=$(wc -l ${BOOTCONFIG} | awk '{print $1}')
+if [[ ${lines} -lt 10 ]]; then
+    echo "ERROR: ${BOOTCONFIG} failed integrity check" | tee -a ${LOG}
+    echo "Restoring ${BOOTCONFIG} from ${BOOTCONFIG}.orig" | tee -a ${LOG}
+    if [[ -f ${BOOTCONFIG}.orig ]]; then
+        sudo cp ${BOOTCONFIG}.orig ${BOOTCONFIG}
+        echo "Re-run sudo ${0} "
+    else
+        echo "Restore/repair ${BOOTCONFIG}" | tee -a ${LOG}
+    fi
+    exit 1
+else
+    echo
+    echo "Using ${BOOTCONFIG} configuration (${lines} lines)"  | tee -a ${LOG}
+    echo
+fi
 
 # Add the user to the audio group 
 sudo usermod -G audio -a $USER
@@ -417,57 +433,43 @@ if [[ ${TYPE} == ${RPI} ]]; then
 fi
 
 
-# Waveshare WM8960 DAC driver options
-ADJ_ALSA=0
-REMOVE_WM8960=0
-INSTALL_WM8960=0
 if [[ ${TYPE} == ${WM8960} ]]; then
+    ADJ_ALSA=0
+    REMOVE_WM8960=0
+    INSTALL_WM8960=0
 
-    if [[ ${SKIP_PKG_CHANGE} == "-s" ]]; then
-        no_install "Waveshare WM8960 Hat"
-        exit 0
-    else
-        echo "Installing WM8960 packages" | tee -a ${LOG}
-        sudo ${SCRIPTS_DIR}/install_wm8960.sh 
-    fi
+    selection=1 
+    while [ $selection != 0 ]
+    do
+        ans=$(whiptail --title "Select audio output" --menu "Choose your option" 18 75 12 \
+        "1" "Adjust sound mixer settings (alsamixer)" \
+        "2" "Install Waveshare WM8960 DAC driver (Un-install existing first)" \
+        "3" "Un-install Waveshare WM8960 DAC driver" 3>&1 1>&2 2>&3)
 
-    status=$(dkms status wm8960-soundcard)  
-    echo ${status} | tee -a ${LOG}
-    if [[ ${status} != "" ]]; then  
-        selection=1 
-        while [ $selection != 0 ]
-        do
-            ans=$(whiptail --title "Select audio output" --menu "Choose your option" 18 75 12 \
-            "1" "Adjust sound mixer settings (alsamixer)" \
-            "2" "Re-install Waveshare WM8960 DAC driver (Run Un-install first)" \
-            "3" "Un-install Waveshare WM8960 DAC driver" 3>&1 1>&2 2>&3)
+        exitstatus=$?
+        if [[ $exitstatus != 0 ]]; then
+            exit 0
+        fi
 
-            exitstatus=$?
-            if [[ $exitstatus != 0 ]]; then
-                exit 0
-            fi
+        if [[ ${ans} == '1' ]]; then
+            DESC="Adjust sound mixer settings"
+            ADJ_ALSA=1
+        fi
 
-            if [[ ${ans} == '1' ]]; then
-                DESC="Adjust sound mixer settings"
-                ADJ_ALSA=1
-            fi
+        if [[ ${ans} == '2' ]]; then
+            DESC="install Waveshare WM8960 DAC driver"
+            INSTALL_WM8960=1
+        fi
 
-            if [[ ${ans} == '2' ]]; then
-                DESC="install Waveshare WM8960 DAC driver"
-                INSTALL_WM8960=1
-            fi
+        if [[ ${ans} == '3' ]]; then
+            DESC="Remove Waveshare WM8960 DAC driver"
+            REMOVE_WM8960=1
+        fi
 
-            if [[ ${ans} == '3' ]]; then
-                DESC="Remove Waveshare WM8960 DAC driver"
-                REMOVE_WM8960=1
-            fi
+        whiptail --title "$DESC selected" --yesno "Is this correct?" 10 60
+        selection=$?
+    done
 
-            whiptail --title "$DESC selected" --yesno "Is this correct?" 10 60
-            selection=$?
-        done
-    else         
-        INSTALL_WM8960=1
-    fi
 fi
 
 if [[ ${ADJ_ALSA} == '1' ]]; then
@@ -492,23 +494,41 @@ if [[ ${ADJ_ALSA} == '1' ]]; then
         fi
     fi
     exit 0
-fi
 
-if [[ ${INSTALL_WM8960} == '1' ]]; then
-    echo | tee -a ${LOG}
-    cd ${DIR}/WM8960-Audio-HAT 
-    echo "Installng Waveshare DAC driver (wm8960-soundcard)" | tee -a ${LOG}
-    sudo ./install_wm8960.sh | tee -a ${LOG}
-fi
+elif [[ ${INSTALL_WM8960} == '1' ]]; then
+    if [[ ${SKIP_PKG_CHANGE} == "-s" ]]; then
+        no_install "Waveshare WM8960 Hat"
 
-if [[ ${REMOVE_WM8960} == '1' ]]; then
+    else
+        status=$(dkms status wm8960-soundcard)  
+        echo ${status} | tee -a ${LOG}
+        if [[ ${status} == "" ]]; then  
+            echo | tee -a ${LOG}
+            cd ${DIR}/WM8960-Audio-HAT 
+            echo "Installng Waveshare DAC driver (wm8960-soundcard)" | tee -a ${LOG}
+            sudo ./install_wm8960.sh | tee -a ${LOG}
+        else
+            echo -n "Un-install WM8960-Audio-HAT first - Enter to continue: "
+            read a 
+            exit 1
+        fi
+    fi
+
+elif [[ ${REMOVE_WM8960} == '1' ]]; then
     echo | tee -a ${LOG}
     echo "Un-installng Waveshare DAC driver (wm8960-soundcard)?" | tee -a ${LOG}
-    cd ${DIR}/WM8960-Audio-HAT 
-    if [[ $? == 0 ]]; then  # Do not separate from above
-        sudo ./uninstall.sh | tee -a ${LOG}
-        sudo rm -rf ${DIR}/WM8960-Audio-HAT | tee -a ${LOG}
-        sudo rm -f /etc/wm8960-soundcard | tee -a ${LOG}
+    if [[ -d /etc/wm8960-soundcard ]]; then 
+        if [[ -d ${DIR}/WM8960-Audio-HAT ]]; then 
+            cd ${DIR}/WM8960-Audio-HAT 
+            sudo ./uninstall.sh | tee -a ${LOG}
+            cd
+            sudo rm -rf ${DIR}/WM8960-Audio-HAT | tee -a ${LOG}
+        else
+            echo "ERROR: ${DIR}/WM8960-Audio-HAT  missing" | tee -a ${LOG}
+            exit 1
+        fi
+        sudo rm -rf /etc/wm8960-soundcard | tee -a ${LOG}
+        sudo sed -i '/dtoverlay=wm8960-soundcard/d' ${BOOTCONFIG}
     else
         echo "${DIR}/WM8960-Audio-HAT already un-installed" | tee -a ${LOG}
     fi
@@ -524,6 +544,11 @@ PKG="alsa-utils"
 if [[ ! -f /usr/bin/amixer && ${SKIP_PKG_CHANGE} != "-s" ]]; then
     echo "Installing ${PKG} package" | tee -a ${LOG}
     sudo apt-get --yes install ${PKG}
+fi
+
+if [[ ! -d /usr/share/doc/python3-alsaaudio ]]; then
+    echo "Installing python3-alsaaudio package" | tee -a ${LOG}
+    sudo apt install python3-alsaaudio
 fi
 
 # Check if required pulse audio installed. 
@@ -829,20 +854,6 @@ if [[ ${SKIP_PKG_CHANGE} != "-s" ]]; then
         echo "You chose not to reboot!" | tee -a ${LOG}
         echo "Changes made will not become active until the next reboot" | tee -a ${LOG}
     fi
-fi
-
-# Integrity check of /boot/config.txt
-declare -i lines=$(wc -l ${BOOTCONFIG} | awk '{print $1}')
-if [[ ${lines} -lt 10 ]]; then
-    echo "ERROR: ${BOOTCONFIG} failed integrity check"
-    echo "Restoring ${BOOTCONFIG} from ${BOOTCONFIG}.orig"
-    sudo cp ${BOOTCONFIG}.orig ${BOOTCONFIG}
-    echo "Re-run sudo ${0} "
-    exit 1
-else
-    echo
-    echo "${BOOTCONFIG} has ${lines} lines"
-    echo
 fi
 
 # Sync changes to disk

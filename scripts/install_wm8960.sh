@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio - Install Waveshare WM8960 DAC driver
-# $Id: install_wm8960.sh,v 1.5 2025/01/13 10:09:00 bob Exp $
+# $Id: install_wm8960.sh,v 1.7 2025/02/22 11:41:10 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -66,20 +66,13 @@ if [[ ${BIT} == "32" ]]; then
     fi
 fi
 
-# Install git download the archive
-if [[ -d ${WM8960_CONF_DIR} ]];then
-    echo "Waveshare software is already installed"  | tee -a ${LOG}
-    echo -n "Uninstall first - Press enter to continue: "
-    read a
-    exit 0
-fi
-
 echo "Disable on-board audio" | tee -a ${LOG}
 sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 
 sudo apt-get -y install git 
 echo "Cloning https://github.com/waveshare/WM8960-Audio-HAT" | tee -a ${LOG}
+cd ${DIR}
 rm -rf WM8960-Audio-HAT
 git clone https://github.com/waveshare/WM8960-Audio-HAT  | tee -a ${LOG}
 

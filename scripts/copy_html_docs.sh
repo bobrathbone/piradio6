@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: copy_html_docs.sh,v 1.5 2025/01/07 12:14:18 bob Exp $
+# $Id: copy_html_docs.sh,v 1.6 2025/02/01 09:08:50 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -50,8 +50,10 @@ do
     sudo cp -f ${DOCS_DIR}/${file}.html ${WWW_DOCS}/.
 done
 # Copy CSS file
-sudo cp -f ${DOCS_DIR}/docs.css ${WWW_DOCS}/.
-sudo cp -f ${DOCS_DIR}/index.html ${WWW_DOCS}/.
+CMD="sudo cp -f ${DOCS_DIR}/docs.css ${WWW_DOCS}/."
+echo ${CMD} ;${CMD}
+CMD="sudo cp -f ${DOCS_DIR}/index.html ${WWW_DOCS}/."
+echo ${CMD};${CMD}
 echo "The above html documents have been copied to ${WWW_DOCS}"
 
 # End of script

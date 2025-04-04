@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.28 2025/01/28 09:40:48 bob Exp $
+# $Id: configure_radio.sh,v 1.32 2025/03/08 11:19:25 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -27,6 +27,8 @@ SCRIPTS=${DIR}/scripts
 
 # Display colours
 orange='\033[33m'
+blue='\033[34m'
+green='\033[32m'
 default='\033[39m'
 
 # Development directory
@@ -52,7 +54,7 @@ WXCONFIG=/etc/weather.conf
 LOG=${LOGDIR}/install.log
 NODAEMON_LOG=${LOGDIR}/radiod_nodaemon.log
 SPLASH="bitmaps\/raspberry-pi-logo.bmp" # Used for sed so \ needed
-MANAGE_PIP=/usr/lib/python3.11/EXTERNALLY-MANAGED 
+MANAGE_PIP=/usr/lib/python3.11/EXTERNALLY-MANAGED
 FFMPEG=/usr/bin/ffmpeg
 X_INSTALLED='no'   # 'yes' = X-Windows installed
 WALLPAPER==/usr/share/rpd-wallpaper
@@ -143,9 +145,10 @@ function no_install
     echo
     echo "WARNING!"
     echo "You cannot configure $1 during the initial installation" | tee -a ${LOG}
-    printf "Finish installing the radio package first then run ${orange}radio-config${default}"
+    printf "Run ${orange}radio-config${default} from the command line"
+    printf " then select ${green}1 configure radio software${default}\n"
+    echo "from the menu line and reconfigure the radio software"
     echo 
-    echo "from the command line and reconfigure $1"
     echo -n "Press enter to continue: "
     read x
 }
@@ -664,7 +667,7 @@ if [[ ${ROTARY_CLASS} == "rgb_i2c_rotary" ]]; then
         cd -
     else
         no_install "I2C rotary encoders with RGB LEDs"
-        exit 1
+        exit 0
     fi
     
     # Link ioexpander to site-packages 
@@ -1090,9 +1093,10 @@ if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
     done
 
 elif [[ ${DISPLAY_TYPE} =~ "WS_SPI_SSD1309" ]]; then
+    set -x
     if [[ ${FLAGS} != "-s" ]]; then
         if [[ $(release_id) -ge 12 ]]; then
-            sudo mv ${MANAGE_PIP} ${MANAGE_PIP}.old
+            sudo mv ${MANAGE_PIP} ${MANAGE_PIP}.orig
         fi
         sudo apt-get install python3-pip
         sudo pip3 install RPi.GPIO
@@ -1100,7 +1104,7 @@ elif [[ ${DISPLAY_TYPE} =~ "WS_SPI_SSD1309" ]]; then
         sudo pip3 install spidev
 
         if [[ $(release_id) -ge 12 ]]; then
-            sudo mv ${MANAGE_PIP}.old ${MANAGE_PIP}
+            sudo mv ${MANAGE_PIP}.orig ${MANAGE_PIP}
         fi
 
         sudo sed -i 's/^#dtparam=spi=.*$/dtparam=spi=on/'  ${BOOTCONFIG}
@@ -1543,9 +1547,24 @@ elif [[ ${BUTTON_WIRING} == "5" ]]; then
     sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=24/}" ${CONFIG}
     #sudo sed -i -e "0,/^right_switch/{s/right_switch.*/right_switch=20/}" ${CONFIG}
 
+    # Install ST7789
+    if [[ ${FLAGS} != "-s" ]]; then
+        sudo apt-get install python3-pip
+        if [[ -f  ${MANAGE_PIP} ]]; then
+            sudo mv ${MANAGE_PIP} ${MANAGE_PIP}.orig
+        fi
+        echo "Installing ST7789 module" | tee -a ${LOG}
+        sudo apt-get -y install libopenblas-dev
+        sudo pip3 install st7789 
+        sudo mv ${MANAGE_PIP}.orig ${MANAGE_PIP}
+    else
+        no_install "Devices with ST7789 controller"
+        exit 0
+    fi
+
 # Configure 1.3" OLED with 5-button joystick and 3 push buttons
 elif [[ ${BUTTON_WIRING} == "6" ]]; then
-    echo "Configuring Pimoroni Audio with ST7789 controller"  | tee -a ${LOG}
+    echo "Configuring Pimoroni Audio with ST7789 controller" | tee -a ${LOG}
     # Switches
     sudo sed -i -e "0,/^menu_switch=/{s/menu_switch=.*/menu_switch=13/}" ${CONFIG}
     sudo sed -i -e "0,/^mute_switch/{s/mute_switch.*/mute_switch=21/}" ${CONFIG}
