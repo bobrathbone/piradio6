@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.136 2025/03/09 16:52:21 bob Exp $
+# $Id: piradio,v 1.137 2025/04/08 13:58:35 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is both the 32-bit and 64-bit version
 # Source: <source package name; defaults to package name>
@@ -98,6 +98,7 @@ Files:  radiod.py /usr/share/radio/
     docs/record_radio.md /usr/share/radio/docs
     docs/wifi_notes.md /usr/share/radio/docs
     docs/running_diagnostics.md /usr/share/radio/docs
+    docs/build.md /usr/share/radio/docs
     docs/shoutcast.md /usr/share/radio/docs
     docs/index.html /usr/share/radio/docs
     docs/docs.css /usr/share/radio/docs

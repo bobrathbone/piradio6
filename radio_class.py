@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.195 2025/03/14 14:58:24 bob Exp $
+# $Id: radio_class.py,v 1.199 2025/04/10 11:02:48 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -107,6 +107,7 @@ class Radio:
     server = None
     ir_pid = -1         # IR event daemon process pid
     record_pid = -1     # Recording process pid
+    play_number = 0     # Play number set by IR remote control
 
     client = mpd.MPDClient()    
     volume = 0
@@ -509,12 +510,10 @@ class Radio:
 
         elif 'PLAY_' in key:    
             x = key.split('_')
-            play_number = int(x[1])
-            if play_number <= self.PL.size:
-                self.event.set(self.event.play(play_number))
-                self.event.set(self.event.PLAY)
-                if self.volume.muted():
-                    self.volume.unmute()
+            self.play_number = int(x[1])
+            if self.volume.muted():
+                self.volume.unmute()
+            self.event.set(self.event.PLAY)
 
         elif 'PLAYLIST:' in key:    # This event comes from the Web interface
             key_array = key.split(':')
@@ -560,6 +559,10 @@ class Radio:
     #  Get LOAD_PLAYLIST event playlist name
     def getPlaylistName(self):
         return self.playlistName
+
+    #  Get play number set by remote control
+    def getPlayNumber(self):
+        return self.play_number
 
     # Set up radio configuration and start the MPD daemon
     def start(self):
@@ -710,8 +713,6 @@ class Radio:
                 # Wait for stations to be loaded before playing
                 self.client.stop()
                 log.message("Connected to MPD port " + str(port), log.INFO)
-                ##if self.volume != None:
-                #self.volume.setClient(self.client)
                 connected = True
                 retry = 0
 
@@ -1629,8 +1630,8 @@ class Radio:
     # Get the ID  of the currently playing track or station ID
     def getCurrentID(self):
         try:
-            currentsong = self.getCurrentSong()
-            pos = currentsong.get("pos")
+            self.currentsong = self.getCurrentSong()
+            pos = self.currentsong.get("pos")
             if pos == None:
                 currentid = self.current_id
                 if self.errorCode == 0:
@@ -1693,8 +1694,10 @@ class Radio:
     # It raises a MPD_CLIENT_CHANGE interrupt
     def checkClientChange(self):
         source_type = self.source.getType()
-        currentsong = self.client.currentsong()
-        file = currentsong.get("file")
+        self.currentsong = self.client.currentsong()
+        file = self.currentsong.get("file")
+        changed = False
+        x = ""
 
         if file != None:
             if source_type == self.source.RADIO or source_type == self.source.MEDIA:
@@ -1707,8 +1710,18 @@ class Radio:
                     self.source.setType(source_type)
                     self.event.set(self.event.MPD_CLIENT_CHANGE)
                     log.message("checkClientChange to " + source_name, log.DEBUG)
+                    changed = True
 
-        self.checkAdded()
+                current_id = int(self.currentsong.get("pos")) + 1
+                if self.current_id != current_id:
+                    changed = True
+                    self.current_id = current_id
+                    self.storeIntegerValue (self.current_id,CurrentStationFile)
+                    x = self.getSearchName()
+
+        if not changed:
+            changed = self.checkAdded()
+        return changed
 
     # Get source type RADIO or MEDIA 
     def getStreamType(self,file):
@@ -1795,23 +1808,26 @@ class Radio:
         status = self.client.status()
         pl_length = int(status.get("playlistlength"))
         search_length = len(self.PL.searchlist)
+        changed = False
 
         # Switch to new song and add it to the searchlist 
         if pl_length > search_length:
             index = pl_length - 1
             self.client.play(index)
             time.sleep(0.5)   # Allow MPD to action station change
-            currentsong = self.getCurrentSong()
-            name = currentsong.get("name")
+            self.currentsong = self.getCurrentSong()
+            name = self.currentsong.get("name")
             if name == None:
-                name = currentsong.get("title")
+                name = self.currentsong.get("title")
             if name == None:
                 name = "Station %d" % pl_length
-            url = currentsong.get("file")
+            url = self.currentsong.get("file")
 
             # Only allow new radio stations to be added and if update_playlists=yes
             if url.startswith("http") and self.config.update_playlists:
                 self.addNewEntry(name,url)
+            changed = True
+        return changed
 
     # Add a new entry to searchlist, playlist and stationlist file
     def addNewEntry(self,name,url):
@@ -1856,13 +1872,11 @@ class Radio:
     # Get current song information (Only for use within this module)
     def getCurrentSong(self):
         try:
-            currentsong = self.client.currentsong()
-            self.currentsong = currentsong
+            self.currentsong = self.client.currentsong()
         except:
             # Try re-connect and status
             try:
-                currentsong = self.client.currentsong()
-                self.currentsong = currentsong
+                self.currentsong = self.client.currentsong()
             except Exception as e:
                 log.message("radio.getCurrentSong failed: " + str(e), log.ERROR)
         return self.currentsong
@@ -1871,6 +1885,8 @@ class Radio:
     def getSearchName(self):
         name = ''
         try:
+            self.currentsong = self.getCurrentSong()
+            self.search_index =  int(self.currentsong.get("pos"))
             name = self.getStationName(self.search_index) 
             if len(name) > 0:
                 name = self.translate.all(name)
@@ -1883,9 +1899,9 @@ class Radio:
 
     # Get the currently playing radio station name from mpd 
     def getCurrentStationName(self):
-        currentsong = self.getCurrentSong()
+        self.currentsong = self.getCurrentSong()
         try:
-            name = str(currentsong.get("name"))
+            name = str(self.currentsong.get("name"))
         except:
             name = ''
 
@@ -1926,8 +1942,8 @@ class Radio:
         name = '' 
 
         try:
-            currentsong = self.getCurrentSong()
-            title = str(currentsong.get("title"))
+            self.currentsong = self.getCurrentSong()
+            title = str(self.currentsong.get("title"))
         except:
             title = ''
 
@@ -1960,10 +1976,10 @@ class Radio:
     # Get the name of the current artist mpd (Music library only)
     def getCurrentArtist(self):
         try:
-            currentsong = self.getCurrentSong()
-            artist = str(currentsong.get("artist"))
+            self.currentsong = self.getCurrentSong()
+            artist = str(self.currentsong.get("artist"))
             artist = self.translate.all(artist) 
-            title = str(currentsong.get("title"))
+            title = str(self.currentsong.get("title"))
             title = self.translate.all(title)
             if str(artist) == 'None':
                 artist = "Unknown artist"
@@ -1976,8 +1992,8 @@ class Radio:
     def getFileName(self):
         filename = ''
         try:
-            currentsong = self.getCurrentSong()
-            filename = str(currentsong.get("file"))
+            self.currentsong = self.getCurrentSong()
+            filename = str(self.currentsong.get("file"))
             if str(filename) == 'None':
                 filename = ''
         except:
@@ -1987,8 +2003,8 @@ class Radio:
     # Get the name of the current artist mpd (Music library only)
     def getCurrentAlbum(self):
         try:
-            currentsong = self.getCurrentSong()
-            album = str(currentsong.get("album"))
+            self.currentsong = self.getCurrentSong()
+            album = str(self.currentsong.get("album"))
             if str(album) == 'None':
                 album = ""
             else:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.41 2025/03/12 08:53:54 bob Exp $
+# $Id: ireventd.py,v 1.43 2025/04/11 11:32:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -245,7 +245,7 @@ class RemoteDaemon(Daemon):
                         print(reply)
 
                     if 'KEY_RECORD' in keycode :
-                        time.sleep(2)
+                        time.sleep(1.5)
 
                 if remote_led > 0:
                     if recording: 
@@ -300,7 +300,6 @@ class RemoteDaemon(Daemon):
             
     # Test the LED
     def flash(self):
-        log.init('radio')
         remote_led = config.remote_led
         if remote_led > 0:
             GPIO.setup(remote_led, GPIO.OUT)  # Output LED

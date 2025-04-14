@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.193 2025/03/14 15:41:29 bob Exp $
+# $Id: radiod.py,v 1.203 2025/04/14 11:58:16 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -145,11 +145,11 @@ def interrupt():
             if menu_mode == menu.MENU_TIME or menu_mode == menu.MENU_RSS:
                 displayTimeDate(display,radio,message)
 
-    radio.checkClientChange()
+    if radio.checkClientChange():
+        interrupt = True
 
     if display.hasButtons():
         display.checkButton()
-
     return interrupt
 
 # Daemon class
@@ -320,12 +320,11 @@ class MyDaemon(Daemon):
     
                 displayBacklight(radio,menu,display)
 
+
                 # Check if streamripper is recording
                 self.recording = radio.isRecording()
 
-                radio.checkClientChange()
-
-                # This delay is important. DDon't remove or
+                # This delay is important. Don't remove or
                 # button/encoder events will be missed
                 time.sleep(0.025)
 
@@ -436,11 +435,6 @@ def handleEvent(event,display,radio,menu):
     elif event_type == event.MPD_CLIENT_CHANGE:
         log.message("handleEvent Client Change",log.DEBUG)
 
-    elif event_type == event.PLAY:
-        play_number = event.getPlayNumber() 
-        log.message("handleEvent Play " + str(play_number),log.DEBUG)
-        radio.play(play_number)
-
     elif event_type != event.NO_EVENT:
         handleRadioEvent(event,display,radio,menu)
 
@@ -451,6 +445,7 @@ def handleEvent(event,display,radio,menu):
 # Handle normal volume and channel change events
 def handleRadioEvent(event,display,radio,menu):
     global _connecting
+    global _volume
     event_type = event.getType()
     event_name = event.getName()
     menu_mode = menu.mode()
@@ -580,9 +575,13 @@ def handleRadioEvent(event,display,radio,menu):
         radio.handlePlaylistChange()
 
     elif event_type == event.PLAY:  # From IR remote control
-        play_number = event.getPlayNumber()
-        radio.play(play_number)
-        menu.set(menu.MENU_TIME)
+        pl_length = radio.getPlayListLength()
+        play_number = radio.getPlayNumber()
+        if play_number <= pl_length:
+            radio.play(play_number)
+            menu.set(menu.MENU_TIME)
+        _volume = -1
+        displayPlay(play_number,pl_length)
 
     elif event_type == event.SHUTDOWN:
         log.message('event SHUTDOWN', log.DEBUG)
@@ -1032,8 +1031,7 @@ def displaySearch(display,menu,message):
                 message.speak(str(index+1) + ' ' +  current_artist[0:50])
 
     elif source_type == radio.source.RADIO:
-        ## search_station = radio.getStationName(index)
-        search_station = radio.getSearchName()
+        search_station = radio.getStationName(index)
         search_station = search_station.lstrip('"')
         search_station = search_station.rstrip('"')
 
@@ -1234,15 +1232,6 @@ def displayInfo(display,radio,message,event):
         display.out(5,msg)
 
     display.update()    
-
-    event_type = event.getType()
-    if event_type == event.PLAY:  # From IR remote control
-        play_number = event.getPlayNumber()
-        radio.play(play_number)
-        menu.set(menu.MENU_TIME)
-
-    newMenu = False
-
 
 # Display sleep 
 def displaySleep(display,radio):
@@ -1534,7 +1523,20 @@ def displayVolume(display,radio):
             _displayOledVolume(display,radio)
         else:
             _displayVolume(display,radio)
-    
+
+# Display IR remote selection
+def displayPlay(play_number,pl_length):
+    nlines = display.getLines()
+    if play_number > pl_length:
+        msg = message.get("error")
+        msg = "%s > %d" % (msg,pl_length) 
+    else:
+        play = message.get("play") 
+        msg = "%s %d" % (play,play_number)
+    display.out(nlines, msg, no_interrupt)
+    time.sleep(1.5)
+    display.refreshVolumeBar()
+   
 # LCD volume display routine
 def _displayVolume(display,radio):
     global _volume

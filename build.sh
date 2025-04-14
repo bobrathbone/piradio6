@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.19 2025/02/17 10:03:04 bob Exp $
+# $Id: build.sh,v 1.20 2025/03/14 10:58:33 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -44,7 +44,7 @@ VERSION_ID=$(grep VERSION_ID ${OS_RELEASE})
 SAVEIFS=${IFS}; IFS='='
 ID=$(echo ${VERSION_ID} | awk '{print $2}' | sed 's/"//g')
 if [[ ${ID} -lt 10 ]]; then
-	VERSION=$(grep VERSION= ${OS_RELEASE})
+	VERSION=$(grep VERSION=${OS_RELEASE})
     echo "Raspbian Buster (Release 10) or later is required to run this build"
 	RELEASE=$(echo ${VERSION} | awk '{print $2 $3}' | sed 's/"//g')
 	echo "This is Raspbian ${RELEASE}"

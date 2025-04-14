@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.52 2025/03/04 07:42:06 bob Exp $
+# $Id: vgradio.py,v 1.53 2025/04/10 14:39:23 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -229,9 +229,16 @@ def handleEvent(radio,radioEvent):
             
         handleSourceChange(radioEvent,radio,message)
 
-    elif event_type == event.PLAYLIST_CHANGED:
+    elif event_type == radioEvent.PLAYLIST_CHANGED:
         log.message('PLAYLIST_CHANGED event received', log.DEBUG)
         radio.handlePlaylistChange()
+
+    elif event_type == radioEvent.PLAY:     # Raised by IR RC PLAY_nn event
+        log.message('PLAY event received', log.DEBUG)
+        pl_length = radio.getPlayListLength()
+        play_number = radio.getPlayNumber()
+        if play_number <= pl_length:
+            radio.play(play_number)
 
     # Finally clear the event
     radioEvent.clear()

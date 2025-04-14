@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.32 2025/03/08 11:19:25 bob Exp $
+# $Id: configure_radio.sh,v 1.33 2025/04/14 18:15:42 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -433,6 +433,10 @@ fi
 
 # Normal cofiguration start
 sudo rm -f ${LOG}
+# Make log file writeable
+sudo touch ${LOG}
+sudo chown ${USER}:${GRP} ${LOG}
+
 echo "$0 configuration log, $(date) " | tee ${LOG}
 echo "Using ${DIR}" | tee -a ${LOG}
 echo "Configuring radio for $(codename) OS " | tee -a ${LOG}

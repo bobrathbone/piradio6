@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: language_class.py,v 1.5 2025/02/16 12:53:30 bob Exp $
+# $Id: language_class.py,v 1.7 2025/04/10 08:59:09 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -81,6 +81,8 @@ class Language:
         'title_unknown': 'Title unknown',
         'track_unknown': 'Track unknown',
         'no_information': 'No information',
+        'play': 'Play',
+        'error': 'Error',
 
         # Options
         'random': 'Random',

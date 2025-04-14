@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_bluetooth.sh,v 1.5 2025/01/07 17:43:28 bob Exp $
+# $Id: configure_bluetooth.sh,v 1.7 2025/04/12 11:29:43 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -35,7 +35,8 @@ fi
 DOCS_DIR=${DIR}/docs
 DOC=""
 LYNX=/usr/bin/lynx
-CMARK="/usr/bin/cmark --hardbreaks" 
+CMARK_EXE="/usr/bin/cmark" 
+CMARK="${CMARK_EXE} --hardbreaks" 
 OS_RELEASE=/etc/os-release
 ASOUND_CONF=/etc/asound.conf
 ASOUND_CONF_DIST=${DIR}/asound/asound.conf.dist.blue
@@ -45,6 +46,7 @@ AUDIO_INTERFACE="pulse"
 BOOTCONFIG=/boot/config.txt
 BOOTCONFIG_2=/boot/firmware/config.txt
 USR=$(logname)
+GRP=$(id -g -n ${USR})
 BT_DEVICE=""
 PA_PLAY=/usr/bin/paplay
 #WAV=/usr/share/sounds/alsa/Front_Center.wav
@@ -70,7 +72,7 @@ function exit_message
 }
 
 # Install cmark if not yet installed
-if [[ ! -f ${CMARK} ]]; then
+if [[ ! -f ${CMARK_EXE} ]]; then
     sudo apt-get -y install cmark
 fi
 
@@ -84,11 +86,16 @@ if [[ $(release_id) -ge 12 ]]; then
     BOOTCONFIG=${BOOTCONFIG_2}
 fi
 
+# Get paired devices (different commands for Bullseye and Bookworm)
 if [[ $(release_id) -lt 12 ]]; then
-    PAIRED=$(bluetoothctl paired-devices)
+    PAIRED=$(bluetoothctl paired-devices)   # Bullseye
 else
-    PAIRED=$(bluetoothctl devices)
+    PAIRED=$(bluetoothctl devices)  # Bluetooth
 fi
+
+# Make log file writeable
+sudo touch ${LOG}
+sudo chown ${USR}:${GRP} ${LOG}
 
 loop=1
 while [ ${loop} == 1 ]
@@ -167,7 +174,7 @@ do
         ${CMD}
 
         echo "Installing Bluetooth packages" | tee -a ${LOG}
-        PKGS="install pulseaudio pulseaudio-module-bluetooth "
+        PKGS="pulseaudio pulseaudio-module-bluetooth "
     
         if [[ $(release_id) -ge 12 ]]; then
             PKGS=${PKGS}" bluez-alsa-utils"
@@ -273,7 +280,6 @@ do
 
             # /etc/radiod.conf
             echo "Configuring audio_out parameter in ${CONFIG}" | tee -a ${LOG}
-            #sudo sed -i -e "0,/audio_out=/{s/^#aud/aud/}" ${CONFIG}
             sudo sed -i -e "0,/^audio_out=/{s/^audio_out=.*/audio_out=\"bluetooth\"/}" ${CONFIG}
             grep -i "audio_out="  ${CONFIG} | tee -a ${LOG}
             exit_message
@@ -296,22 +302,49 @@ do
             TITLE="Status Bluetooth Device ${BT_NAME} ${BT_DEVICE}"
             # Create .md file, convert to HTML and display with lynx
             echo ${TITLE} > ${TEMPFILE}.md
-            echo "=====" >> ${TEMPFILE}.md
+            echo "========================" >> ${TEMPFILE}.md
+
+            echo "Bluetooth paired devices" >> ${TEMPFILE}.md
+            echo "========================" >> ${TEMPFILE}.md
+            echo '```' >> ${TEMPFILE}.md
+            echo ${PAIRED} >> ${TEMPFILE}.md
+            echo '```' >> ${TEMPFILE}.md
+
+            echo "Bluetooth device information" >> ${TEMPFILE}.md
+            echo "============================" >> ${TEMPFILE}.md
             echo '```' >> ${TEMPFILE}.md
             bluetoothctl info ${BT_DEVICE} >> ${TEMPFILE}.md
             echo '```' >> ${TEMPFILE}.md
 
-            echo "Bluealsa devices list" >> ${TEMPFILE}.md
+            echo "Paired, Bonded, Trusted and Connected should all be set to **yes**" >> ${TEMPFILE}.md 
+            echo "Blocked should be set to **no**" >> ${TEMPFILE}.md 
+            echo '' >> ${TEMPFILE}.md
+
+            echo "Bluetooth configuration in ${CONFIG}" >> ${TEMPFILE}.md
             echo "=====================" >> ${TEMPFILE}.md
+            echo '```' >> ${TEMPFILE}.md
+            grep "^audio_out=" ${CONFIG} >> ${TEMPFILE}.md
+            grep "^bluetooth_device=" ${CONFIG} >> ${TEMPFILE}.md
+            echo '```' >> ${TEMPFILE}.md
+            echo '' >> ${TEMPFILE}.md
+
+            echo '' >> ${TEMPFILE}.md
+            echo "Bluetooth devices" >> ${TEMPFILE}.md
+            echo "=================" >> ${TEMPFILE}.md
             echo '```' >> ${TEMPFILE}.md
             bluealsa-aplay -l >> ${TEMPFILE}.md
             echo '```' >> ${TEMPFILE}.md
 
+            echo "If you do not see any **PLAYBACK** devices then try removing ${BT_DEVICE}" >> ${TEMPFILE}.md
+            echo "using **bluetoothctl** and rescan, pair, trust and re-connect  " >> ${TEMPFILE}.md
+            echo "device ${BT_DEVICE}, then restart the radio " >> ${TEMPFILE}.md
+            echo "**Note:** No CAPTURE devices are configured or used by the radio" >> ${TEMPFILE}.md
+            # Display the configuration
             ${CMARK} ${TEMPFILE}.md > ${TEMPFILE}.html
             ${LYNX}  ${TEMPFILE}.html
             rm -f ${TEMPFILE}.*
         else
-            echo "No paired devices found" | tee -a ${LOG}
+            echo "**Error:** No paired devices found" | tee -a ${LOG}
             echo "First pair a Bluetooth audio device" | tee -a ${LOG}
             echo -n "Press enter to continue: " 
             read x

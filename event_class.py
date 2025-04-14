@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.39 2025/02/15 14:14:18 bob Exp $
+# $Id: event_class.py,v 1.41 2025/04/10 11:02:48 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -273,16 +273,6 @@ class Event():
         self.event_triggered = True
         self.event_type = event
         return self.event_type
-
-    # Play station/track number
-    def play(self,play_number):
-        self.play_number = play_number
-
-    # Get play number (called by PLAY event in radiod)
-    def getPlayNumber(self):
-        play_number = self.play_number
-        self.play_number = 0
-        return play_number
 
     # Check for event True or False
     def detected(self):

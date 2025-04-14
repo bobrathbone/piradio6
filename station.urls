@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.47 2025/03/04 08:21:28 bob Exp $
+# $Id: station.urls,v 1.48 2025/04/08 08:31:18 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -217,4 +217,4 @@
 #[Forever Christmas] http://158.69.4.114:8064/listen.pls
 
 # Stations added in the Web interface or any other MPD client will be added to
-# the end of this file and will be added to the last playlist defined
+# the end of this file and will be added to the last playlist defined.

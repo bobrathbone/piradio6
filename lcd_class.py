@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.15 2024/12/15 12:51:42 bob Exp $
+# $Id: lcd_class.py,v 1.16 2025/04/07 11:33:36 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -279,11 +279,6 @@ class Lcd:
         for i in range(self.width):
             self._byte_out(ord(s[i]),LCD_CHR)
 
-        # Call interrupt routine
-        interrupt()
-        return
-
-
     # Scroll line - interrupt() breaks out routine if True
     def _scroll(self,line,text,interrupt):
         ilen = len(text)
@@ -318,7 +313,6 @@ class Lcd:
                 time.sleep(0.2)
                 if interrupt():
                     break
-        return
 
     # Set Scroll line speed - Best values are 0.2 and 0.3
     # Limit to between 0.05 and 0.9. 0=use default
@@ -337,7 +331,6 @@ class Lcd:
         if self.lcd_configured:
             self._byte_out(0x01,LCD_CMD) # 000001 Clear display
             time.sleep(E_POSTCLEAR)
-        return
 
     # Does this screen support color
     def hasColor(self):

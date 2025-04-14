@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: display_docs.sh,v 1.9 2025/01/05 11:05:01 bob Exp $
+# $Id: display_docs.sh,v 1.10 2025/04/08 14:42:13 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -50,6 +50,9 @@ ans=$(whiptail --title "Select document to display" --menu "Choose document" 15 
 "5" "Network configuration and roaming" \
 "6" "Configuration tutorial (/etc/radiod.conf)" \
 "7" "Recording a Radio station" \
+"8" "Running Shoutcast" \
+"9" "Building the radiod package from GitHub" \
+"10" "Running diagnostics" \
 3>&1 1>&2 2>&3)
 
 exitstatus=$?
@@ -76,6 +79,15 @@ elif [[ ${ans} == '6' ]]; then
 
 elif [[ ${ans} == '7' ]]; then
     DOC=${DOCS_DIR}/record_radio
+
+elif [[ ${ans} == '8' ]]; then
+    DOC=${DOCS_DIR}/shoutcast
+
+elif [[ ${ans} == '9' ]]; then
+    DOC=${DOCS_DIR}/build
+
+elif [[ ${ans} == '10' ]]; then
+    DOC=${DOCS_DIR}/running_diagnostics
 fi
 
 MD_DOC=${DOC}.md

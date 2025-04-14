@@ -13,7 +13,7 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.0 release notes
 -------------------------
-Release 1 April 2025 - Build 5 
+release 9 April 2025 - Build 6 
 1) Prevent radio program from crashing if no IP network and no media to load
 2) Support for the Waveshare 1.5 and 2.42-Inch SPI interface OLEDs added
 3) New configuration parameter ky040_r1_fitted added to set KY040 switch (SW) pullup resistor
@@ -36,6 +36,8 @@ Release 1 April 2025 - Build 5
 20) Facility to add radio stations via Web Interface (O!MPD) implemented
 21) Scroll speed in the ST7789 screen class can now be set in /etc/radiod.conf 
 22) Improved IR remote control selection of radio stations and tracks
+23) Display new IR remote control selection on the bottom line for 1 second
+24) Implemented IR remote control selection in touch-screen versions of the radio (gradio & vgradio)
 
 Manuals
 -------
@@ -52,6 +54,7 @@ GitHub
 ------
 Source available from GitHub
 Version 8.x see:  https://github.com/bobrathbone/piradio6
+First clone the radio6 package from GitHub 
 Run ./setup.sh from the command line to create the radiod package
 
 Licenses
