@@ -8,12 +8,14 @@ To display tutorial run **radio-config** then select **Information, Documents an
 Format of the stationlist file
 ==============================
 
-To use this file add the URL that points to either an asx or pls file
+An example stationlist file is set up during initial installation process
 The format is:
 
 ```
   (<playlist>)
   [<title>] http://<url>
+  [<title>] http://<url>
+  :
 ```
 
 The (\<playlist\>) parameter groups the following station definitions into one playlist

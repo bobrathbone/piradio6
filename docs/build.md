@@ -33,7 +33,7 @@ radio-config
 
 Contributing to the source of radiod on GitHub
 ==============================================
-The principle aim of **GitHub** apart from providing a repository for project sources is to provide a platform that can be used by developers in a collaborative manner. The previous instructions just create a package locally on your development machine only. If you wish to submit your code changes to be included in the **radiod** project then it is necessary to follow GitHub procedures. This normally entails creating a **fork** of the main source trre and to make your changes to the fork you created. Once your changes have been tested you need to issue a **pull request** which allows   the project owner to examine and approve your changes and then **merge** these into the main source tree.
+The principle aim of **GitHub** apart from providing a repository for project sources is to provide a platform that can be used by developers in a collaborative manner. The previous instructions just create a package locally on your development machine only. If you wish to submit your code changes to be included in the **radiod** project then it is necessary to follow GitHub procedures. This normally entails creating a **fork** of the main source tree and to make your changes to the fork you created. Once your changes have been tested you need to issue a **pull request** which allows   the project owner to examine and approve your changes and then **merge** these into the main source tree.
 
 See [GitHub documentation](https://docs.github.com/en) for further information
 

@@ -1,5 +1,6 @@
 Running diagnostics
 ===================
+Log into the Raspberry Pi
  
 1) Run **radio-config**
 2) Select option **5 Diagnostics and Information**
