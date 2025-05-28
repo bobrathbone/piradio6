@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: playlist_class.py,v 1.33 2025/03/01 10:06:37 bob Exp $
+# $Id: playlist_class.py,v 1.34 2025/05/27 13:10:32 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -137,6 +137,7 @@ class Playlist:
             self._name = name
             client.clear()
             client.load(name)
+            client.update(name)
             self._plist = client.playlist()
             self._type = self.getType(name)
             self._searchlist = self.createSearchList(client)

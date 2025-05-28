@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.203 2025/04/14 11:58:16 bob Exp $
+# $Id: radiod.py,v 1.204 2025/05/12 19:11:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -241,6 +241,7 @@ class MyDaemon(Daemon):
 
         statusLed.set(StatusLed.NORMAL)
         display.refreshVolumeBar()
+        self.recording = radio.isRecording()
 
         # Main processing loop
         while True:
@@ -320,8 +321,7 @@ class MyDaemon(Daemon):
     
                 displayBacklight(radio,menu,display)
 
-
-                # Check if streamripper is recording
+                # Check if liquidsoap is recording
                 self.recording = radio.isRecording()
 
                 # This delay is important. Don't remove or
@@ -613,6 +613,8 @@ def handleRadioEvent(event,display,radio,menu):
         print(msg)
         log.message(msg, log.INFO)
         sys.exit(0)
+
+    event.clear()
 
     # Set timer for rapid display of volume
     if volume_change:

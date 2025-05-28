@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.33 2025/04/14 18:15:42 bob Exp $
+# $Id: configure_radio.sh,v 1.34 2025/05/20 13:17:32 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -258,7 +258,7 @@ if [[ ${COMPONENTS} == 1 ]]; then
         "4" "Install Icecast" \
         "5" "Install Speech facility" \
         "6" "Install Luma OLED/TFT driver" \
-        "7" "Install recording utility (streamripper)" \
+        "7" "Install recording utility (liquidsoap)" \
         "8" "Install Alsa equalizer software" \
         "9" "Install Spotify (librespot)" \
         "10" "Install FLIRC IR remote control (X-Windows)" \
@@ -296,7 +296,7 @@ if [[ ${COMPONENTS} == 1 ]]; then
 
         elif [[ ${ans} == '7' ]]; then
             SCRIPT="install_recording.sh"
-            DESC="Install recording (streamripper)"
+            DESC="Install recording (liquidsoap)"
 
         elif [[ ${ans} == '8' ]]; then
             SCRIPT="install_equalizer.sh"

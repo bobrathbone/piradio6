@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio IR Remote Control Class
-# $Id: ir_daemon.py,v 1.4 2023/07/04 19:29:51 bob Exp $
+# $Id: ir_daemon.py,v 1.5 2025/05/10 14:43:42 bob Exp $
 # 
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
@@ -89,6 +89,7 @@ class Daemon:
         """
         Start the daemon
         """
+        print("Starting IR remote control daemon(ireventd.py)")
         self.begin(True)
 
     def nodaemon(self):
@@ -157,27 +158,26 @@ class Daemon:
 
         # Try killing the daemon process    
         try:
+            print("Sending SIGHUP to process %d" % pid)
             os.kill(pid, SIGHUP)
-            sys.exit(0)
 
-        except ValueError as err:
+        except TypeError as e:
+            pass # Ignore None type 
+
+        except ValueError as e:
             print("Remote control daemon not running")
-            os.remove(self.pidfile)
+            pass
 
-        except OSError as err:
-            err = str(err)
-            if err.find("No such process") > 0:
-                if os.path.exists(self.pidfile):
-                    os.remove(self.pidfile)
-            else:
-                print(str(err))
-                sys.exit(1)
+        except OSError as e:
+            print(str(er))
+            pass
 
     def restart(self):
         """
         Restart the daemon
         """
         self.stop()
+        time.sleep(1)   # Give it time to stop
         self.start()
 
     def status(self):

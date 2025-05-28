@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.137 2025/04/08 13:58:35 bob Exp $
+# $Id: piradio,v 1.140 2025/05/20 08:18:11 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is both the 32-bit and 64-bit version
 # Source: <source package name; defaults to package name>
@@ -9,7 +9,7 @@ Priority: optional
 Homepage: http://www.bobrathbone.com
 
 Package: radiod
-Version: 8.0
+Version: 8.1
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 Standards-Version: 4.7.0.2
@@ -65,6 +65,8 @@ Files:  radiod.py /usr/share/radio/
     display_current.py /usr/share/radio/
     button_class.py /usr/share/radio/
     record.py /usr/share/radio/
+    record.liq /usr/share/radio/
+    ffmpeg.pref /usr/share/radio/
     rotary_class.py /usr/share/radio/
     rotary_class_rgb.py /usr/share/radio/
     rotary_class_rgb_i2c.py /usr/share/radio/

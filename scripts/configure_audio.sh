@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.13 2025/03/08 09:52:24 bob Exp $
+# $Id: configure_audio.sh,v 1.16 2025/05/03 09:21:22 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -155,7 +155,7 @@ if [[ $(release_id) -lt 11 ]]; then
     echo "This program is only supported on Raspbian Bullseye/Bookworm or later!" | tee -a ${LOG}
     echo "This system is running $(codename) OS"
     echo "Exiting program." | tee -a ${LOG}
-    exit 1
+    #exit 1
 fi
 
 
@@ -277,7 +277,14 @@ do
     elif [[ ${ans} == '6' ]]; then
         DESC="HiFiBerry DAC Plus/Amp2"
         NAME=${DESC}
-        DTOVERLAY="hifiberry-dacplus"
+        #DTOVERLAY="hifiberry-dacplus" 
+        #For kernels 6.1.77 and above 
+        if [[ $(release_id) -ge 12 ]]; then
+            DTOVERLAY="hifiberry-dacplus-std"
+        else
+            DTOVERLAY="hifiberry-dacplus"
+        fi
+        DTOVERLAY="hifiberry-dacplus-std"
         MIXER="software"
         TYPE=${DAC}
 
@@ -546,9 +553,10 @@ if [[ ! -f /usr/bin/amixer && ${SKIP_PKG_CHANGE} != "-s" ]]; then
     sudo apt-get --yes install ${PKG}
 fi
 
-if [[ ! -d /usr/share/doc/python3-alsaaudio ]]; then
-    echo "Installing python3-alsaaudio package" | tee -a ${LOG}
-    sudo apt install python3-alsaaudio
+PKG="python3-alsaaudio"
+if [[ ! -d /usr/share/doc/python3-alsaaudio && ${SKIP_PKG_CHANGE} != "-s" ]]; then
+    echo "Installing ${PKG} package" | tee -a ${LOG}
+    sudo apt install ${PKG}
 fi
 
 # Check if required pulse audio installed. 

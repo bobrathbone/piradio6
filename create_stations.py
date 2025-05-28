@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.28 2025/03/12 11:56:01 bob Exp $
+# $Id: create_stations.py,v 1.29 2025/05/23 09:38:50 bob Exp $
 #
 # Create playlist files from the following url formats
 #    iPhone stream files (.asx)
@@ -380,14 +380,15 @@ def checkStream(url,lineCount):
     # Get the stream file
     try:
         socket.setdefaulttimeout(TimeOut)
-        req = urllib.request.Request(url)
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         response = urllib.request.urlopen(req)
         data = response.read(50) # Just read 50 bytes
         success = True
-    except:
+    except Exception as e:
         errorCount += 1
         msg = "Failed to retrieve [" +title + "] " + url + " on line " + str(lineCount)
         print("ERROR: "+ msg)
+        print(str(e))
         ErrorUrls.append(msg)
     return success
 
@@ -570,7 +571,9 @@ for line in open(StationList,'r'):
         isAAC = True
         try:
             url = url.replace('(stream)', '')
-            code = urllib.request.urlopen(url).getcode()
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+            req = urllib.request.Request(url,headers=headers)
+            code = urllib.request.urlopen(req).getcode()
 
             iCode = int(code)
             if int(code) != 200:
@@ -586,10 +589,11 @@ for line in open(StationList,'r'):
             filenumber += 1
             m3u_output += parseDirect(title,url,filenumber)
 
-        except:
+        except Exception as e:
             errorCount += 1
             msg = "Failed to retrieve [" +title + "] " + url + " on line " + str(lineCount)
             print("ERROR: " + msg)
+            print(str(e))
             ErrorUrls.append(msg)
         continue
 

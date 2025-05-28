@@ -80,7 +80,7 @@ The **setup.sh** script only needs to be run once. Subsequent builds can be done
 ```
 Finally install the new package. 
 ```
-sudo dpkg -i radiod_8.0_all.deb
+sudo dpkg -i radiod_8.1_all.deb
 ```
 This will install the **radiod** package and supporting files in the **/usr/share/radio** directory. 
 To configure the **radiod** package further run **radio-config** from the command line.

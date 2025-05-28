@@ -13,5 +13,6 @@ test_urls.urls
 weather2.py
 weather2.service
 ws_epaper_class.py
+record_ripper.py
 wxconfig
 CVS/

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.130 2025/02/28 15:32:39 bob Exp $
+# $Id: config_class.py,v 1.131 2025/05/26 11:42:34 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -121,7 +121,7 @@ class Configuration:
     _station_names = LIST # Station names from playlist names or STREAM
     _update_playlists = False  # Allow update of playlists by external clients
     _mute_action = 0      # MPD action on mute, 1=pause, 2=stop, 0=volume off only
-    _codecs = 'mp3 ogg flac wav wma aac'    # Radio stream Codecs
+    _codecs = 'mp3 ogg flac wav wma aac m4a opus'    # Radio stream Codecs
     MuteActions =  ['Pause','Stop']  # Text for above _mute_action
 
     # Rotary encoder parameters

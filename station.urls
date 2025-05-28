@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.48 2025/04/08 08:31:18 bob Exp $
+# $Id: station.urls,v 1.50 2025/05/24 19:17:34 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -202,6 +202,9 @@
 [Radio Poland] https://stream85.polskieradio.pl/pr5/pr5.sdp/playlist.m3u8
 [Disco radio] http://stream.rcs.revma.com:80/cvswvmyewzzuv
 [Polskie Radio Bialystok] http://stream4.nadaje.com:15476/radiobialystok
+
+# India
+[Macfast] https://icecast.octosignals.com/radiomacfast
 
 #(Air traffic)
 # Live_ATC (Uncomment to try)

@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Web Interface
-# $Id: install_web_interface.sh,v 1.8 2025/02/19 13:36:09 bob Exp $
+# $Id: install_web_interface.sh,v 1.11 2025/04/22 16:05:36 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -77,36 +77,48 @@ echo "Installing Apache Web server" | tee -a ${LOG}
 sudo apt-get -y install apache2 php libapache2-mod-php  | tee -a ${LOG}
 
 # Install PHP
-if [[ $(release_id) -ge 12 ]]; then
-    echo "Installing PHP8.2" | tee -a ${LOG}
-    sudo apt-get -y install php8.2-gd php8.2-mbstring | tee -a ${LOG}
-else
-    echo "Installing PHP7.4" | tee -a ${LOG}
-    sudo apt-get -y install php7.4-gd php7.4-mbstring | tee -a ${LOG}
-fi
+#if [[ $(release_id) -ge 12 ]]; then
+#    echo "Installing PHP8.2" | tee -a ${LOG}
+#    sudo apt-get -y install php8.2-gd php8.2-mbstring | tee -a ${LOG}
+#else
+#    echo "Installing PHP7.4" | tee -a ${LOG}
+#    sudo apt-get -y install php7.4-gd php7.4-mbstring | tee -a ${LOG}
+#fi
 
 # Remove redundant packages
 #sudo apt-get -y autoremove | tee -a ${LOG}
 
 # Install MariaDB database.
-echo "Installing MariaDB database" | tee -a ${LOG}
+echo "Installing PHP and Radio Web software" | tee -a ${LOG}
 if [[ $(release_id) -ge 12 ]]; then
-    sudo apt-get -y install php8.2-gd php8.2-mbstring mariadb-server php-mysql | tee -a ${LOG}
+    echo "Installing PHP8.2" | tee -a ${LOG}
+    sudo apt-get -y install php8.2-gd php8.2-mbstring php-mysql | tee -a ${LOG}
     sudo apt-get -y install php8.2-curl | tee -a ${LOG}
+    sudo a2enmod php8.2
+
+    # Install package from Rathbone Web site
+    rm -f radiodweb_3.2_all.*
+    wget http://bobrathbone.com/raspberrypi/packages/radiodweb_3.2_all.deb | tee -a ${LOG}
+    sudo dpkg -i radiodweb_3.2_all.deb | tee -a ${LOG}
 else
-    sudo apt-get -y install php7.4-gd php7.4-mbstring mariadb-server php-mysql | tee -a ${LOG}
+    echo "Installing PHP7.4" | tee -a ${LOG}
+    sudo apt-get -y install php7.4-gd php7.4-mbstring php-mysql | tee -a ${LOG}
     sudo apt-get -y install php7.4-curl | tee -a ${LOG}
+    # Enable modules
+    sudo phpenmod gd mbstring | tee -a ${LOG}
+    sudo a2enmod php7.4
+    
+    # Install package from Rathbone Web site
+    rm -f radiodweb_2.3_all.*
+    wget http://bobrathbone.com/raspberrypi/packages/radiodweb_2.3_armhf.deb | tee -a ${LOG}
+    sudo dpkg -i radiodweb_2.3_armhf.deb | tee -a ${LOG}
 fi
 
-# Install package from Rathbone Web site
-rm -f radiodweb_3.2_all.*
-wget http://bobrathbone.com/raspberrypi/packages/radiodweb_3.2_all.deb | tee -a ${LOG}
-sudo dpkg -i radiodweb_3.2_all.deb | tee -a ${LOG}
+echo "Installing mariadb-server" | tee -a ${LOG}
+sudo apt-get -y install mariadb-server
 
 sudo apt-get -y --fix-broken install | tee -a ${LOG}
 
-# Enable modules
-sudo phpenmod gd mbstring | tee -a ${LOG}
 
 #sudo apachectl restart | tee -a ${LOG}
 

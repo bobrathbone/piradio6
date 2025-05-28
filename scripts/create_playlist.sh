@@ -2,7 +2,7 @@
 # set -x
 #set -B
 # Raspberry Pi Internet Radio
-# $Id: create_playlist.sh,v 1.7 2024/11/26 16:32:33 bob Exp $
+# $Id: create_playlist.sh,v 1.9 2025/05/26 18:50:19 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -38,7 +38,7 @@ MAX_SIZE=5000
 SDCARD="sdcard"
 USBDRIVE="usbdrive"
 CONFIG=/etc/radiod.conf
-CODECS="mp3 ogg flac wav aac"
+CODECS="mp3 ogg flac wav aac m4a flac opus mp4"
 USR=$(logname)
 LOCATION="/home/${USR}/Music"
 RECORDINGS_DIR="/home/${USR}/Recordings"
@@ -232,6 +232,7 @@ fi
 
 # Allow MPD access to the music directory using ACL 
 sudo setfacl -m u:mpd:rx,g:audio:rx /home/${USR}
+sudo setfacl -m u:mpd:rx,g:audio:rx ${RECORDINGS_DIR}
 
 # Set up a filter (This becomes the playlist name)
 ans=0
@@ -291,6 +292,8 @@ if [[ $? == 0 ]]; then  # Do not seperate from above line
     IFS=${SAVEIFS}
 fi
 
+echo "Supported CODECS in ${CONFIG} ${CODECS}"
+
 for codec in ${CODECS}
 do
         SEARCH="${SEARCH} ${OR} -name *.${codec}"
@@ -342,6 +345,7 @@ if [[ ${FILTERS} != "" ]];then
 else
     echo "${size} tracks found in directory ${SUBDIR} (No filter)"
 fi
+echo "Created from ${LOCATION}"
 
 if [[ ${size} -eq 0 ]];then
     echo "No matching tracks for filter \"${FILTERS}\" found"

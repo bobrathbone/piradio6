@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.41 2025/04/10 11:02:48 bob Exp $
+# $Id: event_class.py,v 1.42 2025/05/12 19:11:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -206,12 +206,13 @@ class Event():
 
         return self.event_type
 
-    # This is the record button to start streamripper
+    # This is the record button to start liquidsoap
     def record_button_event(self,event):
         msg = "Record button event:" + str(event)
         log.message(msg, log.DEBUG)
         while record_button.pressed():
             time.sleep(0.1)
+        time.sleep(1)
         self.event_type = self.RECORD_BUTTON
         self.event_triggered = True
         return self.event_type

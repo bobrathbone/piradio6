@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.43 2025/04/11 11:32:33 bob Exp $
+# $Id: ireventd.py,v 1.44 2025/05/10 10:56:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -346,7 +346,7 @@ def execCommand(cmd):
 
 # Print usage
 def usage():
-    print(("Usage: sudo %s start|stop|status|nodaemon|flash|config|send <KEY>" % sys.argv[0]))
+    print(("Usage: sudo %s start|stop|status|restart|nodaemon|flash|config|send <KEY>" % sys.argv[0]))
     sys.exit(2)
 
 def usageSend():
@@ -417,6 +417,8 @@ if __name__ == "__main__":
             daemon.nodaemon()
         elif 'stop' == sys.argv[1]:
             daemon.stop()
+        elif 'restart' == sys.argv[1]:
+            daemon.restart()
         elif 'flash' == sys.argv[1]:
             daemon.flash()
         elif 'status' == sys.argv[1]:

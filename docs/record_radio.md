@@ -60,18 +60,24 @@ The actual program that calls **streamripper** software is called **record.py**
 The following will be displayed
 
 ```
+./record.py running, pid 281904 27, May 2025 17:36:20
 This program can only be run as root user or using sudo
 
-Usage: ./record.py --station_id=<station number> --duration=<duration>
+Usage: sudo  ./record.py --station_id=<station number> --duration=<duration>
                  --omit_incomplete --playlist_only --directory=<directory>
-                 --cleanup
+                 --cleanup --format=aac|mp3|flac|opus
+                 --log=<loglevel>
 
 Where <station number> is the number of the radio stream to record
       --station_id if ommited the currently playing station will be recorded
       --omit_incomplete skip incomplete tracks when creating the playlist
       --playlist_only Only create playlist from the recordings directory. No recording
       --cleanup Remove incomplete tracks from the /home/<user>/Recordings directory
+      --format Output file format, choices aac,mp3,flac or opus
+      --load Load new Recordings playlist
+      --log <loglevel>
       <directory> is the location for recorded files. default /home/<user>/Recordings
+      <loglevel> 1 crtitcal , 2 severe (default) , 3 important, 4 info , 5 debug
       <duration> is the length of time to record in hours:minutes
                  Maximum recording time allowed 12 hours
 ```

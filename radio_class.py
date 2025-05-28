@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.199 2025/04/10 11:02:48 bob Exp $
+# $Id: radio_class.py,v 1.205 2025/05/24 19:17:34 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -108,6 +108,7 @@ class Radio:
     ir_pid = -1         # IR event daemon process pid
     record_pid = -1     # Recording process pid
     play_number = 0     # Play number set by IR remote control
+    record_delay = False  # Block multiple record key entries
 
     client = mpd.MPDClient()    
     volume = 0
@@ -288,9 +289,8 @@ class Radio:
 
     # Set up configuration files
     def setupConfiguration(self):
-        # Create directory 
-        if not os.path.isfile(CurrentStationFile):
-            self.execCommand ("mkdir -p " + RadioLibDir )
+        # Create /var/lib/radiod directory 
+        self.createDirectory(RadioLibDir)
 
         # Initialise configuration files from ConfigFiles list
         for file in self.ConfigFiles:
@@ -301,9 +301,8 @@ class Radio:
                 f.close()
 
         # Create pid run directory for the record program
-        if not os.path.isdir(PidDir):
-            os.mkdir(PidDir)
-            os.chown(PidDir, self.uid, self.gid)
+        self.createDirectory(PidDir)
+        os.chown(PidDir, self.uid, self.gid)
 
         # Link /var/lib/mpd/music/media to /media/<user>
         cmd = "rm -f /var/lib/mpd/music/media"
@@ -312,11 +311,10 @@ class Radio:
         self.execCommand(cmd)
 
         # Create mount point for networked music library (NAS)
-        if not os.path.isfile("/share"):
-            self.execCommand("mkdir -p /share")
-            if not os.path.ismount("/share"):
-                os.chown('/share', self.uid, self.gid)
-            self.execCommand("sudo ln -f -s /share /var/lib/mpd/music")
+        self.createDirectory("/share")
+        if not os.path.ismount("/share"):
+            os.chown('/share', self.uid, self.gid)
+        self.execCommand("sudo ln -f -s /share /var/lib/mpd/music")
 
         self.execCommand("chown -R " + self.usr + ":" + self.grp + " " + RadioLibDir)
         self.execCommand("chmod -R 764 " + RadioLibDir)
@@ -324,6 +322,20 @@ class Radio:
         self.current_id = self.getStoredID(self.current_file)
 
         return
+
+    # Make directory 
+    def createDirectory(self,dir,exit=True):
+        if not os.path.exists(dir):
+            try:
+                os.mkdir(dir)
+            except Exception as e:
+                msg = "Error " + str(e)
+                if exit:
+                    msg = msg + " Exiting!"
+                    log.message(msg,log.CRITICAL)
+                    sys.exit(1)
+            msg = "Created " + dir
+            log.message(msg,log.DEBUG)
 
     # Set up Alsa mixer ID file
     def setMixerId(self,MixerIdFile):
@@ -366,13 +378,49 @@ class Radio:
                 time.sleep(0.5)
         return ipaddr
 
-    def handleRecordKey(self,key):
-        t = threading.Thread(target=self._RecordKey,args=(key,))
-        t.daemon = True
-        t.start()
+    # Timer function to disable Record key for x seconds 
+    def setRecordTimer(self,delay=1.5):
+        self.record_delay = True
+        self.t=threading.Timer(delay,self.recordTimerFired)
+        self.t.start()
 
-    def _RecordKey(self,key):
+    def recordTimerFired(self):
+        self.record_delay = False
+
+    # Record key or IR KEY_RECORD pressed
+    def handleRecordKey(self,key):
+        if self.record_delay:
+            return
+
+        elif not self.recording and not self.record_delay:
+            self.setRecordTimer(5)
+            self.recording = True
+            #breakpoint()
+            self.switch_record_led(self.recording)
+            t = threading.Thread(target=self._startRecording,args=(key,))
+            t.daemon = True
+            t.start()
+            
+        else:
+            pid = self.getPid(record_pidfile)
+            if pid > 1:
+                try:
+                    os.kill(int(pid), signal.SIGHUP)
+                    time.sleep(2)
+                    cmd = "sudo killall liquidsoap"
+                    subprocess.run(cmd,shell=True,check=True, capture_output=True,encoding='utf-8')
+                except Exception as e:
+                    print(str(e))
+                time.sleep(2)
+                os.remove(record_pidfile)
+                msg = "Stopped recording %s" % self.stationName
+                self.recording = False
+                self.switch_record_led(self.recording)
+
+    # Start recording process (blocks so it is started as a seperate thread)
+    def _startRecording(self,key):
         global log
+        msg = ""
         self.ir_pid = self.getPid(ireventd_pidfile)
         if not self.recording and self.ir_pid > 1:
             try:
@@ -383,22 +431,14 @@ class Radio:
                 pass
 
         source_type = self.source.getType()
-        pid = self.getPid(record_pidfile)
-        if pid > 1:
-            try:
-                os.kill(int(pid), signal.SIGHUP)
-            except Exception as e:
-                print(str(e))
-            time.sleep(2)
-            os.remove(record_pidfile)
-            msg = "Stopped recording %s" % self.stationName
-
-        elif source_type == self.source.RADIO:
+        if source_type == self.source.RADIO:
             params = "--omit_incomplete"
             cmd = "/usr/share/radio/record.py %s" % params
             try:
-                subprocess.run(cmd,shell=True,check=True, capture_output=True,encoding='utf-8')
+                subprocess.run(cmd,shell=True,check=True,capture_output=True,encoding='utf-8')
                 msg = "Started recording %s" % self.stationName
+                print(msg)
+                log.message(msg, log.INFO)
             except Exception as e:
                 print(str(e))
                 pass
@@ -406,11 +446,13 @@ class Radio:
         else:
             msg = "Record request ignored - Not listening to a radio stream"
 
-        print(msg)
-        log.message(msg, log.INFO)
+        if len(msg) > 0:
+            print(msg)
+            log.message(msg, log.INFO)
 
     # If recording station, signal the ireventd to switch on activity LED
     def isRecording(self):
+        record_pid = 0
         now = time.time()
         if now > self.recordTime + self.recordDelay:
             self.recordTime = now
@@ -426,25 +468,51 @@ class Radio:
                     log.message("Recording is running PID " + str(self.record_pid),log.DEBUG)
                     self.recording = True
 
+            self.recording = self.check_pid(record_pid)
+            if not self.recording:
+                try:
+                    os.remove(record_pid)
+                except:
+                    pass
+
             # If  IR remote control daemon is running switch IR activity LED on/off
-            self.ir_pid = self.getPid(ireventd_pidfile)
-            if self.ir_pid > 1:
-                if self.recording:
-                    try:
-                        # This causes the IR daemon to switch on the activity LED
-                        os.kill(int(self.ir_pid), signal.SIGUSR1)
-                    except:
-                        pass
-                else:
-                    try:
-                        # This causes the IR daemon to switch off the activity LED
-                        os.kill(int(self.ir_pid), signal.SIGUSR2)
-                    except Exception as e:
-                        print(str(e))
-                        os.remove(ireventd_pidfile)
-                        pass
+            self.switch_record_led(self.recording)
+
+        if self.record_delay:
+            self.recording = True
 
         return self.recording
+
+    # Signal ireventd to switch recording LED on and off
+    def switch_record_led(self,recording): 
+        self.ir_pid = self.getPid(ireventd_pidfile)
+        if self.ir_pid > 1 and self.check_pid(self.ir_pid):
+            if recording:
+                try:
+                    # This causes the IR daemon to switch on the activity LED
+                    os.kill(int(self.ir_pid), signal.SIGUSR1)
+                except:
+                    pass
+            else:
+                try:
+                    # This causes the IR daemon to switch off the activity LED
+                    os.kill(int(self.ir_pid), signal.SIGUSR2)
+                except Exception as e:
+                    print(str(e))
+                    os.remove(ireventd_pidfile)
+                    pass
+
+    # Check if PID running
+    def check_pid(self,pid):        
+        ret = False 
+        if pid > 1:
+            try:
+                os.kill(pid, 0)
+            except OSError:
+                ret = False 
+            else:
+                ret = True
+        return ret
 
     # Get the pid from a pidfile
     def getPid(self,pidfile):
@@ -2472,6 +2540,8 @@ class Radio:
 
     # Get track name by Index
     def getTrackNameByIndex(self,index):
+        if index > len(self.PL.searchlist)-1:
+            index = 0
         if len(self.PL.searchlist) < 1: 
             track = "No tracks"
         else:

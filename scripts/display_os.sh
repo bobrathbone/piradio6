@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi display  OS configuration for analysis
-# $Id: display_os.sh,v 1.2 2024/11/25 10:16:08 bob Exp $
+# $Id: display_os.sh,v 1.4 2025/05/10 08:43:31 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -18,6 +18,7 @@ export LC_ALL=C
 
 DIR=/usr/share/radio
 LOGDIR=${DIR}/logs
+SCRIPTS_DIR=${DIR}/scripts
 LOG=${LOGDIR}/os_config.log
 USR=$(logname)
 GRP=$(id -g -n ${USR})
@@ -104,7 +105,7 @@ ip4=$(hostname -I | awk '{print $1;}')
 echo "IP address: ${ip4}"  | tee -a ${LOG}
 ip route | tee -a ${LOG}
 
-${DIR}/display_wifi.sh | tee -a ${LOG}
+${SCRIPTS_DIR}/display_wifi.sh | tee -a ${LOG}
 echo | tee -a ${LOG}
 
 # Display user details
@@ -135,7 +136,6 @@ if [[ -f /usr/bin/startx ]]; then
         fi
 
     elif [[ ${X} == "Wayland" ]]; then
-        echo;
         echo "X-Windows autostart configuration in file ${WAYFIRE_INI}" | tee -a ${LOG}
         grep "\[autostart\]" ${WAYFIRE_INI} | tee -a ${LOG}
         sed -e '1,/\[autostart\]/d' ${WAYFIRE_INI} | tee -a ${LOG}

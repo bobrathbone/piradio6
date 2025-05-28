@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.16 2025/01/31 09:09:38 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.17 2025/05/20 15:23:03 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -183,7 +183,7 @@ do
 
     elif [[ ${ans} == '5' ]]; then
         clear
-        sudo systemctl start ireventd.service
+        sudo systemctl restart ireventd.service
         sudo ${DIR}/ireventd.py status
         echo -n "Press enter to continue: "
         read x
