@@ -13,13 +13,13 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.1 release notes
 -------------------------
-Release 24 May 2025 - Build 1
-1) Recoding facility streamripper replaced with liquidsoap 
+Release 5 May 2025 - Build 1
+1) Recording facility streamripper replaced with liquidsoap 
 2) Correct 403 error (Forbidden) for some stations when creating Radio playlist for some stations
 
-version 8.0 release notes
+Version 8.0 release notes
 -------------------------
-Release 10th May 2025 - Build 8 
+release 23rd April 2025 - Build 7 
 1) Prevent radio program from crashing if no IP network and no media to load
 2) Support for the Waveshare 1.5 and 2.42-Inch SPI interface OLEDs added
 3) New configuration parameter ky040_r1_fitted added to set KY040 switch (SW) pullup resistor

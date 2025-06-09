@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.205 2025/05/24 19:17:34 bob Exp $
+# $Id: radio_class.py,v 1.218 2025/06/08 19:33:21 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -48,7 +48,7 @@ from language_class import Language
 from source_class import Source
 from volume_class import Volume
 from playlist_class import Playlist
-from record import Recorder
+from record_class import Recorder
 import mpd
 
 # MPD files
@@ -70,8 +70,6 @@ BoardRevisionFile = RadioLibDir + "/boardrevision"
 StationListFile = RadioLibDir + "/stationlist"
 
 # Recording PID details
-PidDir = '/var/run/radio_record'
-record_pidfile = PidDir + '/record.pid'
 ireventd_pidfile = '/var/run/ireventd.pid'
 
 Icecast = "/usr/bin/icecast2"
@@ -171,6 +169,7 @@ class Radio:
     error_display_delay = 0     # Delay before clearing error messages
     playlist_size = 0           # For checking changes to the playlist
     PL = None                   # Playlist class
+    record = None               # Recording class
     ip_addr = ''                # Local IP address
     OSrelease = ''              # OS Release 
     
@@ -194,6 +193,7 @@ class Radio:
     alarmTriggered = False  # Alarm fired
 
     recordDuration = "1:25" # Record duration in hours:minutes
+    record_led = False      # Record led True = lit
 
     stationTitle = ''       # Radio station title
     stationName = ''        # Radio station name
@@ -254,7 +254,7 @@ class Radio:
             from pivumeter_class import PiVumeter
             self.pivumeter = PiVumeter()
 
-        self.PL = Playlist('Radio',self.config)     # Playlist class 
+        self.PL = Playlist('Radio',self.config,log)     # Playlist class 
         self.translate = translate
         self.airplay = AirplayReceiver(translate)
         self.spotify = SpotifyReceiver(translate)
@@ -299,10 +299,6 @@ class Radio:
                 f = open(file,'w')
                 f.write(str(value))
                 f.close()
-
-        # Create pid run directory for the record program
-        self.createDirectory(PidDir)
-        os.chown(PidDir, self.uid, self.gid)
 
         # Link /var/lib/mpd/music/media to /media/<user>
         cmd = "rm -f /var/lib/mpd/music/media"
@@ -393,33 +389,29 @@ class Radio:
             return
 
         elif not self.recording and not self.record_delay:
-            self.setRecordTimer(5)
+            self.setRecordTimer(5)  # Blocks multiple record key depressions
             self.recording = True
-            #breakpoint()
-            self.switch_record_led(self.recording)
             t = threading.Thread(target=self._startRecording,args=(key,))
-            t.daemon = True
+            t.daemon = True    
             t.start()
             
         else:
-            pid = self.getPid(record_pidfile)
-            if pid > 1:
-                try:
-                    os.kill(int(pid), signal.SIGHUP)
-                    time.sleep(2)
-                    cmd = "sudo killall liquidsoap"
-                    subprocess.run(cmd,shell=True,check=True, capture_output=True,encoding='utf-8')
-                except Exception as e:
-                    print(str(e))
-                time.sleep(2)
-                os.remove(record_pidfile)
-                msg = "Stopped recording %s" % self.stationName
-                self.recording = False
-                self.switch_record_led(self.recording)
+            cmd = "sudo killall liquidsoap"
+            print("Record:",cmd)
+            log.message("Record: " + cmd, log.INFO)
+            try:
+                subprocess.run(cmd,shell=True,check=True, capture_output=True,encoding='utf-8')
+            except:
+                pass
+            self.recording = False
+            msg = "Radio: Stopped recording %s" % self.stationName
+            print(msg)
+            log.message(msg, log.INFO)
 
     # Start recording process (blocks so it is started as a seperate thread)
     def _startRecording(self,key):
         global log
+        self.record = Recorder(log,self.PL)
         msg = ""
         self.ir_pid = self.getPid(ireventd_pidfile)
         if not self.recording and self.ir_pid > 1:
@@ -432,13 +424,29 @@ class Radio:
 
         source_type = self.source.getType()
         if source_type == self.source.RADIO:
-            params = "--omit_incomplete"
-            cmd = "/usr/share/radio/record.py %s" % params
             try:
-                subprocess.run(cmd,shell=True,check=True,capture_output=True,encoding='utf-8')
-                msg = "Started recording %s" % self.stationName
+                duration = self.convertDuration(self.recordDuration)
+                name = "Recordings"
+                loglevel = 1 
+                format = "mp3"
+                url = self.getUrl() # Get URL of current station
+                dateformat = "%H:%M:%S"
+                timedate = strftime(dateformat)
+                msg = "Record: Started recording %s %s" % (self.stationName,timedate)
                 print(msg)
                 log.message(msg, log.INFO)
+                self.record.start(name,url,duration,self.config)
+                msg = "Record: Finished recording %s %s" % (self.stationName,timedate)
+                print(msg)
+                log.message(msg, log.INFO)
+
+                # Create the playlist
+                playlist_file = PlaylistsDirectory + '/' + "Recordings.m3u" 
+                self.PL.createRecordPlaylist(playlist_file,self.config)
+                msg = "Record: Created playlist %s" % playlist_file
+                print(msg)
+                log.message(msg, log.INFO)
+
             except Exception as e:
                 print(str(e))
                 pass
@@ -450,37 +458,31 @@ class Radio:
             print(msg)
             log.message(msg, log.INFO)
 
+    # Convert hh:mm to minutes
+    def convertDuration(self,duration):
+        try:
+            (hours,minutes) = duration.split(':')
+        except:
+            minutes = int(duration)
+            return minutes
+        if minutes == '':
+            minutes = int(hours) * 60
+        else:
+            minutes = int(hours) * 60 + int(minutes)
+        return minutes
+
     # If recording station, signal the ireventd to switch on activity LED
     def isRecording(self):
-        record_pid = 0
-        now = time.time()
-        if now > self.recordTime + self.recordDelay:
-            self.recordTime = now
-
-            # Is record running
-            record_pid = self.getPid(record_pidfile)
-            if record_pid != self.record_pid:
-                self.record_pid = record_pid 
-                if self.record_pid < 1:
-                    log.message("Recording has stopped",log.DEBUG)
-                    self.recording = False
-                else:
-                    log.message("Recording is running PID " + str(self.record_pid),log.DEBUG)
-                    self.recording = True
-
-            self.recording = self.check_pid(record_pid)
-            if not self.recording:
-                try:
-                    os.remove(record_pid)
-                except:
-                    pass
-
-            # If  IR remote control daemon is running switch IR activity LED on/off
-            self.switch_record_led(self.recording)
-
-        if self.record_delay:
+        try: 
+            pid_liquidsoap = int(check_output(["pidof","liquidsoap"]))
+            if not self.record_led:  
+                self.switch_record_led(True) 
             self.recording = True
-
+        except:
+            if self.record_led:  
+                self.switch_record_led(False)
+            self.recording = False
+            pass
         return self.recording
 
     # Signal ireventd to switch recording LED on and off
@@ -491,12 +493,14 @@ class Radio:
                 try:
                     # This causes the IR daemon to switch on the activity LED
                     os.kill(int(self.ir_pid), signal.SIGUSR1)
+                    self.record_led = True
                 except:
                     pass
             else:
                 try:
                     # This causes the IR daemon to switch off the activity LED
                     os.kill(int(self.ir_pid), signal.SIGUSR2)
+                    self.record_led = False
                 except Exception as e:
                     print(str(e))
                     os.remove(ireventd_pidfile)
@@ -1791,6 +1795,12 @@ class Radio:
             changed = self.checkAdded()
         return changed
 
+    # Get URL for recording process
+    def getUrl(self):
+        self.currentsong = self.getCurrentSong()
+        url = str(self.currentsong.get("file"))
+        return url
+
     # Get source type RADIO or MEDIA 
     def getStreamType(self,file):
         if "http:" in file or "https:" in file:
@@ -2223,7 +2233,8 @@ class Radio:
             self.current_file = CurrentTrackFile
             self.mountAll()
             self.loadPlaylist()
-            self.execMpcCommand("update &")
+            #self.execMpcCommand("update &")
+            self.updateLibrary(force=True)
 
             # If the playlist is empty then load media
             # Else simply load the playlist

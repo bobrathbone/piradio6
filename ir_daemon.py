@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio IR Remote Control Class
-# $Id: ir_daemon.py,v 1.5 2025/05/10 14:43:42 bob Exp $
+# $Id: ir_daemon.py,v 1.7 2025/06/03 11:21:17 bob Exp $
 # 
 # Author : Sander Marechal
 # Website http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
@@ -169,7 +169,7 @@ class Daemon:
             pass
 
         except OSError as e:
-            print(str(er))
+            print(str(e))
             pass
 
     def restart(self):

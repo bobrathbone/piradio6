@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: playlist_class.py,v 1.34 2025/05/27 13:10:32 bob Exp $
+# $Id: playlist_class.py,v 1.38 2025/06/08 19:33:20 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -19,8 +19,12 @@
 #
 
 import pdb,sys,time
+import os
 import threading
 import copy
+import pwd 
+import re
+
 from translate_class import Translate
 from source_class import Source
 
@@ -30,6 +34,7 @@ source = Source()
 # MPD files
 MpdLibDir = "/var/lib/mpd"
 PlaylistsDirectory =  MpdLibDir + "/playlists"
+MpdMusicDir =  MpdLibDir + "/music"
 RadioLibDir = "/var/lib/radiod"
 CurrentPlaylistName = RadioLibDir + "/source_name"
 
@@ -38,6 +43,7 @@ MEDIA = 1
 
 class Playlist:
     config = None
+    log = None
 
     _name = "Radio"  # Default playlist name
     _size = 0   # Playlist size
@@ -45,7 +51,8 @@ class Playlist:
     _plist = [] # This is the playlist from the MPD client (See "mpc playlist")
     _searchlist = []  # This is the searchlist and is different from plist if RADIO type
 
-    def __init__(self,name,config):
+    def __init__(self,name,config,log):
+        self.log = log
         self.config = config
         self._name = name
         return
@@ -89,6 +96,69 @@ class Playlist:
             newlist.append(line)
         return newlist
 
+    # Get owner of the installed package
+    def getOwner(self,path):
+        stat = os.stat(path)
+        uid = stat.st_uid
+        owner = pwd.getpwuid(uid).pw_name
+        return owner
+
+   # Create playlist omit_incomplete=True/False omit incomplete tracks
+    def createRecordPlaylist(self,playlist_file,config):
+        owner = self.getOwner('/usr/share/radio')
+        directory = '/home/' + owner + '/Recordings'
+        msg = "Record: Processing recordings directory " + directory
+        print(msg)
+        self.log.message(msg, self.log.DEBUG)
+
+        if config.record_incomplete:
+            msg = "Record: Including incomplete recordings in playlist %s" % playlist_file
+        else:
+            msg = "Record: Ommiting incomplete recordings from playlist %s" % playlist_file
+        print(msg)
+        self.log.message(msg, self.log.DEBUG)
+
+        count = 0
+
+        f = open(playlist_file,'w')
+        for path, subdirs, files in os.walk(directory):
+            for name in files:
+                track = os.path.join(path, name)
+                orig_track  = track
+                track = track.replace("/home/" + owner + "/Recordings/","recordings/")
+                
+                omit = False
+                if "/incomplete/" in track and not config.record_incomplete:
+                    omit = True
+                    if config.record_cleanup:
+                        os.remove(orig_track)
+                        continue
+
+                # Omit tracks containing time stamp eg. (08-30)
+                if re.search("\([0-9]", track) and re.search("[0-9]\)", track):
+                        omit = True
+                   
+                if omit:
+                    continue
+
+                f.write(track + '\n')
+                count += 1
+        f.close()
+
+        os.system("chmod -R 755 %s" % directory)
+
+        try:
+            # Link /home/<usr>/Recordings -> /var/lib/mpd/music/recordings
+            link = MpdMusicDir + '/' + "recordings"
+            if not os.path.islink(link):
+                os.symlink(directory,link)
+        except Exception as e:
+            print (str(e))
+
+        msg = "Record: %d tracks written to %s" % (count,playlist_file)
+        print(msg)
+        self.log.message(msg, self.log.INFO)
+
     # Create a playlist in RADIO format
     def createNewRadioPlaylist(self,plist):
         url = ''
@@ -122,7 +192,7 @@ class Playlist:
 
     # Write the new RADIO playlist to the MPD playlist directory 
     def writePlaylistFile(self,playlist_name,newlist):
-        playlist_file = PlaylistsDirectory + '/' + playlist_name + '.m3u'
+        self.playlist_file = PlaylistsDirectory + '/' + playlist_name + '.m3u'
         try:
             with open(playlist_file, 'w') as f:
                 for line in newlist:
@@ -272,14 +342,14 @@ class Playlist:
     # Identify playlist type RADIO or MEDIA 
     def getType(self,playlist_name):
         playlist_type = source.MEDIA
-        playlist_file = PlaylistsDirectory + '/' + playlist_name + '.m3u'
+        self.playlist_file = PlaylistsDirectory + '/' + playlist_name + '.m3u'
         typeNames = ['RADIO','MEDIA']
 
         # Check playlist for "#EXTM3U" definition
         count = 15  # Allow comments 15 lines max at start of file
         found = False
         try:
-            f = open(playlist_file, 'r')
+            f = open(self.playlist_file, 'r')
             while count > 0 and not found:
                 line = f.readline()
                 line = line.rstrip()
@@ -308,10 +378,13 @@ class Playlist:
 if __name__ == "__main__":
     import mpd
     from config_class import Configuration
+    from log_class import Log
+
+    log = Log()
     config = Configuration()
     client = mpd.MPDClient()
 
-    PL = Playlist("Radio",config)    
+    PL = Playlist("Radio",config,log)    
     print ("Playlist", PL.name)
     list = PL.createSearchList(client)
     print (PL.size)

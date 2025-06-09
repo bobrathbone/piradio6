@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.131 2025/05/26 11:42:34 bob Exp $
+# $Id: config_class.py,v 1.135 2025/06/08 19:33:20 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -122,7 +122,16 @@ class Configuration:
     _update_playlists = False  # Allow update of playlists by external clients
     _mute_action = 0      # MPD action on mute, 1=pause, 2=stop, 0=volume off only
     _codecs = 'mp3 ogg flac wav wma aac m4a opus'    # Radio stream Codecs
+
     MuteActions =  ['Pause','Stop']  # Text for above _mute_action
+
+    # Recording parameters
+    _record_switch=27        # Uses GPIO 27 (physical pin 13) or GPIO5 (pin 29)
+    _record_log=1            # 0 none, 1 crtitcal, 2 severe, 3 important, 4 info, 5 debug
+    _record_format='mp3'     # mp4(aac), flac(flac), opus(libopus), mp3(libmp3lame); (<codec>)
+    _record_incomplete=False # Include incomplete tracks when creating the playlist
+    _record_cleanup=False    # Remove incomplete tracks from the /home/<user>/Recordings directory
+    _load_recordings=False   # Load new Recordings playlist when recording finished
 
     # Rotary encoder parameters
     _rotary_class = STANDARD # Rotary class STANDARD,RGB_ROTARY or ALTERNATIVE 
@@ -303,6 +312,21 @@ class Configuration:
 
                 elif option == 'codecs':
                     self.codecs = parameter
+
+                elif option == 'record_format':
+                    self.record_format = parameter
+
+                elif option == 'record_log':
+                    self.record_log = parameter
+
+                elif option == 'record_incomplete':
+                    self.record_incomplete = self.convertYesNo(parameter)
+
+                elif option == 'record_cleanup':
+                    self.record_cleanup = self.convertYesNo(parameter)
+
+                elif option == 'load_recordings':
+                    self.load_recordings = self.convertYesNo(parameter)
 
                 elif option == 'volume_range':
                     range = 100
@@ -1727,6 +1751,7 @@ class Configuration:
         if self.hexValue(parameter):
             self._volume_rgb_i2c = int(parameter,16)
 
+    # CODECS  for MEDIA streams (not recording)
     @property
     def codecs(self):
         return self._codecs
@@ -1734,6 +1759,51 @@ class Configuration:
     @codecs.setter
     def codecs(self, parameter):
         self._codecs = parameter
+
+    # ** Recording options **
+    # Record program (record.py) parameters
+    @property
+    def record_format(self):
+        return self._record_format
+
+    @record_format.setter
+    def record_format(self, parameter):
+        self._record_format = parameter
+
+    # Record log 0 to 5
+    @property
+    def record_log(self):
+        return self._record_log
+
+    @record_log.setter
+    def record_log(self, parameter):
+        self._record_log = int(parameter)
+
+    @property
+    def record_incomplete(self):
+        return self._record_incomplete
+
+    @record_incomplete.setter
+    def record_incomplete(self, parameter):
+        self._record_incomplete = parameter
+
+    @property
+    def load_recordings(self):
+        return self._load_recordings
+
+    @load_recordings.setter
+    def load_recordings(self, parameter):
+        self._load_recordings = parameter
+
+    @property
+    def record_cleanup(self):
+        return self._record_cleanup
+
+    @record_cleanup.setter
+    def record_cleanup(self, parameter):
+        self._record_cleanup = parameter
+
+    # ** End of recording parameters **
 
     @property
     def channel_rgb_i2c(self):
@@ -1920,6 +1990,13 @@ if __name__ == '__main__':
     # Execute command
     print ("Execute on exit command (execute):",config.execute)
 
+    print ("\nRecord radio stations section")
+    print ("Record loglevel (record_log):",config.record_log)
+    print ("Record format/codec (record_format):",config.record_format)
+    print ("Record incomplete tracks (record_incomplete):",config.record_incomplete)
+    print ("Cleanup Recordings directory (record_cleanup):",config.record_cleanup)
+    print ("Load Recordings playlist (load_recordings):",config.load_recordings)
+    
     print ("\n[SCREEN] section")
     print ("----------------")
     print ("Graphic screen size (screen_size):", config.screen_size)

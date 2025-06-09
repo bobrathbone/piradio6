@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: record.py,v 1.49 2025/05/27 13:18:44 bob Exp $
+# $Id: record.py,v 1.53 2025/06/01 11:31:41 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -108,6 +108,13 @@ class Recorder:
             log.message("Record: Music player daemon not running!",log.DEBUG)
             log.message("Record: Start radio (or MPD) and re-run program",log.DEBUG)
             sys.exit(1)
+
+    # Get the currently playing station ID
+    def getCurrentId(self):
+        id = 0
+        if self.currentsong != None:
+            id =  self.currentsong.get('pos')
+        return id
 
     # Disconnect
     def disconnect(self):
@@ -440,6 +447,8 @@ def convertDuration(duration):
 if __name__ == "__main__":
     import getpass
     from time import strftime
+    from os import walk
+    import shutil 
 
     sDate = strftime('%d, %b %Y %H:%M:%S')
     pid = os.getpid()
@@ -611,9 +620,35 @@ if __name__ == "__main__":
     print(msg)
     log.message(msg,log.DEBUG)
 
+    # Rename directories called 'None' to Station_<station_id>
+    if station_id < 1:
+        station_id = int(record.getCurrentId()) + 1
+        station=record.getStation(station_id)   # Returns tuple(id,name,url)
+    dirs = []
+
+    for (dirpath, dirnames,filenames) in walk(directory):
+        dirs.extend(dirnames)
+        break
+
+    for dir in dirs:
+        orig_dir = directory + '/' + dir
+        if dir == 'None':
+            station_name = station[1]
+            new_dir = directory + '/' + station_name 
+            if not os.path.isdir(new_dir):
+                os.mkdir(new_dir)
+            # Copy the files from the None directory to the new directory
+            cmd = "cp -r " + orig_dir + "/* '" + new_dir + "'"
+            print(cmd)
+            log.message(msg,log.DEBUG)
+            subprocess.run(cmd, shell=True, check=True, capture_output=False,encoding='utf-8')
+            cmd = "rm -rf " + orig_dir + "/*"
+            print(cmd)
+            log.message(msg,log.DEBUG)
+            subprocess.run(cmd, shell=True, check=True, capture_output=False,encoding='utf-8')
 
     # Create playlist in /var/lib/mpd/playlists directory
-    msg = "Creating playlist for %s" % directory
+    msg = "Record: Creating playlist for %s" % directory
     print(msg)
     log.message(msg,log.DEBUG)
     playlist = Playlist()
