@@ -171,6 +171,13 @@ The Record button normally uses GPIO 27 (physical pin 13) if LCD, TFT or OLED di
 configured. If using Waveshare 2.4" or 1.5" SPI displays set this to GPIO05 (pin 29)
 **record_switch=27**
 
+Record program parameters
+ --omit_incomplete skip incomplete tracks when creating the playlist
+ --cleanup Remove incomplete tracks from the /home/<user>/Recordings directory
+ --load Load new Recordings playlist
+ --log <loglevel> 1 crtitcal , 2 severe (default) , 3 important, 4 info , 5 debug
+**record_params="--omit_incomplete --cleanup"**
+
 Pull GPIO up/down internal resistors. Only set. Only set to up if using first model
 Raspberry Pi's and the switches have been wired GPIOx --> Switch --> 0V(GND)
 Set to 'none' if external resistors have been wired. Default: up
