@@ -306,6 +306,23 @@ Shutdown command (Default "sudo shutdown -h now")
 Replace with required command for example "x735off" for a X735 V2.5 shield
 **shutdown_command="sudo shutdown -h now"**
 
+Record program parameters (See **record_class.py**)
+**record_switch=\<GPIO\>** - Record button normally uses GPIO 27 (physical pin 13) or GPIO5 (pin 29)
+**record_log=\<loglevel\>** - 0 none, 1 crtitcal , 2 severe (default) , 3 important, 4 info , 5 debug
+**record_format=\<format\>** - mp4, flac, opus   , mp3
+. . . . . . . . . . . . Also sets codec - aac, flac, libopus, libmp3lame
+**record_incomplete** - yes/no Include incomplete tracks when creating the playlist
+**cleanup -  yes/no** Remove incomplete tracks from the /home/<user>/Recordings directory
+**load_recordings** - yes/no Load new Recordings playlist
+```
+record_switch=27
+record_log=1
+record_format=mp3
+record_incomplete=yes
+record_cleanup=no
+load_recordings=no
+```
+
 The SCREEN Section
 ==================
 Parameters for the Graphical programs **gradio.py** and **vgradio.py**
