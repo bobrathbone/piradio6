@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: install_recording.sh,v 1.7 2025/05/20 16:01:41 bob Exp $
+# $Id: install_recording.sh,v 1.8 2025/05/31 11:48:34 bob Exp $
 #
 # Raspberry Pi Internet Radio - Install LiquidSoap
 # This script installs and configures LiquidSoap recording utility
@@ -105,7 +105,9 @@ CMD="sudo apt-get -y install libfdk-aac2 libjemalloc2 liblo7 libpcre3 libportaud
 echo ${CMD}  | tee -a ${LOG}; 
 ${CMD} | tee -a ${LOG};
 
+# Remove old copies of liquidsoap and get new copy
 cd
+rm -f liquidsoap_*.deb*
 CMD="wget ${LIQUIDSOAP_DEB}"
 echo ${CMD}  | tee -a ${LOG};
 ${CMD} | tee -a ${LOG};

@@ -1,0 +1,17 @@
+# Radio systemd script
+# $Id: station_select.service,v 1.2 2025/06/26 10:48:05 bob Exp $
+# Copy this service definition to /usr/lib/systemd/system/station_select.service
+[Unit]
+Description=Radio station button selection utility
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/share/radio/station_select.py 
+PIDFile=/var/run/station_select.pid
+Requires=radiod.py
+#Restart=on-failure
+#RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

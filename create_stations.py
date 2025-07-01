@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Raspberry Pi Internet Radio playlist utility
-# $Id: create_stations.py,v 1.29 2025/05/23 09:38:50 bob Exp $
+# $Id: create_stations.py,v 1.31 2025/06/26 13:51:32 bob Exp $
 #
 # Create playlist files from the following url formats
 #    iPhone stream files (.asx)
@@ -79,7 +79,6 @@ def createM3uOutput(title,url):
     #url = url.split('#')[0] # Remove #<station name> 
     lines.append('#EXTM3U')
     lines.append('#EXTINF:-1,%s' % title)
-    #lines.append(url + '#' + title) # No longer required
     lines.append(url)
     return lines
 
@@ -91,7 +90,6 @@ def createM3uFile(filename,output,nlines):
         filename = 'Radio'
 
     # Old radio playlists began with '_' (Underscore) 
-    ##outfile = TempDir + '_' + filename + '.m3u' 
     outfile = TempDir + filename + '.m3u' 
 
     # Create unique files
@@ -310,7 +308,7 @@ def parsePls(title,url,lines,filenumber):
         output = ""
     return output
 
-# Parse M3U file to PLS output
+# Parse M3U input file to M3U output definition
 def parseM3u(title,url,lines,filenumber):
     global lineCount
     info = 'Unknown' 
@@ -343,7 +341,20 @@ def parseM3u(title,url,lines,filenumber):
     if checkStream(url,lineCount):
         output.append('#EXTM3U')
         output.append('#EXTINF:-1,%s'% title)
-        output.append('%s#%s'% (url,title))
+        output.append(url)
+    else:
+        output = ''    
+    return output
+
+# Parse mpeg-dash input file to M3U output definition
+def parseMPD(title,url,lines,filenumber):
+    global lineCount
+    output = []
+    print("Title: " + title)
+    if checkStream(url,lineCount):
+        output.append('#EXTM3U')
+        output.append('#EXTINF:-1,%s'% title)
+        output.append(url)
     else:
         output = ''    
     return output
@@ -472,6 +483,7 @@ for line in open(StationList,'r'):
     isM3U = False
     isPLS = False
     isAAC = False
+    isMPD = False
 
     # Skip commented out or blank lines
     line = line.rstrip()    # Remove line feed
@@ -565,6 +577,10 @@ for line in open(StationList,'r'):
     elif url.endswith('.pls') or '.pls?' in url:
         isPLS = True
 
+    # Playlist format
+    elif url.endswith('.mpd') or '.mpd?' in url:
+        isMPD = True
+
     # Advanced Audio Coding stream (Don't retrieve any URL)
     else:
         # Remove redundant (stream) parameter 
@@ -623,6 +639,11 @@ for line in open(StationList,'r'):
 
     elif isM3U:
         m3u_output += parseM3u(title,url,lines,filenumber)
+        if len(m3u_output) < 1:
+            continue
+
+    elif isMPD:
+        m3u_output += parseMPD(title,url,lines,filenumber)
         if len(m3u_output) < 1:
             continue
 

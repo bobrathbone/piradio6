@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: record_class.py,v 1.12 2025/06/08 18:20:15 bob Exp $
+# $Id: record_class.py,v 1.15 2025/06/28 14:32:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -166,7 +166,10 @@ class Recorder:
         if not os.path.exists(record_dir):
             os.makedirs(record_dir)
     
-        self.connect()    # Connect to client
+        try:
+            self.connect()    # Connect to client
+        except:
+            pass
 
         tstart = time.time()
 
@@ -184,12 +187,10 @@ class Recorder:
             os.chown(record_dir, uid, gid)
 
             # Change ownership to pi:pi (or actual user)
-            for root, dirs, files in os.walk(record_dir):  
-                for dir in dirs:  
-                    os.chown(os.path.join(root,dir), uid, gid)
-                    
-                for file in files:  
-                    os.chown(os.path.join(root,file), uid, gid)
+            cmd = "sudo chown -R %s:%s %s" % (uid,gid,record_dir)
+            print(cmd)
+            log.message(cmd,log.DEBUG)
+            subprocess.run(cmd, shell=True, check=True, capture_output=False,encoding='utf-8')
 
             result = "Record: liquidsoap succesfully executed"
      
@@ -351,12 +352,20 @@ class Recorder:
                 new_dir = '/home/' + owner + '/' + name + '/' + station_name
                 if not os.path.isdir(new_dir):
                     os.mkdir(new_dir)
+
                 # Copy the files from the None/Recordings directory to the new directory
                 cmd = "cp -r " + record_dir + "/" + dir + "/* " +  "\'" + new_dir + "/\'"
                 print(cmd)
                 log.message(cmd,log.DEBUG)
                 subprocess.run(cmd, shell=True, check=True, capture_output=False,encoding='utf-8')
 
+                # Change ownership
+                cmd = "chown -R %s:%s '%s'" % (owner,owner,new_dir)
+                print(cmd)
+                log.message(cmd,log.DEBUG)
+                subprocess.run(cmd, shell=True, check=True, capture_output=False,encoding='utf-8')
+    
+                # Remove old Recordings or None directory
                 cmd = "rm -rf " + record_dir + "/" + dir
                 print(cmd)
                 log.message(cmd,log.DEBUG)

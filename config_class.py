@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.135 2025/06/08 19:33:20 bob Exp $
+# $Id: config_class.py,v 1.137 2025/06/14 17:22:28 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -128,9 +128,9 @@ class Configuration:
     # Recording parameters
     _record_switch=27        # Uses GPIO 27 (physical pin 13) or GPIO5 (pin 29)
     _record_log=1            # 0 none, 1 crtitcal, 2 severe, 3 important, 4 info, 5 debug
-    _record_format='mp3'     # mp4(aac), flac(flac), opus(libopus), mp3(libmp3lame); (<codec>)
+    _record_format='mp3'     # mp4(aac), flac(flac), opus(libopus), mp3(libmp3lame); (<codec>) Use MP3
     _record_incomplete=False # Include incomplete tracks when creating the playlist
-    _record_cleanup=False    # Remove incomplete tracks from the /home/<user>/Recordings directory
+    _record_cleanup=True     # Remove incomplete tracks from the /home/<user>/Recordings directory
     _load_recordings=False   # Load new Recordings playlist when recording finished
 
     # Rotary encoder parameters

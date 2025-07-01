@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.16 2025/05/03 09:21:22 bob Exp $
+# $Id: configure_audio.sh,v 1.17 2025/06/25 11:08:18 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -797,6 +797,9 @@ if [[ ${DTOVERLAY} != "" || ${TYPE} == ${HDMI} ]]; then
     sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
     sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 
+    # Enable HDMI vc4 driver
+    sudo sed -i 's/^#dtoverlay=vc4-kms-v3d.*$/dtoverlay=vc4-kms-v3d/g'  ${BOOTCONFIG}
+
     # Load the overlay
     cmd="sudo dtoverlay ${DTOVERLAY}"
     echo ${cmd}; ${cmd}
@@ -814,6 +817,12 @@ else
         sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=on/g'  ${BOOTCONFIG}
         sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=on/g'  ${BOOTCONFIG}
     fi
+fi
+
+# Disable HDMI vc4 driver
+if [[ ${TYPE} != ${HDMI} ]]; then
+    echo "Disable HDMI vc4 driver" | tee -a ${LOG}
+    sudo sed -i 's/^dtoverlay=vc4-kms-v3d.*$/#dtoverlay=vc4-kms-v3d/g' ${BOOTCONFIG}
 fi
 
 # Load the audio card overlay

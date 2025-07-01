@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: playlist_class.py,v 1.38 2025/06/08 19:33:20 bob Exp $
+# $Id: playlist_class.py,v 1.44 2025/06/28 15:51:48 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -24,6 +24,7 @@ import threading
 import copy
 import pwd 
 import re
+import shutil
 
 from translate_class import Translate
 from source_class import Source
@@ -105,8 +106,9 @@ class Playlist:
 
    # Create playlist omit_incomplete=True/False omit incomplete tracks
     def createRecordPlaylist(self,playlist_file,config):
+        name = 'Recordings'
         owner = self.getOwner('/usr/share/radio')
-        directory = '/home/' + owner + '/Recordings'
+        directory = '/home/' + owner + '/' + name
         msg = "Record: Processing recordings directory " + directory
         print(msg)
         self.log.message(msg, self.log.DEBUG)
@@ -121,24 +123,22 @@ class Playlist:
         count = 0
 
         f = open(playlist_file,'w')
-        for path, subdirs, files in os.walk(directory):
-            for name in files:
-                track = os.path.join(path, name)
-                orig_track  = track
-                track = track.replace("/home/" + owner + "/Recordings/","recordings/")
-                
-                omit = False
-                if "/incomplete/" in track and not config.record_incomplete:
-                    omit = True
-                    if config.record_cleanup:
-                        os.remove(orig_track)
-                        continue
 
-                # Omit tracks containing time stamp eg. (08-30)
-                if re.search("\([0-9]", track) and re.search("[0-9]\)", track):
-                        omit = True
-                   
-                if omit:
+        for path, subdirs, files in os.walk(directory):
+            for file in files:
+                track = os.path.join(path,file)
+                orig_track = track
+                track = track.replace(directory,"recordings") # This is the playlist entry
+                #self.log.message(track, self.log.DEBUG)
+
+                if "/incomplete/" in track and not config.record_incomplete:
+                    if config.record_cleanup:
+                        try:
+                            idir = os.path.dirname(orig_track)
+                            if len(idir) > 10:  # Safety check
+                                shutil.rmtree(idir)
+                        except:
+                            pass
                     continue
 
                 f.write(track + '\n')

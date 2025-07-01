@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.218 2025/06/08 19:33:21 bob Exp $
+# $Id: radio_class.py,v 1.221 2025/06/28 10:36:41 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -61,6 +61,7 @@ ConfigFile = "/etc/radiod.conf"
 RadioLibDir = "/var/lib/radiod"
 CurrentStationFile = RadioLibDir + "/current_station"
 CurrentTrackFile = RadioLibDir + "/current_track"
+RecordTrackFile = RadioLibDir + "/record_track"
 CurrentSourceFile = RadioLibDir + "/source"
 SourceNameFile = RadioLibDir + "/source_name"
 VolumeFile = RadioLibDir + "/volume"
@@ -210,6 +211,8 @@ class Radio:
     pingDelay = 15      # Delay between pings in seconds
     recordTime = 0      # Reduce amount of recording checks
     recordDelay = 4     # Delay between recording checks in seconds
+    checkStatusCount = 0   # Prevent status check being done too often
+    checkStatusDelay = 60  # Status check countdown
 
     connected = False   # Connection status
     recording = False   # Recording station
@@ -218,6 +221,7 @@ class Radio:
     ConfigFiles = {
         CurrentStationFile: 1,
         CurrentTrackFile: 1,
+        RecordTrackFile: 1,
         CurrentSourceFile: 0,
         SourceNameFile: "Radio",
         VolumeFile: 75,
@@ -1744,6 +1748,11 @@ class Radio:
         if not self.checkInternet():
             return self.error
 
+        if self.checkStatusCount > 0:
+            self.checkStatusCount -= 1
+            return
+
+        self.checkStatusCount = self.checkStatusDelay
         try:
             status = self.client.status()
             errorStr = str(status.get("error"))
@@ -1902,8 +1911,9 @@ class Radio:
             url = self.currentsong.get("file")
 
             # Only allow new radio stations to be added and if update_playlists=yes
-            if url.startswith("http") and self.config.update_playlists:
-                self.addNewEntry(name,url)
+            if url != None:
+                if url.startswith("http") and self.config.update_playlists:
+                    self.addNewEntry(name,url)
             changed = True
         return changed
 
@@ -2230,11 +2240,12 @@ class Radio:
             self.loadPlaylist()
         
         elif source_type == self.source.MEDIA:
-            self.current_file = CurrentTrackFile
+            if source_name == "Recordings": 
+                self.current_file = RecordTrackFile
+            else:
+                self.current_file = CurrentTrackFile
             self.mountAll()
             self.loadPlaylist()
-            #self.execMpcCommand("update &")
-            self.updateLibrary(force=True)
 
             # If the playlist is empty then load media
             # Else simply load the playlist
