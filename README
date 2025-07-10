@@ -13,11 +13,12 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.1 release notes
 -------------------------
-Release 1 July 2025 - Build 3
+Release 7 July 2025 - Build 4
 1) Recording facility streamripper replaced with liquidsoap 
 2) Correct 403 error (Forbidden) for some stations when creating Radio playlist for some stations
-3) Improvements to the recording facility
-4) Experimental station_select.py and station_select.service added (currently unsupported)
+3) Experimental station_select.py and station_select.service added (currently unsupported)
+4) Add speaker test to diagnostics
+5) Correct crash if no RSS file name specified in /var/lib/radiod directory
 
 Version 8.0 release notes
 -------------------------

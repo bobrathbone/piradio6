@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.34 2025/05/20 13:17:32 bob Exp $
+# $Id: configure_radio.sh,v 1.35 2025/07/09 09:15:26 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1160,7 +1160,7 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
             SCREEN_SIZE="480x320"
 
         elif [[ ${ans} == '4' ]]; then
-            DESC="7-inch TFT touch-screen (1024x600)"
+            DESC="7-inch TFT touch-screen (800x480)"
             SCREEN_SIZE="800x480"
 
         elif [[ ${ans} == '5' ]]; then

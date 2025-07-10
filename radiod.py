@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.204 2025/05/12 19:11:08 bob Exp $
+# $Id: radiod.py,v 1.206 2025/07/09 10:52:58 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -95,6 +95,9 @@ def signalHandler(signal,frame):
     global display
     global radio
     global log
+
+    msg = "Received termination signal " + str(signal)
+    log.message(msg,log.INFO)
 
     # Switch on red LED
     statusLed.set(StatusLed.ERROR)
@@ -270,13 +273,13 @@ class MyDaemon(Daemon):
                     displayOptions(display,radio,menu,message)
 
                 elif menu_mode == menu.MENU_RSS:
-                    if display.hasScreen():
+                    if display.hasScreen() and rss.isAvailable():
                         if display.volume_delay:
                             displayVolume(display,radio)
                         else:
                             displayRss(display,radio,message,rss)
                     else:
-                        menu.set(menu.MENU_TIME) # Skip RSS
+                        menu.set(menu.MENU_INFO) # Skip RSS
 
                 elif menu_mode == menu.MENU_INFO:
                     if display.volume_delay:

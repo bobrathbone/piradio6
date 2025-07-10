@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.141 2025/06/02 14:06:03 bob Exp $
+# $Id: piradio,v 1.142 2025/07/10 08:32:56 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is both the 32-bit and 64-bit version
 # Source: <source package name; defaults to package name>
@@ -55,6 +55,8 @@ Files:  radiod.py /usr/share/radio/
     sh1106_config.py /usr/share/radio/
     sh1106_key_test.py /usr/share/radio/
     luma_class.py /usr/share/radio/
+    station_select.py /usr/share/radio/
+    station_select.service /usr/share/radio/
     message_class.py /usr/share/radio/
     menu_class.py /usr/share/radio/
     event_class.py /usr/share/radio/

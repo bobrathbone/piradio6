@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.2 2024/11/25 10:16:08 bob Exp $
+# $Id: display_config.sh,v 1.3 2025/07/09 09:11:56 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -232,17 +232,16 @@ fi
 aplay -L | grep -i pulse | tee -a ${LOG}
 
 echo | tee -a ${LOG}
-echo "Mixer controls" | tee -a ${LOG}
-echo "--------------" | tee -a ${LOG}
+if [[ ${AUDIO_OUT} =~ bluetooth  || ${AUDIO_OUT} =~ USB ]]; then
+    echo "Mixer controls for card ${SOUND_CARD}" | tee -a ${LOG}
+    echo "--------------" | tee -a ${LOG}
+fi
 if [[ ${AUDIO_OUT} =~ bluetooth  ]]; then
     cmd="amixer -D bluealsa controls"
 elif [[ ${AUDIO_OUT} =~ USB  ]]; then
     SOUND_CARD=1
     cmd="amixer -c ${SOUND_CARD} controls 2>$1" | tee -a ${LOG}
 fi
-echo "audio_out=${AUDIO_OUT}"
-echo ${cmd} | tee -a ${LOG}
-${cmd} | tee -a ${LOG}
 
 # Display /etc/asound.conf configuration
 if [[ -f ${ASOUND} ]]; then 

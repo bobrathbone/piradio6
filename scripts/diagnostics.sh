@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: diagnostics.sh,v 1.8 2025/01/31 12:05:07 bob Exp $
+# $Id: diagnostics.sh,v 1.9 2025/07/09 09:14:14 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -32,6 +32,7 @@ CMARK_EXE="/usr/bin/cmark"
 LYNX=/usr/bin/lynx
 SCRIPTS_DIR=${DIR}/scripts
 DOCS_DIR=${DIR}/docs
+SPEAKER_TEST="speaker-test -t sine -D default -l 1"
 
 function build_report
 {
@@ -64,7 +65,8 @@ do
         "4" "Test events layer" \
         "5" "Test configured display" \
         "6" "Test GPIOs" \
-        "7" "Display Radio and OS configuration" 3>&1 1>&2 2>&3)
+        "7" "Speaker test (speaker-test)" \
+        "8" "Display Radio and OS configuration" 3>&1 1>&2 2>&3)
 
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
@@ -112,6 +114,12 @@ do
         echo "Press Ctrl-C to exit diagnostic mode"
         echo "Test Rotary encoders and buttons "
         sudo ${DIR}/test_gpios.py --pull_up
+        exit 0
+
+    elif [[ ${ans} == '7' ]]; then
+        sudo systemctl stop radiod.service
+        echo "Press Ctrl-Z to exit speaker test (Takes a few seconds to stop)"
+        ${SPEAKER_TEST}
         exit 0
 
     elif [[ ${ans} == '7' ]]; then

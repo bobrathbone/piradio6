@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.221 2025/06/28 10:36:41 bob Exp $
+# $Id: radio_class.py,v 1.222 2025/07/09 10:10:50 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -1800,7 +1800,7 @@ class Radio:
                     self.storeIntegerValue (self.current_id,CurrentStationFile)
                     x = self.getSearchName()
 
-        if not changed:
+        if not changed and source_type == self.source.RADIO:
             changed = self.checkAdded()
         return changed
 
