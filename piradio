@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.142 2025/07/10 08:32:56 bob Exp $
+# $Id: piradio,v 1.144 2025/07/11 07:36:54 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is both the 32-bit and 64-bit version
 # Source: <source package name; defaults to package name>
@@ -120,6 +120,7 @@ Files:  radiod.py /usr/share/radio/
     scripts/display_wifi.sh /usr/share/radio/scripts/
     scripts/display_os.sh /usr/share/radio/scripts/
     scripts/display_docs.sh /usr/share/radio/scripts/
+    scripts/display_audio.sh /usr/share/radio/scripts/
     scripts/check_voltage.sh /usr/share/radio/scripts/
     scripts/set_mixer_id.sh /usr/share/radio/scripts/
     scripts/install_streaming.sh /usr/share/radio/scripts/
@@ -171,6 +172,7 @@ Files:  radiod.py /usr/share/radio/
     asound/asound.conf.dist.vc4hdmi /usr/share/radio/asound
     asound/asound.conf.dist.softvol /usr/share/radio/asound
     asound/asound.conf.dist.wm8960 /usr/share/radio/asound
+    asound/asound.conf.dist.adafruit_bonnet /usr/share/radio/asound
     asound/piano.wav /usr/share/radio/asound
     codes/__init__.py /usr/share/radio/codes/
     codes/English.py /usr/share/radio/codes/

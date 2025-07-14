@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio - Install Waveshare WM8960 DAC driver
-# $Id: install_wm8960.sh,v 1.7 2025/02/22 11:41:10 bob Exp $
+# $Id: install_wm8960.sh,v 1.9 2025/07/14 11:24:50 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -70,11 +70,20 @@ echo "Disable on-board audio" | tee -a ${LOG}
 sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 sudo sed -i 's/^#dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
 
+# Install dkms
+sudo apt-get -y install dkms 
+
+# Run WM8960-Audio-HAT installation script
 sudo apt-get -y install git 
 echo "Cloning https://github.com/waveshare/WM8960-Audio-HAT" | tee -a ${LOG}
 cd ${DIR}
 rm -rf WM8960-Audio-HAT
-git clone https://github.com/waveshare/WM8960-Audio-HAT  | tee -a ${LOG}
+
+# As of July 2025 the wave share script no longer works 
+# See https://github.com/waveshareteam/WM8960-Audio-HAT/issues/74
+# git clone https://github.com/waveshare/WM8960-Audio-HAT  | tee -a ${LOG}
+# Use the ubopod version from GitHub at https://github.com/ubopod/WM8960-Audio-HAT
+git clone https://github.com/ubopod/WM8960-Audio-HAT | tee -a ${LOG}
 
 # Change to WM8960-Audio-HAT directory
 cd WM8960-Audio-HAT

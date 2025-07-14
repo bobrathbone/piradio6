@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: diagnostics.sh,v 1.9 2025/07/09 09:14:14 bob Exp $
+# $Id: diagnostics.sh,v 1.10 2025/07/13 10:40:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -122,7 +122,7 @@ do
         ${SPEAKER_TEST}
         exit 0
 
-    elif [[ ${ans} == '7' ]]; then
+    elif [[ ${ans} == '8' ]]; then
         INFO=1
     fi
 
@@ -139,7 +139,7 @@ do
         "6" "Display full radio configuration" \
         "7" "Display formatted /etc/radiod.conf" \
         "8" "Display current Music Player Daemon output" \
-        "9" "Display Sound Cards" \
+        "9" "Display Audio Configuration" \
          3>&1 1>&2 2>&3)
 
         exitstatus=$?
@@ -189,9 +189,9 @@ do
             ${DIR}/display_current.py > ${TEMPFILE}
 
         elif [[ ${ans} == '9' ]]; then
-            TITLE="Sound cards configuration"
+            TITLE="Audio configuration"
             build_report "${TITLE}"
-            aplay -l > ${TEMPFILE}
+            ${SCRIPTS_DIR}/display_audio.sh > ${TEMPFILE}
         fi
 
         if [[ ${run_info} == 1 ]]; then
