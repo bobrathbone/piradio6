@@ -20,6 +20,7 @@ Release 11 July 2025 - Build 5
 4) Add speaker test to diagnostics
 5) Correct crash if no RSS file name specified in /var/lib/radiod directory
 6) Display audio configuration (display_audio.sh) added
+7) Correct install failure for the Waveshare WM8960 DAC See github.com/ubopod/WM8960-Audio-HAT
 
 Version 8.0 release notes
 -------------------------
