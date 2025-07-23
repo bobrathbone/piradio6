@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-$Id: display_model.py,v 1.14 2025/01/28 10:05:33 bob Exp $
+$Id: display_model.py,v 1.16 2025/07/21 12:51:15 bob Exp $
 
 Author: Chris Hager <chris@linuxuser.at>
 License: MIT
@@ -90,6 +90,7 @@ model_data = {
     'b03111': ('4B', '1.1', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'b03111': ('4B', '1.2', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'b03114': ('4B', '1.4', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
+    'a03115': ('4B', '1.5', '1.5GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'b03115': ('4B', '1.5', '2GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03111': ('4B', '1.1', '4GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
     'c03112': ('4B', '1.2', '4GB', 'Sony UK', '1.5GHz quad core, Bluetooth 5, USB 2/3'),
@@ -141,7 +142,7 @@ class ModelInfo(object):
                 print ("Unknown model", rev_hex.lstrip("0"))
 
     def __repr__(self):
-        s = "%s: Model %s, Revision %s, RAM: %s MB, Maker: %s%s" % ( \
+        s = "%s: Model %s, Revision %s, RAM: %s, Maker: %s%s" % ( \
             self.revision_hex, self.model, self.revision, self.ram_mb, \
             self.maker, ", %s" % self.info if self.info else "")
         return s

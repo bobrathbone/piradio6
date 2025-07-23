@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.222 2025/07/09 10:10:50 bob Exp $
+# $Id: radio_class.py,v 1.224 2025/07/23 11:22:57 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -211,8 +211,8 @@ class Radio:
     pingDelay = 15      # Delay between pings in seconds
     recordTime = 0      # Reduce amount of recording checks
     recordDelay = 4     # Delay between recording checks in seconds
-    checkStatusCount = 0   # Prevent status check being done too often
-    checkStatusDelay = 60  # Status check countdown
+    statusDelayTime = 0   # Prevent status check being done too often
+    statusDelayValue = 3  # Status check delay time
 
     connected = False   # Connection status
     recording = False   # Recording station
@@ -392,7 +392,8 @@ class Radio:
         if self.record_delay:
             return
 
-        elif not self.recording and not self.record_delay:
+        ##elif not self.recording and not self.record_delay:
+        elif not self.recording:
             self.setRecordTimer(5)  # Blocks multiple record key depressions
             self.recording = True
             t = threading.Thread(target=self._startRecording,args=(key,))
@@ -400,7 +401,7 @@ class Radio:
             t.start()
             
         else:
-            cmd = "sudo killall liquidsoap"
+            cmd = "sudo killall -HUP liquidsoap"
             print("Record:",cmd)
             log.message("Record: " + cmd, log.INFO)
             try:
@@ -1745,14 +1746,13 @@ class Radio:
 
     # See if any error. Return True if error
     def checkStatus(self):
-        if not self.checkInternet():
-            return self.error
 
-        if self.checkStatusCount > 0:
-            self.checkStatusCount -= 1
+        now = time.time()
+        if now < self.statusDelayTime + self.statusDelayValue:
             return
 
-        self.checkStatusCount = self.checkStatusDelay
+        self.statusDelayTime = now
+
         try:
             status = self.client.status()
             errorStr = str(status.get("error"))

@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.206 2025/07/09 10:52:58 bob Exp $
+# $Id: radiod.py,v 1.207 2025/07/21 12:51:49 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -153,6 +153,8 @@ def interrupt():
 
     if display.hasButtons():
         display.checkButton()
+
+    radio.checkStatus()
     return interrupt
 
 # Daemon class
@@ -326,6 +328,7 @@ class MyDaemon(Daemon):
 
                 # Check if liquidsoap is recording
                 self.recording = radio.isRecording()
+
 
                 # This delay is important. Don't remove or
                 # button/encoder events will be missed

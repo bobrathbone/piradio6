@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi RPi.GPIO interception package
-# $Id: GPIO.py,v 1.15 2025/01/19 10:45:00 bob Exp $
+# $Id: GPIO.py,v 1.21 2025/07/23 11:21:26 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -49,14 +49,10 @@ pins = {
          36:16, 37:26, 38:20, 40:21,
        }
         
-# LGPIO Flags
-LGPIO_PULL_UP = 32
-LGPIO_PULL_DOWN = 64
-LGPIO_PULL_OFF = 128
-
 # A dictionary containing line event callbacks accessed using GPIO number
-callbacks = {}
-edges = ['NONE','RISING_EDGE','FALLING_EDGE','BOTH_EDGES']
+callbacks = {}  
+edges = {}          # Edge settings RISING, FALLING or BOTH
+bouncetimes = {}    # Bounce times per GPIO
 
 # The Raspberry Pi Model 5 uses the RP1 chip (4). Try to open first
 if os.path.exists("/proc/device-tree/aliases/gpio4"):
@@ -89,34 +85,51 @@ def _get_gpio(line):
     pin = line 
     if mode_board:
         try:
-            pin = pins[line]
+            if type(line) is list:
+                pin = []
+                for x in line:
+                    pin.append(pins[line])
+            else:
+                pin = pins[line]
         except:
             pass
     return pin     
 
 # The lgpio package does not have the equivalent of GPIO.setwarnings
-# so the setwarnings can eitherbe ignored or be used to enable/disable lgpio exceptions
+# so the setwarnings can either be ignored or be used to enable/disable lgpio exceptions
 # Set IGNORE_WARNINGS to True at the beginning of this program to prevent warnings/exceptions
 def setwarnings(boolean=True):
     if not IGNORE_WARNINGS:
         lgpio.exceptions = boolean
     return
 
-# Setup GPIO line for INPUT or OUTPUT and set internal Pull Up/Down resistors
+'''
+ Setup GPIO line for INPUT or OUTPUT and set internal Pull Up/Down resistors
+ This routine handles either a single GPIO or a list of GPIOs
+ See https://sourceforge.net/p/raspberry-gpio-python/wiki/BasicUsage/
+'''
 def setup(gpio,mode=OUT,pull_up_down=PUD_OFF):
     gpio = _get_gpio(gpio)
     if mode == IN:
         # Set up pull up/down resistors
         if pull_up_down == PUD_UP:
-            pullupdown = LGPIO_PULL_UP
+            pullupdown = lgpio.SET_PULL_UP
         elif pull_up_down == PUD_DOWN:
-            pullupdown = LGPIO_PULL_DOWN
+            pullupdown = lgpio.SET_PULL_DOWN
         elif pull_up_down == PUD_OFF:
-            pullupdown = LGPIO_PULL_OFF
-        lgpio.gpio_claim_input(chip,gpio,pullupdown)
+            pullupdown = lgpio.SET_PULL_NONE
+
+        # Handle single gpio or a list of gpios
+        if type(gpio) is list:
+            lgpio.group_claim_input(chip,gpio,pullupdown)
+        else:
+            lgpio.gpio_claim_input(chip,gpio,pullupdown)
 
     elif mode == OUT:
-        lgpio.gpio_claim_output(chip, gpio)
+        if type(gpio) is list:
+            lgpio.group_claim_output(chip, gpio)
+        else:
+            lgpio.gpio_claim_output(chip, gpio)
 
 # Convert LGPIO event to a GPIO event and call user callback
 # Level values (Not used by our callback but could be)
@@ -124,25 +137,42 @@ def setup(gpio,mode=OUT,pull_up_down=PUD_OFF):
 # 1: change to high (a rising edge)
 # 2: no level change (a watchdog timeout)
 def _gpio_event(chip,gpio,level,flags):
+    edge = edges[gpio]
     gpio = _get_gpio(gpio)
+    bouncetime = bouncetimes[gpio]
+    
+    # RISING or FALLING
     try:
-        callbacks[gpio](gpio)
+        if (edge == FALLING or edge == BOTH) and level < 1:
+            #print("_gpio_event FALLING level=%d edge %d" % (level,edge))
+            callbacks[gpio](gpio)
+        elif (edge == RISING or edge == BOTH) and level > 0:
+            #print("_gpio_event RISING level=%d edge %d" % (level,edge))
+            callbacks[gpio](gpio)
+
+        time.sleep(bouncetime/1000)
     except Exception as e:
         print(str(e)) 
 
-# Add event detection - Converts GPIO add_event_detect call to LGPIO 
+# Add event detection - Converts RPi.GPIO add_event_detect call to LGPIO equivelant
 def add_event_detect(gpio,edge,callback=None,bouncetime=0):
     gpio = _get_gpio(gpio)
     callbacks[gpio] = callback 
+    bouncetimes[gpio] = bouncetime 
     if edge ==  RISING:
         detect = lgpio.RISING_EDGE
     elif edge ==  FALLING:
         detect = lgpio.FALLING_EDGE
     else:
         detect = lgpio.BOTH_EDGES
+    edges[gpio] = edge
+
+    # We listen for both  edges and sort it out in the event routine
+    detect = lgpio.BOTH_EDGES
     try:
+        lflags = lgpio.SET_PULL_UP
+        lgpio.gpio_claim_alert(chip, gpio, eFlags=detect, lFlags=lflags, notify_handle=None)
         lgpio.callback(chip, gpio, detect,_gpio_event)
-        lgpio.gpio_claim_alert(chip, gpio, 1, lFlags=detect, notify_handle=None)
         lgpio.gpio_set_debounce_micros(chip, gpio, bouncetime)
 
     except Exception as e:
@@ -158,18 +188,37 @@ def input(gpio):
         print(str(e)) 
     return level
 
-# Output to a GPIO pin
-def output(gpio,level=LOW):
-    gpio = _get_gpio(gpio)
+# Output to a GPIO pin or group of pins
+def output(gpio,level):
     try:
-        lgpio.gpio_write(chip, gpio, level)
+        if type(gpio) is list:
+            newlist = []
+            newlist = zip(gpio,level)
+            for arr in (newlist): 
+                (pin,value) = arr
+                pin = _get_gpio(pin)
+                lgpio.gpio_write(chip,pin,value)
+        else:
+            pin = _get_gpio(gpio)
+            lgpio.gpio_write(chip,pin,level)
+
     except Exception as e:
         print(str(e)) 
 
 def get_info():
     return 
 
-def cleanup():
+# GPIO.cleanup 
+# Issue: Currently unless gpio(s) are specified they are left in 
+# their last state. Workaround: specify a GPIO or a group of GPIOs
+def cleanup(gpio=None):
+
+    if type(gpio) is list:
+        for pin in gpio:
+            lgpio.gpio_write(chip,pin,0)
+    elif gpio is not None:
+        lgpio.gpio_write(chip,gpio,0)
+
     lgpio.gpiochip_close(chip)
 
 # Get the Raspberry pi board version from /proc/cpuinfo
@@ -203,6 +252,10 @@ class PWMInstance:
     def ChangeDutyCycle(self, duty_cycle):
         self.duty_cycle = duty_cycle
         lgpio.tx_pwm(chip, self.gpio, self.frequency, duty_cycle)
+
+    def ChangeFrequency(self, frequency):
+        self.frequency = frequency
+        lgpio.tx_pwm(chip, self.gpio, frequency, self.duty_cycle)
 
     def stop(self):
         lgpio.tx_pwm(chip, self.gpio, 0, 0)
