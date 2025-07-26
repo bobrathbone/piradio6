@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.224 2025/07/23 11:22:57 bob Exp $
+# $Id: radio_class.py,v 1.225 2025/07/24 09:01:24 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -479,6 +479,7 @@ class Radio:
     # If recording station, signal the ireventd to switch on activity LED
     def isRecording(self):
         try: 
+            # The following check_output causes an exception if liquidsoap is not running
             pid_liquidsoap = int(check_output(["pidof","liquidsoap"]))
             if not self.record_led:  
                 self.switch_record_led(True) 
