@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi RPi.GPIO interception package
-# $Id: GPIO.py,v 1.23 2025/07/25 08:15:23 bob Exp $
+# $Id: GPIO.py,v 1.24 2025/07/26 09:26:24 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -138,17 +138,17 @@ def setup(gpio,mode=OUT,pull_up_down=PUD_OFF):
 # Level values (Not used by our callback but could be)
 # 0: change to low (a falling edge)
 # 1: change to high (a rising edge)
-# 2: no level change (a watchdog timeout)
+# 2: no level change (a watchdog timeout) - Ignored
 def _gpio_event(chip,gpio,level,flags):
     edge = edges[gpio]
     gpio = _get_gpio(gpio)
     
     # RISING or FALLING
     try:
-        if (edge == FALLING or edge == BOTH) and level < 1:
+        if (edge == FALLING or edge == BOTH) and level == 0:
             #print("_gpio_event FALLING level=%d edge %d" % (level,edge))
             callbacks[gpio](gpio)
-        elif (edge == RISING or edge == BOTH) and level > 0:
+        elif (edge == RISING or edge == BOTH) and level == 1:
             #print("_gpio_event RISING level=%d edge %d" % (level,edge))
             callbacks[gpio](gpio)
 
