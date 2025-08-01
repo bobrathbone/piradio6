@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.137 2025/06/14 17:22:28 bob Exp $
+# $Id: config_class.py,v 1.138 2025/07/28 21:58:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -126,7 +126,7 @@ class Configuration:
     MuteActions =  ['Pause','Stop']  # Text for above _mute_action
 
     # Recording parameters
-    _record_switch=27        # Uses GPIO 27 (physical pin 13) or GPIO5 (pin 29)
+    _record_switch=0        # Uses GPIO 27 (physical pin 13) or GPIO5 (pin 29)
     _record_log=1            # 0 none, 1 crtitcal, 2 severe, 3 important, 4 info, 5 debug
     _record_format='mp3'     # mp4(aac), flac(flac), opus(libopus), mp3(libmp3lame); (<codec>) Use MP3
     _record_incomplete=False # Include incomplete tracks when creating the playlist

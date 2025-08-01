@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: record_class.py,v 1.15 2025/06/28 14:32:45 bob Exp $
+# $Id: record_class.py,v 1.18 2025/07/31 13:47:27 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -161,10 +161,16 @@ class Recorder:
             
         duration = duration * 60 # Convert to seconds
         owner = self.getOwner('/usr/share/radio')
-        record_dir = '/home/' + owner + '/'  + name
+        record_dir = '/home/' + owner + '/'  + "Recordings"
 
         if not os.path.exists(record_dir):
             os.makedirs(record_dir)
+
+        # Set ownership and permissions
+        uid = pwd.getpwnam(owner).pw_uid
+        gid = pwd.getpwnam(owner).pw_gid
+        os.chown(record_dir, uid, gid)
+        os.chmod(record_dir,0o766) # Allow RW access to anyone
     
         try:
             self.connect()    # Connect to client

@@ -2,7 +2,7 @@ RPi/GPIO.py
 ===========
 
 The GPIO.py code is only for use with the Raspberry Pi Model 5.
-Do not use it for earlier models such as the Model 3B or 4
+or for earlier models such as the Model 3B or 4 that are running Bookworm OS
 
 It is designed to intercept GPIO calls and convert them to LGPIO calls.
 See: https://abyz.me.uk/lg/py_lgpio.html
@@ -28,7 +28,8 @@ For a Raspberry Pi model 5 or running if Bookworm only. Example:
 touch /usr/share/radio/RPi/__init__.py
 The instruction above will cause the code using the GPIO calls to see directory RPi as a pacckage.
 
-For earlier models such as the 3B or 4 disable the package
+For earlier models such as the 3B or 4 running Bullseye or earlier disable the package
+For example (radio package)
 rm /usr/share/radio/RPi/__init__.py
 
 Support

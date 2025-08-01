@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.225 2025/07/24 09:01:24 bob Exp $
+# $Id: radio_class.py,v 1.226 2025/07/31 08:12:26 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -431,7 +431,10 @@ class Radio:
         if source_type == self.source.RADIO:
             try:
                 duration = self.convertDuration(self.recordDuration)
-                name = "Recordings"
+                index = self.getCurrentID() - 1
+                if index < 1:
+                    index = 1
+                name = self.getStationName(index)
                 loglevel = 1 
                 format = "mp3"
                 url = self.getUrl() # Get URL of current station

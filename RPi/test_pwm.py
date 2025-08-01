@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# $Id: test_pwm.py,v 1.2 2025/01/30 12:02:21 bob Exp $
 # test_pwm.py 
 # Author: Fgmnts https://github.com/fgmnts
 # Change the led GPIO number to the GPIO your led is connected to
@@ -11,11 +12,12 @@ from RPi import GPIO
 import time
 
 led = 16
+freq = 100
 
 GPIO.setmode(GPIO.BCM)
 
 GPIO.setup(led, GPIO.OUT)
-pwm_led1 = GPIO.PWM(led, 100)
+pwm_led1 = GPIO.PWM(led, freq)
 pwm_led1.start(10)
 try:
     while True:
@@ -27,6 +29,11 @@ try:
         time.sleep(0.8)
         pwm_led1.ChangeDutyCycle(0)
         time.sleep(0.8)
+        if freq == 100:
+            freq = 5
+        else:
+            freq = 100
+        pwm_led1.ChangeFrequency(freq)
 except KeyboardInterrupt as e:
     print(e)
 finally:

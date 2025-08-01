@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.207 2025/07/21 12:51:49 bob Exp $
+# $Id: radiod.py,v 1.208 2025/07/31 13:46:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -987,7 +987,7 @@ def displayTimeDate(display,radio,message):
             search_name = radio.getSearchName()
             if len(msg + " " + search_name) > width:
                 msg = msg[:5]
-            msg = msg + " " + search_name 
+            msg = msg +  recording_ind + streaming +  " " + search_name 
             display.out(1,msg[:width])
 
         elif sourceType == radio.source.MEDIA:

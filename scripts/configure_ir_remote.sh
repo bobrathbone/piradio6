@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.17 2025/05/20 15:23:03 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.18 2025/07/30 06:52:49 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -110,6 +110,7 @@ if [[ ! -f ${LYNX} ]]; then
 fi
 
 config_changed=0
+reboot=0
 
 mkdir -p ${LOGDIR}
 sudo rm -f ${LOG}
@@ -148,7 +149,7 @@ do
     fi
 
     if [[ ${ans} == '1' ]]; then
-        CONFIGURE=1
+        reboot=1
         run=0
 
     elif [[ ${ans} == '2' ]]; then
@@ -211,7 +212,7 @@ do
     elif [[ ${ans} == '9' ]]; then
         clear
         ${SCRIPTS_DIR}/select_ir_remote.sh ${FLAGS}
-        echo "Reboot the Raspberry Pi or run the following command:"
+        echo "Run the following command to implement the remote control change:"
         printf "${orange}sudo systemctl restart ireventd radiod${default}"
         echo ''
         echo -n "Press enter to continue: "
@@ -408,9 +409,12 @@ if [[ ${ERRORS} > 0 ]]; then
 else
     echo "Configuration of Kernel Events completed OK" | tee -a ${LOG}
     echo "" |  tee -a ${LOG}
-    echo "Reboot the Raspberry Pi or run the following command:"
-    printf "${orange}sudo systemctl restart ireventd radiod${default}"
-    echo "" |  tee -a ${LOG}
+    if [[ reboot == 1 ]]; then
+        echo "It is necessary to reboot the Raspberry Pi to implement changes"
+    else
+        echo "Run the following command to implement changes:"
+        printf "${orange}sudo systemctl restart ireventd radiod${default}"
+    fi
     echo "" |  tee -a ${LOG}
 fi
 echo "A log of this run will be found in ${LOG}"
