@@ -13,7 +13,7 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.1 release notes
 -------------------------
-Release 30 July 2025 - Build 6
+Release 4 October 2025 - Build 7
 1) Recording facility streamripper replaced with liquidsoap 
 2) Correct 403 error (Forbidden) for some stations when creating Radio playlist for some stations
 3) Experimental station_select.py and station_select.service added (currently unsupported)
@@ -22,6 +22,8 @@ Release 30 July 2025 - Build 6
 6) Display audio configuration (display_audio.sh) added
 7) Correct install failure for the Waveshare WM8960 DAC See github.com/ubopod/WM8960-Audio-HAT
 8) Improved IR remote control installation scripts
+9) Correct non-translation of Cyrillic characters in the search menu
+10) Correct LCD Cyrillic character test routine
 
 Version 8.0 release notes
 -------------------------

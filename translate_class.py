@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding: latin-1 -*-
 #
 # Raspberry Pi Radio Character translation class
 # Escaped characters, html and unicode translation to ascii
 #
-# $Id: translate_class.py,v 1.8 2021/11/23 10:40:30 bob Exp $
+# $Id: translate_class.py,v 1.10 2025/10/04 09:17:56 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -218,19 +217,29 @@ class Translate:
 if __name__ == '__main__':
 
     translate = Translate() # Test routine object
+    debug = False
 
     if len(sys.argv) > 1:
         text = sys.argv[1]
     else:
-        text = 'ABCDEF 012345'
+        print('Usage: %s "<text>"' % sys.argv[0])
+        sys.exit(1)
+
     print (text)
 
-    s = translate._convert2escape(text)
-    print()
-    print (s)
+    # Set to True to Romanise characters (Latin)
+    translate.setRomanize(False)
+    translate.setTranslate(True)
 
-    # Complete text
-    print (translate.all(text))
+    # To test conversion to escape characters
+    if debug:
+        s = translate._convert2escape(text)
+        print()
+        print (s)
+
+    # Convert text to equivalent LCD codes
+    text = translate.all(text)
+    print(text)
     print('')
     sys.exit(0)
 # End of file

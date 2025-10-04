@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.53 2025/07/01 08:08:36 bob Exp $
+# $Id: station.urls,v 1.54 2025/09/25 18:37:17 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -199,7 +199,10 @@
 [Радио Рекорд] http://radiorecord.hostingradio.ru/mdl96.aacp
 [Наше радіо] http://online.nasheradio.ua/NasheRadio_HD
 [Радио России] http://icecast.vgtrk.cdnvideo.ru:80/rrzonam_mp3_192kbps?36a9
-#[Гуляй Радио] http://online.radioplayer.ua/GuliayRadio_HD
+[Гуляй Радио] http://online.radioplayer.ua/GuliayRadio_HD
+[Нафталин_фм] https://online.radiorecord.com.ua/naft?n
+[П'ятниця_диско] https://cast.mediaonline.net.ua/radiopyatnica320
+[Лампа] https://listen3.myradio24.com/180667
 
 # Australia
 [ABC News] http://www.abc.net.au/res/streaming/audio/mp3/news_radio.pls

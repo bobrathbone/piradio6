@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: latin-1 -*-
 #
-# $Id: lcd_class.py,v 1.16 2025/04/07 11:33:36 bob Exp $
+# $Id: lcd_class.py,v 1.18 2025/10/04 09:11:50 bob Exp $
 # Raspberry Pi display routines
 # using an HD44780 or MC0100 LCD or OLED character display
 #
@@ -344,19 +343,19 @@ def no_interrupt():
 
 # Class test routine
 if __name__ == "__main__":
-    test_Russian = False
     from translate_class import Translate
     translate = Translate() # Test routine in __main__
+
+    test_Russian = False    # Change to 'True' to test Cyrillic (Cyrillic LCD required)
 
     try:
         print("Test lcd_class.py")
 
-        # Code page. 0=Use primary font code page
-        # 1 to 3 override primary font codepage. gives 0x0 to 0x2 
-        page = 3    # MC0100 Russian
-
         lcd = Lcd()
         if test_Russian:
+            # Code page. 0=Use primary font code page
+            # 1 to 3 override primary font codepage. gives 0x0 to 0x2 
+            page = 3    # MC0100 Russian
             lcd.init(code_page=page)
         else:
             lcd.init()
@@ -375,34 +374,34 @@ if __name__ == "__main__":
 
         if test_Russian:
             text2 = "Радио Пятница" # Radio Pyatnica
-            text2 = "Белоруссией и Украиной"
-            text3 = "Россия - самая"
-            text3 = "На юге Россия"
-            text4 = "большая страна в мире"
-            text4 = "Она охватывает часть" 
-            text4 = "охватывает часть" 
-            text4 = "Перекрёстки"
-            print(text2)
-            print(text3)
-            print(text4)
+            text3 = "На юге Россия" # Na yuge Rossiya (In the south of Russia)
+            # The following line contains all letters of the Russian alphabet
+            text4 = "Съешь же ещё этих мягких французских булок да выпей чаю"
+            # Roman  S"yesh' zhe yeshcho etikh myagkikh frantsuzskikh bulok da vypey chayu 
+            # Eng.   Eat some more of these soft French rolls and drink some tea
+            eot = "Конец теста"
+            
             translate.setTranslate(True)
             translate.setRomanize(True)
             text2 = translate.all(text2)
             text3 = translate.all(text3)
             text4 = translate.all(text4)
+            eot = translate.all(eot)
+            print(text2)
+            print(text3)
+            print(text4)
         else:
             text2 = "Line 2 123456789"
             text3 = "Line 3 123456789"
-            text4 = "Line 4 123456789"
+            text4 = "Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789"
+            eot = "End of test"
             #text2 = "äöüßÄÖÜ"  # Test German umlauts
 
         lcd.out(2,text2)
         lcd.out(3,text3)
-        lcd.out(4,text4)
-        time.sleep(2)
-        lcd.out(4,"Scroll 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", no_interrupt)
-        time.sleep(2)
-        lcd.out(4,"End of test")
+        lcd.out(4,text4,no_interrupt)
+        time.sleep(0.5)
+        lcd.out(4,eot)
         sys.exit(0)
 
     except KeyboardInterrupt:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.226 2025/07/31 08:12:26 bob Exp $
+# $Id: radio_class.py,v 1.228 2025/10/04 06:10:09 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -1977,8 +1977,6 @@ class Radio:
     def getSearchName(self):
         name = ''
         try:
-            self.currentsong = self.getCurrentSong()
-            self.search_index =  int(self.currentsong.get("pos"))
             name = self.getStationName(self.search_index) 
             if len(name) > 0:
                 name = self.translate.all(name)
@@ -1986,7 +1984,6 @@ class Radio:
         except Exception as e:
             log.message("radio.getSearchName: " + str(e), log.DEBUG)
             name = "Bad stream (" + str(self.current_id) + ")"
-
         return name
 
     # Get the currently playing radio station name from mpd 
@@ -2562,6 +2559,7 @@ class Radio:
                 self.stationName = stationName
         except Exception as e:
             log.message("radio.getStationName " + str(e), log.ERROR)
+
         return stationName
 
     # Get track name by Index
