@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: select_ir_remote.sh,v 1.7 2024/12/21 10:34:42 bob Exp $
+# $Id: select_ir_remote.sh,v 1.10 2025/10/07 14:07:05 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -34,20 +34,11 @@ function find_device()
 {
     sname=$1
     found=0
-    for x in 0 1 2 3 4 6
+    for x in 0 1 2 3 4 6 7 8
     do
-        for y in 0 1 2 3 4 5 6
-        do
-            if [[ -f ${SYS_RC}/rc${x}/input${y}/name ]]; then
-                name=$(cat ${SYS_RC}/rc${x}/input${y}/name)
-                if [[ ${name} == ${sname} ]]; then
-                    echo "rc${x}"
-                    found=1
-                    break
-                fi
-            fi
-        done
-        if [[ ${found} == 1 ]]; then
+        name=$(cat ${SYS_RC}/rc${x}/input*/name)
+        if [[ ${name} == ${sname} ]]; then
+            echo "rc${x}"
             break
         fi
     done
@@ -100,6 +91,7 @@ done
 
 # Log to install_ir.log
 echo "Select IR remote control definition $(date)" | tee -a  ${LOG}
+echo "Found kernel device ${IR_DEV} for gpio_ir_recv"
 # Copy selected toml file to /etc/rc_keymaps
 CMD="sudo cp -f ${REMOTES_DIR}/${TOML_FILE} ${KEYMAPS}/."
 echo ${CMD} | tee -a ${LOG}

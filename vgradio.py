@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.53 2025/04/10 14:39:23 bob Exp $
+# $Id: vgradio.py,v 1.55 2025/10/08 07:29:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -747,7 +747,7 @@ if __name__ == "__main__":
         locale.setlocale(locale.LC_ALL, '')
     except:
         pass
-    log.message("locale " + str(locale.getdefaultlocale()), log.DEBUG)
+    log.message("locale " + str(locale.getlocale()), log.DEBUG)
 
     # Prevent LCD version of program starting
     os.popen("systemctl disable radiod")
@@ -775,6 +775,10 @@ if __name__ == "__main__":
     radioEvent = Event(config)    # Add radio event handler
     radio = Radio(rmenu,radioEvent,translate,config,log)  # Define radio
     log.message("Python version " + str(sys.version_info[0]) ,log.INFO)
+
+    progcall = str(sys.argv)
+    log.message("Radio " +  progcall + " Version " + radio.getVersion(), log.INFO)
+    log.message("gradio running, pid " + str(pid), log.INFO)
 
     # Set up the screen
     size = config.screen_size

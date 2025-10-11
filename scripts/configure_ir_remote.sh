@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.18 2025/07/30 06:52:49 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.19 2025/10/07 14:07:05 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -72,20 +72,11 @@ function find_device()
 {
     sname=$1
     found=0
-    for x in 0 1 2 3 4 6
+    for x in 0 1 2 3 4 6 7 8 
     do
-        for y in 0 1 2 3 4 5 6
-        do
-            if [[ -f ${SYS_RC}/rc${x}/input${y}/name ]]; then
-                name=$(cat ${SYS_RC}/rc${x}/input${y}/name)
-                if [[ ${name} == ${sname} ]]; then
-                    echo "rc${x}"
-                    found=1
-                    break
-                fi
-            fi
-        done
-        if [[ ${found} == 1 ]]; then
+        name=$(cat ${SYS_RC}/rc${x}/input*/name)
+        if [[ ${name} == ${sname} ]]; then
+            echo "rc${x}"
             break
         fi
     done
@@ -334,10 +325,6 @@ do
     selection=$?
 done
 
-# Select the IR remote control definition (toml file)
-${SCRIPTS_DIR}/select_ir_remote.sh  
-TOML_FILE=$(cat ${REMOTE_CONTROL})
-
 # Display configuration changes
 config_changed=1
 echo "$0 configuration log, $(date) " | tee ${LOG}
@@ -409,7 +396,7 @@ if [[ ${ERRORS} > 0 ]]; then
 else
     echo "Configuration of Kernel Events completed OK" | tee -a ${LOG}
     echo "" |  tee -a ${LOG}
-    if [[ reboot == 1 ]]; then
+    if [[ ${reboot} == 1 ]]; then
         echo "It is necessary to reboot the Raspberry Pi to implement changes"
     else
         echo "Run the following command to implement changes:"

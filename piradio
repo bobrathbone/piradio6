@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.144 2025/07/11 07:36:54 bob Exp $
+# $Id: piradio,v 1.145 2025/10/08 06:57:56 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is both the 32-bit and 64-bit version
 # Source: <source package name; defaults to package name>
@@ -9,7 +9,7 @@ Priority: optional
 Homepage: http://www.bobrathbone.com
 
 Package: radiod
-Version: 8.1
+Version: 8.2
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 Standards-Version: 4.7.0.2

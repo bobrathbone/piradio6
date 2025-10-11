@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.209 2025/10/04 09:20:29 bob Exp $
+# $Id: radiod.py,v 1.210 2025/10/06 19:20:09 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1343,7 +1343,7 @@ def displayCurrent(display,radio,message):
 
     if sourceType == radio.source.RADIO:
         station_name = radio.getCurrentStationName()
-        search_name = radio.getSearchName()
+        search_name = radio.getSearchName(True)
         title = radio.getCurrentTitle()
         bitrate = radio.getBitRate()
         station = search_name   # Name from our playlists

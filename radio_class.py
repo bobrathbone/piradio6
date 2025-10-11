@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.228 2025/10/04 06:10:09 bob Exp $
+# $Id: radio_class.py,v 1.229 2025/10/06 19:20:09 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -1974,9 +1974,11 @@ class Radio:
         return self.currentsong
 
     # Get station name by index from search list
-    def getSearchName(self):
+    def getSearchName(self,byindex=False):
         name = ''
         try:
+            if byindex:
+                self.search_index = self.getCurrentID()  - 1
             name = self.getStationName(self.search_index) 
             if len(name) > 0:
                 name = self.translate.all(name)

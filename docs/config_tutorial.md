@@ -5,9 +5,7 @@ Configuration Tutorial
 running the **radio-config** utility which in turn calls the configure_radio.sh programs.
 NOTE: The configuration in this file uses GPIO numbers and not physical pin numbers.
 
-Further information can be found in the **Raspberry Pi Internet Radio - Technical Reference Manual** available at **https://bobrathbone.com** or **https://github.com/bobrathbone/piradio6/** in the docs directory.
-
-To search this tuturial for a given parameter or string enter a slash '/'.
+To search this tutorial for a given parameter or string enter a slash '/' followed by the item.
 
 The RADIOD section
 ==================

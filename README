@@ -11,9 +11,14 @@ This software uses the python3-mpd library. See https://packages.debian.org/sid/
 
 To configure the radio software and components run: radio-config from the command line
 
+Version 8.2 (beta) release notes
+-------------------------
+Release 9 October 2025 - Build 1
+1) Modifications to run with Debian Trixie release 2nd October 2025
+
 Version 8.1 release notes
 -------------------------
-Release 4 October 2025 - Build 7
+Release 7 October 2025 - Build 8
 1) Recording facility streamripper replaced with liquidsoap 
 2) Correct 403 error (Forbidden) for some stations when creating Radio playlist for some stations
 3) Experimental station_select.py and station_select.service added (currently unsupported)
@@ -24,6 +29,7 @@ Release 4 October 2025 - Build 7
 8) Improved IR remote control installation scripts
 9) Correct non-translation of Cyrillic characters in the search menu
 10) Correct LCD Cyrillic character test routine
+11) Correct station name not changing when selecting a new one using the Web interface
 
 Version 8.0 release notes
 -------------------------

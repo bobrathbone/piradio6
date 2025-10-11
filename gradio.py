@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.66 2025/04/10 14:39:23 bob Exp $
+# $Id: gradio.py,v 1.68 2025/10/08 07:29:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1228,7 +1228,7 @@ if __name__ == "__main__":
         locale.setlocale(locale.LC_ALL, '')
     except:
         pass
-    log.message("locale " + str(locale.getdefaultlocale()), log.DEBUG)
+    log.message("locale " + str(locale.getlocale()), log.DEBUG)
 
     font = pygame.font.SysFont('freesans', 13)
     display = GraphicDisplay(font)
@@ -1273,6 +1273,8 @@ if __name__ == "__main__":
 
     pid = checkPid(pidfile)
 
+    progcall = str(sys.argv)
+    log.message("Radio " +  progcall + " Version " + radio.getVersion(), log.INFO)
     log.message("gradio running, pid " + str(pid), log.INFO)
 
 
