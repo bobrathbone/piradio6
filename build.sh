@@ -68,7 +68,7 @@ sudo chmod +x *.py *.cmd *.sh
 sudo chmod -x language/* voice.dist
 
 if [[ ! -f ${MPD} ]]; then
-    sudo apt-get -y install python3-mpd mpd
+    sudo apt-get -y install python3-mpd mpd mpc
 fi
 
 if [[ ! -f ${EQUIVS} ]];then
