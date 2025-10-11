@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Web Interface
-# $Id: install_web_interface.sh,v 1.11 2025/04/22 16:05:36 bob Exp $
+# $Id: install_web_interface.sh,v 1.12 2025/10/10 14:17:06 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -90,17 +90,7 @@ sudo apt-get -y install apache2 php libapache2-mod-php  | tee -a ${LOG}
 
 # Install MariaDB database.
 echo "Installing PHP and Radio Web software" | tee -a ${LOG}
-if [[ $(release_id) -ge 12 ]]; then
-    echo "Installing PHP8.2" | tee -a ${LOG}
-    sudo apt-get -y install php8.2-gd php8.2-mbstring php-mysql | tee -a ${LOG}
-    sudo apt-get -y install php8.2-curl | tee -a ${LOG}
-    sudo a2enmod php8.2
-
-    # Install package from Rathbone Web site
-    rm -f radiodweb_3.2_all.*
-    wget http://bobrathbone.com/raspberrypi/packages/radiodweb_3.2_all.deb | tee -a ${LOG}
-    sudo dpkg -i radiodweb_3.2_all.deb | tee -a ${LOG}
-else
+if [[ $(release_id) -le 11 ]]; then
     echo "Installing PHP7.4" | tee -a ${LOG}
     sudo apt-get -y install php7.4-gd php7.4-mbstring php-mysql | tee -a ${LOG}
     sudo apt-get -y install php7.4-curl | tee -a ${LOG}
@@ -112,6 +102,26 @@ else
     rm -f radiodweb_2.3_all.*
     wget http://bobrathbone.com/raspberrypi/packages/radiodweb_2.3_armhf.deb | tee -a ${LOG}
     sudo dpkg -i radiodweb_2.3_armhf.deb | tee -a ${LOG}
+elif [[ $(release_id) -eq 12 ]]; then
+    echo "Installing PHP8.2" | tee -a ${LOG}
+    sudo apt-get -y install php8.2-gd php8.2-mbstring php-mysql | tee -a ${LOG}
+    sudo apt-get -y install php8.2-curl | tee -a ${LOG}
+    sudo a2enmod php8.2
+
+    # Install package from Rathbone Web site
+    rm -f radiodweb_3.2_all.*
+    wget http://bobrathbone.com/raspberrypi/packages/radiodweb_3.2_all.deb | tee -a ${LOG}
+    sudo dpkg -i radiodweb_3.2_all.deb | tee -a ${LOG}
+elif [[ $(release_id) -ge 13 ]]; then
+    echo "Installing PHP8.4" | tee -a ${LOG}
+    sudo apt-get -y install php8.4-gd php8.4-mbstring php-mysql | tee -a ${LOG}
+    sudo apt-get -y install php8.4-curl | tee -a ${LOG}
+    sudo a2enmod php8.4
+
+    # Install package from Rathbone Web site
+    rm -f radiodweb_3.3_all.*
+    wget http://bobrathbone.com/raspberrypi/packages/radiodweb_3.3_all.deb | tee -a ${LOG}
+    sudo dpkg -i radiodweb_3.3_all.deb | tee -a ${LOG}
 fi
 
 echo "Installing mariadb-server" | tee -a ${LOG}
