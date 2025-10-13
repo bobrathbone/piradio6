@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.20 2025/03/14 10:58:33 bob Exp $
+# $Id: build.sh,v 1.21 2025/10/11 09:25:17 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 

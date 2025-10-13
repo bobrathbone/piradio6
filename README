@@ -13,8 +13,9 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.2 (beta) release notes
 -------------------------
-Release 9 October 2025 - Build 1
+Release 12 October 2025 - Build 2
 1) Modifications to run with Debian Trixie release 2nd October 2025
+2) Support for X-Windows desktop and Wayfire compositor removed
 
 Version 8.1 release notes
 -------------------------

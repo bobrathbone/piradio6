@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #       
 # Raspberry Pi remote control daemon
-# $Id: ireventd.py,v 1.44 2025/05/10 10:56:17 bob Exp $
+# $Id: ireventd.py,v 1.45 2025/10/05 07:39:18 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -145,13 +145,14 @@ class RemoteDaemon(Daemon):
         for x in range(7):
             name = ''
             device = ''
-            for y in range(7):
+            for y in range(15):
                 file = sys_rc + '/rc' + str(x) + '/input' + str(y) + '/name'
-                if os.path.isfile (file):
+                if os.path.isfile(file):
                     try:
                         f = open(file, "r")
                         name = f.read()
                         name = name.strip()
+                        print(name)
                         if (sName == name):
                             device = 'rc' + str(x)
                             rc_device = sys_rc + '/rc' + str(x)

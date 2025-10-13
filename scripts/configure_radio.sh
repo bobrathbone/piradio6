@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.35 2025/07/09 09:15:26 bob Exp $
+# $Id: configure_radio.sh,v 1.38 2025/10/13 13:01:56 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -60,8 +60,6 @@ X_INSTALLED='no'   # 'yes' = X-Windows installed
 WALLPAPER==/usr/share/rpd-wallpaper
 
 # X-Window parameters
-LXSESSION=""    # Start desktop radio at boot time
-WAYFIRE_INI=/home/$USER/.config/wayfire.ini
 LABWC_DIR=/home/$USER/.config/labwc
 LABWC_AUTOSTART=${LABWC_DIR}/autostart
 LABWC=/usr/bin/labwc
@@ -1282,61 +1280,12 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
 fi
 
 
-# X-Windows radio desktop program (gradio or vgradio) installation 
-# Install for both X11 and Wayland protocols as user can switch between them
-LXDE="LXDE-${USER}"
-LXDE_DIR=/home/${USER}/.config/lxsession/${LXDE}
-X11_AUTOSTART="${LXDE_DIR}/autostart"
-
 if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
-
     echo "Configuring X-Windows configuration for automatic start" | tee -a ${LOG}
-    if [[ ! -d ${LXDE_DIR} ]]; then
-        mkdir -p ${LXDE_DIR}
-        cp ${DIR}/lxsession/${LXDE}.autostart ${X11_AUTOSTART} 
-        chown -R ${USER}:${GRP} /home/${USER}/.config/lxsession
-    fi
-
-    # Configure desktop X11 autostart if X-Windows installed
-    if [[ -f ${X11_AUTOSTART} ]]; then
-        echo "${X11_AUTOSTART}" | tee -a ${LOG}
-        if [[ ${LXSESSION} == "yes" ]]; then
-            # Delete old entry if it exists
-            sudo sed -i -e "/radio/d" ${X11_AUTOSTART}
-            cmd="@sudo /usr/share/radio/${GPROG}.py"
-            sudo echo ${cmd} | tee -a ${LOG}
-            echo ${cmd} >>  ${X11_AUTOSTART}
-        fi
-        echo | tee -a ${LOG}
-    fi
-
-    # Configure desktop wayfire.ini if Wayland installed 
-    if [[ -f ${WAYFIRE_INI} ]]; then
-        echo "${WAYFIRE_INI}" | tee -a ${LOG}
-        if [[ ${LXSESSION} == "yes" ]]; then
-            grep "^\[autostart\]"  ${WAYFIRE_INI} > /dev/null 2>&1
-            if [[ $? != 0 ]]; then
-                echo >> ${WAYFIRE_INI}
-                cmd="[autostart]"
-                echo ${cmd} | tee -a ${LOG}
-                echo ${cmd} >> ${WAYFIRE_INI}
-            fi 
-            # Delete old entry if it exists
-            sudo sed -i "/^radiod = sudo/d" ${WAYFIRE_INI}
-            sudo sed -i "/^#radiod = sudo/d" ${WAYFIRE_INI}
-            cmd="radiod = sudo /usr/share/radio/${GPROG}.py"
-            echo ${cmd} | tee -a ${LOG}
-            echo ${cmd} >> ${WAYFIRE_INI} 
-        fi
-        echo | tee -a ${LOG}
-    fi 
-
     if [[ -f ${LABWC} ]]; then
         echo "${LABWC_AUTOSTART}" | tee -a ${LOG}
+	echo "${LXSESSION}" | tee -a ${LOG}
         if [[ ${LXSESSION} == "yes" ]]; then
-            if [[ ! -d ${LABWC_DIR} ]]; then
-                mkdir -p ${LABWC_DIR}
-            fi
             if [[ ! -d ${LABWC_AUTOSTART} ]]; then
                 touch ${LABWC_AUTOSTART}
             fi
@@ -1345,22 +1294,17 @@ if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
             echo ${cmd} | tee -a ${LOG}
             echo ${cmd} >> ${LABWC_AUTOSTART} 
             chown -R pi:pi ${LABWC_DIR}
+
+            # Set up desktop radio execution icon
+            echo "Setting up desktop icons in /home/${USER}/Desktop/" | tee -a ${LOG}
+            sudo cp ${DIR}/Desktop/gradio.desktop /home/${USER}/Desktop/.
+            sudo cp ${DIR}/Desktop/vgradio.desktop /home/${USER}/Desktop/.
+            sudo chmod +x /home/${USER}/Desktop/gradio.desktop
+            sudo chmod +x /home/${USER}/Desktop/vgradio.desktop
+
         fi
     fi
 else
-    # Delete auto-run entries from all X-Windows configurations
-    echo "Deleting any X-Windows application start commands" | tee -a ${LOG}
-    if [[ -f ${X11_AUTOSTART} ]]; then
-        echo "   ${X11_AUTOSTART}" | tee -a ${LOG}
-        sudo sed -i "/gradio/d" ${X11_AUTOSTART}
-        sudo sed -i "/vgradio/d" ${X11_AUTOSTART}
-    fi
-
-    if [[ -f ${WAYFIRE_INI} ]]; then
-        echo "   ${WAYFIRE_INI}" | tee -a ${LOG}
-        sed -i '/radiod = sudo/d' ${WAYFIRE_INI}
-    fi
-
     if [[ -f ${LABWC_AUTOSTART} ]]; then
         echo "   ${LABWC_AUTOSTART}" | tee -a ${LOG}
         sed -i '/gradio/d' ${LABWC_AUTOSTART}
@@ -1383,10 +1327,11 @@ echo "VERSION_ID"  $(release_id)
 if [[ ${PI_MODEL} -ge 5 || $(release_id) -ge 12 ]]; then
     # Enable GPIO converter in ${DIR}/RPi
     touch ${DIR}/RPi/__init__.py | tee -a ${LOG}
+    sudo chown ${USER}:${GRP} ${DIR}/RPi/__init__.py
     echo "GPIO conversion enabled" | tee -a ${LOG}
 else
     # Disable GPIO converter
-    rm -f  ${DIR}/RPi/__init__.py | tee -a ${LOG}
+    sudo rm -f  ${DIR}/RPi/__init__.py | tee -a ${LOG}
     echo "GPIO conversion disabled" | tee -a ${LOG}
 fi 
 
@@ -1409,7 +1354,6 @@ fi
 if [[ $DATE_FORMAT != "" ]]; then
     sudo sed -i -e "0,/^dateformat/{s/dateformat.*/dateformat=${DATE_FORMAT}/}" ${CONFIG}
 fi
-
 
 # Set up graphical screen size
 if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
@@ -1448,6 +1392,7 @@ elif [[ ${USER_INTERFACE} == "5" ]]; then
 elif [[ ${USER_INTERFACE} == "7" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=pifacecad/}" ${CONFIG}
 fi
+
 
 # Configure I2C address
 if [[ ${I2C_ADDRESS} != "0x00" ]]; then
@@ -1611,7 +1556,6 @@ fi
 echo "Disable dtoverlay=i2s-mmap in ${BOOTCONFIG}" 
 sudo sed -i -e "0,/^dtoverlay=i2s-mmap/{s/^dtoverlay=i2s-mmap.*/#dtoverlay=i2s-mmap/}" ${BOOTCONFIG}
 
-
 # Force fsck file system check
 grep -q "fsck.mode=force" ${CMDLINE}
 if [[ $? -ne 0 ]]; then
@@ -1683,12 +1627,6 @@ echo "-----------------------------------" | tee -a ${LOG}
 echo | tee -a ${LOG}
 # Update system startup 
 if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
-
-    # Set up desktop radio execution icon
-    sudo cp ${DIR}/Desktop/gradio.desktop /home/${USER}/Desktop/.
-    sudo cp ${DIR}/Desktop/vgradio.desktop /home/${USER}/Desktop/.
-    sudo chmod +x /home/${USER}/Desktop/gradio.desktop
-    sudo chmod +x /home/${USER}/Desktop/vgradio.desktop
 
     # Add [SCREEN] section to the configuration file
     grep "\[SCREEN\]" ${CONFIG} >/dev/null 2>&1
