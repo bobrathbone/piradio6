@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.38 2025/10/13 13:01:56 bob Exp $
+# $Id: configure_radio.sh,v 1.43 2025/10/17 11:47:24 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -60,6 +60,7 @@ X_INSTALLED='no'   # 'yes' = X-Windows installed
 WALLPAPER==/usr/share/rpd-wallpaper
 
 # X-Window parameters
+LXSESSION="no"
 LABWC_DIR=/home/$USER/.config/labwc
 LABWC_AUTOSTART=${LABWC_DIR}/autostart
 LABWC=/usr/bin/labwc
@@ -1095,7 +1096,6 @@ if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
     done
 
 elif [[ ${DISPLAY_TYPE} =~ "WS_SPI_SSD1309" ]]; then
-    set -x
     if [[ ${FLAGS} != "-s" ]]; then
         if [[ $(release_id) -ge 12 ]]; then
             sudo mv ${MANAGE_PIP} ${MANAGE_PIP}.orig
@@ -1284,43 +1284,56 @@ if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     echo "Configuring X-Windows configuration for automatic start" | tee -a ${LOG}
     if [[ -f ${LABWC} ]]; then
         echo "${LABWC_AUTOSTART}" | tee -a ${LOG}
-	echo "${LXSESSION}" | tee -a ${LOG}
         if [[ ${LXSESSION} == "yes" ]]; then
             if [[ ! -d ${LABWC_AUTOSTART} ]]; then
                 touch ${LABWC_AUTOSTART}
             fi
             sed -i '/gradio/d' ${LABWC_AUTOSTART} >/dev/null 2>&1
             cmd="sudo /usr/share/radio/${GPROG}.py &"
-            echo ${cmd} | tee -a ${LOG}
-            echo ${cmd} >> ${LABWC_AUTOSTART} 
+            echo ${cmd} | tee -a ${LABWC_AUTOSTART} 
             chown -R pi:pi ${LABWC_DIR}
+            echo "autostart: $(cat ${LABWC_AUTOSTART})" | tee -a ${LOG}
+        fi
 
-            # Set up desktop radio execution icon
-            echo "Setting up desktop icons in /home/${USER}/Desktop/" | tee -a ${LOG}
-            sudo cp ${DIR}/Desktop/gradio.desktop /home/${USER}/Desktop/.
-            sudo cp ${DIR}/Desktop/vgradio.desktop /home/${USER}/Desktop/.
-            sudo chmod +x /home/${USER}/Desktop/gradio.desktop
-            sudo chmod +x /home/${USER}/Desktop/vgradio.desktop
+        # Set up desktop radio execution icon
+        echo "Setting up desktop icons in /home/${USER}/Desktop/" | tee -a ${LOG}
+        cmd="sudo cp ${DIR}/Desktop/gradio.desktop /home/${USER}/Desktop/."
+        echo ${cmd}; $cmd
+        cmd="sudo cp ${DIR}/Desktop/vgradio.desktop /home/${USER}/Desktop/."
+        echo ${cmd}; $cmd
+        sudo chmod +x /home/${USER}/Desktop/gradio.desktop
+        sudo chmod +x /home/${USER}/Desktop/vgradio.desktop
 
+        echo "Setting up screen size to ${SCREEN_SIZE} pixels" | tee -a ${LOG}
+        sudo sed -i -e "0,/^screen_size/{s/screen_size.*/screen_size=${SCREEN_SIZE}/}" ${CONFIG}
+
+        # Set fullscreen option (Graphical radio version only)
+        if [[ ${FULLSCREEN} != "" ]]; then
+            sudo sed -i -e "0,/^fullscreen/{s/fullscreen.*/fullscreen=${FULLSCREEN}/}" ${CONFIG}
+        fi
+        echo "fullscreen=${FULLSCREEN}" | tee -a ${LOG}
+
+    else
+        if [[ -f ${LABWC_AUTOSTART} ]]; then
+            echo "   ${LABWC_AUTOSTART}" | tee -a ${LOG}
+            sed -i '/gradio/d' ${LABWC_AUTOSTART}
+            sed -i '/vgradio/d' ${LABWC_AUTOSTART}
         fi
     fi
-else
-    if [[ -f ${LABWC_AUTOSTART} ]]; then
-        echo "   ${LABWC_AUTOSTART}" | tee -a ${LOG}
-        sed -i '/gradio/d' ${LABWC_AUTOSTART}
-        sed -i '/vgradio/d' ${LABWC_AUTOSTART}
-    fi
+    cmd="sudo systemctl disable radiod.service"
+    echo ${cmd} | tee -a ${LOG}
+    ${cmd}
 
 fi  # End of ${DISPLAY_TYPE} == "GRAPHICAL" 
+
+#######################################
+# Commit changes to radio config file #
+#######################################
 
 # Install Adafruit SSD1306 package if required
 if [[ ${ADAFRUIT_SSD1306} > 0  ]]; then
     ${SCRIPTS}/install_ssd1306.sh | tee -a ${LOG}
 fi
-
-#######################################
-# Commit changes to radio config file #
-#######################################
 
 # Enable GPIO converter module if model is a Raspberry Pi 5 or later or Bookworm OS or later
 echo "VERSION_ID"  $(release_id)
@@ -1355,10 +1368,6 @@ if [[ $DATE_FORMAT != "" ]]; then
     sudo sed -i -e "0,/^dateformat/{s/dateformat.*/dateformat=${DATE_FORMAT}/}" ${CONFIG}
 fi
 
-# Set up graphical screen size
-if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
-    sudo sed -i -e "0,/^screen_size/{s/screen_size.*/screen_size=${SCREEN_SIZE}/}" ${CONFIG}
-fi
 
 # Configure user interface
 if [[ ${USER_INTERFACE} == "1" || ${USER_INTERFACE} == "8" || ${USER_INTERFACE} == "9" ]]; then
@@ -1392,7 +1401,6 @@ elif [[ ${USER_INTERFACE} == "5" ]]; then
 elif [[ ${USER_INTERFACE} == "7" ]]; then
     sudo sed -i -e "0,/^user_interface/{s/user_interface.*/user_interface=pifacecad/}" ${CONFIG}
 fi
-
 
 # Configure I2C address
 if [[ ${I2C_ADDRESS} != "0x00" ]]; then
@@ -1552,9 +1560,11 @@ else
     sudo sed -i -e "0,/^flip_display_vertically/{s/flip_display_vertically.*/flip_display_vertically=no/}" ${CONFIG}
 fi
 
-# Disable dtoverlay=i2s-mmap (now automatically loaded)
-echo "Disable dtoverlay=i2s-mmap in ${BOOTCONFIG}" 
-sudo sed -i -e "0,/^dtoverlay=i2s-mmap/{s/^dtoverlay=i2s-mmap.*/#dtoverlay=i2s-mmap/}" ${BOOTCONFIG}
+# Disable dtoverlay=i2s-mmap (BOOKWORM only!)
+if [[ $(release_id) -lt 13 ]]; then
+    echo "Disable dtoverlay=i2s-mmap in ${BOOTCONFIG}" 
+    sudo sed -i -e "0,/^dtoverlay=i2s-mmap/{s/^dtoverlay=i2s-mmap.*/#dtoverlay=i2s-mmap/}" ${BOOTCONFIG}
+fi
 
 # Force fsck file system check
 grep -q "fsck.mode=force" ${CMDLINE}
@@ -1562,6 +1572,35 @@ if [[ $? -ne 0 ]]; then
     sudo cp -f ${CMDLINE} ${CMDLINE}.save
     sudo sed -i -e "0,/fsck.repair=yes/{s/fsck.repair=yes/fsck.repair=yes fsck.mode=force/}" ${CMDLINE}
     echo "Added fsck.mode=force to ${CMDLINE}"
+fi
+
+echo | tee -a ${LOG}
+# Update system startup 
+
+# Enable radio daemon to start radiod for LCD's
+if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
+    if [[ -x /bin/systemctl ]]; then
+        sudo systemctl daemon-reload
+        cmd="sudo systemctl enable radiod.service"
+        echo ${cmd}; ${cmd} >/dev/null 2>&1
+    else
+        sudo systemctl enable radiod 
+    fi
+fi
+
+# Enable mpd socket service
+cmd="sudo systemctl disable mpd.service"
+echo ${cmd}; ${cmd} >/dev/null 2>&1
+cmd="sudo systemctl enable mpd.socket"
+echo ${cmd}; ${cmd} >/dev/null 2>&1
+
+echo ${PROGRAM};echo | tee -a ${LOG}
+
+# Install anacron if not already installed
+PKG="anacron"
+if [[ ! -f /usr/sbin/anacron && ${FLAGS} != "-s" ]]; then
+        echo "Installing ${PKG} package" | tee -a ${LOG}
+        sudo apt-get --yes install ${PKG}
 fi
 
 #####################
@@ -1623,73 +1662,6 @@ if [[ $DATE_FORMAT != "" ]]; then
     echo $(grep -m 1 "^dateformat=" ${CONFIG} ) | tee -a ${LOG}
 fi
 echo "-----------------------------------" | tee -a ${LOG}
-
-echo | tee -a ${LOG}
-# Update system startup 
-if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
-
-    # Add [SCREEN] section to the configuration file
-    grep "\[SCREEN\]" ${CONFIG} >/dev/null 2>&1
-    if [[ $? != 0 ]]; then  # Don't seperate from above
-        echo "Adding [SCREEN] section to ${CONFIG}" | tee -a ${LOG}
-        sudo cat ${DIR}/gradio.conf | sudo tee -a ${CONFIG}
-    fi
-    sudo systemctl daemon-reload
-    cmd="sudo systemctl disable radiod.service"
-    echo ${cmd}; ${cmd}  >/dev/null 2>&1
-
-    # Set fullscreen option (Graphical radio version only)
-    if [[ ${FULLSCREEN} != "" ]]; then
-        sudo sed -i -e "0,/^fullscreen/{s/fullscreen.*/fullscreen=${FULLSCREEN}/}" ${CONFIG}
-        echo "fullscreen=${FULLSCREEN}" | tee -a ${LOG}
-    fi
-
-# Enable  radio daemon to start radiod
-elif [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
-    if [[ -x /bin/systemctl ]]; then
-        sudo systemctl daemon-reload
-        cmd="sudo systemctl enable radiod.service"
-        echo ${cmd}; ${cmd} >/dev/null 2>&1
-    else
-        sudo systemctl enable radiod 
-    fi
-fi
-
-# Enable mpd socket service
-cmd="sudo systemctl disable mpd.service"
-echo ${cmd}; ${cmd} >/dev/null 2>&1
-cmd="sudo systemctl enable mpd.socket"
-echo ${cmd}; ${cmd} >/dev/null 2>&1
-
-echo ${PROGRAM};echo | tee -a ${LOG}
-
-# Install anacron if not already installed
-PKG="anacron"
-if [[ ! -f /usr/sbin/anacron && ${FLAGS} != "-s" ]]; then
-        echo "Installing ${PKG} package" | tee -a ${LOG}
-        sudo apt-get --yes install ${PKG}
-fi
-
-# Install config-parser if running Bullseye
-PKG="python-configparser"
-if [[ $(release_id) -le 11 ]]; then
-        echo "Installing ${PKG} package" | tee -a ${LOG}
-        sudo apt-get -y install ${PKG}
-fi
-
-# Install X-windows components
-if [[ ${X_INSTALLED} == 'yes' ]]; then
-
-    # Install ffmpeg (Used for X-Windows programs)
-    if [[ ! -x ${FFMPEG} ]]; then
-        sudo apt-get -y install ffmpeg
-    fi
-
-    if [[ ! -x ${WALLPAPER} ]]; then
-        sudo apt-get -y install rpd-wallpaper
-    fi
-
-fi
 
 # Configure audio device
 ans=0

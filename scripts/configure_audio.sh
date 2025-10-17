@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.21 2025/07/14 14:26:03 bob Exp $
+# $Id: configure_audio.sh,v 1.24 2025/10/17 11:47:24 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -152,11 +152,11 @@ function card_id
 }
 
 # Releases before Bullseye not supported
-if [[ $(release_id) -lt 11 ]]; then
-    echo "This program is only supported on Raspbian Bullseye/Bookworm or later!" | tee -a ${LOG}
+if [[ $(release_id) -lt 12 ]]; then
+    echo "This program is only supported on Raspbian Bookworm or Trixie or later!" | tee -a ${LOG}
     echo "This system is running $(codename) OS"
     echo "Exiting program." | tee -a ${LOG}
-    #exit 1
+    exit 1
 fi
 
 
@@ -205,6 +205,7 @@ if [[ -f  ${PIDFILE} ]];then
 fi
 
 sudo service mpd stop
+
 
 selection=1 
 while [ $selection != 0 ]
@@ -386,7 +387,11 @@ do
     selection=$?
 done 
 
-echo "$DESC selected, dtoverlay ${DTOVERLAY}" | tee -a ${LOG}
+if [[ ${DTOVERLAY} != "" ]]; then
+    echo "$DESC selected, dtoverlay ${DTOVERLAY}" | tee -a ${LOG}
+else
+    echo "$DESC selected" | tee -a ${LOG}
+fi
 
 # Handle RPi Display cards
 if [[ ${TYPE} == ${RPI} ]]; then
@@ -565,6 +570,7 @@ if [[ ! -d /usr/share/doc/python3-alsaaudio && ${SKIP_PKG_CHANGE} != "-s" ]]; th
     sudo apt install ${PKG}
 fi
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Check if required pulse audio installed. 
 # Bluetooth is handled in configure_bluetooth.sh
 if [[ ${TYPE} != ${BLUETOOTH} ]]; then
@@ -596,19 +602,6 @@ if [[ ${TYPE} != ${BLUETOOTH} ]]; then
             $cmd | tee -a ${LOG}
             sudo sed -i -e "0,/^load-module module-native-protocol-unix/{s/load-module module-native-protocol-unix/load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1/}" ${PULSE_PA}
         fi
-    else
-        if [[ -f ${PULSEAUDIO} ]]; then
-            if [[ ${SKIP_PKG_CHANGE} == '-s' ]]; then
-                echo "${DESC} requires pulseaudio to be removed" | tee -a ${LOG}
-                echo "Run: sudo apt-get remove pulseaudio" | tee -a ${LOG}
-                echo "and re-run ${SCRIPT}" | tee -a ${LOG}
-                echo "" | tee -a ${LOG}
-            else
-                echo "Un-installng pulseaudio" | tee -a ${LOG}
-                sudo apt-get --yes remove pulseaudio | tee -a ${LOG}
-            fi
-        fi
-
     fi
 fi
 
