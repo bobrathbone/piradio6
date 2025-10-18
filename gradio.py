@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.68 2025/10/08 07:29:30 bob Exp $
+# $Id: gradio.py,v 1.69 2025/10/18 08:11:15 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -266,7 +266,7 @@ def displayCurrent(screen,font,radio,message):
     max_columns = int(columns - startColumn * 2)
     columnPos = display.getColumnPos(column)
 
-    search_name = radio.getSearchName()
+    search_name = radio.getSearchName(True)
     search_name = uEncode(search_name)
 
     title = radio.getCurrentTitle()
