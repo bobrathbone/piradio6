@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.43 2025/10/17 11:47:24 bob Exp $
+# $Id: configure_radio.sh,v 1.44 2025/10/19 08:38:26 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1279,7 +1279,6 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     echo "Desktop program ${GPROG}.py configured" | tee -a ${LOG}
 fi
 
-
 if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     echo "Configuring X-Windows configuration for automatic start" | tee -a ${LOG}
     if [[ -f ${LABWC} ]]; then
@@ -1313,17 +1312,16 @@ if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
         fi
         echo "fullscreen=${FULLSCREEN}" | tee -a ${LOG}
 
-    else
-        if [[ -f ${LABWC_AUTOSTART} ]]; then
-            echo "   ${LABWC_AUTOSTART}" | tee -a ${LOG}
-            sed -i '/gradio/d' ${LABWC_AUTOSTART}
-            sed -i '/vgradio/d' ${LABWC_AUTOSTART}
-        fi
+        cmd="sudo systemctl disable radiod.service"
+        echo ${cmd} | tee -a ${LOG}
+        ${cmd}
     fi
-    cmd="sudo systemctl disable radiod.service"
-    echo ${cmd} | tee -a ${LOG}
-    ${cmd}
-
+else
+    if [[ -f ${LABWC_AUTOSTART} ]]; then
+        echo "   ${LABWC_AUTOSTART}" | tee -a ${LOG}
+        sed -i '/gradio/d' ${LABWC_AUTOSTART}
+        sed -i '/vgradio/d' ${LABWC_AUTOSTART}
+    fi
 fi  # End of ${DISPLAY_TYPE} == "GRAPHICAL" 
 
 #######################################
