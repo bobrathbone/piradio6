@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Airplay receiver Class
-# $Id: airplay_class.py,v 1.4 2024/04/30 09:00:06 bob Exp $
+# $Id: airplay_class.py,v 1.5 2025/10/21 14:02:24 bob Exp $
 #
 #
 # Author : Bob Rathbone
@@ -150,7 +150,7 @@ class AirplayReceiver:
         if os.path.isfile(AirplayMetadata):
             # Change from Jo Havik Norway to display meta information
             #cmd = "tail -8 " + AirplayMetadata + " > " + AirplayInfo
-            cmd = 'grep "Artist\|Album\|Title" ' + AirplayMetadata + ' > ' + AirplayInfo
+            cmd = 'grep "Artist|Album|Title" ' + AirplayMetadata + ' > ' + AirplayInfo
             self.execCommand(cmd)
 
         if os.path.isfile(AirplayInfo):

@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: install_recording.sh,v 1.8 2025/05/31 11:48:34 bob Exp $
+# $Id: install_recording.sh,v 1.14 2025/10/23 14:10:12 bob Exp $
 #
 # Raspberry Pi Internet Radio - Install LiquidSoap
 # This script installs and configures LiquidSoap recording utility
@@ -23,6 +23,7 @@ if [[ ${FLAGS} == "-t" ]]; then
     DIR=$(pwd)
 fi
 
+OS_RELEASE=/etc/os-release
 LOGDIR=${DIR}/logs
 LOG=${LOGDIR}/install_record.log
 
@@ -32,12 +33,30 @@ sudo chown ${USR}:${GRP} ${LOG}
 
 CONFIG=/etc/radiod.conf
 
+# Get OS release ID
+function release_id
+{
+    VERSION_ID=$(grep VERSION_ID $OS_RELEASE)
+    arr=(${VERSION_ID//=/ })
+    ID=$(echo "${arr[1]}" | tr -d '"')
+    ID=$(expr ${ID} + 0)
+    echo ${ID}
+}
+
+# Get OS release name
+function codename
+{
+    VERSION_CODENAME=$(grep VERSION_CODENAME $OS_RELEASE)
+    arr=(${VERSION_CODENAME//=/ })
+    CODENAME=$(echo "${arr[1]}" | tr -d '"')
+    echo ${CODENAME}
+}
+
 clear
 ans=0
 selection=1
 GPIO=0
 
-LIQUIDSOAP_DEB="https://github.com/savonet/liquidsoap/releases/download/v2.2.5/liquidsoap_2.2.5-debian-bookworm-1_arm64.deb"
 FFMPEG_PREF="/etc/apt/preferences.d/ffmpeg.pref"
 
 # Get architecture
@@ -92,42 +111,54 @@ CMD="sudo apt-get dist-upgrade"
 echo ${CMD}  | tee -a ${LOG}; 
 ${CMD} | tee -a ${LOG};
 
-CMD="sudo apt-get -y install opam"
-echo ${CMD}  | tee -a ${LOG}; 
-${CMD} | tee -a ${LOG};
+#CMD="sudo apt-get -y install opam"
+#echo ${CMD}  | tee -a ${LOG}; 
+#${CMD} | tee -a ${LOG};
 
-CMD="sudo apt-get -y install ffmpeg libavcodec-dev libavcodec59 libavdevice59 libavfilter8 libavformat-dev libavformat59 libavutil-dev libavutil57 libpostproc56 libswresample-dev libswresample4 libswscale-dev libswscale6"
+echo "Release ID $(release_id) $(codename)"
+
+if [[ $(release_id) -ge 13 ]]; then
+    # Trixie
+    LIBS="libavcodec-dev libavcodec61 libavdevice61 libavfilter10 libavformat-dev libavformat61 libavutil-dev libavutil59 libpostproc58 libswresample-dev libswresample5 libswscale-dev libswscale8"
+else
+    # Bookworm
+    LIBS="libavcodec-dev libavcodec59 libavdevice59 libavfilter8 libavformat-dev libavformat59 libavutil-dev libavutil57 libpostproc56 libswresample-dev libswresample4 libswscale-dev libswscale6"
+fi
+echo "Installing libraries"
+
+CMD="sudo apt-get install -y ${LIBS}"
 echo ${CMD} | tee -a ${LOG};
 ${CMD} | tee -a ${LOG};
 
+#CMD="sudo apt-get -y install libfdk-aac2 libjemalloc2 liblo7 libpcre3 libportaudio2"
+#echo ${CMD}  | tee -a ${LOG}; 
+#${CMD} | tee -a ${LOG};
 
-CMD="sudo apt-get -y install libfdk-aac2 libjemalloc2 liblo7 libpcre3 libportaudio2"
-echo ${CMD}  | tee -a ${LOG}; 
-${CMD} | tee -a ${LOG};
-
-# Remove old copies of liquidsoap and get new copy
-cd
-rm -f liquidsoap_*.deb*
-CMD="wget ${LIQUIDSOAP_DEB}"
-echo ${CMD}  | tee -a ${LOG};
-${CMD} | tee -a ${LOG};
-
-CMD="sudo dpkg -i liquidsoap_2.2.5-debian-bookworm-1_arm64.deb"
-echo ${CMD}  | tee -a ${LOG};
-${CMD} | tee -a ${LOG};
-cd -
+# Install distribution copy of liquidsoap 
+sudo apt-get install liquidsoap -y
 
 # Downgrade ffmpeg
-CMD="sudo apt-get -y remove ffmpeg" 
+sudo apt-get dist-upgrade
+CMD="sudo apt-cache policy ffmpeg"
+echo ${CMD}  | tee -a ${LOG};
+${CMD} | tee -a ${LOG}
+
+CMD="sudo apt-get remove ffmpeg" 
 echo ${CMD}  | tee -a ${LOG};
 ${CMD} | tee -a ${LOG}
 
 sleep 2 
-CMD="sudo apt-get -y install ffmpeg"
+CMD="sudo apt-get install ffmpeg"
 echo ${CMD}  | tee -a ${LOG};
 ${CMD} | tee -a ${LOG};
 
-CMD="sudo cp -f ${DIR}/ffmpeg.pref ${FFMPEG_PREF}"
+echo "Create ${FFMPEG_PREF}" | tee -a ${LOG};
+TMP_PREF="/tmp/ffmpeg_pref"
+echo "Package: ffmpeg ${LIBS}" > ${TMP_PREF}
+echo "Pin: origin deb.debian.org" >> ${TMP_PREF}
+echo "Pin-Priority: 1001" >> ${TMP_PREF}
+sudo cp ${TMP_PREF} ${FFMPEG_PREF} 
+cat ${FFMPEG_PREF}
 
 echo "Configured record_switch in ${CONFIG}" | tee -a ${LOG};
 grep "^record_switch=" ${CONFIG} | tee -a ${LOG};
@@ -141,7 +172,7 @@ fi
 
 echo "" | tee -a ${LOG};
 
-liquidsoap --version | tee -a ${LOG};
+liquidsoap --version 
 if [[ $? -ne 0 ]]; then
     echo "ERROR: Installation of liquidsoap failed" | tee -a ${LOG};
 else

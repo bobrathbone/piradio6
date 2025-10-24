@@ -1,5 +1,5 @@
 # Radio systemd script
-# $Id: radiod.service,v 1.5 2025/06/26 10:24:20 bob Exp $
+# $Id: radiod.service,v 1.6 2025/10/23 16:05:04 bob Exp $
 [Unit]
 Description=Radio daemon
 After=network.target
@@ -7,7 +7,7 @@ After=network.target
 [Service]
 Type=simple
 ExecStart=/usr/share/radio/radiod.py nodaemon
-PIDFile=/var/run/radiod.pid
+PIDFile=/run/radiod.pid
 #Restart=on-failure
 #RestartSec=5s
 

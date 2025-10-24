@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# $Id: record_class.py,v 1.18 2025/07/31 13:47:27 bob Exp $
+# $Id: record_class.py,v 1.20 2025/10/21 14:32:07 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -258,7 +258,7 @@ class Recorder:
         id = 0
         for line in open(StationList,'r'):
             line = line.strip()
-            if (re.match("^\[",line)):
+            if (re.match("^\\[",line)):
                 id += 1
                 line = line.strip('[')
                 (name,url) = line.split(']')

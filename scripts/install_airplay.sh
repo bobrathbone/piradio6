@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-# $Id: install_airplay.sh,v 1.3 2024/12/11 11:06:15 bob Exp $
+# $Id: install_airplay.sh,v 1.4 2025/10/21 08:10:47 bob Exp $
 # Raspberry Pi Internet Radio - Install Airplay
 # This script installs and configures Airplay (shairport)
 #
@@ -83,12 +83,14 @@ do
     done
 
     if [[ ${STATUS} == 1 ]]; then
-        echo "Press Ctrl-C to exit"
-        echo "===================="
         echo
+        echo "Press Ctrl-C to exit status display"
+        echo "==================================="
         echo "$(grep airplay= ${CONFIG}) set in ${CONFIG}"
         echo
         sudo systemctl status shairport-sync || /bin/true
+        echo "Press enter to continue"
+        read a
 
     elif [[ ${ENABLE} == 1 ]]; then
         echo "Enabling Airplay (shairport-sync)"
@@ -124,6 +126,12 @@ cd ${BUILD_DIR}
 echo "Installing GIT"
 echo ${INSTALL} ${GIT} 
 ${INSTALL} ${GIT} 
+
+# Trixie faile to find avahi-client. Using the following workaround to overcome this
+sudo apt-get clean
+sudo rm -R /var/lib/apt/lists
+sudo apt update
+#apt install libavahi-client-dev 
 
 echo "Installing shairport libraries" | tee -a ${LOG}
 echo ${INSTALL} ${LIBS1}  | tee -a ${LOG}
