@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Web Interface
-# $Id: install_web_interface.sh,v 1.12 2025/10/10 14:17:06 bob Exp $
+# $Id: install_web_interface.sh,v 1.13 2025/10/25 08:08:23 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -86,6 +86,7 @@ sudo apt-get -y install apache2 php libapache2-mod-php  | tee -a ${LOG}
 #fi
 
 # Remove redundant packages
+# Don't use autoremove as it causes problems
 #sudo apt-get -y autoremove | tee -a ${LOG}
 
 # Install MariaDB database.

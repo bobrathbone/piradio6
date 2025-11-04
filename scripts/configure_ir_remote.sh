@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_ir_remote.sh,v 1.19 2025/10/07 14:07:05 bob Exp $
+# $Id: configure_ir_remote.sh,v 1.22 2025/10/31 16:11:57 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -373,10 +373,11 @@ ${CMD}
 if [[ $? -ne '0' ]]; then       # Do not seperate from above
     echo "Failed to install ${PKGS}" | tee -a ${LOG}
     ERRORS=$(($ERRORS+1))
-else
-    CMD="sudo apt -y autoremove"
-    echo ${CMD} | tee -a ${LOG}
-${CMD}
+# Don't use autoremove as it causes problems
+#else
+#    CMD="sudo apt -y autoremove"
+#    echo ${CMD} | tee -a ${LOG}
+#${CMD}
 fi
 
 # Enable ireventd.service service

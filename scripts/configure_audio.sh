@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.24 2025/10/17 11:47:24 bob Exp $
+# $Id: configure_audio.sh,v 1.25 2025/11/02 11:11:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -58,6 +58,7 @@ PULSE_PA=/etc/pulse/default.pa
 OS_RELEASE=/etc/os-release
 AUDIO_OUT_CARD=${LIBDIR}/audio_out_card
 DKMS=/usr/sbin/dkms
+WM8960_BIN=/usr/bin/wm8960-soundcard
 
 # Waveshare WM8960 DAC alsamixer commands
 WM8960_ALSA_STORE="sudo alsactl store --file  /etc/wm8960-soundcard/wm8960_asound.state"
@@ -570,7 +571,6 @@ if [[ ! -d /usr/share/doc/python3-alsaaudio && ${SKIP_PKG_CHANGE} != "-s" ]]; th
     sudo apt install ${PKG}
 fi
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Check if required pulse audio installed. 
 # Bluetooth is handled in configure_bluetooth.sh
 if [[ ${TYPE} != ${BLUETOOTH} ]]; then
@@ -712,6 +712,13 @@ fi
 # Set up /etc/asound.conf except if using pulseaudio and bluetooth
 echo "Copying ${ASOUND_CONF_DIST} to ${ASOUNDCONF}" | tee -a ${LOG}
 sudo cp -f ${ASOUND_DIR}/${ASOUND_CONF_DIST} ${ASOUNDCONF}
+
+# Prevent wm8960-soundcard.service from linking /etc/asound.conf towm8960-soundcard
+if [[ -x ${WM8960_BIN} && ${TYPE} != ${WM8960} ]]; then
+    CMD="sudo systemctl disable wm8960-soundcard.service"
+    echo ${CMD} | tee -a ${LOG}
+    ${CMD}
+fi
 
 if [[ ${CARD} == 0 ]]; then
         sudo sed -i -e "0,/card/s/1/0/" ${ASOUNDCONF}

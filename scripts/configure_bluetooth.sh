@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_bluetooth.sh,v 1.7 2025/04/12 11:29:43 bob Exp $
+# $Id: configure_bluetooth.sh,v 1.16 2025/11/04 14:14:22 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -49,10 +49,12 @@ USR=$(logname)
 GRP=$(id -g -n ${USR})
 BT_DEVICE=""
 PA_PLAY=/usr/bin/paplay
+RFKILL="rfkill"
 #WAV=/usr/share/sounds/alsa/Front_Center.wav
 WAV=${DIR}/asound/piano.wav
 APLAY="aplay -q -D bluealsa:SRV=org.bluealsa,PROFILE=a2dp,DEV="
 BIT=$(getconf LONG_BIT)     # 32 or 64-bit archtecture
+WM8960_BIN=/usr/bin/wm8960-soundcard
 
 
 # Get OS release ID
@@ -168,10 +170,11 @@ do
     if [[ ${INSTALL_BLUETOOTH} == 1 ]]; then
         echo "$0 Bluetooth configuration log, $(date) " | tee ${LOG}
         echo "Boot configuration in ${BOOTCONFIG}" | tee ${LOG}
-        echo "Removing pipewire package" | tee -a ${LOG}
-        CMD="sudo apt -y remove pipewire"
-        echo ${CMD} | tee -a ${LOG}
-        ${CMD}
+        # Do NOT remove pipewire as it also removes rpd-wayland-core (X-Windows)
+        # echo "Removing pipewire package" | tee -a ${LOG}
+        # CMD="sudo apt -y remove pipewire"
+        # echo ${CMD} | tee -a ${LOG}
+        # ${CMD}
 
         echo "Installing Bluetooth packages" | tee -a ${LOG}
         PKGS="pulseaudio pulseaudio-module-bluetooth "
@@ -187,17 +190,21 @@ do
             ${CMD}
         done
 
-        CMD="sudo apt -y autoremove"
-        echo ${CMD} | tee -a ${LOG}
-        ${CMD}
+        # Don't use autoremove as it causes problems
+        #CMD="sudo apt -y autoremove"
+        #echo ${CMD} | tee -a ${LOG}
+        #${CMD}
 
-        CMD="sudo usermod -G bluetooth -a ${USR}"
-        echo ${CMD} | tee -a ${LOG}
-        ${CMD}
 
         echo "Bluetooth software installation complete" | tee -a ${LOG}
 
     elif [[ ${BLUETOOTH_SHELL} == 1 ]]; then
+        CMD="sudo usermod -G bluetooth -a ${USR}"
+        echo ${CMD} | tee -a ${LOG}
+        ${CMD}
+        CMD="${RFKILL} unblock bluetooth"
+        echo ${CMD} | tee -a ${LOG}
+        ${CMD}
         echo "Run Bluetooth shell (bluetoothctl)"     
         bluetoothctl
 
@@ -250,6 +257,12 @@ do
             fi
 
             echo "Copying ${ASOUND_CONF_DIST} to  ${ASOUND_CONF}" | tee -a ${LOG}
+            # Prevent wm8960-soundcard.service from linking /etc/asound.conf towm8960-soundcard
+            if [[ -x ${WM8960_BIN} ]]; then
+                CMD="sudo systemctl disable wm8960-soundcard.service"
+                echo ${CMD} | tee -a ${LOG}
+                ${CMD}
+            fi
             sudo cp ${ASOUND_CONF_DIST} ${ASOUND_CONF}
         
             # Configure /etc/mpd.conf 
@@ -277,6 +290,13 @@ do
             # config.txt
             sudo sed -i 's/^dtparam=audio=.*$/dtparam=audio=off/g'  ${BOOTCONFIG}
             echo | tee -a ${LOG}
+
+            # Display asound.conf
+            echo "" | tee ${LOG}
+            echo "${ASOUND_CONF}"   | tee ${LOG}
+            echo "================" | tee ${LOG}
+            cat ${ASOUND_CONF}  | tee ${LOG}
+            echo "" | tee ${LOG}
 
             # /etc/radiod.conf
             echo "Configuring audio_out parameter in ${CONFIG}" | tee -a ${LOG}
@@ -339,10 +359,20 @@ do
             echo "using **bluetoothctl** and rescan, pair, trust and re-connect  " >> ${TEMPFILE}.md
             echo "device ${BT_DEVICE}, then restart the radio " >> ${TEMPFILE}.md
             echo "**Note:** No CAPTURE devices are configured or used by the radio" >> ${TEMPFILE}.md
+            
+            echo "" >> ${TEMPFILE}.md
+            echo "${ASOUND_CONF} configuration" >> ${TEMPFILE}.md
+            echo "================" >> ${TEMPFILE}.md
+            echo '```' >> ${TEMPFILE}.md
+            cat "${ASOUND_CONF}" >> ${TEMPFILE}.md
+            echo "" >> ${TEMPFILE}.md
+            echo '```' >> ${TEMPFILE}.md
+
             # Display the configuration
             ${CMARK} ${TEMPFILE}.md > ${TEMPFILE}.html
             ${LYNX}  ${TEMPFILE}.html
             rm -f ${TEMPFILE}.*
+
         else
             echo "**Error:** No paired devices found" | tee -a ${LOG}
             echo "First pair a Bluetooth audio device" | tee -a ${LOG}
