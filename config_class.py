@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.138 2025/07/28 21:58:08 bob Exp $
+# $Id: config_class.py,v 1.140 2025/11/17 09:02:06 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -204,6 +204,7 @@ class Configuration:
     _display_title = True        # Display title play (at bottom of screen)
     _splash_screen = 'bitmaps/raspberry-pi-logo.bmp' # Splash screen (OLED)
     _screen_size = (800,480)     # Screen size 800x480 (7 inch) or 720x480 (3.5 inch)
+    _search_window_rows=8        # Search window number of rows
     # Colours for Adafruit LCD
     color = { 'OFF': 0x0, 'RED' : 0x1, 'GREEN' : 0x2, 'YELLOW' : 0x3,
           'BLUE' : 0x4, 'VIOLET' : 0x5, 'TEAL' : 0x6, 'WHITE' : 0x7 }
@@ -738,6 +739,9 @@ class Configuration:
                 if option == 'screen_size':
                     self.screen_size = parameter
             
+                elif option == 'search_window_rows':
+                    self.search_window_rows = parameter
+                
                 elif option == 'fullscreen':
                     self.fullscreen = parameter
                 
@@ -1406,6 +1410,20 @@ class Configuration:
         h = int(sH)
         self._screen_size = (w,h)
 
+    @property
+    def search_window_rows(self):
+        return self._search_window_rows
+
+    @search_window_rows.setter
+    def search_window_rows(self, parameter):
+        rows = int(parameter)
+        # limit rows to between 5 and 11
+        if rows < 5:
+            rows = 5
+        elif rows > 11:
+            rows = 5
+        self._search_window_rows = rows
+
     # Fullscreen option for graphical screen
     @property
     def fullscreen(self):
@@ -2000,6 +2018,7 @@ if __name__ == '__main__':
     print ("\n[SCREEN] section")
     print ("----------------")
     print ("Graphic screen size (screen_size):", config.screen_size)
+    print ("Search window number of rows (search_window_rows):", config.search_window_rows)
     print ("Full screen (fullscreen):", TrueFalse2yn(config.fullscreen))
     print ("Window title (window_title):", config.window_title)
     print ("Window color (window_color):", config.window_color)

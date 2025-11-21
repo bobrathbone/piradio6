@@ -4,7 +4,7 @@ WiFi Link Quality Notes
 ## To get WiFi status 
 1) Log into the Raspberry Pi and run the **radio-config** utility
 2) Select option **5 Diagnostics and Information**
-3) Select option **7 Display Radio and OS configuration**
+3) Select option **8 Display Radio and OS configuration**
 4) Run option **5 Display WiFi**
 5) See the line called **Link Quality=70/70  Signal level=-38 dBm**
 

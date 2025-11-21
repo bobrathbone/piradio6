@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.145 2025/10/08 06:57:56 bob Exp $
+# $Id: piradio,v 1.146 2025/11/10 17:15:10 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is both the 32-bit and 64-bit version
 # Source: <source package name; defaults to package name>
@@ -76,6 +76,7 @@ Files:  radiod.py /usr/share/radio/
     rotary_switch_class.py /usr/share/radio/
     rotary_class_alternative.py /usr/share/radio/
     rotary_class_gpiozero.py /usr/share/radio/
+    artwork_class.py /usr/share/radio/
     create_stations.py /usr/share/radio/
     create_keymap.py /usr/share/radio/ 
     radio_class.py /usr/share/radio/
@@ -228,6 +229,7 @@ Files:  radiod.py /usr/share/radio/
     images/switch_program.png /usr/share/radio/images/
     images/Vintage.png /usr/share/radio/images/
     images/shutdown.png /usr/share/radio/images/
+    images/no_image.jpg /usr/share/radio/images/
     bitmaps/raspberry-pi-logo.bmp /usr/share/radio/bitmaps/
     sgc/LICENSE /usr/share/radio/sgc/
     sgc/__init__.py /usr/share/radio/sgc/

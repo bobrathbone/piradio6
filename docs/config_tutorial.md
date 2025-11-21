@@ -327,9 +327,11 @@ Parameters for the Graphical programs **gradio.py** and **vgradio.py**
 The parameters are for the most part pretty obvious.
 The **switch_programs** parameter allows switchib between **gradio.py** and **vgradio.py**
 The **screen_saver** parameter is the screen save time in minutes, 0 is no screen saver
+The **search_window_rows** parameter changes the search window size (between 8 and 11)
 
 **\[SCREEN\]**
 **screen_size=800x480**
+**search_window_rows=8**
 **fullscreen=yes**
 **screen_saver=0**
 **window_title=Bob Rathbone Internet Radio Version %V - %H**

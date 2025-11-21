@@ -1,6 +1,6 @@
 # Station list - Source list for radio stations streams
 # File: /var/lib/radiod/stationlist (Don't use station.urls - distribution only)
-# $Id: station.urls,v 1.54 2025/09/25 18:37:17 bob Exp $
+# $Id: station.urls,v 1.55 2025/11/15 11:38:47 bob Exp $
 # To use this file add the URL that points to either an asx or pls file
 # The format is:
 #   (<playlist>)
@@ -23,23 +23,19 @@
 # Name of playlist file
 (Radio)
 # BBC stations (UK) See: https://en.everybodywiki.com/List_of_BBC_radio_stream_URLs
-[BBC - Radio 1] http://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/hls/nonuk/pc_hd_abr_v2/ak/bbc_radio_one.m3u8
-# United Kingdom (Full list available at https://gist.github.com/bpsib/67089b959e4fa898af69fea59ad74bc3)
+# United Kingdom (Full list available at https://gist.github.com/bpsib/)
+[BBC - Radio 1] http://as-hls-ww-live.akamaized.net/pool_01505109/live/ww/bbc_radio_one/bbc_radio_one.isml/bbc_radio_one-audio%3d96000.norewind.m3u8
 [BBC - Radio 2] http://as-hls-ww-live.akamaized.net/pool_74208725/live/ww/bbc_radio_two/bbc_radio_two.isml/bbc_radio_two-audio%3d96000.norewind.m3u8
 [BBC - Radio 3] http://as-hls-ww-live.akamaized.net/pool_23461179/live/ww/bbc_radio_three/bbc_radio_three.isml/bbc_radio_three-audio%3d96000.norewind.m3u8 
 [BBC - Radio 4] http://as-hls-ww-live.akamaized.net/pool_55057080/live/ww/bbc_radio_fourfm/bbc_radio_fourfm.isml/bbc_radio_fourfm-audio%3d96000.norewind.m3u8
 [BBC - Radio 6 Music] http://as-hls-ww-live.akamaized.net/pool_81827798/live/ww/bbc_6music/bbc_6music.isml/bbc_6music-audio%3d96000.norewind.m3u8
-[BBC - BBC World Service] http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_world_service.m3u8
-[BBC - Asia Network] http://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/hls/nonuk/pc_hd_abr_v2/ak/bbc_asian_network.m3u8
-[BBC World Service] http://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/hls/nonuk/audio_syndication_low_sbr_v1/cf/bbc_world_service.m3u8
+[BBC - BBC World Service] http://as-hls-ww-live.akamaized.net/pool_87948813/live/ww/bbc_world_service/bbc_world_service.isml/bbc_world_service-audio%3d96000.norewind.m3u8 
+[BBC - Asia Network] http://as-hls-ww-live.akamaized.net/pool_22108647/live/ww/bbc_asian_network/bbc_asian_network.isml/bbc_asian_network-audio%3d96000.norewind.m3u8
 
 # BBC mpeg-dash streams. See https://garfnet.org.uk/cms/tables/radio-frequencies/internet-radio-player/bbc-national-and-local-radio-dash-streams/
-[BBC Radio 1 Xtra] https://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/dash/nonuk/pc_hd_abr_v2/aks/bbc_1xtra.mpd
-[BBC Radio 4 FM] https://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/dash/nonuk/pc_hd_abr_v2/aks/bbc_radio_fourfm.mpd
-[BBC Radio 4 Extra] https://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/dash/nonuk/pc_hd_abr_v2/aks/bbc_radio_four_extra.mpd
-[BBC Radio 5 Live] https://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/dash/nonuk/pc_hd_abr_v2/aks/bbc_radio_five_live.mpd
-# The following URL gives errors (ffmpeg overruns) - Still being investigated
-# [BBC 1 Dance] https://a.files.bbci.co.uk/ms6/live/3441A116-B12E-4D2F-ACA8-C1984642FA4B/audio/simulcast/dash/nonuk/pc_hd_abr_v2/aks/bbc_radio_one_dance.mpd
+[BBC Radio 1 Xtra] http://as-hls-ww-live.akamaized.net/pool_92079267/live/ww/bbc_1xtra/bbc_1xtra.isml/bbc_1xtra-audio%3d96000.norewind.m3u8
+[BBC Radio 4 Xtra] http://as-hls-ww-live.akamaized.net/pool_26173715/live/ww/bbc_radio_four_extra/bbc_radio_four_extra.isml/bbc_radio_four_extra-audio%3d96000.norewind.m3u8
+[BBC Radio 5 Live] http://as-hls-ww-live.akamaized.net/pool_89021708/live/ww/bbc_radio_five_live/bbc_radio_five_live.isml/bbc_radio_five_live-audio%3d96000.norewind.m3u8
 
 # UK stations
 [Caroline Pirate] http://sc3.radiocaroline.net:8030/listen.m3u8
@@ -65,7 +61,6 @@
 [Hitradio OE3] https://orf-live.ors-shoutcast.at/oe3-q1a
 [Radio Wien] https://orf-live.ors-shoutcast.at/wie-q2a
 [Radio NOE] https://orf-live.ors-shoutcast.at/noe-q1a
-[Radio Energy Wien] http://stream1.energy.at:8000/aacplus.m3u
 [Arabella NÖ] http://frontend.streams.arabella.at/arabella-niederoesterreich/stream/mp3?aggregator=arabella-playlistfile
 [Arabella Lovesong] https://frontend.streams.arabella.at/arabella-lovesongs/stream/mp3?aggregator=arabella-playlistfile
 [Arabella Austropop] https://frontend.streams.arabella.at/arabella-austropop/stream/mp3?aggregator=arabella-playlistfile
@@ -185,7 +180,6 @@
 [UBUradio] http://wfmu.org/wfmu_ubu.pls
 
 # Reggae 
-[1.FM - ReggaeTrade Radio] http://wm.1.fm/reggae/128.m3u
 [181.FM Reggae Roots] http://listen.181fm.com:8096
 [Jah Music Mansion] http://192.99.41.102:5304/stream
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Rotary Encoder Class
-# $Id: rotary_class.py,v 1.25 2025/02/14 12:41:34 bob Exp $
+# $Id: rotary_class.py,v 1.26 2025/11/10 12:24:47 bob Exp $
 #
 # Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
 # Contact: bb@cactii.net
@@ -307,7 +307,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print(" Stopped")
         sys.exit(0)
-
 
 # End of script
 # set tabstop=4 shiftwidth=4 expandtab

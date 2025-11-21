@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.69 2025/10/18 08:11:15 bob Exp $
+# $Id: gradio.py,v 1.85 2025/11/21 10:07:28 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -30,6 +30,7 @@ import random
 import socket
 import signal
 import locale
+import shutil
 import subprocess
 from time import strftime
 
@@ -43,6 +44,7 @@ from rss_class import Rss
 from message_class import Message
 from graphic_display import GraphicDisplay
 from translate_class import Translate
+from artwork_class import Artwork
 import traceback
 
 # Pygame controls
@@ -79,7 +81,11 @@ surface=pygame.Surface((size))
 
 clock = pygame.time.Clock()
 
-Atists = {}     # Dictionary of artists
+Artists = {}     # Dictionary of artists
+
+IgnoreSearchEvents = False  # Ignore search events if artwork displayed
+SearchIgnoreDelay = 2       # After a search window click ignore for n cycles
+SearchIgnoreTimer = time.time()  # Timer before allowing search window events
 
 # Files for artwork extraction
 pidfile = "/var/run/radiod.pid"
@@ -89,6 +95,8 @@ RadioLib =  "/var/lib/radiod"
 ArtworkFile = "/tmp/artwork.jpg"
 artwork_file = ""   # Album artwork file name
 wallpaper = ''      # Background wallpaper
+image_file = RadioLib + "/radio_image.jpg"
+no_image = "images/no_image.jpg"
 
 # Signal SEGV and ABRT handler - Try to dump core
 def signalCrash(signal,frame):
@@ -160,7 +168,6 @@ def displayTimeDate(screen,myfont,radio,message):
     renderText(timedate,font,screen,rowPos,column,color)
     return
 
-
 # Display message popup, bcolor is the border color
 def displayPopup(screen,text,bcolor=(255,255,255)):
     text = uEncode(text)
@@ -179,7 +186,6 @@ def displayPopup(screen,text,bcolor=(255,255,255)):
     displayPopup.drawText(screen,font,color,line,text)
     pygame.display.flip()
     return
-
 
 # Handle shutdown button click
 def handleShutdown(screen):
@@ -508,17 +514,44 @@ def drawRightArrow(display,screen,RightArrow):
 
 # Display Artwork
 def displayArtwork(screen,display,path):
-    ArtworkImage = Image(pygame)
+    radio.getCurrentID()    # Make sure seek is complete
 
+    # Get size of original image and get ratio of height to width
+    OrigImage = pygame.image.load(path)
+    size = OrigImage.get_size() 
+    ratio = size[0]/size[1]
+
+    # Define new image
+    ArtworkImage = Image(pygame)
     rows = display.getRows()
     if rows > 20:
-        mysize = (190,190)
+        # Artwork rows adjusted to match search window size
+        if config.search_window_rows < 9:
+            mysize = (220,220)
+        else:
+            mysize = (242,242)
     else:
         mysize = (160,160)
 
-    xPos = screen.rect.center[0] - mysize[0]/2
-    yPos = display.getRowPos(6.5)
+    # Restore ratio of original image
+    mysize = (int(mysize[0] * ratio), mysize[1]) 
+
+    # Limit size of of artwork
+    ratio1 = 0.28
+    ratio2 = 0.87
+    desktop_info = pygame.display.Info()
+    screen_width = desktop_info.current_w
+    xLimit1 = int(screen_width * ratio1)
+    xLimit2 = int(screen_width * ratio2)
+    xPos = int(screen.rect.center[0] - (mysize[0]/2))
+    if xPos < xLimit1:
+        xPos = xLimit1
+    if xLimit1 + mysize[0] > xLimit2:
+        mysize = (xLimit2 - xLimit1, mysize[1])
+    
+    yPos = display.getRowPos(6.3)
     myPos = (xPos,yPos)
+    
     ArtworkImage.draw(screen,path,(myPos),(mysize),currentdir=False)
     return ArtworkImage
 
@@ -528,8 +561,33 @@ def renderText(text,myfont,screen,row,column,color):
     screen.blit(textsurface,(column,row))
     return
 
+# Return artwork from current station or track 
+def getArtwork():
+    if source_type == radio.source.MEDIA:
+        artwork_file = getMediaArtwork(radio)
+    else:
+        artwork_file = getRadioArtwork()
+    return artwork_file
+
+# Handle artwork change
+def getRadioArtwork():
+    global last_info
+    last_info = None
+    broadcast_info = artwork.get_broadcast_info(radio.client)
+    log.message(broadcast_info, log.DEBUG)
+    img = artwork.getCoverImageFromInfo(broadcast_info)
+    if img != None and broadcast_info != last_info:
+        f = open(image_file,"wb")
+        f.write(img.getbuffer())
+        f.close()
+        log.message("getRadioArtwork wrote %s" % image_file, log.DEBUG)
+        last_info = broadcast_info
+    elif img == None:
+        shutil.copyfile(no_image, image_file)
+    return image_file
+
 # Get artwork from track
-def getArtWork(radio):
+def getMediaArtwork(radio):
     artwork = ""
     if os.path.isfile(ArtworkFile):
         os.remove(ArtworkFile)
@@ -562,14 +620,12 @@ def handleEvent(radio,radioEvent):
 
     elif event_type == radioEvent.CHANNEL_UP:
         radio.channelUp()
-        if source_type == radio.source.MEDIA:
-            artwork_file = getArtWork(radio)
+        artwork_file = getArtwork()
         _connecting = False
 
     elif event_type == radioEvent.CHANNEL_DOWN:
         radio.channelDown()
-        if source_type == radio.source.MEDIA:
-            artwork_file = getArtWork(radio)
+        artwork_file = getArtwork()
         _connecting = False
 
     elif event_type == radioEvent.VOLUME_UP:
@@ -601,8 +657,7 @@ def handleEvent(radio,radioEvent):
 
     elif event_type == radioEvent.MPD_CLIENT_CHANGE:
         log.message("radioEvent Client Change",log.DEBUG)
-        if source_type == radio.source.MEDIA:
-            artwork_file = getArtWork(radio)
+        artwork_file = getArtwork()
 
     elif event_type == radioEvent.LOAD_RADIO or event_type == radioEvent.LOAD_MEDIA \
                or event_type == radioEvent.LOAD_AIRPLAY\
@@ -704,18 +759,19 @@ def handleSourceEvent(event,radio,display):
 # Handle search event (Search window click)
 def handleSearchEvent(radio,event,SearchWindow,display,searchID,largeDisplay):
     global Artists
-
-    if event.type == pygame.MOUSEBUTTONDOWN:
+    global artwork_file
+    if event.type == pygame.MOUSEBUTTONDOWN and not IgnoreSearchEvents:
         # Event in the search window (Not the slider) 
         if SearchWindow.clicked(event):
             idx = SearchWindow.index()
             searchID = selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx)
+            artwork_file = getArtwork()
 
         elif largeDisplay and SearchWindow.slider.clicked(event):
             searchID = SearchWindow.slider.getPosition()
 
     # Search window slider dragged
-    elif largeDisplay and SearchWindow.slider.dragged(event):
+    elif largeDisplay and SearchWindow.slider.dragged(event) and not IgnoreSearchEvents:
         searchID = SearchWindow.slider.getPosition()
     return searchID
 
@@ -854,7 +910,7 @@ def drawSearchWindow(surface,screen,display,searchID):
     if rows < 20:
         lines = 1
     else:
-        lines = 8
+        lines = config.search_window_rows
     ySize = display.getRowPos(lines)    
     border = 3
     color = (200,200,200)
@@ -1207,7 +1263,6 @@ def quit():
 
 # Main routine
 if __name__ == "__main__":
-
     signal.signal(signal.SIGTERM,signalHandler)
     signal.signal(signal.SIGHUP,signalHandler)
     signal.signal(signal.SIGSEGV,signalCrash)
@@ -1303,6 +1358,8 @@ if __name__ == "__main__":
     radio.translate.setTranslate(False) # Switch off text translation
 
     setupRadio(radio)
+    artwork = Artwork(log)
+
     maxRows = display.getRows()
     largeDisplay = True
     if maxRows < 20 :
@@ -1393,10 +1450,20 @@ if __name__ == "__main__":
     else:
         blankTime = 0
 
+    source_type = radio.getSourceType()
+
     # Main processing loop
     while run:
         tick = clock.tick(30)
         source_type = radio.getSourceType()
+
+        # Allow search window events delay after artwork clicked 
+        now = time.time()
+        #print(now, SearchIgnoreTimer + SearchIgnoreDelay)
+        if SearchIgnoreTimer + SearchIgnoreDelay > now:
+            IgnoreSearchEvents = False
+        else:
+            IgnoreSearchEvents = True
 
         # Blank screen after blank time exceeded
         if screenMinutes > 0 and int(time.time()) > blankTime:
@@ -1588,6 +1655,7 @@ if __name__ == "__main__":
                 volume =  int(widget.VolumeSlider.value)
                 if volume != current_volume:
                     radio.setVolume(volume)
+                    current_volume = volume 
 
             # Event in the search window or artwork image clicked
             if source_type != radio.source.AIRPLAY and source_type != radio.source.SPOTIFY:
@@ -1596,6 +1664,8 @@ if __name__ == "__main__":
                         artwork_file = ''
                 searchID = handleSearchEvent(radio,event,
                         SearchWindow,display,searchID,largeDisplay)
+                #IgnoreSearchEvents = False
+                IgnoreSearchCount = 4 # Ignore search events for n cycles
 
         # Detect radio events
         if radioEvent.detected():
@@ -1647,8 +1717,12 @@ if __name__ == "__main__":
             else:
                 if len(artwork_file) > 0:
                     ArtworkImage = displayArtwork(screen,display,artwork_file)
+                    IgnoreSearchEvents = True
                 else:
                     SearchWindow = drawSearchWindow(surface,screen,display,searchID)
+                    # XXXX IgnoreSearchEvents = False
+                    # Add delay before SearchWindow events allowed
+                    SearchIgnoreTimer = time.time() 
 
                 # Display the information window
                 if display.getMode() == display.INFO:

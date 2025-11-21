@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.3 2025/07/09 09:11:56 bob Exp $
+# $Id: display_config.sh,v 1.4 2025/11/08 09:28:05 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -310,7 +310,7 @@ echo "IP address: $(hostname -I)" | tee -a ${LOG}
 echo "IP route:" | tee -a ${LOG}
 ip route | tee -a ${LOG}
 
-./display_wifi.sh | tee -a ${LOG}
+${DIR}/scripts/display_wifi.sh | tee -a ${LOG}
 
 echo | tee -a ${LOG}
 echo "=================== End of run =====================" | tee -a ${LOG}
