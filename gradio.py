@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.85 2025/11/21 10:07:28 bob Exp $
+# $Id: gradio.py,v 1.94 2025/11/24 19:15:34 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -538,7 +538,7 @@ def displayArtwork(screen,display,path):
 
     # Limit size of of artwork
     ratio1 = 0.28
-    ratio2 = 0.87
+    ratio2 = 0.85
     desktop_info = pygame.display.Info()
     screen_width = desktop_info.current_w
     xLimit1 = int(screen_width * ratio1)
@@ -764,7 +764,10 @@ def handleSearchEvent(radio,event,SearchWindow,display,searchID,largeDisplay):
         # Event in the search window (Not the slider) 
         if SearchWindow.clicked(event):
             idx = SearchWindow.index()
-            searchID = selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx)
+            current_id = radio.getCurrentID()
+            # Workaround to prevent reloading same station that is already playing
+            if idx + 1 != current_id:
+                searchID = selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx)
             artwork_file = getArtwork()
 
         elif largeDisplay and SearchWindow.slider.clicked(event):
@@ -936,19 +939,40 @@ def drawSearchWindow(surface,screen,display,searchID):
         previous = '' 
         for i in range (len(textArray)):
             line = textArray[i]
+            '''
             if '/' in line:
                 vals = line.split('/')  
                 line = vals[len(vals)-1]
-            vals = line.split(' - ')    
-            artist = uEncode(vals[0].lstrip())
+            '''
+            # split off artist names
+            line = line.replace(' - ','|',1)
+            array = line.split('|')    
+            artist = uEncode(array[0].lstrip())
             
+            # Create <artist>:<first track index> entry in Artists array
             if artist != previous:
                 previous = artist
                 Artists[artist] = i  # Add to artists array 
-        textArray = sorted(Artists.keys())
+
+        sorted(Artists.keys())
+        
+        # Build an array of artist for display
+        textArray = []
+        for artist in Artists.keys():
+            textArray.append(artist)
     else:
         for i in range (len(textArray)):
             textArray[i] = uEncode(textArray[i])
+            if search_mode == display.SEARCH_PLAYLIST:
+                textArray[i] = textArray[i].rstrip()
+                if textArray[i] == "_spotify":
+                    textArray[i] = "Spotify"
+                elif textArray[i] == "_airplay":
+                    textArray[i] = "Airplay"
+
+            # Remove codec extensions 
+            if source_type == radio.source.MEDIA:
+                textArray[i] = removeCodecs(textArray[i])
 
     searchID = setSearchID(textArray,searchID) 
     idx = int(searchID - 1)
@@ -964,6 +988,16 @@ def drawSearchWindow(surface,screen,display,searchID):
             SearchWindow.setRange(iLeng)
 
     return SearchWindow
+
+# Remove codecs eg. .wma .mpr3 etc. from artist/track name
+def removeCodecs(name):
+    codecs = config.codecs
+    codec_arr = codecs.split(" ")
+    for codec in codec_arr:
+        codec = codec.replace('"','')
+        codec = "." + codec
+        name = name.replace(codec," ")
+    return name
 
 # Get the playlists for search display
 def getPlaylists():
@@ -1091,7 +1125,6 @@ def selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx):
             widget.select_list.activate()
             searchID = Artists.get(artistKey) + 1
             radio.play(searchID)
-
     else:
         # Radio selection
         radio.play(searchID + idx)
@@ -1267,7 +1300,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGHUP,signalHandler)
     signal.signal(signal.SIGSEGV,signalCrash)
     signal.signal(signal.SIGABRT,signalCrash)
-
+    
     log.init('radio')
 
     picWallpaper = None
@@ -1358,7 +1391,7 @@ if __name__ == "__main__":
     radio.translate.setTranslate(False) # Switch off text translation
 
     setupRadio(radio)
-    artwork = Artwork(log)
+    artwork = Artwork(log=log)
 
     maxRows = display.getRows()
     largeDisplay = True
@@ -1720,7 +1753,6 @@ if __name__ == "__main__":
                     IgnoreSearchEvents = True
                 else:
                     SearchWindow = drawSearchWindow(surface,screen,display,searchID)
-                    # XXXX IgnoreSearchEvents = False
                     # Add delay before SearchWindow events allowed
                     SearchIgnoreTimer = time.time() 
 

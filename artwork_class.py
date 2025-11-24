@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio - Album artwork extraction from current URL 
 #
-# $Id: artwork_class.py,v 1.15 2025/11/20 12:41:56 bob Exp $
+# $Id: artwork_class.py,v 1.18 2025/11/24 07:55:01 bob Exp $
 #
 # Authors : Bob Rathbone and Jeff (musicalic)
 # Site    : http://www.bobrathbone.com
@@ -14,7 +14,6 @@
 #
 import sys
 import requests
-import time
 import subprocess
 import urllib.parse
 from io import BytesIO
@@ -28,37 +27,20 @@ class Artwork:
     
     image_file = "/var/lib/radiod/radio_image.jpg"
     no_image = "images/no_image.jpg" 
-
     log = None      # Logging object (See logit routine)
 
-    def __init__(self,client=None,log=None): 
-        
+    def __init__(self,log=None): 
         if log != None:
             self.log = log
         return
 
     # Log if available else print message
     def logit(self,text):
-        if self.log != None:
-            self.log.message(text,self.log.DEBUG)
-        else:
+        if self.log == None:
             print(text)
-    # Not in use
-    def update(self):
-        image_file = ""
-        broadcast_info = self.get_broadcast_info()
-        self.logit(broadcast_info)
-        img = self.getCoverImageFromInfo(broadcast_info)
-        if img != None and broadcast_info != last_info:
-            f = open(image_file,"wb")
-            f.write(img.getbuffer())
-            f.close()
-            self.logit("Update wrote",image_file)
-            last_info = broadcast_info 
-        elif img == None:
-            shutil.copyfile(no_image, image_file)
-        return image_file
-
+        else:
+            self.log.message(text,self.log.DEBUG)
+                  
     def getCoverImageFromInfo(self,broadcast_info):
         coverImage = None 
         coverURL = self.getCoverURL(broadcast_info)
@@ -123,14 +105,14 @@ class Artwork:
             # https://developer.mozilla.org/en-US/docs/Web/API/Response
             response = requests.get(url, headers=HEADERS)
             type = response.headers['content-type']
-            if type != 'application/json':
-                return ""
-            data = response.json() # Python dictionary
-            if len(data['results']) > 1:
-                # Extract the URL of the art cover image
-                cover_url = data['results'][0]['cover_image']
-                if not(isinstance(cover_url, str)):
-                    cover_url = None
+            if type == 'application/json':
+                data = response.json() # Python dictionary
+                if len(data['results']) > 1:
+                    # Extract the URL of the art cover image
+                    cover_url = data['results'][0]['cover_image']
+                    if not(isinstance(cover_url, str)):
+                        cover_url = None
+                    self.logit("Artwork %s" % cover_url)
         except Exception as e:
             self.logit(str(e))
         return cover_url 
