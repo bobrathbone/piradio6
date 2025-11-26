@@ -14,7 +14,7 @@ Runs on
 
 Pre-requisites
 =========
-Raspberry Pi Bookworm or Bullseye Operating System, 32 or 64-Bit Architecture
+Raspberry Pi Bookworm or Trixie Operating System, 32 or 64-Bit Architecture
 Music Player Daemon (**MPD**), python-mpd
 
 Features
