@@ -21,7 +21,8 @@ Features
 ======
 - Choice of push-button or rotary encoder interface
 -  Choice of different displays and audio devices
-- Web interface using !OMPD 
+- Web interface using !OMPD
+- Track and Radio artwork display
 - Time display and Alarm facility
 - Radio station recording facility
 - Comprehensive installation manual
