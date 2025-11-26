@@ -35,7 +35,8 @@ class Radio(Simple):
     """
 
     _can_focus = True
-    _default_size = (15,15)
+    #_default_size = (15,15)
+    _default_size = (20,20)
     _available_images = ("over",)
     _surf_flags = SRCALPHA
     _extra_images = {"active": ((.7, 0), (.7, 0))}

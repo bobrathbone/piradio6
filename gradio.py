@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.94 2025/11/24 19:15:34 bob Exp $
+# $Id: gradio.py,v 1.98 2025/11/25 20:46:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -84,8 +84,6 @@ clock = pygame.time.Clock()
 Artists = {}     # Dictionary of artists
 
 IgnoreSearchEvents = False  # Ignore search events if artwork displayed
-SearchIgnoreDelay = 2       # After a search window click ignore for n cycles
-SearchIgnoreTimer = time.time()  # Timer before allowing search window events
 
 # Files for artwork extraction
 pidfile = "/var/run/radiod.pid"
@@ -514,8 +512,7 @@ def drawRightArrow(display,screen,RightArrow):
 
 # Display Artwork
 def displayArtwork(screen,display,path):
-    radio.getCurrentID()    # Make sure seek is complete
-
+    #radio.getCurrentID()    # Make sure seek is complete
     # Get size of original image and get ratio of height to width
     OrigImage = pygame.image.load(path)
     size = OrigImage.get_size() 
@@ -954,12 +951,13 @@ def drawSearchWindow(surface,screen,display,searchID):
                 previous = artist
                 Artists[artist] = i  # Add to artists array 
 
-        sorted(Artists.keys())
-        
         # Build an array of artist for display
         textArray = []
         for artist in Artists.keys():
             textArray.append(artist)
+        
+        textArray.sort(key=str.lower)  # Sort in place, key=str.lower is important
+
     else:
         for i in range (len(textArray)):
             textArray[i] = uEncode(textArray[i])
@@ -979,6 +977,8 @@ def drawSearchWindow(surface,screen,display,searchID):
 
     iLeng = len(textArray)
     if iLeng > 0:
+        #if search_mode == display.SEARCH_ARTISTS and source_type == radio.source.MEDIA:
+        #    textArray = textArray.sort()
         SearchWindow.drawText(screen,font,color,textArray[idx:])
         lcolor = getLabelColor(display.config.labels_color)
         scolor = getLabelColor(display.config.slider_color)
@@ -1270,7 +1270,7 @@ def displayEqualizerIcon(display):
 def displaySearchType(screen,search_mode,yPos,xPos):
     sTypes = ['List','Playlists','Artists']
     sType = sTypes[search_mode]
-    font = pygame.font.SysFont('freesans', 18)
+    font = pygame.font.SysFont('freesans', 24)
     font.set_bold(True)
     color = pygame.Color('steelblue')
     fontSize = font.size(sType) 
@@ -1490,14 +1490,6 @@ if __name__ == "__main__":
         tick = clock.tick(30)
         source_type = radio.getSourceType()
 
-        # Allow search window events delay after artwork clicked 
-        now = time.time()
-        #print(now, SearchIgnoreTimer + SearchIgnoreDelay)
-        if SearchIgnoreTimer + SearchIgnoreDelay > now:
-            IgnoreSearchEvents = False
-        else:
-            IgnoreSearchEvents = True
-
         # Blank screen after blank time exceeded
         if screenMinutes > 0 and int(time.time()) > blankTime:
             screenBlank = True
@@ -1697,7 +1689,7 @@ if __name__ == "__main__":
                         artwork_file = ''
                 searchID = handleSearchEvent(radio,event,
                         SearchWindow,display,searchID,largeDisplay)
-                #IgnoreSearchEvents = False
+                IgnoreSearchEvents = False  
                 IgnoreSearchCount = 4 # Ignore search events for n cycles
 
         # Detect radio events
@@ -1753,8 +1745,6 @@ if __name__ == "__main__":
                     IgnoreSearchEvents = True
                 else:
                     SearchWindow = drawSearchWindow(surface,screen,display,searchID)
-                    # Add delay before SearchWindow events allowed
-                    SearchIgnoreTimer = time.time() 
 
                 # Display the information window
                 if display.getMode() == display.INFO:
