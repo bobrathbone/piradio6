@@ -13,7 +13,7 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.2 (beta) release notes
 -------------------------
-Release 16th November 2025 - Build 6
+Release 2nd December 2025 - Build 7
 1) Modifications to run with Debian Trixie release 2nd October 2025
 2) Support for X-Windows desktop and Wayfire compositor removed
 3) Correct search name on gradiod not being updated if changed by external client (Web interface)
@@ -22,6 +22,7 @@ Release 16th November 2025 - Build 6
 6) Correct non-display of Wi-Fi information in the display_config.sh diagnostic script
 7) Add display of radio stations artwork in the graphical radio (gradio.py)
 8) Full feature graphic radio search window number of rows configurable 8-11
+9) Redundant record_params parameter removed from radiod.conf
 
 Version 8.1 release notes
 -------------------------

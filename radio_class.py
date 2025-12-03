@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.229 2025/10/06 19:20:09 bob Exp $
+# $Id: radio_class.py,v 1.232 2025/11/30 12:45:16 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -144,6 +144,7 @@ class Radio:
     device_error_cnt = 0    # Device error causes an abort
     isMuted = False # Is radio state "pause" or "stop"
     current_id = 1  # Currently playing track or station
+    startingup = True      # Don't ignore first play request
     reload = False  # Reload radio stations or player playlists
     loading_DB = False  # Loading database
     artist = "" # Artist (Search routines)
@@ -279,6 +280,7 @@ class Radio:
         # Mount all media drives
         self.unmountAll()
         self.mountAll()
+
         return
 
     # This routine starts the MPD socket listener (mpd.socket) which accepts
@@ -2387,6 +2389,7 @@ class Radio:
             new_id = len(self.PL.searchlist) 
 
         # Check if RADIO or MEDIA
+        
         sourceType = self.source.getType()
         if sourceType == self.source.RADIO:
             self.current_id = self.play_radio(new_id) 
@@ -2424,7 +2427,7 @@ class Radio:
         else:
             skip_value = -1
 
-        retry = 3
+        retry = 2
         msg = ''
 
         # If Internet OK skip bad channel otherwise stay on current station
@@ -2432,6 +2435,7 @@ class Radio:
 
             try:
                 # Client play starts from 0
+                self.client.stop()
                 self.client.play(new_id-1)
                 success = True
                 self.current_id = new_id
@@ -2441,14 +2445,7 @@ class Radio:
             except Exception as e:
                 log.message("radio.play_radio error id=" +
                         str(new_id) + " :" + str(e), log.ERROR)
-                retry  -= 1
-                if retry < 0:
-                    break
-                new_id  += skip_value
-                log.message("radio.play: Skipping to station " + 
-                        str(new_id),log.DEBUG)
                 self.reconnect(self.client)
-
                 # If error we want to display this on the screen
                 errMsg = self.parseError(str(e))
                 self.setError(MPD_STREAM_ERROR,errMsg)
@@ -2464,6 +2461,7 @@ class Radio:
         new_id = id
         try:
             # Client play starts from 0
+            self.client.stop()
             self.client.play(new_id-1)
             self.current_id = new_id
             self.clearError()

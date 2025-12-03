@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.98 2025/11/25 20:46:30 bob Exp $
+# $Id: gradio.py,v 1.103 2025/12/03 11:20:34 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -90,10 +90,11 @@ pidfile = "/var/run/radiod.pid"
 MpdLibDir = "/var/lib/mpd"
 MusicDirectory =  MpdLibDir + "/music"
 RadioLib =  "/var/lib/radiod"
-ArtworkFile = "/tmp/artwork.jpg"
-artwork_file = ""   # Album artwork file name
+MediaArtworkFile = "/tmp/artwork.jpg"
 wallpaper = ''      # Background wallpaper
-image_file = RadioLib + "/radio_image.jpg"
+artwork_file = ""   # Album artwork file name
+station_artwork_file = RadioLib + "/radio_artwork.jpg"
+album_artwork_file = RadioLib + "/album_artwork.jpg"
 no_image = "images/no_image.jpg"
 
 # Signal SEGV and ABRT handler - Try to dump core
@@ -548,7 +549,10 @@ def displayArtwork(screen,display,path):
     
     yPos = display.getRowPos(6.3)
     myPos = (xPos,yPos)
-    
+    # The following instruction is a temporary workaround for the problem 
+    # of a bad image not being displayed.
+    ArtworkImage.draw(screen,no_image,(myPos),(mysize),currentdir=False)
+    # A good image will overwriite the no image available artwork above
     ArtworkImage.draw(screen,path,(myPos),(mysize),currentdir=False)
     return ArtworkImage
 
@@ -559,41 +563,59 @@ def renderText(text,myfont,screen,row,column,color):
     return
 
 # Return artwork from current station or track 
-def getArtwork():
+# The first artwork is from the station, subsequent are track/artist artwork
+def getArtwork(station_artwork=False):
     if source_type == radio.source.MEDIA:
         artwork_file = getMediaArtwork(radio)
     else:
-        artwork_file = getRadioArtwork()
+        artwork_file = getRadioArtwork(station_artwork)
     return artwork_file
 
-# Handle artwork change
-def getRadioArtwork():
+# Handle artwork change. The first artwork is the station artwork. 
+# Subsequent requests are for the album artwork (controlled by station_artwork)
+def getRadioArtwork(station_artwork=False):
     global last_info
     last_info = None
     broadcast_info = artwork.get_broadcast_info(radio.client)
     log.message(broadcast_info, log.DEBUG)
     img = artwork.getCoverImageFromInfo(broadcast_info)
+    artwork_file = album_artwork_file
     if img != None and broadcast_info != last_info:
-        f = open(image_file,"wb")
+        if station_artwork:
+            artwork_file = station_artwork_file
+            #print("station_artwork_file",station_artwork_file)
+        else:
+            artwork_file = album_artwork_file
+            #print("album_artwork_file",album_artwork_file)
+
+        f = open(artwork_file,"wb")
         f.write(img.getbuffer())
         f.close()
-        log.message("getRadioArtwork wrote %s" % image_file, log.DEBUG)
+        log.message("getRadioArtwork wrote %s" % artwork_file, log.DEBUG)
         last_info = broadcast_info
     elif img == None:
-        shutil.copyfile(no_image, image_file)
-    return image_file
+        if os.path.exists(station_artwork_file):
+            try:
+                shutil.copyfile(station_artwork_file, artwork_file)
+            except Exception as e:
+                print(str(e))
+                pass
+    if artwork_file == "":
+        shutil.copyfile(no_image, artwork_file)
+
+    return artwork_file
 
 # Get artwork from track
 def getMediaArtwork(radio):
     artwork = ""
-    if os.path.isfile(ArtworkFile):
-        os.remove(ArtworkFile)
+    if os.path.isfile(MediaArtworkFile):
+        os.remove(MediaArtworkFile)
     filename = radio.getFileName()
     filename = MusicDirectory + '/' + filename
-    cmd = 'ffmpeg -i ' + '"' + filename + '" ' + ArtworkFile + ' > /dev/null 2>&1'
+    cmd = 'ffmpeg -i ' + '"' + filename + '" ' + MediaArtworkFile + ' > /dev/null 2>&1'
     radio.execCommand(cmd)
-    if os.path.isfile(ArtworkFile):
-        artwork = ArtworkFile
+    if os.path.isfile(MediaArtworkFile):
+        artwork = MediaArtworkFile
         log.message("Artwork " + artwork, log.DEBUG)
     return artwork
 
@@ -617,12 +639,12 @@ def handleEvent(radio,radioEvent):
 
     elif event_type == radioEvent.CHANNEL_UP:
         radio.channelUp()
-        artwork_file = getArtwork()
+        artwork_file = getArtwork(True)
         _connecting = False
 
     elif event_type == radioEvent.CHANNEL_DOWN:
         radio.channelDown()
-        artwork_file = getArtwork()
+        artwork_file = getArtwork(True)
         _connecting = False
 
     elif event_type == radioEvent.VOLUME_UP:
@@ -760,12 +782,13 @@ def handleSearchEvent(radio,event,SearchWindow,display,searchID,largeDisplay):
     if event.type == pygame.MOUSEBUTTONDOWN and not IgnoreSearchEvents:
         # Event in the search window (Not the slider) 
         if SearchWindow.clicked(event):
+            log.message("SearchWindow.clicked", log.DEBUG)
             idx = SearchWindow.index()
             current_id = radio.getCurrentID()
             # Workaround to prevent reloading same station that is already playing
             if idx + 1 != current_id:
                 searchID = selectNew(radio,display,widget,Artists,searchID,SearchWindow,idx)
-            artwork_file = getArtwork()
+            artwork_file = getArtwork(True)
 
         elif largeDisplay and SearchWindow.slider.clicked(event):
             searchID = SearchWindow.slider.getPosition()
@@ -935,12 +958,8 @@ def drawSearchWindow(surface,screen,display,searchID):
     if search_mode == display.SEARCH_ARTISTS and source_type == radio.source.MEDIA:
         previous = '' 
         for i in range (len(textArray)):
+
             line = textArray[i]
-            '''
-            if '/' in line:
-                vals = line.split('/')  
-                line = vals[len(vals)-1]
-            '''
             # split off artist names
             line = line.replace(' - ','|',1)
             array = line.split('|')    
@@ -1484,6 +1503,7 @@ if __name__ == "__main__":
         blankTime = 0
 
     source_type = radio.getSourceType()
+    artwork_file = getArtwork(True)
 
     # Main processing loop
     while run:
@@ -1552,7 +1572,6 @@ if __name__ == "__main__":
                 if screenBlank:
                     screenBlank = False
 
-                # Display window mouse down changes display mode
                 elif DisplayWindow.clicked(event):
                     mode = display.cycleMode()
 
@@ -1650,6 +1669,16 @@ if __name__ == "__main__":
                         radio.mute()
                         widget.VolumeSlider.label = "Muted"
                 
+                # Event in the search window or artwork image clicked
+                elif source_type != radio.source.AIRPLAY and source_type != radio.source.SPOTIFY:
+                    if ArtworkImage != None and len(artwork_file) > 0:
+                        if ArtworkImage.clicked() and event.type == pygame.MOUSEBUTTONDOWN:
+                            artwork_file = ''
+                    searchID = handleSearchEvent(radio,event,
+                            SearchWindow,display,searchID,largeDisplay)
+                    IgnoreSearchEvents = False  
+
+                # Display window mouse down changes display mode
             # Temporary exit on ESC key during development
             elif event.type == KEYDOWN:
                 if largeDisplay:
@@ -1681,16 +1710,6 @@ if __name__ == "__main__":
                 if volume != current_volume:
                     radio.setVolume(volume)
                     current_volume = volume 
-
-            # Event in the search window or artwork image clicked
-            if source_type != radio.source.AIRPLAY and source_type != radio.source.SPOTIFY:
-                if ArtworkImage != None and len(artwork_file) > 0:
-                    if ArtworkImage.clicked() and event.type == pygame.MOUSEBUTTONDOWN:
-                        artwork_file = ''
-                searchID = handleSearchEvent(radio,event,
-                        SearchWindow,display,searchID,largeDisplay)
-                IgnoreSearchEvents = False  
-                IgnoreSearchCount = 4 # Ignore search events for n cycles
 
         # Detect radio events
         if radioEvent.detected():

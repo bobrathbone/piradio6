@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio - Album artwork extraction from current URL 
 #
-# $Id: artwork_class.py,v 1.18 2025/11/24 07:55:01 bob Exp $
+# $Id: artwork_class.py,v 1.20 2025/12/03 07:15:21 bob Exp $
 #
 # Authors : Bob Rathbone and Jeff (musicalic)
 # Site    : http://www.bobrathbone.com
@@ -12,6 +12,11 @@
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 #       The authors shall not be liable for any loss or damage however caused.
 #
+# Staion and album artwork is provided by the Discogs database. See https://www.discogs.com/
+# The Discogs API will be found at https://www.discogs.com/developers
+# The Discogs database isn't perfect and sometimes the incorrect or no artwork will be displayed
+# Note: The Bob Rathbone Computer Consultancy has no control over the Discogs database
+
 import sys
 import requests
 import subprocess
@@ -144,7 +149,7 @@ if __name__ == "__main__":
             elif img == None:
                 print("Artwork image not available")
                 shutil.copyfile(artwork.no_image, artwork.image_file)
-            time.sleep(2)
+            time.sleep(5)
 
     except KeyboardInterrupt:
         print("Stopped")
