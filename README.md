@@ -1,5 +1,4 @@
 Radiod - Raspberry Pi Internet Radio 
-
 ===== 
 
 **Radiod** is a full feature radio front end for MPD which offers support for a variety of different LCDs, OLEDs and TFTs. There is also a touch-screen version available. User selection of radio streams or music tracks and volume setting, menus etc. can be done using rotary encoders, push buttons or even an IR remote control. Display shows date/time, station/track, artist and volume setting.
@@ -7,7 +6,6 @@ Radiod - Raspberry Pi Internet Radio
 
 
 Platform
-
 ======
 
 Runs on
@@ -27,7 +25,6 @@ Runs on
 
 
 Pre-requisites
-
 =========
 
 Raspberry Pi Bookworm or Trixie Operating System, 32 or 64-Bit Architecture
@@ -37,7 +34,6 @@ Music Player Daemon (**MPD**), python-mpd
 
 
 Features
-
 ======
 
 - Choice of push-button or rotary encoder interface
@@ -57,7 +53,6 @@ Features
 
 
 Supported Hardware
-
 ==============
 
 ## Displays
@@ -123,7 +118,6 @@ Supported Hardware
 
 
 Downloading and creating the radiod package
-
 ===========================================
 
 To create the radiod Debian package log into the Raspberry Pi and clone the source tree from GitHub.
@@ -181,7 +175,6 @@ radio-config
 
 
 Licences
-
 =====
 
 **radiod** is released under the
@@ -191,5 +184,6 @@ Licences
 
 
 See [bobrathbone.com/raspberrypi/pi_internet_radio.html](https://bobrathbone.com/raspberrypi/pi_internet_radio.html) for further information
+
 
 
