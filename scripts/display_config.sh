@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.4 2025/11/08 09:28:05 bob Exp $
+# $Id: display_config.sh,v 1.5 2025/12/12 09:58:04 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -282,6 +282,10 @@ do
         continue
     fi
     if [[ $(basename ${file}) == "language" ]]; then
+        continue
+    fi
+    if [[ $(basename ${file}) =~ "." ]]; then
+        echo $(basename ${file}) | tee -a ${LOG}
         continue
     fi
     param=$(head -1 ${file})

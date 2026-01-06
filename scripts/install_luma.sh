@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
-# Raspberry Pi Internet Radio Audio configuration script
-# $Id: install_luma.sh,v 1.3 2024/11/28 12:32:03 bob Exp $
+# Raspberry Pi Internet Radio LUMA LCDs configuration script
+# $Id: install_luma.sh,v 1.5 2025/12/14 09:04:22 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -30,7 +30,8 @@ fi
 LOGDIR=${DIR}/logs
 LOG=${LOGDIR}/install_luma.log
 DOCS_DIR=${DIR}/docs
-EXTERNALLY_MANAGED="/usr/lib/python3.11/EXTERNALLY-MANAGED"
+EXTERNALLY_MANAGED="/usr/lib/python3.11/EXTERNALLY-MANAGED"     # Bookworm
+EXTERNALLY_MANAGED2="/usr/lib/python3.13/EXTERNALLY-MANAGED"    # Trixie
 
 OS_RELEASE=/etc/os-release
 
@@ -69,12 +70,16 @@ fi
 echo "Using ${DIR}" | tee -a ${LOG}
 
 # Install dependicies
-if [[ $(release_id) -ge 12 ]]; then
-    if [[ -f  ${EXTERNALLY_MANAGED} ]]; then
-        sudo mv ${EXTERNALLY_MANAGED} ${EXTERNALLY_MANAGED}.old
+if [[ $(release_id) -ge 13 ]]; then
+    if [[ -f ${EXTERNALLY_MANAGED2} ]]; then
+        sudo mv ${EXTERNALLY_MANAGED2} ${EXTERNALLY_MANAGED2}.old   # Trixie
     fi
+elif [[ $(release_id) -eq 12 ]]; then
+    if [[ -f ${EXTERNALLY_MANAGED} ]]; then
+        sudo mv ${EXTERNALLY_MANAGED} ${EXTERNALLY_MANAGED}.old     # Bookworm
+    fi 
     sudo apt-get -y install libtiff5-dev | tee -a ${LOG}   # Bookworm or later
-else
+elif [[ $(release_id) -le 11 ]]; then
     # Bullseye
     sudo apt-get -y install libtiff5 | tee -a ${LOG}      # Bullseye
 fi

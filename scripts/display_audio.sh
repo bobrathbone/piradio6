@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_audio.sh,v 1.5 2025/07/14 10:17:05 bob Exp $
+# $Id: display_audio.sh,v 1.7 2026/01/03 16:11:16 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -142,9 +142,8 @@ fi
 
 echo | tee -a ${LOG}
 echo ${BOOTCONFIG} | tee -a ${LOG}
-echo "----------------" | tee -a ${LOG}
+echo "-------------------------" | tee -a ${LOG}
 grep ^hdmi ${BOOTCONFIG} | tee -a ${LOG}
-grep ^dtparam=audio ${BOOTCONFIG} | tee -a ${LOG}
 grep ^dtparam= ${BOOTCONFIG} | tee -a ${LOG}
 grep ^dtoverlay ${BOOTCONFIG} | tee -a ${LOG}
 grep ^gpio=..=op,dh ${BOOTCONFIG} | tee -a ${LOG}
@@ -169,6 +168,12 @@ if [[ -x ${DKMS} ]]; then
         fi
     fi
 fi
+
+# Pulseaudio status
+echo | tee -a ${LOG}
+PKG=pulseaudio
+dpkg -s ${PKG} | grep Package | tee -a ${LOG}
+dpkg -s ${PKG} | grep Status | tee -a ${LOG}
 
 # Create tar file
 tar -zcf ${LOG}.tar.gz ${LOG} >/dev/null 2>&1

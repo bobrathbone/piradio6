@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.103 2025/12/03 11:20:34 bob Exp $
+# $Id: gradio.py,v 1.107 2025/12/18 13:58:25 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -95,7 +95,7 @@ wallpaper = ''      # Background wallpaper
 artwork_file = ""   # Album artwork file name
 station_artwork_file = RadioLib + "/radio_artwork.jpg"
 album_artwork_file = RadioLib + "/album_artwork.jpg"
-no_image = "images/no_image.jpg"
+no_image_file = "images/no_image.jpg"
 
 # Signal SEGV and ABRT handler - Try to dump core
 def signalCrash(signal,frame):
@@ -551,7 +551,7 @@ def displayArtwork(screen,display,path):
     myPos = (xPos,yPos)
     # The following instruction is a temporary workaround for the problem 
     # of a bad image not being displayed.
-    ArtworkImage.draw(screen,no_image,(myPos),(mysize),currentdir=False)
+    ArtworkImage.draw(screen,no_image_file,(myPos),(mysize),currentdir=False)
     # A good image will overwriite the no image available artwork above
     ArtworkImage.draw(screen,path,(myPos),(mysize),currentdir=False)
     return ArtworkImage
@@ -578,6 +578,7 @@ def getRadioArtwork(station_artwork=False):
     last_info = None
     broadcast_info = artwork.get_broadcast_info(radio.client)
     log.message(broadcast_info, log.DEBUG)
+    #shutil.copyfile(no_image_file, artwork_file)
     img = artwork.getCoverImageFromInfo(broadcast_info)
     artwork_file = album_artwork_file
     if img != None and broadcast_info != last_info:
@@ -601,7 +602,7 @@ def getRadioArtwork(station_artwork=False):
                 print(str(e))
                 pass
     if artwork_file == "":
-        shutil.copyfile(no_image, artwork_file)
+        shutil.copyfile(no_image_file, artwork_file)
 
     return artwork_file
 
@@ -1083,9 +1084,9 @@ def drawChannelDownButton(source_type,sgc,display):
     rows = display.getRows()
 
     if rows < 20:
-        xPos = display.getColumnPos(startColumn + 28)
+        xPos = display.getColumnPos(startColumn + 30)
     else:
-        xPos = display.getColumnPos(startColumn + 31)
+        xPos = display.getColumnPos(startColumn + 41)
     yPos = display.getRowPos(rows-5)
     ChannelDownButton = sgc.Button(label=label, pos=(xPos,yPos))
     ChannelDownButton.add(order=2)

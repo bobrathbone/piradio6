@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.232 2025/11/30 12:45:16 bob Exp $
+# $Id: radio_class.py,v 1.233 2026/01/02 15:18:26 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -1724,14 +1724,13 @@ class Radio:
                 self.setInterrupt()
                 
             else:
-                currentid = int(pos) + 1
+                self.current_id = int(pos) + 1
 
         except Exception as e:
             log.message("radio.getCurrentID: " + str(e),log.ERROR)
             if not self.getIdError:
                 log.message("radio.getCurrentID failed ", log.ERROR)
                 self.getIdError = True
-
         return self.current_id
 
     # Check to see if an error occured
@@ -2559,7 +2558,6 @@ class Radio:
                 self.stationName = stationName
         except Exception as e:
             log.message("radio.getStationName " + str(e), log.ERROR)
-
         return stationName
 
     # Get track name by Index

@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: copy_html_docs.sh,v 1.6 2025/02/01 09:08:50 bob Exp $
+# $Id: copy_html_docs.sh,v 1.9 2026/01/06 19:37:46 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

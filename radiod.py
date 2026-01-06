@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.210 2025/10/06 19:20:09 bob Exp $
+# $Id: radiod.py,v 1.211 2025/10/24 18:06:49 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -55,7 +55,7 @@ rss = Rss(translate)
 _connecting = False
 newMenu = True  # Speed up initial display if new menu entered
 ignoreEvent = False # Ignore up/down button after double button menu press
-pidfile = '/var/run/radiod.pid'
+pidfile = '/run/radiod.pid'
 _volume = -1
 save_rss_line = ''
 

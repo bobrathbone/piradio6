@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display Wi-Fi details
-# $Id: display_wifi.sh,v 1.2 2024/11/25 10:05:15 bob Exp $
+# $Id: display_wifi.sh,v 1.3 2026/01/05 19:21:08 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -35,6 +35,6 @@ else
     rfkill list
     rfkill list | grep -i yes >/dev/null 2>&1 
     if [[ $? == 0 ]]; then
-        echo "Use rfkill \"rfkill unblock 0\" command to enable Wifi"
+        echo "Use \"rfkill unblock n\" to enable Wifi or Bluetooth where n is the device"
     fi
 fi

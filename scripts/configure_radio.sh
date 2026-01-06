@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.44 2025/10/19 08:38:26 bob Exp $
+# $Id: configure_radio.sh,v 1.54 2025/12/29 10:14:56 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -24,6 +24,7 @@ FLAGS=$1
 BINDIR="\/usr\/share\/radio\/"  # Used for sed so \ needed
 DIR=/usr/share/radio
 SCRIPTS=${DIR}/scripts
+RADIO_PID=/run/radio.pid
 
 # Display colours
 orange='\033[33m'
@@ -54,7 +55,8 @@ WXCONFIG=/etc/weather.conf
 LOG=${LOGDIR}/install.log
 NODAEMON_LOG=${LOGDIR}/radiod_nodaemon.log
 SPLASH="bitmaps\/raspberry-pi-logo.bmp" # Used for sed so \ needed
-MANAGE_PIP=/usr/lib/python3.11/EXTERNALLY-MANAGED
+MANAGE_PIP=/usr/lib/python3.11/EXTERNALLY-MANAGED   # For Bookworm
+MANAGE_PIP2=/usr/lib/python3.13/EXTERNALLY-MANAGED  # For Trixie
 FFMPEG=/usr/bin/ffmpeg
 X_INSTALLED='no'   # 'yes' = X-Windows installed
 WALLPAPER==/usr/share/rpd-wallpaper
@@ -95,6 +97,8 @@ SCROLL_SPEED="0.2"
 ROTARY_CLASS="standard"    # Standard abc Rotary Encoders
 ROTARY_HAS_RESISTORS=0	# Support for KY-040 or ABC Rotary encoders
 ADAFRUIT_SSD1306=0	# Adafruit SSD1306 libraries required
+ADAFRUIT_TFT=0	# Adafruit PiTFT installation required
+WAVESHARE_SPI_LCD=0 # Waveshare 3.5" SPI LCD
 
 # Display characteristics
 I2C_ADDRESS=0x00        # I2C device address
@@ -191,6 +195,7 @@ DRIVERS=0
 COMPONENTS=0
 EDIT=0
 DAEMONS=0
+
 
 # Display full menu if not called from package install
 if [[ ${FLAGS} != "-s" ]]; then
@@ -441,6 +446,20 @@ echo "Using ${DIR}" | tee -a ${LOG}
 echo "Configuring radio for $(codename) OS " | tee -a ${LOG}
 echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
 echo "X-Windows installed ${X_INSTALLED}"  | tee -a ${LOG}
+
+# Stop and disable radio and mpd services
+echo "Stopping radio and mpd" | tee -a ${LOG}
+if [[ -f ${RADIO_PID} ]]; then
+    sudo kill -HUP $(cat /run/radiod.pid)
+    sudo systemctl stop radiod.service
+    sudo systemctl disable radiod.service
+fi
+
+sudo systemctl stop mpd.socket
+sudo systemctl disable mpd.socket
+sudo systemctl stop mpd.service
+sudo systemctl disable mpd.socket
+
 
 # Copy the distribution configuration
 ans=$(whiptail --title "Replace your configuration file ?" --menu "Choose your option" 15 75 9 \
@@ -1097,17 +1116,15 @@ if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
 
 elif [[ ${DISPLAY_TYPE} =~ "WS_SPI_SSD1309" ]]; then
     if [[ ${FLAGS} != "-s" ]]; then
-        if [[ $(release_id) -ge 12 ]]; then
-            sudo mv ${MANAGE_PIP} ${MANAGE_PIP}.orig
+        if [[ $(release_id) -ge 13 ]] && [[ -f ${MANAGE_PIP2} ]]; then
+            sudo mv ${MANAGE_PIP2} ${MANAGE_PIP2}.old  # Trixie
+        elif [[ $(release_id) -ge 12 ]] && [[ -f ${MANAGE_PIP} ]]; then
+            sudo mv ${MANAGE_PIP} ${MANAGE_PIP}.old    # Bookworm
         fi
         sudo apt-get install python3-pip
         sudo pip3 install RPi.GPIO
         sudo apt-get install python3-smbus
         sudo pip3 install spidev
-
-        if [[ $(release_id) -ge 12 ]]; then
-            sudo mv ${MANAGE_PIP}.orig ${MANAGE_PIP}
-        fi
 
         sudo sed -i 's/^#dtparam=spi=.*$/dtparam=spi=on/'  ${BOOTCONFIG}
         sudo sed -i 's/^dtparam=spi=.*$/dtparam=spi=on/'  ${BOOTCONFIG}
@@ -1134,8 +1151,8 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     do
         ans=$(whiptail --title "Select graphical display type?" --menu "Choose your option" 15 75 9 \
         "1" "Raspberry Pi 7-inch touch-screen (800x480)" \
-        "2" "Medium 3.5 inch TFT touch-screen (720x480)" \
-        "3" "Small 2.8 inch TFT touch-screen (480x320)" \
+        "2" "Waveshare 3.5 inch TFT touch-screen (480x320)" \
+        "3" "Adafruit TFT touch-screens (480x320)" \
         "4" "7-inch TFT touch-screen (800x480)" \
         "5" "HDMI television or monitor (1024x600)" \
         "6" "Do not change configuration" 3>&1 1>&2 2>&3) 
@@ -1150,12 +1167,20 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
             SCREEN_SIZE="800x480"
 
         elif [[ ${ans} == '2' ]]; then
-            DESC="Medium 3.5 inch TFT touch-screen"
-            SCREEN_SIZE="720x480"
+            DESC="Waveshare 3.5 inch TFT touch-screen"
+            if [[ ${FLAGS} != "-s" ]]; then
+                SCREEN_SIZE="480x320"
+                WAVESHARE_SPI_LCD=1 
+            else
+                no_install ${DESC}
+                exit 0
+            fi
 
         elif [[ ${ans} == '3' ]]; then
-            DESC="Small 3.5 inch TFT touch-screen"
+            DESC="Adafruit TFT touch-screens"
             SCREEN_SIZE="480x320"
+            #ADAFRUIT_SSD1306=1	
+            ADAFRUIT_TFT=1	
 
         elif [[ ${ans} == '4' ]]; then
             DESC="7-inch TFT touch-screen (800x480)"
@@ -1312,9 +1337,9 @@ if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
         fi
         echo "fullscreen=${FULLSCREEN}" | tee -a ${LOG}
 
-        cmd="sudo systemctl disable radiod.service"
-        echo ${cmd} | tee -a ${LOG}
-        ${cmd}
+        #XXXXX cmd="sudo systemctl disable radiod.service"
+        #echo ${cmd} | tee -a ${LOG}
+        #${cmd}
     fi
 else
     if [[ -f ${LABWC_AUTOSTART} ]]; then
@@ -1327,10 +1352,16 @@ fi  # End of ${DISPLAY_TYPE} == "GRAPHICAL"
 #######################################
 # Commit changes to radio config file #
 #######################################
-
 # Install Adafruit SSD1306 package if required
 if [[ ${ADAFRUIT_SSD1306} > 0  ]]; then
     ${SCRIPTS}/install_ssd1306.sh | tee -a ${LOG}
+    exit 0
+elif [[ ${ADAFRUIT_TFT} > 0  ]]; then
+    ${SCRIPTS}/install_adafruit_tft.sh | tee -a ${LOG}
+    exit 0
+elif [[ ${WAVESHARE_SPI_LCD} > 0  ]]; then
+    ${SCRIPTS}/install_ws_LCD.sh | tee -a ${LOG}
+    exit 0
 fi
 
 # Enable GPIO converter module if model is a Raspberry Pi 5 or later or Bookworm OS or later
@@ -1505,13 +1536,15 @@ elif [[ ${BUTTON_WIRING} == "5" ]]; then
     # Install ST7789
     if [[ ${FLAGS} != "-s" ]]; then
         sudo apt-get install python3-pip
-        if [[ -f  ${MANAGE_PIP} ]]; then
-            sudo mv ${MANAGE_PIP} ${MANAGE_PIP}.orig
+        if [[ $(release_id) -ge 13 ]] && [[ -f ${MANAGE_PIP2} ]]; then
+            sudo mv ${MANAGE_PIP2} ${MANAGE_PIP2}.old  # Trixie
+        elif [[ $(release_id) -ge 12 ]] && [[ -f ${MANAGE_PIP} ]]; then
+            sudo mv ${MANAGE_PIP} ${MANAGE_PIP}.old    # Bookworm
         fi
         echo "Installing ST7789 module" | tee -a ${LOG}
         sudo apt-get -y install libopenblas-dev
         sudo pip3 install st7789 
-        sudo mv ${MANAGE_PIP}.orig ${MANAGE_PIP}
+        sudo mv ${MANAGE_PIP}.old ${MANAGE_PIP}
     else
         no_install "Devices with ST7789 controller"
         exit 0
@@ -1587,10 +1620,10 @@ if [[ ${DISPLAY_TYPE} =~ "LCD" ]]; then
 fi
 
 # Enable mpd socket service
-cmd="sudo systemctl disable mpd.service"
-echo ${cmd}; ${cmd} >/dev/null 2>&1
-cmd="sudo systemctl enable mpd.socket"
-echo ${cmd}; ${cmd} >/dev/null 2>&1
+if [[ ${DISPLAY_TYPE} != "GRAPHICAL" ]]; then
+    cmd="sudo systemctl enable mpd.socket"
+    echo ${cmd}; ${cmd} >/dev/null 2>&1
+fi
 
 echo ${PROGRAM};echo | tee -a ${LOG}
 
@@ -1675,7 +1708,7 @@ fi
 
 # Integrity check of /boot/config.txt
 declare -i lines=$(wc -l ${BOOTCONFIG} | awk '{print $1}')
-if [[ ${lines} -lt 10 ]]; then
+if [[ ${lines} -lt 20 ]]; then
     echo "ERROR: ${BOOTCONFIG} failed integrity check"
     echo "Restoring ${BOOTCONFIG} from ${BOOTCONFIG}.orig"
     sudo cp ${BOOTCONFIG}.orig ${BOOTCONFIG}

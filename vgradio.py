@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.55 2025/10/08 07:29:30 bob Exp $
+# $Id: vgradio.py,v 1.56 2026/01/02 15:18:26 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -407,26 +407,6 @@ def displayTitle(screen,radio,message,plsize):
     screen.blit(textsurface,(xPos,yPos))
     return
 
-# Display playlist name if more than one
-def displayPlaylistName(screen,plName):
-    if len(plName) > 0:
-        # Display old style names beginning with an underscore
-        if plName[0] == '_':
-            oldname = True
-        else:
-            oldname = False
-        plName = plName.replace('_',' ')
-        plName = plName.lstrip()
-        if oldname:
-            plName = '_' + plName
-        font = pygame.font.SysFont('freesans', 12, bold=False)
-        xPos = 10
-        yPos = 13
-        color = pygame.Color('white')
-        textsurface = font.render(plName, False, (color))
-        screen.blit(textsurface,(xPos,yPos))
-    return
-
 # Display page number and total
 def displayPagePosition(page,maxStations,plsize):
     try:
@@ -479,7 +459,7 @@ def handleShutdown(screen):
 
 # Display the radio station name
 def displayStationName(screen,radio):
-    sname = uEncode(radio.getSearchName()[0:40])
+    sname = uEncode(radio.getSearchName(True)[0:40])
     font = pygame.font.SysFont('freesans', 20, bold=True)
 
     displayRect = TextRectangle(pygame)     # Blank out background
@@ -500,6 +480,7 @@ def displayStationName(screen,radio):
 
     line = 1    # Not used but required
     color = (255,230,153)
+    # Display station (search) name at top of screen
     displayWindow.drawText(screen,font,color,line,sname)
     return displayWindow
 
@@ -992,8 +973,6 @@ if __name__ == "__main__":
         # Display the radio details
         if display.config.display_date:
             displayTimeDate(screen,radio,message)
-
-        displayPlaylistName(screen,plName)
 
         # Scrolling station names
         currentID = radio.getCurrentID()

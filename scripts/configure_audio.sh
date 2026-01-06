@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Audio configuration script 
-# $Id: configure_audio.sh,v 1.25 2025/11/02 11:11:08 bob Exp $
+# $Id: configure_audio.sh,v 1.27 2026/01/03 16:31:42 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -188,6 +188,11 @@ fi
 sudo usermod -G audio -a $USER
 
 # Stop the radio and MPD
+echo "Stopping radio and mpd" | tee -a ${LOG}
+if [[ -f /run/radiod.pid ]]; then
+    sudo kill -HUP $(cat /run/radiod.pid)
+fi
+
 CMD="sudo systemctl stop radiod.service"
 echo ${CMD};${CMD} | tee -a ${LOG}
 CMD="sudo systemctl stop mpd.service"
@@ -387,6 +392,7 @@ do
     whiptail --title "$DESC selected" --yesno "Is this correct?" 10 60
     selection=$?
 done 
+sudo chown ${USER}:${GRP} ${LIBDIR}/*
 
 if [[ ${DTOVERLAY} != "" ]]; then
     echo "$DESC selected, dtoverlay ${DTOVERLAY}" | tee -a ${LOG}
@@ -653,6 +659,9 @@ elif [[ ${TYPE} == ${JACK} ]]; then
     sudo amixer cset numid=3 1
     sudo alsactl store
     SCARD="headphones"
+    CMD="sudo apt-get remove pulseaudio"
+    echo ${CMD} | tee -a ${LOG}
+    ${CMD}
 
 elif [[ ${TYPE} == ${DAC} ]]; then
     echo "Configuring DAC as output" | tee -a ${LOG}
@@ -727,10 +736,10 @@ else
         sudo sed -i -e "0,/card/s/0/1/" ${ASOUNDCONF}
         sudo sed -i -e "0,/plughw/s/0,0/1,0/" ${ASOUNDCONF}
 fi
-
 # Save original configuration 
 if [[ ! -f ${MPDCONFIG}.orig ]]; then
-    grep ^audio_output ${MPDCONFIG}
+    grep ^audio_output ${MPDCONFIG}  # XXXXXX ???
+    echo "Saving ${MPDCONFIG} to  ${MPDCONFIG}.orig" | tee -a ${LOG}
     sudo cp -f -p ${MPDCONFIG} ${MPDCONFIG}.orig
 fi
 
@@ -778,6 +787,7 @@ fi
 # Bind address to localhost (Prevent binding to IPV6 ::1)
 sudo sed -i -e "0,/bind_to_address/{s/.*bind_to_address.*/bind_to_address\t\t\"127.0.0.1\"/}" ${MPDCONFIG}
 
+echo "DEBUG D"
 # Save original boot config
 if [[ ! -f ${BOOTCONFIG}.orig ]]; then
     sudo cp ${BOOTCONFIG} ${BOOTCONFIG}.orig
