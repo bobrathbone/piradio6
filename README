@@ -13,7 +13,7 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.2 release notes
 -------------------------
-Release 7th January 2025 - Build 11
+Release 7th January 2026 - Build 11
 1) Modifications to run with Debian Trixie release 2nd October 2025
 2) Support for X-Windows desktop and Wayfire compositor removed
 3) Correct search name on gradiod not being updated if changed by external client (Web interface)
