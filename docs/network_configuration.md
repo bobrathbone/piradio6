@@ -1,6 +1,6 @@
 Configuring network roaming on a Raspberry Pi
 ============================================= 
-Normally the network is configured by the Rpi-imager software when creating the SD-card. However, you may wish to add a second or third Wi-Fi access point to enable Wi-Fi roaming for example between your home and office. These extra WiFi network points will be typically another router at a differnt location forexample "office" or a repeater in the same building. 
+Normally the network is configured by the Rpi-imager software when creating the SD-card. However, you may wish to add a second or third Wi-Fi access point to enable Wi-Fi roaming for example between your home and office. These extra WiFi network points will be typically another router at a different location for example "office" or a repeater in the same building. 
 
 To see what Wi-Fi access points are available run the following **iwlist** command:
 
@@ -20,10 +20,10 @@ This will display all available Wi-Fi access points available in your immediate 
 
 Bullseye OS network configuration using wpa_supplicant.conf 
 ===========================================================
-**Bullseye** and earlier versions of **Bookworm** used extra entries in **wpa_supplicant.conf**. Edit the **/etc/wpa_supplicant/wpa_supplicant.conf** configuration file and add a second network definition. More network definitions can be added as required.
+**Bullseye** used extra entries in **wpa_supplicant.conf**. Edit the **/etc/wpa_supplicant/wpa_supplicant.conf** configuration file and add a second network definition. More network definitions can be added as required.
 
 
-Example **/etc/wpa_supplicant/wpa_supplicant.conf** configured for two WiFi accesss points.
+Example **/etc/wpa_supplicant/wpa_supplicant.conf** configured for two WiFi access points.
 ```
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
@@ -62,12 +62,12 @@ Bookworm and Trixie OS network configuration using Network Manager
 Each new Wi-Fi network added has a separate config file in **/etc/NetworkManager/system-connections/** in a well configured system these will have a 256bit WPA PSK rather than a plain text passphrase.
 For example for an SSID **EE-GH6J42** the previous instructions will produce a file called **EE-GH6J42.nmconnection** in the **/etc/NetworkManager/system-connections** directory.
 
-You may wonder where the original connection for router **EE-GH6J42** is to be found. If you look in the **/run/NetworkManager/system-connections/** you will see the following files.
+You may wonder where the original connection for router, for example **EE-B944TH** is to be found. If you look in the **/run/NetworkManager/system-connections/** you will see the following files.
 
 ```
- lo.nmconnection   netplan-wlan0-EE-EE-GH6J42.nmconnection  'Wired connection 1.nmconnection'
+ lo.nmconnection   netplan-wlan0-EE-B944TH.nmconnection  'Wired connection 1.nmconnection'
 ```
-This is because Debian Linux is now using a product called **netplan** to configure the Raspberry Pi which takes the parameters specified using the **Raspberry Pi Imager software** and configures the initial network configuration in the **/run** directory. This is not without controversy as it is confusing to have network configurations in two seperate directories. Maybe this may change in the future! 
+This is because Debian Linux is now using a product called **netplan** to configure the Raspberry Pi which takes the parameters specified using the **Raspberry Pi Imager software** and configures the initial network configuration in the **/run** directory. This is rather confusing to have network configurations in two seperate directories and perhaps, for this reason, this may well change in the future! 
 
 
 ```
@@ -144,7 +144,7 @@ Select \<Edit\> then \<Add\> then select **Wi-Fi** from the drop down list
 ```
 Use the arrow keys to move around the screen. The space bar selects [X] 
 Enter your router SSID into *both* the **Profile name** and **SSID** fields
-The **Device** will always be **wlan0** unlesas you have an extra WiFi adapter
+The **Device** will always be **wlan0** unless you have an extra WiFi adapter
 Select **WPA & WPA2 Personal** in the Security drop-down box
 Enter your router password into the **Password** field
 Leave all other fields as they are then press \<OK\>
