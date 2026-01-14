@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: copy_html_docs.sh,v 1.9 2026/01/06 19:37:46 bob Exp $
+# $Id: copy_html_docs.sh,v 1.10 2026/01/09 09:43:53 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -39,14 +39,14 @@ for doc in ${DOCS_DIR}/*.md
 do
     file=$(basename "$doc")
     file="${file%.*}"
-    echo ${HTML_HEADER} > ${DOCS_DIR}/${file}.html
-    echo ${CSS} >> ${DOCS_DIR}/${file}.html
-    echo ${HTML_BODY} >> ${DOCS_DIR}/${file}.html
-    echo "<button onclick=\"window.location.href='index.html';\">Back</button>" >> ${DOCS_DIR}/${file}.html
+    sudo echo ${HTML_HEADER} > ${DOCS_DIR}/${file}.html
+    sudo echo ${CSS} >> ${DOCS_DIR}/${file}.html
+    sudo echo ${HTML_BODY} >> ${DOCS_DIR}/${file}.html
+    sudo echo "<button onclick=\"window.location.href='index.html';\">Back</button>" >> ${DOCS_DIR}/${file}.html
     ${CMARK} ${doc} >> ${DOCS_DIR}/${file}.html
-    echo "<button onclick=\"window.location.href='index.html';\">Back</button>" >> ${DOCS_DIR}/${file}.html
-    echo ${HTML_FOOTER} >> ${DOCS_DIR}/${file}.html
-    echo "Converted ${file}.md to ${file}.html"
+    sudo echo "<button onclick=\"window.location.href='index.html';\">Back</button>" >> ${DOCS_DIR}/${file}.html
+    sudo echo ${HTML_FOOTER} >> ${DOCS_DIR}/${file}.html
+    sudo echo "Converted ${file}.md to ${file}.html"
     sudo cp -f ${DOCS_DIR}/${file}.html ${WWW_DOCS}/.
 done
 # Copy CSS file

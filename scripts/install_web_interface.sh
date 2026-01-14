@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Web Interface
-# $Id: install_web_interface.sh,v 1.13 2025/10/25 08:08:23 bob Exp $
+# $Id: install_web_interface.sh,v 1.14 2026/01/13 09:41:51 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -28,6 +28,9 @@ GRP=$(id -g -n ${USER})
 OS_RELEASE=/etc/os-release
 SCRIPTS_DIR=${DIR}/scripts
 BIT=$(getconf LONG_BIT)
+
+EXTERNALLY_MANAGED="/usr/lib/python3.11/EXTERNALLY-MANAGED"     # Bookworm
+EXTERNALLY_MANAGED2="/usr/lib/python3.13/EXTERNALLY-MANAGED"    # Trixie
 
 # Get OS release ID
 function release_id
@@ -124,6 +127,22 @@ elif [[ $(release_id) -ge 13 ]]; then
     wget http://bobrathbone.com/raspberrypi/packages/radiodweb_3.3_all.deb | tee -a ${LOG}
     sudo dpkg -i radiodweb_3.3_all.deb | tee -a ${LOG}
 fi
+
+# The CGI module has been dropped in python 3.13 onwards 
+echo "Installing legacy CGI" | tee -a ${LOG}
+CMD="sudo pip3 install legacy-cgi"
+if [[ $(release_id) -ge 13 ]]; then
+    if [[ -f ${EXTERNALLY_MANAGED2} ]]; then
+        sudo mv ${EXTERNALLY_MANAGED2} ${EXTERNALLY_MANAGED2}.old   # Trixie
+    fi
+    ${CMD}
+elif [[ $(release_id) -eq 12 ]]; then
+    if [[ -f ${EXTERNALLY_MANAGED} ]]; then
+        sudo mv ${EXTERNALLY_MANAGED} ${EXTERNALLY_MANAGED}.old     # Bookworm
+    fi
+    ${CMD}
+fi
+
 
 echo "Installing mariadb-server" | tee -a ${LOG}
 sudo apt-get -y install mariadb-server

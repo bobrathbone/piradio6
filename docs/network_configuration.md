@@ -149,10 +149,9 @@ Select **WPA & WPA2 Personal** in the Security drop-down box
 Enter your router password into the **Password** field
 Leave all other fields as they are then press \<OK\>
 
-Unfortunately connecting to the 2nd router doesn't work using **nmtui**
-Use the following command:
+Unfortunately connecting to the 2nd router doesn't work using **nmtui** because it doesn't display the new router just added. Use the following command:
 **sudo nmcli connection up \<Your SSID\>**
-NB. Do not use quotes around your router.
+NB. Do not use quotes around your router SSID.
 
 More details will be found in the Radio Constructors manual
 

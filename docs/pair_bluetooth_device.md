@@ -1,8 +1,15 @@
 Pairing a Bluetooth device
 ==========================
 
-Switch on the Bluetooth speakers or headphones.  Reboot the Raspberry Pi.
-To pair your Bluetooth device run bluetoothctl. This will enter its own shell.
+Before attempting to pair your Bluetooth device you must first install the Bluetooth software using:
+ **radio-config --> Option 2 Configure audio output devices --> Option 13 Bluetooth Device**
+
+Switch on the Bluetooth speakers or headphones.  Reboot the Raspberry Pi. 
+If you are doing this setup from the command line run **rfkill** to make sure that bluetooth isn't blocked. 
+```
+sudo rfkill bluetooth 
+```
+To pair your Bluetooth device run **bluetoothctl**. This will enter its own shell.
 ```
 bluetoothctl
 Agent registered
@@ -65,7 +72,8 @@ Attempting to connect to 00:75:58:41:B1:25
 Connection successful
 [CHG] Device 00:75:58:41:B1:25 ServicesResolved: yes
 ```
-Trust the new Bluetooth device
+Note that from now on you now will see the name of the connected device ([SP-AD70-B]) in the bluetoothctl prompt. 
+Now trust the new Bluetooth device
 
 ```
 [SP-AD70-B]#trust 00:75:58:41:B1:25

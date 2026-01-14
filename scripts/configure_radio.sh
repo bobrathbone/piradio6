@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.54 2025/12/29 10:14:56 bob Exp $
+# $Id: configure_radio.sh,v 1.56 2026/01/09 14:49:07 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -233,6 +233,7 @@ if [[ ${FLAGS} != "-s" ]]; then
             exit 0
 
         elif [[ ${ans} == '6' ]]; then
+            #${SCRIPTS}/copy_html_docs.sh ${FLAGS} >/dev/null 2>&1 &
             ${SCRIPTS}/display_docs.sh ${FLAGS}
             exit 0
 
