@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_audio.sh,v 1.7 2026/01/03 16:11:16 bob Exp $
+# $Id: display_audio.sh,v 1.8 2026/01/15 13:28:24 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -31,6 +31,7 @@ ASOUND=/etc/asound.conf
 SOUND_CARD=0
 DKMS=/usr/sbin/dkms
 WM8960_LOG=/var/log/wm8960-soundcard.log
+BLUETOOTHCTL=/usr/bin/bluetoothctl
 
 USR=$(logname)
 GRP=$(id -g -n ${USR})
@@ -167,6 +168,14 @@ if [[ -x ${DKMS} ]]; then
             echo ${status} | tee -a ${LOG}
         fi
     fi
+fi
+
+# Display any Bluetooth devices
+if [[ -x ${BLUETOOTHCTL} ]]; then
+    echo "" | tee -a ${LOG}
+    echo "Connected Bluetooth devices" | tee -a ${LOG}
+    echo "---------------------------" | tee -a ${LOG}
+    ${BLUETOOTHCTL} info | tee -a ${LOG}
 fi
 
 # Pulseaudio status

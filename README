@@ -13,7 +13,7 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.2 release notes
 -------------------------
-Release 14th January 2026 - Build 12
+Release 21st January 2026 - Build 13
 1) Modifications to run with Debian Trixie release 2nd October 2025
 2) Support for X-Windows desktop and Wayfire compositor removed
 3) Correct search name on gradiod not being updated if changed by external client (Web interface)
@@ -28,6 +28,7 @@ Release 14th January 2026 - Build 12
 12) Correct incorrect station name in vgradio when external client (web interface) changes station
 13) Re-write the network tutorial to use both nmcli and nmtui utilities
 14) Web source selection error, CGI module dropped in Python 3.13i, Replaced with legacy-cgi 
+15) Waveshare 3.5" touch screen installation script install_ws_LCD.sh updated for Trixie
 
 Version 8.1 release notes
 -------------------------

@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Waveshare LCDs configuration script
-# $Id: install_ws_LCD.sh,v 1.18 2026/01/02 17:13:56 bob Exp $
+# $Id: install_ws_LCD.sh,v 1.21 2026/01/22 09:34:20 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -32,12 +32,13 @@ fi
 PROG=${0}
 LOGDIR=${DIR}/logs
 LOG=${LOGDIR}/install_ws_lcd.log
+CALIBRATOR=/usr/bin/xinput_calibrator
+CALIBRATE_CONF="/usr/share/X11/xorg.conf.d/99-calibration.conf"
 OS_RELEASE=/etc/os-release
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/firmware/config.txt
 EV_CONF_10="/usr/share/X11/xorg.conf.d/10-evdev.conf"
 EV_CONF_45="/usr/share/X11/xorg.conf.d/45-evdev.conf"
-CALIBRATION_CONF="/usr/share/X11/xorg.conf.d/99-calibration.conf"
 USER=$(logname)
 GRP=$(id -g -n ${USR})
 GRADIO="${DIR}/gradio.py"
@@ -70,6 +71,13 @@ function codename
     echo ${CODENAME}
 }
 
+# Get Raspberry Pi model
+function rpi_model
+{
+    model=$(cat /proc/device-tree/model | cut -d ' ' -f 3)
+    echo ${model}
+}
+
 
 # Releases before Bookworm not supported
 if [[ $(release_id) -lt 12 ]]; then
@@ -79,11 +87,13 @@ if [[ $(release_id) -lt 12 ]]; then
     exit 1
 fi
 
+
 run=1
 INSTALL_WS_SPI=0
 CALIBRATE_TOUCH=0
 EV_TEST=0
 selection=1
+
 while [ $selection != 0 ]
 do
     ans=0
@@ -112,20 +122,22 @@ do
     selection=$?
 done
 
-# Run the X-screen calibrator software
-if [[ ${CALIBRATE_TOUCH} == '1' ]]; then
-    echo ""
-    if [[ -x /usr/bin/xinput_calibrator ]]; then
-        echo "Start an X-terminal session from the Raspberry Pi Desktop." | tee -a ${LOG};
-        printf "From the command line enter the command ${orange}xinput_calibrator${default} and follow\n" 
-        echo "the on-screen instructions. You cannot use an SSH session for this!"
-    else
-        echo "Error! You must install the Waveshare touch-screen software first!"
-    fi
-    echo -n "Press enter to continue: " | tee -a ${LOG};
-    read a
-    exit 1 
+# Install software components
+if [[ ${INSTALL_WS_SPI} == '1' ]]; then
+    : # NO-OP
 
+# Run the X-screen calibrator software
+elif [[ ${CALIBRATE_TOUCH} == '1' ]]; then
+    if [[ ! -f ${CALIBRATE_CONF}.save ]]; then
+        sudo cp ${CALIBRATE_CONF} ${CALIBRATE_CONF}.save
+    fi
+    sudo DISPLAY=:0.0 ${CALIBRATOR} --output-filename ${CALIBRATE_CONF}
+    echo "New calibration details written to ${CALIBRATE_CONF}" | tee -a ${LOG}
+    echo -n "Enter to continue: "
+    read a
+    exit 0 
+
+# Run evtest software
 elif [[ ${EV_TEST} == '1' ]]; then
     if [[ ! -x ${EVTEST} ]]; then
         echo -n "Install touch-sreen software first. Enter to continue: "
@@ -138,11 +150,17 @@ elif [[ ${EV_TEST} == '1' ]]; then
     echo -n "Enter to continue: " | tee -a ${LOG};
     read a
     /usr/bin/evtest 
-    exit 0 
+else
+    echo "Error! You must install the Waveshare touch-screen software first!"
+    echo -n "Press enter to continue: " | tee -a ${LOG};
+    read a
+    exit 1 
 fi
 
 echo "$0 configuration log, $(date) " | tee ${LOG}
-echo "Installing Waveshare touch-screen software" |tee ${LOG}
+echo "Installing Waveshare touch-screen software" | tee ${LOG}
+echo "Hardware Raspberry Pi model $(rpi_model)" | tee -a ${LOG}
+
 CMD="sudo apt-get install evtest -y"
 echo ${CMD}  | tee -a ${LOG};
 ${CMD} | tee -a ${LOG};
@@ -225,9 +243,9 @@ Section "InputClass"
         MatchProduct    "ADS7846 Touchscreen"
         Option  "Calibration"   "3932 300 294 3801"
         Option  "SwapAxes"      "1"
-        Option "EmulateThirdButton" "1"
-        Option "EmulateThirdButtonTimeout" "1000"
-        Option "EmulateThirdButtonMoveThreshold" "300"
+        #Option "EmulateThirdButton" "1"
+        #Option "EmulateThirdButtonTimeout" "1000"
+        #Option "EmulateThirdButtonMoveThreshold" "300"
 EndSection
 EOF
 fi
@@ -241,18 +259,25 @@ grep "^screen_size=" ${CONFIG} | tee -a ${LOG}
 grep "^fullscreen=" ${CONFIG} | tee -a ${LOG}
 grep "^display_type=" ${CONFIG} | tee -a ${LOG}
 
+echo "" | tee -a ${LOG}
+echo "Add startx and FRAMEBUFFER device in ${BASH_PROFILE}" | tee -a ${LOG}
 touch ${BASH_PROFILE}
 grep "FRAMEBUFFER" ${BASH_PROFILE}
-if [[ $? != 0 ]]; then      # Do not seperate from above 
+if [[ $? != 0 ]]; then      # Do not separate from above 
     echo "" | tee -a ${LOG}
     echo "Setting up framebuffer configuration in ${BASH_PROFILE}" | tee -a ${LOG}
-    echo "export FRAMEBUFFER=/dev/fb1" >> ${BASH_PROFILE}
+    if [[ ${rpi_model} -ge '5' ]]; then
+        echo "export FRAMEBUFFER=/dev/fb1" >> ${BASH_PROFILE}
+    else
+        echo "export FRAMEBUFFER=/dev/fb0" >> ${BASH_PROFILE}
+    fi 
     echo "startx 2> /tmp/xorg_errors" >> ${BASH_PROFILE}
-    ##echo "sudo ${GRADIO} &" >> ${BASH_PROFILE}
 fi
 
 # For some reason  labwc/autostart will not start gradio.py on a small touchscreen
 # This workaround launches gradio.py from .profile (Ignored if using an SSH login"
+echo "" | tee -a ${LOG}
+echo "Add start gradio.py command to ${PROFILE}" | tee -a ${LOG}
 grep "gradio.py" ${PROFILE}
 if [[ $? != 0 ]]; then      # Do not seperate from above
     echo "" | tee -a ${LOG}

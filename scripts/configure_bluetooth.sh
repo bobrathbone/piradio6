@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_bluetooth.sh,v 1.16 2025/11/04 14:14:22 bob Exp $
+# $Id: configure_bluetooth.sh,v 1.17 2026/01/15 16:34:03 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -169,7 +169,7 @@ do
     # Install Bluetooth software
     if [[ ${INSTALL_BLUETOOTH} == 1 ]]; then
         echo "$0 Bluetooth configuration log, $(date) " | tee ${LOG}
-        echo "Boot configuration in ${BOOTCONFIG}" | tee ${LOG}
+        echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
         # Do NOT remove pipewire as it also removes rpd-wayland-core (X-Windows)
         # echo "Removing pipewire package" | tee -a ${LOG}
         # CMD="sudo apt -y remove pipewire"
@@ -221,7 +221,7 @@ do
         fi
 
     elif [[ ${USE_BLUETOOTH} == 1 ]]; then
-        echo "$0 Bluetooth configuration log, $(date) " | tee ${LOG}
+        echo "$0 Bluetooth configuration log, $(date) " | tee -a ${LOG}
         echo ${PAIRED} |  tee -a ${LOG}
         BT_NAME=$(echo ${PAIRED} | awk '{print $3}')
         BT_DEVICE=$( echo ${PAIRED} | awk '{print $2}')
@@ -292,11 +292,11 @@ do
             echo | tee -a ${LOG}
 
             # Display asound.conf
-            echo "" | tee ${LOG}
-            echo "${ASOUND_CONF}"   | tee ${LOG}
-            echo "================" | tee ${LOG}
-            cat ${ASOUND_CONF}  | tee ${LOG}
-            echo "" | tee ${LOG}
+            echo "" | tee -a ${LOG}
+            echo "${ASOUND_CONF}"   | tee -a ${LOG}
+            echo "================" | tee -a ${LOG}
+            cat ${ASOUND_CONF}  | tee -a ${LOG}
+            echo "" | tee -a ${LOG}
 
             # /etc/radiod.conf
             echo "Configuring audio_out parameter in ${CONFIG}" | tee -a ${LOG}

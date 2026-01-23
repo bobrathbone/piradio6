@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.56 2026/01/09 14:49:07 bob Exp $
+# $Id: configure_radio.sh,v 1.57 2026/01/23 07:04:31 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -320,9 +320,6 @@ if [[ ${COMPONENTS} == 1 ]]; then
             DESC="Install PiFace CAD (Bullseye only)"
         fi
 
-        ## To do
-        ## ${DIR}/install_ssd1306.sh ${FLAGS}
-        #exit 0
         whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
 
         selection=$? 
