@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.140 2025/11/17 09:02:06 bob Exp $
+# $Id: config_class.py,v 1.141 2026/01/26 13:44:45 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1405,10 +1405,14 @@ class Configuration:
 
     @screen_size.setter
     def screen_size(self,parameter):
-        sW,sH = parameter.split('x')    
-        w = int(sW)
-        h = int(sH)
-        self._screen_size = (w,h)
+        try:
+            sW,sH = parameter.split('x')    
+            w = int(sW)
+            h = int(sH)
+            self._screen_size = (w,h)
+        except:
+            print("Error: Invalid screen_size parameter in",ConfigFile)
+            pass
 
     @property
     def search_window_rows(self):

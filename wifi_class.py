@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Wifi Class
-# $Id: wifi_class.py,v 1.5 2022/04/02 12:03:22 bob Exp $
+# $Id: wifi_class.py,v 1.6 2026/01/24 10:35:50 bob Exp $
 #
+# This program allows selection of a specific Wi-Fi network from 
+# a list of available SSIDs. It adds a wpa-suplicant entry to
+# /etc/wpa-supplicant/wpa-suplicant.conf
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com

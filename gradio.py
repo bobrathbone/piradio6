@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.107 2025/12/18 13:58:25 bob Exp $
+# $Id: gradio.py,v 1.108 2026/02/02 05:15:48 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -688,6 +688,12 @@ def handleEvent(radio,radioEvent):
     elif event_type == radioEvent.PLAYLIST_CHANGED:
         log.message('PLAYLIST_CHANGED event received', log.DEBUG)
         radio.handlePlaylistChange()
+
+    elif event_type == radioEvent.MPD_VOLUME_CHANGE:
+        volume = radio.volume.get()
+        msg = "handleEvent Volume Changed %d" % volume
+        log.message(msg,log.DEBUG)
+        radio.volume.storeVolume(volume)
 
     elif event_type == radioEvent.PLAY:     # Raised by IR RC PLAY_nn event
         log.message('PLAY event received', log.DEBUG)

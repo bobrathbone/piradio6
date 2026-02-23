@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio - Album artwork extraction from current URL 
 #
-# $Id: artwork_class.py,v 1.20 2025/12/03 07:15:21 bob Exp $
+# $Id: artwork_class.py,v 1.21 2026/02/19 14:16:29 bob Exp $
 #
 # Authors : Bob Rathbone and Jeff (musicalic)
 # Site    : http://www.bobrathbone.com
@@ -17,13 +17,23 @@
 # The Discogs database isn't perfect and sometimes the incorrect or no artwork will be displayed
 # Note: The Bob Rathbone Computer Consultancy has no control over the Discogs database
 
+import os
 import sys
 import requests
 import subprocess
 import urllib.parse
 from io import BytesIO
 
-API_DISCOGS_TOKEN = "SkLpyuNUuVTglclfwrvdBuxiucbjCFwMaXKLsAOg"
+# To get a new token see: https://www.discogs.com/developers/#page:authentication
+# https://www.discogs.com/applications/edit/113086
+KEY="jVQGatBjapPdPYDyWRfk"
+SECRET="ZrvMKBRaMaSRAGWODIbNELrNfEfxIwou"
+#Request Token URL   https://api.discogs.com/oauth/request_token
+#Authorize URL   https://www.discogs.com/oauth/authorize
+#Access Token URL    https://api.discogs.com/oauth/access_token
+# Example "https://api.discogs.com/database/search?q='Radio&nbsp;Caroline'&key=jVQGatBjapPdPYDyWRfksecret=ZrvMKBRaMaSRAGWODIbNELrNfEfxIwou"
+
+#API_DISCOGS_TOKEN = "SkLpyuNUuVTglclfwrvdBuxiucbjCFwMaXKLsAOg" No longer used
 BASE_URL = "https://api.discogs.com/database/search?q="
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 
@@ -103,12 +113,13 @@ class Artwork:
                 title = broadcast_info[broadcast_info.index(":")+1 :] 
             except:
                 title = broadcast_info
-            # Build the url following this pattern:
-            # https://api.discogs.com/database/search?q=Rose%20Laurens%20-%20Quand%20Tu%20Pars%20(12%60%60%20Version)&token=SkLpyuNUuVTglclfwrvdBuxiucbjCFwMaXKLsAOg
-            # https://mojoauth.com/escaping/url-escaping-in-python/
-            url = BASE_URL + urllib.parse.quote_plus(title) + "&token=" + API_DISCOGS_TOKEN
+            title = urllib.parse.quote_plus(title)   # Convert spaces to + signs
+            print("Title",title)
+            url = BASE_URL + title + "&key=" + KEY + "&secret=" + SECRET
+
             # https://developer.mozilla.org/en-US/docs/Web/API/Response
-            response = requests.get(url, headers=HEADERS)
+            #response = requests.get(url, headers=HEADERS)  # Causes 403 error ?
+            response = requests.get(url)
             type = response.headers['content-type']
             if type == 'application/json':
                 data = response.json() # Python dictionary
@@ -121,6 +132,11 @@ class Artwork:
         except Exception as e:
             self.logit(str(e))
         return cover_url 
+
+    # Execute a system command
+    def execCommand(cmd):
+        p = os.popen(cmd)
+        return  p.readline().rstrip('\n')
 
 # End of Artwork class
 

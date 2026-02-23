@@ -25,7 +25,8 @@ class Combo(Simple):
     """
 
     _can_focus = True
-    _default_size = (200, 30)
+    #_default_size = (200, 30)
+    _default_size = (145, 30)
     _settings_default = {"values": ()}
 
     _selection = -1

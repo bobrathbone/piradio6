@@ -11,9 +11,16 @@ This software uses the python3-mpd library. See https://packages.debian.org/sid/
 
 To configure the radio software and components run: radio-config from the command line
 
+Version 8.3 release notes
+-------------------------
+Release 18th February 2026 - Build 1
+1) Added Waveshare 3.5" SPI touchscreen and installation script
+2) Added Osoyoo 3.5" SPI touchscreen and installation script
+3) Improved diagnostic information
+
 Version 8.2 release notes
 -------------------------
-Release 21st January 2026 - Build 13
+release 21st January 2026 - Build 13
 1) Modifications to run with Debian Trixie release 2nd October 2025
 2) Support for X-Windows desktop and Wayfire compositor removed
 3) Correct search name on gradiod not being updated if changed by external client (Web interface)
@@ -29,10 +36,11 @@ Release 21st January 2026 - Build 13
 13) Re-write the network tutorial to use both nmcli and nmtui utilities
 14) Web source selection error, CGI module dropped in Python 3.13i, Replaced with legacy-cgi 
 15) Waveshare 3.5" touch screen installation script install_ws_LCD.sh updated for Trixie
+16) MPC volume command now stores the new volume in the /var/lib/radiod/volume file
 
 Version 8.1 release notes
 -------------------------
-release 7 October 2025 - Build 8
+release 7th October 2025 - Build 8
 1) Recording facility streamripper replaced with liquidsoap 
 2) Correct 403 error (Forbidden) for some stations when creating Radio playlist for some stations
 3) Experimental station_select.py and station_select.service added (currently unsupported)

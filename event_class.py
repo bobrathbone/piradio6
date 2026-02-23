@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Event class
 #
-# $Id: event_class.py,v 1.42 2025/05/12 19:11:08 bob Exp $
+# $Id: event_class.py,v 1.43 2026/01/25 17:31:09 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -79,23 +79,26 @@ class Event():
     # MP client change
     MPD_CLIENT_CHANGE = 14
 
+    # MP client change
+    MPD_VOLUME_CHANGE = 15
+
     # Events from the Web interface
-    LOAD_RADIO = 15     # Used by web interface v1.7
-    LOAD_MEDIA = 16     #   ditto
-    LOAD_PLAYLIST = 17  # Used by web interface v1.8 onwards
-    LOAD_AIRPLAY = 18
-    LOAD_SPOTIFY = 19
+    LOAD_RADIO = 16     # Used by web interface v1.7
+    LOAD_MEDIA = 17     #   ditto
+    LOAD_PLAYLIST = 18  # Used by web interface v1.8 onwards
+    LOAD_AIRPLAY = 19
+    LOAD_SPOTIFY = 20
 
     # Playlist events
-    PLAYLIST_CHANGED = 20
+    PLAYLIST_CHANGED = 21
 
     # PLAY COMMAND
-    PLAY = 21
+    PLAY = 22
 
-    RECORD_BUTTON = 22
+    RECORD_BUTTON = 23
 
     # Shutdown radio
-    SHUTDOWN = 23
+    SHUTDOWN = 24
 
     # Alternate event names (easier to understand code )
     VOLUME_UP = RIGHT_SWITCH
@@ -109,7 +112,7 @@ class Event():
     eventNames = ['NO_EVENT', 'RIGHT_SWITCH', 'LEFT_SWITCH', 'MUTE_BUTTON_DOWN', 
               'MUTE_BUTTON_UP', 'UP_SWITCH', 'DOWN_SWITCH', 'MENU_BUTTON_DOWN',
               'MENU_BUTTON_UP', 'ALARM_FIRED', 'TIMER_FIRED', 'KEY_LANGUAGE',
-              'KEY_INFO', 'ROTARY_SWITCH_CHANGE', 'MPD_CLIENT_CHANGE', 
+              'KEY_INFO', 'ROTARY_SWITCH_CHANGE', 'MPD_CLIENT_CHANGE','MPD_VOLUME_CHANGE', 
               'LOAD_RADIO', 'LOAD_MEDIA', 'LOAD_PLAYLIST', 'LOAD_AIRPLAY', 
               'LOAD_SPOTIFY','PLAYLIST_CHANGED','PLAY','RECORD_BUTTON','SHUTDOWN',
              ]

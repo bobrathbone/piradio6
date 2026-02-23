@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_audio.sh,v 1.8 2026/01/15 13:28:24 bob Exp $
+# $Id: display_audio.sh,v 1.9 2026/01/25 09:07:14 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -52,6 +52,7 @@ sudo chown ${USR}:${GRP} ${LOGDIR}
 
 echo "Audio configuration log for $(hostname) $(date)" | tee ${LOG}
 grep ^Release ${DIR}/README | tee -a ${LOG}
+echo "User:${USR} group:${GRP}"
 
 # Display sound devices
 echo | tee -a ${LOG}
@@ -80,9 +81,14 @@ echo "mixer_volume=$(cat ${RADIOLIB}/mixer_volume)" | tee -a ${LOG}
 echo "mixer_volume_id=$(cat ${RADIOLIB}/mixer_volume_id)" | tee -a ${LOG}
 
 echo | tee -a ${LOG}
+echo "${RADIOLIB} files ownership and permissions" | tee -a ${LOG}
+echo "-----------------------------------------------" | tee -a ${LOG}
+ls -la ${RADIOLIB} | tee -a ${LOG}
+
+echo | tee -a ${LOG}
 if [[ ${AUDIO_OUT} =~ bluetooth  || ${AUDIO_OUT} =~ USB ]]; then
     echo "Mixer controls for card ${SOUND_CARD}" | tee -a ${LOG}
-    echo "--------------" | tee -a ${LOG}
+    echo "-------------------------" | tee -a ${LOG}
 fi
 if [[ ${AUDIO_OUT} =~ bluetooth  ]]; then
     cmd="amixer -D bluealsa controls"

@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.149 2025/12/27 16:09:02 bob Exp $
+# $Id: piradio,v 1.151 2026/02/17 09:46:08 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is both the 32-bit and 64-bit version
 # Source: <source package name; defaults to package name>
@@ -9,7 +9,7 @@ Priority: optional
 Homepage: http://www.bobrathbone.com
 
 Package: radiod
-Version: 8.2
+Version: 8.3
 Maintainer: Bob Rathbone <bob@bobrathbone.com>
 Email-Address : bob@bobrathbone.com
 Standards-Version: 4.7.0.2
@@ -137,6 +137,7 @@ Files:  radiod.py /usr/share/radio/
     scripts/install_flirc.sh /usr/share/radio/scripts/
     scripts/install_pifacecad.sh /usr/share/radio/scripts/
     scripts/install_ws_LCD.sh /usr/share/radio/scripts/
+    scripts/install_osoyoo_LCD.sh /usr/share/radio/scripts/
     scripts/install_adafruit_tft.sh /usr/share/radio/scripts/
     station.urls /usr/share/radio/
     voice.dist /usr/share/radio/

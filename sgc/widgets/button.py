@@ -27,7 +27,8 @@ class Button(Simple):
     """
 
     _can_focus = True
-    _default_size = (110, 50)
+    #_default_size = (110, 50)
+    _default_size = (85, 40)
     _available_images = ("over", "down")
     _settings_default = {"label": ("",), "col": (127, 127, 169),
                          "label_col": Font.col, "label_font": Font["widget"]}

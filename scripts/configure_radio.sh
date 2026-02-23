@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.57 2026/01/23 07:04:31 bob Exp $
+# $Id: configure_radio.sh,v 1.61 2026/02/05 09:32:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -99,6 +99,7 @@ ROTARY_HAS_RESISTORS=0	# Support for KY-040 or ABC Rotary encoders
 ADAFRUIT_SSD1306=0	# Adafruit SSD1306 libraries required
 ADAFRUIT_TFT=0	# Adafruit PiTFT installation required
 WAVESHARE_SPI_LCD=0 # Waveshare 3.5" SPI LCD
+OSOYOO_SPI_LCD=0 # Osoyoo 3.5" SPI LCD
 
 # Display characteristics
 I2C_ADDRESS=0x00        # I2C device address
@@ -440,6 +441,7 @@ sudo touch ${LOG}
 sudo chown ${USER}:${GRP} ${LOG}
 
 echo "$0 configuration log, $(date) " | tee ${LOG}
+echo "User:${USR} group:${GRP}"
 echo "Using ${DIR}" | tee -a ${LOG}
 echo "Configuring radio for $(codename) OS " | tee -a ${LOG}
 echo "Boot configuration in ${BOOTCONFIG}" | tee -a ${LOG}
@@ -453,8 +455,8 @@ if [[ -f ${RADIO_PID} ]]; then
     sudo systemctl disable radiod.service
 fi
 
-sudo systemctl stop mpd.socket
-sudo systemctl disable mpd.socket
+#sudo systemctl stop mpd.socket
+#sudo systemctl disable mpd.socket
 sudo systemctl stop mpd.service
 sudo systemctl disable mpd.socket
 
@@ -1150,10 +1152,11 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
         ans=$(whiptail --title "Select graphical display type?" --menu "Choose your option" 15 75 9 \
         "1" "Raspberry Pi 7-inch touch-screen (800x480)" \
         "2" "Waveshare 3.5 inch TFT touch-screen (480x320)" \
-        "3" "Adafruit TFT touch-screens (480x320)" \
+        "3" "Adafruit TFT touch-screens (1.8 to 3.5-inch)" \
         "4" "7-inch TFT touch-screen (800x480)" \
         "5" "HDMI television or monitor (1024x600)" \
-        "6" "Do not change configuration" 3>&1 1>&2 2>&3) 
+        "6" "Osoyoo 3.5 inch SPI touch-screen (480x320)" \
+        "7" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -1187,6 +1190,17 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
         elif [[ ${ans} == '5' ]]; then
             DESC="HDMI television or monitor"
             SCREEN_SIZE="1024x600"
+
+        elif [[ ${ans} == '6' ]]; then
+            DESC="Osoyoo 3.5 inch SPI touch-screen"
+            if [[ ${FLAGS} != "-s" ]]; then
+                SCREEN_SIZE="480x320"
+                OSOYOO_SPI_LCD=1 
+            else
+                no_install ${DESC}
+                exit 0
+            fi
+
 
         else
             DESC="Graphical display type unchanged"    
@@ -1359,6 +1373,9 @@ elif [[ ${ADAFRUIT_TFT} > 0  ]]; then
     exit 0
 elif [[ ${WAVESHARE_SPI_LCD} > 0  ]]; then
     ${SCRIPTS}/install_ws_LCD.sh | tee -a ${LOG}
+    exit 0
+elif [[ ${OSOYOO_SPI_LCD} > 0  ]]; then
+    ${SCRIPTS}/install_osoyoo_LCD.sh | tee -a ${LOG}
     exit 0
 fi
 

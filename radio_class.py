@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.233 2026/01/02 15:18:26 bob Exp $
+# $Id: radio_class.py,v 1.235 2026/01/26 08:30:25 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -144,6 +144,7 @@ class Radio:
     device_error_cnt = 0    # Device error causes an abort
     isMuted = False # Is radio state "pause" or "stop"
     current_id = 1  # Currently playing track or station
+    current_volume = -1 # Current volume (detect volume changes)
     startingup = True      # Don't ignore first play request
     reload = False  # Reload radio stations or player playlists
     loading_DB = False  # Loading database
@@ -1779,12 +1780,15 @@ class Radio:
     # Check if external client has change the source between RADIO and MEDIA
     # It raises a MPD_CLIENT_CHANGE interrupt
     def checkClientChange(self):
+        #x = ""
+        changed = False
         source_type = self.source.getType()
         self.currentsong = self.client.currentsong()
-        file = self.currentsong.get("file")
-        changed = False
-        x = ""
+        current_id = int(self.currentsong.get("pos")) + 1
+        status = self.client.status()
+        current_volume = int(status.get("volume"))
 
+        file = self.currentsong.get("file")
         if file != None:
             if source_type == self.source.RADIO or source_type == self.source.MEDIA:
                 source_type = self.getStreamType(file) 
@@ -1797,13 +1801,19 @@ class Radio:
                     self.event.set(self.event.MPD_CLIENT_CHANGE)
                     log.message("checkClientChange to " + source_name, log.DEBUG)
                     changed = True
+        
+        elif self.current_id != current_id:
+            changed = True
+            self.current_id = current_id
+            self.storeIntegerValue (self.current_id,CurrentStationFile)
+            #x = self.getSearchName()
 
-                current_id = int(self.currentsong.get("pos")) + 1
-                if self.current_id != current_id:
-                    changed = True
-                    self.current_id = current_id
-                    self.storeIntegerValue (self.current_id,CurrentStationFile)
-                    x = self.getSearchName()
+        elif current_volume != None:
+            current_volume = int(current_volume)
+            if self.current_volume != current_volume:
+                changed = True
+                self.event.set(self.event.MPD_VOLUME_CHANGE)
+                self.current_volume = current_volume
 
         if not changed and source_type == self.source.RADIO:
             changed = self.checkAdded()

@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio daemon
 #
-# $Id: radiod.py,v 1.211 2025/10/24 18:06:49 bob Exp $
+# $Id: radiod.py,v 1.212 2026/01/25 17:31:09 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -440,6 +440,12 @@ def handleEvent(event,display,radio,menu):
 
     elif event_type == event.MPD_CLIENT_CHANGE:
         log.message("handleEvent Client Change",log.DEBUG)
+
+    elif event_type == event.MPD_VOLUME_CHANGE:
+        volume = radio.volume.get()
+        msg = "handleEvent Volume Changed %d" % volume
+        log.message(msg,log.DEBUG)
+        radio.volume.storeVolume(volume)
 
     elif event_type != event.NO_EVENT:
         handleRadioEvent(event,display,radio,menu)

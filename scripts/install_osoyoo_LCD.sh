@@ -1,12 +1,12 @@
 #!/bin/bash
 # set -x
-# Raspberry Pi Internet Radio Waveshare LCDs configuration script
-# $Id: install_ws_LCD.sh,v 1.25 2026/01/29 20:03:05 bob Exp $
+# Raspberry Pi Internet Radio Osoyoo LCDs configuration script
+# $Id: install_osoyoo_LCD.sh,v 1.10 2026/02/06 13:15:05 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
 #
-# This program installs the driver software for Waveshare 3.5" screens
+# This program installs the driver software for Osoyou 3.5" screens
 # It normally called from the configure_radio.sh script
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
@@ -17,8 +17,9 @@
 # This program uses whiptail. Set putty terminal to use UTF-8 charachter set
 # for best results
 #
-# Script based on https://www.waveshare.com/wiki/3.5inch_RPi_LCD_(C)
-# Waveshare Wiki's all products https://www.waveshare.com/wiki/Main_Page 
+# Script based on https://osoyoo.com/2025/06/04/3-5spibookworm/
+# For RPi 3B See:
+# Updated https://osoyoo.com/2026/01/29/rpi3-osoyoo-3-5-spi-screen-trixie-system-complete-configuration-guide/
 
 # This script requires an English locale(C)
 export LC_ALL=C
@@ -31,15 +32,18 @@ if [[ ${FLAGS} == "-t" ]]; then
 fi
 PROG=${0}
 LOGDIR=${DIR}/logs
-LOG=${LOGDIR}/install_ws_lcd.log
+LOG=${LOGDIR}/install_osoyoo_lcd.log
+mkdir -p ${LOGDIR}
+
 CALIBRATOR=/usr/bin/xinput_calibrator
 CALIBRATION_CONF="/usr/share/X11/xorg.conf.d/99-calibration.conf"
-FBTURBO="/usr/share/X11/xorg.conf.d/99-fbturbo.~"
 OS_RELEASE=/etc/os-release
 CONFIG=/etc/radiod.conf
 BOOTCONFIG=/boot/firmware/config.txt
+BOOT_OVERLAYS=/boot/overlays
 EV_CONF_10="/usr/share/X11/xorg.conf.d/10-evdev.conf"
 EV_CONF_45="/usr/share/X11/xorg.conf.d/45-evdev.conf"
+FBTURBO="/usr/share/X11/xorg.conf.d/99-fbturbo.~"
 USER=$(logname)
 GRP=$(id -g -n ${USR})
 GRADIO="${DIR}/gradio.py"
@@ -79,7 +83,6 @@ function rpi_model
     echo ${model}
 }
 
-
 # Releases before Bookworm not supported
 if [[ $(release_id) -lt 12 ]]; then
     echo "This program is only supported on Debian Bookworm/Trixie or later!" | tee -a ${LOG}
@@ -88,28 +91,29 @@ if [[ $(release_id) -lt 12 ]]; then
     exit 1
 fi
 
-
 run=1
-INSTALL_WS_SPI=0
+INSTALL_OSOYOO_SPI=0
 CALIBRATE_TOUCH=0
 EV_TEST=0
+DISPLAY_CFG=0
 selection=1
 
 while [ $selection != 0 ]
 do
     ans=0
-    ans=$(whiptail --title "Waveshare SPI touchscreen installation" --menu "Choose your option" 15 75 9 \
-    "1" "Install Waveshare software (Do this first!)" \
-    "2" "Calibrate Waveshare touch screen" \
+    ans=$(whiptail --title "Osoyoo SPI touchscreen installation" --menu "Choose your option" 15 75 9 \
+    "1" "Install Osoyoo software (Do this first!)" \
+    "2" "Calibrate Osoyoo touch screen" \
     "3" "Test raw touchscreen events with evtest" \
-    "4" "Exit" 3>&1 1>&2 2>&3)
+    "4" "Display Osoyoo touch screen configuration" \
+    "5" "Exit" 3>&1 1>&2 2>&3)
     exitstatus=$?
     if [[ $exitstatus != 0 ]]; then
         exit 0
 
     elif [[ ${ans} == '1' ]]; then
-        INSTALL_WS_SPI=1
-        DESC="Install Waveshare 2.4/3.5 SPI touchscreen software"
+        INSTALL_OSOYOO_SPI=1
+        DESC="Install Osoyoo 2.4/3.5 SPI touchscreen software"
 
     elif [[ ${ans} == '2' ]]; then
         CALIBRATE_TOUCH=1
@@ -118,13 +122,18 @@ do
     elif [[ ${ans} == '3' ]]; then
         EV_TEST=1
         DESC="Test touch screen events using evtest"
+
+    elif [[ ${ans} == '4' ]]; then
+        DISPLAY_CFG=1
+        DESC="Display touch screen configuration"
     fi
+
     whiptail --title "${DESC}" --yesno "Is this correct?" 10 60
     selection=$?
 done
 
 # Install software components
-if [[ ${INSTALL_WS_SPI} == '1' ]]; then
+if [[ ${INSTALL_OSOYOO_SPI} == '1' ]]; then
     : # NO-OP
 
 # Run the X-screen calibrator software
@@ -138,6 +147,64 @@ elif [[ ${CALIBRATE_TOUCH} == '1' ]]; then
     read a
     exit 0 
 
+elif [[ ${DISPLAY_CFG} == '1' ]]; then
+    echo "" | tee -a ${LOG}
+    echo "Osoyoo touch-screen configuration" | tee -a ${LOG}
+    echo "=================================" | tee -a ${LOG}
+    echo "" | tee -a ${LOG}
+
+    echo "${BOOT_OVERLAYS}" | tee -a ${LOG}
+    echo "--------------" | tee -a ${LOG}
+    if [[ -f ${BOOT_OVERLAYS}/osoyoo35b.dtbo ]]; then
+        echo "OK: osoyoo35b.dtbo found in ${BOOT_OVERLAYS}" | tee -a ${LOG}
+    else
+        echo "Error: osoyoo35b.dtbo NOT found in ${BOOT_OVERLAYS}" | tee -a ${LOG}
+    fi
+    echo "" | tee -a ${LOG}
+
+    echo "${BOOTCONFIG}" | tee -a ${LOG}
+    echo "--------------------------" | tee -a ${LOG}
+    grep "dtoverlay=vc4-kms-v3d" ${BOOTCONFIG} | tee -a ${LOG}
+    grep "max_framebuffers=" ${BOOTCONFIG} | tee -a ${LOG}
+    tail -14  ${BOOTCONFIG} | tee -a ${LOG}
+
+    echo "" | tee -a ${LOG}
+    echo "${BASH_PROFILE}" | tee -a ${LOG}
+    echo "----------------------" | tee -a ${LOG}
+    cat ${BASH_PROFILE}
+
+    echo "" | tee -a ${LOG}
+    echo "${FBTURBO}" | tee -a ${LOG}
+    echo "---------------------------------------" | tee -a ${LOG}
+    cat ${FBTURBO} | tee -a ${LOG}
+
+    echo "" | tee -a ${LOG}
+    echo "${CALIBRATION_CONF}" | tee -a ${LOG}
+    echo "---------------------------------------------" | tee -a ${LOG}
+    cat ${CALIBRATION_CONF} | tee -a ${LOG}
+
+    echo "" | tee -a ${LOG}
+    echo "${EV_CONF_45}" | tee -a ${LOG}
+    echo "----------------------------------------" | tee -a ${LOG}
+    cat ${EV_CONF_45} | tee -a ${LOG}
+
+    echo "" | tee -a ${LOG}
+    echo "Installed packages" | tee -a ${LOG}
+    echo "------------------" | tee -a ${LOG}
+    for pkg in xserver-xorg-input-evdev xinput-calibrator
+    do
+        dpkg-query -s ${pkg} >/dev/null 2>&1
+        if [[ $?  == 0 ]]; then # Do not seperate from above
+            echo "OK: ${pkg} is installed" | tee -a ${LOG}
+        else
+            echo "Error: ${pkg} is NOT installed" | tee -a ${LOG}
+        fi
+    done
+
+
+    echo "" | tee -a ${LOG}
+    exit 0
+
 # Run evtest software
 elif [[ ${EV_TEST} == '1' ]]; then
     if [[ ! -x ${EVTEST} ]]; then
@@ -146,20 +213,20 @@ elif [[ ${EV_TEST} == '1' ]]; then
         exit 1
     fi 
     echo ""
-    echo "The program will now run evtest and display the available devices:" | tee -a ${LOG};
+    echo "The program will now run evtest and display the available devices:" | tee -a ${LOG}
     echo "Enter the event number for the touch-screen, normally 3" | tee -a ${LOG};
     echo -n "Enter to continue: " | tee -a ${LOG};
     read a
     /usr/bin/evtest 
 else
-    echo "Error! You must install the Waveshare touch-screen software first!"
+    echo "Error! You must install the Osoyoo touch-screen software first!"
     echo -n "Press enter to continue: " | tee -a ${LOG};
     read a
     exit 1 
 fi
 
 echo "$0 configuration log, $(date) " | tee ${LOG}
-echo "Installing Waveshare touch-screen software" | tee ${LOG}
+echo "Installing Osoyoo touch-screen software" | tee ${LOG}
 echo "Hardware Raspberry Pi model $(rpi_model)" | tee -a ${LOG}
 
 CMD="sudo apt-get install evtest -y"
@@ -178,21 +245,24 @@ if [[ ! -x /usr/bin/cmake ]]; then
     ${CMD} | tee -a ${LOG};
 fi
 
-sudo rm -f Waveshare35c.zip
-CMD="wget https://files.waveshare.com/wiki/common/Waveshare35c.zip"
+echo "Install osoyoo35b.dtbo overlay" | tee -a ${LOG}
+cd ~
+rm -f osoyoo35b.zip*
+CMD="sudo wget https://osoyoo.com/driver/osoyoo35b.zip"
+echo ${CMD} | tee -a ${LOG};
+${CMD} 2>&1 | tee -a ${LOG};
+
+CMD="sudo unzip ./osoyoo35b.zip"
 echo ${CMD} | tee -a ${LOG};
 ${CMD} | tee -a ${LOG};
 
-CMD="sudo unzip ./Waveshare35c.zip"
+pwd
+CMD="sudo mv osoyoo35b.dtbo /boot/overlays/"
 echo ${CMD} | tee -a ${LOG};
 ${CMD} | tee -a ${LOG};
 
-CMD="sudo mv waveshare35c.dtbo /boot/overlays/"
-echo ${CMD} | tee -a ${LOG};
-${CMD} | tee -a ${LOG};
-
-# Remove redundant Waveshare35c.zip
-sudo rm -f Waveshare35c.zip
+# Remove redundant Osoyoo35b.zip
+sudo rm -f Osoyoo35b.zip
 
 echo "Disabling DRM VC4 V3D driver in ${BOOTCONFIG}" | tee -a ${LOG}
 sudo sed -i 's/^dtoverlay=vc4-kms-v3d.*/\#dtoverlay=vc4-kms-v3d/'  ${BOOTCONFIG}
@@ -200,14 +270,14 @@ sudo sed -i 's/^max_framebuffers=.*/\#max_framebuffers=2/'  ${BOOTCONFIG}
 grep "dtoverlay=vc4-kms-v3d"  ${BOOTCONFIG}  | tee -a ${LOG}
 grep "max_framebuffers"  ${BOOTCONFIG}  | tee -a ${LOG}
 
-grep "^dtoverlay=waveshare" ${BOOTCONFIG}
+grep "^dtoverlay=osoyoo35b" ${BOOTCONFIG}
 if [[ $? != 0 ]]; then      # Do not seperate from above 
     echo "" | tee -a ${LOG}
     echo "Adding touch-screen parameters to ${BOOTCONFIG}" | tee -a ${LOG}
     sudo echo "" | sudo tee -a  ${BOOTCONFIG} 
-    sudo echo "# Waveshare parameters added by radiod" | sudo tee -a  ${BOOTCONFIG} 
+    sudo echo "# Osoyoo parameters added by radiod" | sudo tee -a  ${BOOTCONFIG} 
     sudo echo "dtoverlay=spi=on" | sudo tee -a  ${BOOTCONFIG} 
-    sudo echo "dtoverlay=waveshare35c" | sudo tee -a  ${BOOTCONFIG} 
+    sudo echo "dtoverlay=osoyoo35b:speed=20000000" | sudo tee -a  ${BOOTCONFIG} 
     sudo echo "hdmi_force_hotplug=1" | sudo tee -a  ${BOOTCONFIG} 
     sudo echo "max_usb_current=1" | sudo tee -a  ${BOOTCONFIG} 
     sudo echo "hdmi_group=2" | sudo tee -a  ${BOOTCONFIG} 
@@ -215,11 +285,11 @@ if [[ $? != 0 ]]; then      # Do not seperate from above
     sudo echo "hdmi_mode=87" | sudo tee -a  ${BOOTCONFIG} 
     sudo echo "hdmi_cvt 480 320 60 6 0 0 0" | sudo tee -a  ${BOOTCONFIG} 
     sudo echo "hdmi_drive=2" | sudo tee -a  ${BOOTCONFIG} 
-    sudo echo "display_rotate=0" | sudo tee -a  ${BOOTCONFIG} 
+    sudo echo "display_rotate=2" | sudo tee -a  ${BOOTCONFIG} 
 fi
 
 echo ""  | tee -a ${LOG} 
-echo "Install Waveshare touch-screen calibration software"  | tee -a ${LOG};
+echo "Install Osoyoo touch-screen calibration software"  | tee -a ${LOG};
 CMD="sudo apt-get install xserver-xorg-input-evdev"
 echo ${CMD}  | tee -a ${LOG};
 ${CMD} | tee -a ${LOG};
@@ -240,48 +310,21 @@ if [[ $? != 0 ]];then
     echo "Setting up ${CALIBRATION_CONF}" | tee -a ${LOG}
     sudo tee -a ${CALIBRATION_CONF}  <<EOF
 Section "InputClass"
-        Identifier      "calibration"
-        MatchProduct    "ADS7846 Touchscreen"
-        Option  "Calibration"   "3932 300 294 3801"
-        Option  "SwapAxes"      "1"
-        #Option "EmulateThirdButton" "1"
-        #Option "EmulateThirdButtonTimeout" "1000"
-        #Option "EmulateThirdButtonMoveThreshold" "300"
+    Identifier "calibration"
+    MatchProduct "ADS7846 Touchscreen"
+    Option "Calibration" "241 3854 3885 240"
+    Option "SwapAxes" "1"
 EndSection
 EOF
-fi
-
-echo "" | tee -a ${LOG}
-echo "Setting screen_size and fullscreen in ${CONFIG}" | tee -a ${LOG}
-sudo sed -i -e "0,/^screen_size=/{s/screen_size=.*/screen_size=${SCREEN_SIZE}/}" ${CONFIG}
-sudo sed -i -e "0,/^fullscreen=/{s/fullscreen=.*/fullscreen=yes/}" ${CONFIG}
-sudo sed -i -e "0,/^display_type/{s/display_type.*/display_type=${DISPLAY_TYPE}/}" ${CONFIG}
-grep "^screen_size=" ${CONFIG} | tee -a ${LOG}
-grep "^fullscreen=" ${CONFIG} | tee -a ${LOG}
-grep "^display_type=" ${CONFIG} | tee -a ${LOG}
-
-echo "" | tee -a ${LOG}
-echo "Add startx and FRAMEBUFFER device in ${BASH_PROFILE}" | tee -a ${LOG}
-touch ${BASH_PROFILE}
-grep "FRAMEBUFFER" ${BASH_PROFILE}
-if [[ $? != 0 ]]; then      # Do not separate from above 
-    echo "" | tee -a ${LOG}
-    echo "Setting up framebuffer configuration in ${BASH_PROFILE}" | tee -a ${LOG}
-    if [[ ${rpi_model} -ge '5' ]]; then
-        echo "export FRAMEBUFFER=/dev/fb1" >> ${BASH_PROFILE}
-    else
-        echo "export FRAMEBUFFER=/dev/fb0" >> ${BASH_PROFILE}
-    fi 
-    echo "startx 2> /tmp/xorg_errors" >> ${BASH_PROFILE}
 fi
 
 echo "" | tee -a ${LOG}
 sudo touch ${FBTURBO}
 sudo grep "fbturbo" ${FBTURBO}
 if [[ $? != 0 ]];then
-        echo "Setting up ${FBTURBO}" | tee -a ${LOG}
-        sudo touch ${FBTURBO}
-        sudo tee -a ${FBTURBO}  <<EOF
+	echo "Setting up ${FBTURBO}" | tee -a ${LOG}
+	sudo touch ${FBTURBO}
+	sudo tee -a ${FBTURBO}  <<EOF
 Section "InputClass"
         Identifier      "Allwinner A10/A13 FBDEV"
         Driver          "fbturbo"
@@ -291,6 +334,23 @@ Section "InputClass"
 EndSection
 EOF
 fi
+
+if [[ -f /etc/radiod.conf ]]; then
+    echo "" | tee -a ${LOG}
+    echo "Setting screen_size and fullscreen in ${CONFIG}" | tee -a ${LOG}
+    sudo sed -i -e "0,/^screen_size=/{s/screen_size=.*/screen_size=${SCREEN_SIZE}/}" ${CONFIG}
+    sudo sed -i -e "0,/^fullscreen=/{s/fullscreen=.*/fullscreen=yes/}" ${CONFIG}
+    sudo sed -i -e "0,/^display_type/{s/display_type.*/display_type=${DISPLAY_TYPE}/}" ${CONFIG}
+    grep "^screen_size=" ${CONFIG} | tee -a ${LOG}
+    grep "^fullscreen=" ${CONFIG} | tee -a ${LOG}
+    grep "^display_type=" ${CONFIG} | tee -a ${LOG}
+fi
+
+echo "" | tee -a ${LOG}
+echo "Setting up framebuffer configuration in ${BASH_PROFILE}" | tee -a ${LOG}
+sudo echo "export FRAMEBUFFER=/dev/fb1" > ${BASH_PROFILE}
+sudo echo "startx 2> /tmp/xorg_errors" >> ${BASH_PROFILE}
+cat  ${BASH_PROFILE} | tee -a ${LOG}
 
 # For some reason  labwc/autostart will not start gradio.py on a small touchscreen
 # This workaround launches gradio.py from .profile (Ignored if using an SSH login"
@@ -304,20 +364,13 @@ if [[ $? != 0 ]]; then      # Do not seperate from above
     echo "sudo ${GRADIO} &" >> ${PROFILE}
 fi
 
-
-if [[ $(release_id) -ge 13 ]]; then
-    BOOT_TYPE=B2    # Trixie console
-else
-    BOOT_TYPE=B1    # Bookworm console
-fi
-
 echo ""  | tee -a ${LOG} 
 echo "Set CLI to auto login (User ${USER})"  | tee -a ${LOG} 
-CMD="sudo -u ${USER} sudo raspi-config nonint do_boot_behaviour ${BOOT_TYPE}"
+CMD="sudo -u ${USER} sudo raspi-config nonint do_boot_behaviour B2"
 echo ${CMD}  | tee -a ${LOG};
 ${CMD} | tee -a ${LOG};
 sleep 2 # Important, allow raspi-config to finish
-CMD="sudo -u ${USER} sudo raspi-config nonint do_wayland W1 &"
+CMD="sudo -u ${USER} sudo raspi-config nonint do_wayland W1"
 echo ${CMD}  | tee -a ${LOG};
 ${CMD} | tee -a ${LOG};
 
