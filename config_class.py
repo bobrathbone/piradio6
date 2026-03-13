@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.141 2026/01/26 13:44:45 bob Exp $
+# $Id: config_class.py,v 1.142 2026/02/28 10:14:33 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1425,7 +1425,7 @@ class Configuration:
         if rows < 5:
             rows = 5
         elif rows > 11:
-            rows = 5
+            rows = 11
         self._search_window_rows = rows
 
     # Fullscreen option for graphical screen

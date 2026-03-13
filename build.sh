@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: build.sh,v 1.21 2025/10/11 09:25:17 bob Exp $
+# $Id: build.sh,v 1.22 2026/02/28 10:04:07 bob Exp $
 # Build script for the Raspberry PI radio
 # Run this script as user pi and not root
 
@@ -34,7 +34,7 @@ if [[ "$EUID" -eq 0 ]];then
     exit 1
 fi
 
-echo "Building radiod package $(date)"
+echo "Building radiod package version ${VERSION} $(date)"
 
 DEBPKG=${PKG}_${VERSION}_all.deb
 echo "Buiding ${DEBPKG}"

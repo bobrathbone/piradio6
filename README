@@ -13,10 +13,12 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.3 release notes
 -------------------------
-Release 18th February 2026 - Build 1
+Release 12th March 2026 - Build 2
 1) Added Waveshare 3.5" SPI touchscreen and installation script
 2) Added Osoyoo 3.5" SPI touchscreen and installation script
-3) Improved diagnostic information
+3) Added support for the Osoyoo 5" DSI touchscreen 
+4) Improved diagnostic information
+5) Correct BBC2 displaying BBC1 artwork ( - character in station name)
 
 Version 8.2 release notes
 -------------------------

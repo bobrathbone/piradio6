@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio - Album artwork extraction from current URL 
 #
-# $Id: artwork_class.py,v 1.21 2026/02/19 14:16:29 bob Exp $
+# $Id: artwork_class.py,v 1.22 2026/03/12 09:26:03 bob Exp $
 #
 # Authors : Bob Rathbone and Jeff (musicalic)
 # Site    : http://www.bobrathbone.com
@@ -109,10 +109,13 @@ class Artwork:
         cover_url = ""
         try:
             # try to extract the singer and the name of the song
+            print("info:" ,broadcast_info)
             try:
                 title = broadcast_info[broadcast_info.index(":")+1 :] 
             except:
                 title = broadcast_info
+            title = title.replace('-',' ')  # Remove - sign (causes lookup errors)
+            title = title.replace('  ',' ')  # Remove double spaces
             title = urllib.parse.quote_plus(title)   # Convert spaces to + signs
             print("Title",title)
             url = BASE_URL + title + "&key=" + KEY + "&secret=" + SECRET
