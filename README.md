@@ -1,14 +1,8 @@
-Radiod - Raspberry Pi Internet Radio 
-
-===== 
+# Radiod - Raspberry Pi Internet Radio 
 
 **Radiod** is a full feature radio front end for MPD which offers support for a variety of different LCDs, OLEDs and TFTs. There is also a touch-screen version available. User selection of radio streams or music tracks and volume setting, menus etc. can be done using rotary encoders, push buttons or even an IR remote control. Display shows date/time, station/track, artist and volume setting.
 
-
-
-Platform
-
-======
+## Platform
 
 Runs on
 
@@ -207,5 +201,6 @@ Licences
 
 
 See [bobrathbone.com/raspberrypi/pi_internet_radio.html](https://bobrathbone.com/raspberrypi/pi_internet_radio.html) for further information
+
 
 
