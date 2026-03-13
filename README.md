@@ -20,19 +20,13 @@ Runs on
 
 
 
-Pre-requisites
-
-=========
+## Pre-requisites
 
 Raspberry Pi Bookworm or Trixie Operating System, 32 or 64-Bit Architecture
 
 Music Player Daemon (**MPD**), python-mpd
 
-
-
-Features
-
-======
+## Features
 
 - Choice of push-button or rotary encoder interface
 
@@ -50,9 +44,7 @@ Features
 
 
 
-Supported Hardware
-
-==============
+# Supported Hardware
 
 ## Displays
 
@@ -116,11 +108,9 @@ Supported Hardware
 
 - IR remote control facility using TSOP382xx series sensor or FLIRC dongle
 
+# Installation
 
-
-Installation from the Bob Rathbone Web site
-
-===========================================
+## Installation from the Bob Rathbone Web site
 
 Normally you should install the **radiod** from the  Bob Rathbone Web site.
 
@@ -128,13 +118,7 @@ See [https://bobrathbone.com/raspberrypi/pi_internet_radio.html](https://bobrath
 
 Full instructions will be found in the **Raspberry Pi Internet Radio Constructors Manual**
 
-
-
-
-
-Downloading and creating the radiod package
-
-===========================================
+## Downloading and creating the radiod package
 
 To create the radiod Debian package log into the Raspberry Pi and clone the source tree from GitHub.
 
@@ -190,9 +174,7 @@ radio-config
 
 
 
-Licences
-
-=====
+# Licences
 
 **radiod** is released under the
 
@@ -201,6 +183,7 @@ Licences
 
 
 See [bobrathbone.com/raspberrypi/pi_internet_radio.html](https://bobrathbone.com/raspberrypi/pi_internet_radio.html) for further information
+
 
 
 
