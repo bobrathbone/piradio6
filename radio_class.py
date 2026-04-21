@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.235 2026/01/26 08:30:25 bob Exp $
+# $Id: radio_class.py,v 1.239 2026/04/21 06:43:37 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -218,6 +218,8 @@ class Radio:
 
     connected = False   # Connection status
     recording = False   # Recording station
+
+    use_search_name = False     # Use search name for artwork lookup (gradio.py)
 
     # Configuration files in /var/lib/radiod 
     ConfigFiles = {
@@ -1780,7 +1782,6 @@ class Radio:
     # Check if external client has change the source between RADIO and MEDIA
     # It raises a MPD_CLIENT_CHANGE interrupt
     def checkClientChange(self):
-        #x = ""
         changed = False
         source_type = self.source.getType()
         self.currentsong = self.client.currentsong()
@@ -1806,7 +1807,6 @@ class Radio:
             changed = True
             self.current_id = current_id
             self.storeIntegerValue (self.current_id,CurrentStationFile)
-            #x = self.getSearchName()
 
         elif current_volume != None:
             current_volume = int(current_volume)
@@ -1991,13 +1991,25 @@ class Radio:
             if byindex:
                 self.search_index = self.getCurrentID()  - 1
             name = self.getStationName(self.search_index) 
+
             if len(name) > 0:
                 name = self.translate.all(name)
 
         except Exception as e:
             log.message("radio.getSearchName: " + str(e), log.DEBUG)
             name = "Bad stream (" + str(self.current_id) + ")"
+
+        leng = len(name)
+        if leng > 1 and '*' == name[leng - 1]:
+            self.use_search_name = True
+            name = name[:leng-1] # Strip '*'
         return name
+
+    # Use search name for Artwork lookup
+    def useSearchName(self):
+        ret = self.use_search_name 
+        self.use_search_name = False
+        return ret
 
     # Get the currently playing radio station name from mpd 
     def getCurrentStationName(self):
@@ -2561,13 +2573,21 @@ class Radio:
         try:
             if len(self.PL.searchlist) > 0: 
                 stationName = self.PL.searchlist[index] 
+                # If an * at the end of the search name set flag to force gradio to
+                # use the search name instead of the stream name to lookup artwork
+                leng = len(stationName)
+                if leng > 1 and '*' == stationName[leng - 1]:
+                    self.use_search_name = True
+                    name = stationName[:leng-1] # Strip '*'
 
             if stationName != self.stationName and len(stationName) > 0:
                 log.message ("Station " + str(index+1) + ": " \
                     + str(stationName), log.DEBUG)  
                 self.stationName = stationName
+                self.event.set(self.event.MPD_CLIENT_CHANGE) # Signal station change
         except Exception as e:
             log.message("radio.getStationName " + str(e), log.ERROR)
+
         return stationName
 
     # Get track name by Index
@@ -2882,7 +2902,6 @@ class Radio:
     def playlistChange(self):
         if self.config.update_playlists:
             self.event.set(self.event.PLAYLIST_CHANGED)
-            print("event.PLAYLIST_CHANGED sent!")
 
 # End of Radio Class
 

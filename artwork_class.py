@@ -2,7 +2,7 @@
 #
 # Raspberry Pi Radio - Album artwork extraction from current URL 
 #
-# $Id: artwork_class.py,v 1.22 2026/03/12 09:26:03 bob Exp $
+# $Id: artwork_class.py,v 1.30 2026/04/20 08:53:07 bob Exp $
 #
 # Authors : Bob Rathbone and Jeff (musicalic)
 # Site    : http://www.bobrathbone.com
@@ -26,27 +26,34 @@ from io import BytesIO
 
 # To get a new token see: https://www.discogs.com/developers/#page:authentication
 # https://www.discogs.com/applications/edit/113086
-KEY="jVQGatBjapPdPYDyWRfk"
-SECRET="ZrvMKBRaMaSRAGWODIbNELrNfEfxIwou"
+
 #Request Token URL   https://api.discogs.com/oauth/request_token
 #Authorize URL   https://www.discogs.com/oauth/authorize
 #Access Token URL    https://api.discogs.com/oauth/access_token
 # Example "https://api.discogs.com/database/search?q='Radio&nbsp;Caroline'&key=jVQGatBjapPdPYDyWRfksecret=ZrvMKBRaMaSRAGWODIbNELrNfEfxIwou"
 
-#API_DISCOGS_TOKEN = "SkLpyuNUuVTglclfwrvdBuxiucbjCFwMaXKLsAOg" No longer used
-BASE_URL = "https://api.discogs.com/database/search?q="
+BASE_URL = "https://api.discogs.com/database/search?type=all&q="
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 
 # Artwork handler class
 class Artwork:
+
+    discogs_key = "jVQGatBjapPdPYDyWRfk"
+    discogs_password = "ZrvMKBRaMaSRAGWODIbNELrNfEfxIwou"
     
     image_file = "/var/lib/radiod/radio_image.jpg"
     no_image = "images/no_image.jpg" 
     log = None      # Logging object (See logit routine)
 
-    def __init__(self,log=None): 
+    def __init__(self,log=None,config=None): 
         if log != None:
             self.log = log
+
+        if config != None:
+            self.discogs_key = config.discogs_key
+            self.discogs_password = config.discogs_password
+            self.logit(self.discogs_key)
+            self.logit(self.discogs_password)
         return
 
     # Log if available else print message
@@ -59,9 +66,28 @@ class Artwork:
     def getCoverImageFromInfo(self,broadcast_info):
         coverImage = None 
         coverURL = self.getCoverURL(broadcast_info)
-        if coverURL != None and ':' in coverURL :
+        if coverURL != '' and ':' in coverURL :
             coverImage = self.getCoverImageFromURL(coverURL)
         return coverImage
+
+    # Get album information from MPD (MEDIA)
+    def get_album_info(self,client):
+        broadcast_info = ""
+        try:
+            currentsong = client.currentsong()
+            artist = currentsong.get("artist")
+            title = currentsong.get("title")
+            album = currentsong.get("album")    # Not used
+            if artist != None:
+                broadcast_info = artist
+            if title != None and artist != None:
+                broadcast_info = broadcast_info + ' : ' + title
+        except Exception as e:
+            self.logit(e)
+            print(e)
+            broadcast_info = ""
+            pass
+        return broadcast_info
 
     # Get the broadcast info from the current radio station or track
     # If radio client not available then use subprocess.run 
@@ -77,11 +103,20 @@ class Artwork:
             try:
                 currentsong = client.currentsong()
                 name = currentsong.get("name")
+                if name == None:
+                    name = ''
                 title = currentsong.get("title")
-                if name != None and title != None:
+
+                if title == None:
+                    title = ''
+
+                if name != '' and title != '':
                     broadcast_info = name + ': ' + title
-                elif name != None:
+                elif name == '':
+                    broadcast_info = title
+                else:
                     broadcast_info = name
+
             except Exception as e:
                 self.logit(e)
                 print(e)
@@ -89,6 +124,7 @@ class Artwork:
                 pass
         return broadcast_info
 
+    # Get cover artwork image from URL
     def getCoverImageFromURL(self,cover_url):
         coverImage = None
         try:
@@ -109,7 +145,7 @@ class Artwork:
         cover_url = ""
         try:
             # try to extract the singer and the name of the song
-            print("info:" ,broadcast_info)
+            # print("Title:" ,broadcast_info)
             try:
                 title = broadcast_info[broadcast_info.index(":")+1 :] 
             except:
@@ -117,8 +153,7 @@ class Artwork:
             title = title.replace('-',' ')  # Remove - sign (causes lookup errors)
             title = title.replace('  ',' ')  # Remove double spaces
             title = urllib.parse.quote_plus(title)   # Convert spaces to + signs
-            print("Title",title)
-            url = BASE_URL + title + "&key=" + KEY + "&secret=" + SECRET
+            url = BASE_URL + title + "&key=" + self.discogs_key + "&secret=" + self.discogs_password
 
             # https://developer.mozilla.org/en-US/docs/Web/API/Response
             #response = requests.get(url, headers=HEADERS)  # Causes 403 error ?
@@ -130,11 +165,40 @@ class Artwork:
                     # Extract the URL of the art cover image
                     cover_url = data['results'][0]['cover_image']
                     if not(isinstance(cover_url, str)):
-                        cover_url = None
+                        cover_url = ""  
                     self.logit("Artwork %s" % cover_url)
         except Exception as e:
             self.logit(str(e))
         return cover_url 
+    
+    # Get artwork by name (eg. artist, station or track etc)
+    # Example https://www.discogs.com/search?q=BBC1
+    def getArtworkByName(self,name):
+        coverImage = None 
+        cover_url = ''
+        name = urllib.parse.quote_plus(name)   # Convert spaces to + signs
+        url = BASE_URL + name + "&key=" + self.discogs_key + "&secret=" + self.discogs_password
+       
+        try:
+            #response = requests.get(url)
+            response = requests.get(url, headers=HEADERS)  # Causes 403 error ?
+            type = response.headers['content-type']
+            if type == 'application/json':
+                data = response.json() # Python dictionary
+                if len(data['results']) > 1:
+                    # Extract the URL of the art cover image
+                    cover_url = data['results'][0]['cover_image']
+                    if not(isinstance(cover_url, str)):
+                        cover_url = ''
+                    self.logit("Artwork %s" % cover_url)
+
+            if cover_url != '':
+                coverImage = self.getCoverImageFromURL(cover_url)
+
+        except Exception as e:
+            self.logit(str(e))
+    
+        return coverImage
 
     # Execute a system command
     def execCommand(cmd):

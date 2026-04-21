@@ -261,6 +261,13 @@ Action when muting MPD. Options: pause(Stream continues but not processed) or st
 Shoutcast ID needed to access Shoutcast radio streams
 **shoutcast_key=anCLSEDQODrElkxl**
 
+Discogs Artwork database authorisation key and password (see artwork_class.py)
+To request Token URL   [https://api.discogs.com/oauth/request_token](https://api.discogs.com/oauth/request_token)
+To authorize URL   [https://www.discogs.com/oauth/authorize](https://www.discogs.com/oauth/authorize)
+To get Access token URL  [https://api.discogs.com/oauth/access_token](https://api.discogs.com/oauth/access_token)
+**discogs_key=jVQGatBjapPdPYDyWRfk**
+**discogs_password=ZrvMKBRaMaSRAGWODIbNELrNfEfxIwou**
+
 Display Pimoroni PHat Beat (pivumeter)
 **pivumeter=no**
 

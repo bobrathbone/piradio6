@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.61 2026/02/05 09:32:33 bob Exp $
+# $Id: configure_radio.sh,v 1.63 2026/04/18 12:16:15 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -911,7 +911,8 @@ if [[ ${DISPLAY_TYPE} == "LUMA" ]]; then
         "4" "SSD1309 monochrome OLED " \
         "5" "SSD1325 monochrome OLED " \
         "6" "SSD1331 monochrome OLED " \
-        "7" "WS0010 monochrome OLED " 3>&1 1>&2 2>&3) 
+        "7" "SSD1322 monochrome OLED " \
+        "8" "WS0010 monochrome OLED " 3>&1 1>&2 2>&3) 
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -944,6 +945,10 @@ if [[ ${DISPLAY_TYPE} == "LUMA" ]]; then
             DISPLAY_TYPE="${DISPLAY_TYPE}.SSD1331"
 
         elif [[ ${ans} == '7' ]]; then
+            DESC="SSD1322 monochrome OLED"
+            DISPLAY_TYPE="${DISPLAY_TYPE}.SSD1322"
+
+        elif [[ ${ans} == '8' ]]; then
             DESC="WS0010 monochrome OLED"
             DISPLAY_TYPE="${DISPLAY_TYPE}.WS0010"
         fi

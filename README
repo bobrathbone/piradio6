@@ -13,12 +13,17 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.3 release notes
 -------------------------
-Release 12th March 2026 - Build 2
+Release 20th April 2026 - Build 4
 1) Added Waveshare 3.5" SPI touchscreen and installation script
 2) Added Osoyoo 3.5" SPI touchscreen and installation script
 3) Added support for the Osoyoo 5" DSI touchscreen 
 4) Improved diagnostic information
 5) Correct BBC2 displaying BBC1 artwork ( - character in station name)
+6) Discogs Artwork database key and password now specified in /etc/radiod.conf
+7) Media artist/track artwork now supplied by the Discogs database
+8) Corrected incorrect playlist type when selecting media playlists
+9) Get discogs artwork from search name if not found using station url
+10) Downloaded Discogs artwork now written to Ram Disk to save SD card writes
 
 Version 8.2 release notes
 -------------------------

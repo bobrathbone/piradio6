@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.142 2026/02/28 10:14:33 bob Exp $
+# $Id: config_class.py,v 1.144 2026/04/20 08:53:07 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -165,6 +165,10 @@ class Configuration:
     # Shoutcast ID
     _shoutcast_key = "anCLSEDQODrElkxl"
 
+    # Discogs authorisation key and password
+    _discogs_key = "jVQGatBjapPdPYDyWRfk"
+    _discogs_password = "ZrvMKBRaMaSRAGWODIbNELrNfEfxIwou"
+
     # Internet check URL and port number
     _internet_check_url="google.com"
     _internet_check_port=80
@@ -196,6 +200,8 @@ class Configuration:
     _display_shutdown_button = True    # Shutdown button
     _shutdown_command = "sudo shutdown -h now"   # Shutdown command
     _display_icecast_button = False # Display Icecast button 
+    _ramdisk = '/mnt/ramdisk'  # Ram disk location for gradio.py artwork
+    _ramdisk_size = '10M'      # Ram disk size 
 
     # Parameters specific to the vintage graphic radio
     _scale_labels_color = 'white'    # Vintage screen labels colour
@@ -205,6 +211,7 @@ class Configuration:
     _splash_screen = 'bitmaps/raspberry-pi-logo.bmp' # Splash screen (OLED)
     _screen_size = (800,480)     # Screen size 800x480 (7 inch) or 720x480 (3.5 inch)
     _search_window_rows=8        # Search window number of rows
+
     # Colours for Adafruit LCD
     color = { 'OFF': 0x0, 'RED' : 0x1, 'GREEN' : 0x2, 'YELLOW' : 0x3,
           'BLUE' : 0x4, 'VIOLET' : 0x5, 'TEAL' : 0x6, 'WHITE' : 0x7 }
@@ -617,6 +624,12 @@ class Configuration:
                 elif option == 'shoutcast_key':
                     self.shoutcast_key = parameter
 
+                elif option == 'discogs_key':
+                    self.discogs_key = parameter
+
+                elif option == 'discogs_password':
+                    self.discogs_password = parameter
+
                 elif option == 'internet_check_url':
                     self.internet_check_url = parameter
 
@@ -679,6 +692,12 @@ class Configuration:
 
                 elif option == 'pivumeter':
                     self.pivumeter = parameter
+
+                elif option == 'ramdisk':
+                    self.ramdisk = parameter
+
+                elif option == 'ramdisk_size':
+                    self.ramdisk_size = parameter
 
                 else:
                     msg = "Invalid option " + option + ' in section ' \
@@ -1584,6 +1603,24 @@ class Configuration:
     def shoutcast_key(self, parameter):
         self._shoutcast_key = parameter
 
+    # Discogs key
+    @property
+    def discogs_key(self):
+        return self._discogs_key
+
+    @discogs_key.setter
+    def discogs_key(self, parameter):
+        self._discogs_key = parameter
+
+    # Discogs password
+    @property
+    def discogs_password(self):
+        return self._discogs_password
+
+    @discogs_password.setter
+    def discogs_password(self, parameter):
+        self._discogs_password = parameter
+
     # Bluetooth device
     @property
     def bluetooth_device(self):
@@ -1763,6 +1800,24 @@ class Configuration:
     def display_icecast_button(self, parameter):
         self._display_icecast_button = self.convertYesNo(parameter)
 
+    # Ram disk location for gradio.py artwork
+    @property
+    def ramdisk(self):
+        return self._ramdisk
+
+    @ramdisk.setter
+    def ramdisk(self, parameter):
+        self._ramdisk = parameter
+
+    # Ram disk size for gradio.py artwork
+    @property
+    def ramdisk_size(self):
+        return self._ramdisk_size
+
+    @ramdisk_size.setter
+    def ramdisk_size(self, parameter):
+        self._ramdisk_size = parameter
+
     # RGB I2C Rotary Encoder Hex addresses
     @property
     def volume_rgb_i2c(self):
@@ -1907,6 +1962,8 @@ if __name__ == '__main__':
     print ("Do shutdown on exit (shutdown):",TrueFalse2yn(config.shutdown))
     print ("Comitup IP (comitup_ip):",config.comitup_ip)
     print ("Shoutcast key (shoutcast_key):", config.shoutcast_key)
+    print ("Discogs key (discogs_key):", config.discogs_key)
+    print ("Discogs password (discogs_password):", config.discogs_password)
 
     print('')
     print ("Volume range (volume_range):", config.volume_range)
@@ -2019,6 +2076,10 @@ if __name__ == '__main__':
     print ("Cleanup Recordings directory (record_cleanup):",config.record_cleanup)
     print ("Load Recordings playlist (load_recordings):",config.load_recordings)
     
+    print ("\nRamdisk settings for gradio.py artwork")
+    print ("Ramdisk location (ramdisk):",config.ramdisk)
+    print ("Ramdisk size (ramdisk_size):",config.ramdisk_size)
+
     print ("\n[SCREEN] section")
     print ("----------------")
     print ("Graphic screen size (screen_size):", config.screen_size)

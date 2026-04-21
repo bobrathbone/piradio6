@@ -1,6 +1,6 @@
 #!/bin/bash
 # Raspberry Pi Internet Radio display configuration for analysis
-# $Id: display_config.sh,v 1.5 2025/12/12 09:58:04 bob Exp $
+# $Id: display_config.sh,v 1.7 2026/03/23 17:00:27 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -37,6 +37,7 @@ EMAIL=bob@bobrathbone.com
 LXSESSION=/home/${USR}/.config/lxsession
 MPDLIB=/var/lib/mpd
 BLUETOOTHCTL=/usr/bin/bluetoothctl
+DATETIMECTL=/usr/bin/timedatectl
 # The LXDE sub directory can be plain LXDE or LXDE-${USR}
 AUTOSTART="${LXSESSION}/LXDE*/autostart"
 WAYFIRE_INI=~/.config/wayfire.ini
@@ -125,7 +126,7 @@ if [[ -f /usr/bin/startx ]]; then
             echo "Graphic versions of the radio not configured in ${AUTOSTART}" | tee -a ${LOG}
         fi
 
-    elif [[ ${X} == "Wayland" ]]; then
+    elif [[ ${X} == "Wayland" &&  -f ${WAYFIRE_INI} ]]; then
         echo; 
         echo "${WAYFIRE_INI} file autostart configuration" | tee -a ${LOG}
         grep "\[autostart\]" ${WAYFIRE_INI} | tee -a ${LOG}
@@ -315,6 +316,13 @@ echo "IP route:" | tee -a ${LOG}
 ip route | tee -a ${LOG}
 
 ${DIR}/scripts/display_wifi.sh | tee -a ${LOG}
+
+if [[ -x ${DATETIMECTL} ]]; then
+    echo | tee -a ${LOG}
+    echo "Network Time (NTP)" | tee -a ${LOG}
+    echo "------------------" | tee -a ${LOG}
+    ${DATETIMECTL} timesync-status
+fi
 
 echo | tee -a ${LOG}
 echo "=================== End of run =====================" | tee -a ${LOG}

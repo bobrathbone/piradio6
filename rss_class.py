@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: latin-1 -*-
 #
-# $Id: rss_class.py,v 1.4 2021/07/13 09:06:44 bob Exp $
+# $Id: rss_class.py,v 1.7 2026/03/13 17:14:58 bob Exp $
 # Raspberry Pi RSS feed class
 #
 # Author : Bob Rathbone
-# Site   : http://www.bobrathbone.com
+# Site   : https://www.bobrathbone.com
 #
 # License: GNU V3, See https://www.gnu.org/copyleft/gpl.html
 #
@@ -26,6 +26,10 @@ from log_class import Log
 log = Log()
 url = "/var/lib/radiod/rss"
 DELAY = 5
+
+headers = {  
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'  
+}  
 
 class Rss:
     rss = []    # Array for the RSS feed
@@ -58,6 +62,7 @@ class Rss:
 
     # Gets the next RSS entry from the rss array
     def getFeed(self):
+        feed = "Invalid RSS file"
         self.feed_available = False
         line = "No RSS feed"
         if self.length < 1:
@@ -95,7 +100,8 @@ class Rss:
         if os.path.isfile(url):
             rss_feed = self.execCommand("cat " + url)
             try:
-                file = urllib.request.urlopen(rss_feed)
+                req = urllib.request.Request(rss_feed, headers=headers)
+                file = urllib.request.urlopen(req, timeout=10)
                 data = file.read()
                 file.close()
                 dom = parseString(data)
@@ -103,11 +109,12 @@ class Rss:
                 rss = self.parse_feed(dom)
                 self.rss_error = False # Clear RSS Error
                 log.message("Getting RSS feed: " + rss_feed,log.INFO)
-            except:
+            except Exception as e:
                 if not self.rss_error:
-                    log.message("Invalid RSS feed: " + rss_feed,log.ERROR)
+                    msg = "Invalid RSS feed: " + rss_feed
+                    log.message(str(e),log.ERROR)
                     self.rss_error = True  # Set RSS error
-                rss.append("No RSS feed found")
+                    rss.append(msg)
         return rss
         
     # Parse XML line
@@ -252,6 +259,27 @@ class Rss:
         return self.rss_line2
 
 # End of class
+if __name__ == "__main__":
+    import sys
+    import time
+
+    from translate_class import Translate
+    translate  = Translate()
+    rss = Rss(translate)
+
+    rss_line = '' 
+
+    if rss.isAvailable():
+        while True:
+            try:
+                rss_line = rss.getFeed()
+                print(rss_line)
+                time.sleep(4)
+            except KeyboardInterrupt:
+                sys.exit(0)
+    else:
+        print("No RSS feed available")
+        sys.exit(1) 
 
 # set tabstop=4 shiftwidth=4 expandtab
 # retab

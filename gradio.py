@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.108 2026/02/02 05:15:48 bob Exp $
+# $Id: gradio.py,v 1.123 2026/04/20 12:37:17 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -93,9 +93,10 @@ RadioLib =  "/var/lib/radiod"
 MediaArtworkFile = "/tmp/artwork.jpg"
 wallpaper = ''      # Background wallpaper
 artwork_file = ""   # Album artwork file name
-station_artwork_file = RadioLib + "/radio_artwork.jpg"
+station_artwork_file =  RadioLib + "/radio_artwork.jpg"
 album_artwork_file = RadioLib + "/album_artwork.jpg"
 no_image_file = "images/no_image.jpg"
+last_info = ''  # Station/track information change
 
 # Signal SEGV and ABRT handler - Try to dump core
 def signalCrash(signal,frame):
@@ -230,7 +231,8 @@ def displayInfo(screen,font,radio,message):
     max_columns = columns - 8
 
     # Get info
-    version = radio.getVersion()    
+    #version = radio.getVersion()    
+    version = radio.getBuild()    
     MpdVersion = radio.getMpdVersion()
     sVersion = "Radio version " + version + ", MPD version " + MpdVersion
     ipaddr = message.getIpAddress()
@@ -511,9 +513,8 @@ def drawRightArrow(display,screen,RightArrow):
     RightArrow.draw(screen,path,(myPos),(mysize))
     return 
 
-# Display Artwork
+# Display Artwork. Needs to cope with varying artwork sizes
 def displayArtwork(screen,display,path):
-    #radio.getCurrentID()    # Make sure seek is complete
     # Get size of original image and get ratio of height to width
     OrigImage = pygame.image.load(path)
     size = OrigImage.get_size() 
@@ -538,10 +539,14 @@ def displayArtwork(screen,display,path):
     ratio1 = 0.28
     ratio2 = 0.85
     desktop_info = pygame.display.Info()
-    screen_width = desktop_info.current_w
-    xLimit1 = int(screen_width * ratio1)
-    xLimit2 = int(screen_width * ratio2)
-    xPos = int(screen.rect.center[0] - (mysize[0]/2))
+
+    # Get window size (not screensize)
+    winsize = display.config.screen_size
+    xLimit1 = int(winsize[0] * ratio1)
+    xLimit2 = int(winsize[0] * ratio2)
+
+    xPos = int(winsize[0]/2 - (mysize[0]/2))
+    size = display.config.screen_size
     if xPos < xLimit1:
         xPos = xLimit1
     if xLimit1 + mysize[0] > xLimit2:
@@ -562,63 +567,71 @@ def renderText(text,myfont,screen,row,column,color):
     screen.blit(textsurface,(column,row))
     return
 
-# Return artwork from current station or track 
-# The first artwork is from the station, subsequent are track/artist artwork
-def getArtwork(station_artwork=False):
-    if source_type == radio.source.MEDIA:
-        artwork_file = getMediaArtwork(radio)
-    else:
-        artwork_file = getRadioArtwork(station_artwork)
-    return artwork_file
-
-# Handle artwork change. The first artwork is the station artwork. 
+# Handle artwork change. Quite often the first artwork returned is the station artwork. 
 # Subsequent requests are for the album artwork (controlled by station_artwork)
-def getRadioArtwork(station_artwork=False):
+# This routine provides artwork for both radio stations and media files 
+# from the Discogs database. broadcast_info take form <name>:<title>
+def getArtwork(station_artwork=False):
     global last_info
-    last_info = None
-    broadcast_info = artwork.get_broadcast_info(radio.client)
-    log.message(broadcast_info, log.DEBUG)
-    #shutil.copyfile(no_image_file, artwork_file)
-    img = artwork.getCoverImageFromInfo(broadcast_info)
-    artwork_file = album_artwork_file
-    if img != None and broadcast_info != last_info:
-        if station_artwork:
-            artwork_file = station_artwork_file
-            #print("station_artwork_file",station_artwork_file)
-        else:
-            artwork_file = album_artwork_file
-            #print("album_artwork_file",album_artwork_file)
+    last_info = ''
+    source_type = radio.getSourceType()
+    search_name = radio.getSearchName(True)
+    use_search_name = radio.useSearchName()
 
+    if use_search_name:
+        log.message("Use search name" + str(use_search_name), log.DEBUG)
+
+    # Artwork for media (mp3 etc) files 
+    if source_type == radio.source.MEDIA:
+        broadcast_info =artwork.get_album_info(radio.client)
+    else:
+        # Artwork for radio stations 
+        broadcast_info = artwork.get_broadcast_info(radio.client)
+
+        # If use_search_name use the search name to lookup discogs artwork
+        if use_search_name: 
+            if len(broadcast_info) > 3:
+                parts = broadcast_info.split(':')
+                if len(parts) > 1:
+                    title = parts[1]
+                    broadcast_info = search_name + ':' + title    
+            else:
+                broadcast_info = search_name 
+
+    log.message("info: " + broadcast_info, log.DEBUG)
+    img = artwork.getCoverImageFromInfo(broadcast_info)
+
+    # If None found try looking up station name or artist name
+    
+    if img == None and source_type == radio.source.RADIO:
+        search_name = radio.getSearchName(True)
+        img = artwork.getArtworkByName(search_name)
+
+    if station_artwork:
+        artwork_file = station_artwork_file
+    else:
+        artwork_file = album_artwork_file
+
+    if img != None and broadcast_info != last_info:
         f = open(artwork_file,"wb")
         f.write(img.getbuffer())
         f.close()
         log.message("getRadioArtwork wrote %s" % artwork_file, log.DEBUG)
         last_info = broadcast_info
-    elif img == None:
-        if os.path.exists(station_artwork_file):
+
+    else:
+        if len(broadcast_info) > 0:
+            log.message("No Discogs Artwork found for %s" % broadcast_info, log.DEBUG)
+        else:
+            log.message("No broadcast_info found", log.DEBUG)
+
+        if os.path.exists(station_artwork_file):   
             try:
-                shutil.copyfile(station_artwork_file, artwork_file)
+                shutil.copyfile(no_image_file, artwork_file)
             except Exception as e:
                 print(str(e))
                 pass
-    if artwork_file == "":
-        shutil.copyfile(no_image_file, artwork_file)
-
     return artwork_file
-
-# Get artwork from track
-def getMediaArtwork(radio):
-    artwork = ""
-    if os.path.isfile(MediaArtworkFile):
-        os.remove(MediaArtworkFile)
-    filename = radio.getFileName()
-    filename = MusicDirectory + '/' + filename
-    cmd = 'ffmpeg -i ' + '"' + filename + '" ' + MediaArtworkFile + ' > /dev/null 2>&1'
-    radio.execCommand(cmd)
-    if os.path.isfile(MediaArtworkFile):
-        artwork = MediaArtworkFile
-        log.message("Artwork " + artwork, log.DEBUG)
-    return artwork
 
 # Handle radio event
 def handleEvent(radio,radioEvent):
@@ -678,6 +691,7 @@ def handleEvent(radio,radioEvent):
     elif event_type == radioEvent.MPD_CLIENT_CHANGE:
         log.message("radioEvent Client Change",log.DEBUG)
         artwork_file = getArtwork()
+        ArtworkImage = displayArtwork(screen,display,artwork_file)
 
     elif event_type == radioEvent.LOAD_RADIO or event_type == radioEvent.LOAD_MEDIA \
                or event_type == radioEvent.LOAD_AIRPLAY\
@@ -1363,6 +1377,26 @@ if __name__ == "__main__":
     size = config.screen_size
     log.message("Python version " + str(sys.version_info[0]) ,log.INFO)
 
+    # Setup ramdisk for artwork storage
+    ramdisk = config.ramdisk            # Ram disk for artwork jpegs
+    if len(ramdisk) > 1 and '/' in ramdisk:
+        ramdisk_size = config.ramdisk_size  # Ram disk size
+        radio.execCommand("sudo mkdir %s" % ramdisk) 
+        cmd = "sudo mount -t tmpfs -o size=%s tmpfs %s" % (ramdisk_size,ramdisk) 
+        radio.execCommand(cmd) 
+        station_artwork_file = ramdisk + '/' + "station_artwork_file.jpg"
+        album_artwork_file = ramdisk + '/' "album_artwork.jpg"
+
+    log.message("Station artwork: " + station_artwork_file,log.DEBUG)
+    log.message("Album artwork: " + album_artwork_file,log.DEBUG)
+
+    # Copy no_image image to artwork directory
+    try:
+        shutil.copyfile(no_image_file, station_artwork_file)
+        shutil.copyfile(no_image_file, album_artwork_file)
+    except Exception as e:
+        print(str(e))
+
     ipaddr = radio.waitForNetwork()
     
     try:
@@ -1417,7 +1451,7 @@ if __name__ == "__main__":
     radio.translate.setTranslate(False) # Switch off text translation
 
     setupRadio(radio)
-    artwork = Artwork(log=log)
+    artwork = Artwork(log=log,config=config)
 
     maxRows = display.getRows()
     largeDisplay = True
@@ -1510,7 +1544,7 @@ if __name__ == "__main__":
         blankTime = 0
 
     source_type = radio.getSourceType()
-    artwork_file = getArtwork(True)
+    display_artwork = False  # Flag to force artwork display in main loop
 
     # Main processing loop
     while run:
@@ -1722,6 +1756,7 @@ if __name__ == "__main__":
         if radioEvent.detected():
             log.message("radioEvent.detected", log.DEBUG)
             handleEvent(radio,radioEvent)
+            display_artwork = True   # Force Artwork display first time in
         elif radio.getReload():
             displayLoadingSource(screen,myfont,radio,message)
             radio.loadSource()      # Load new source
@@ -1824,6 +1859,12 @@ if __name__ == "__main__":
         # Screen blanking
         if screenBlank and display.config.fullscreen:
             screen.fill(Color(0,0,0))
+
+        # Force Artwork display first time in
+        if display_artwork:
+            artwork_file = getArtwork(True)
+            ArtworkImage = displayArtwork(screen,display,artwork_file) 
+            display_artwork = False
 
         # Update display
         pygame.display.flip()

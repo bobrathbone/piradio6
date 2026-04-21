@@ -5,7 +5,7 @@
 # the /var/lib/mpd/source.directory including the radio playlist
 # or indicates that airplay needs to be loaded (see radio_class.py)
 #
-# $Id: source_class.py,v 1.11 2024/01/15 15:26:38 bob Exp $
+# $Id: source_class.py,v 1.12 2026/04/11 09:47:56 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -205,17 +205,21 @@ class Source:
         return self._getType(self.index)
 
     # Set the type RADIO, MEDIA, AIRPLAY or SPOTIFY
+    # Set new type of playlist and get first playlist of that type
     def setType(self,type):
         idx = 0
         newtype = -1
-        playlist = self.getName()
+        newtype = self.getNewType()
         while type != newtype: 
+            print(type,newtype)
             self.cycle(UP)
             newtype = self.getNewType()
             if idx == self.new_index:
                 break
-        if type == newtype: 
-            return playlist
+        #if type == newtype: 
+        playlist = self.getName()
+        #print(self.typeNames[type])
+        return newtype
 
     # Routine to load O!MPD web interface library
     def loadOmpdLibrary(self):
