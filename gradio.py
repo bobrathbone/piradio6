@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.123 2026/04/20 12:37:17 bob Exp $
+# $Id: gradio.py,v 1.125 2026/04/28 14:19:21 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -1381,7 +1381,7 @@ if __name__ == "__main__":
     ramdisk = config.ramdisk            # Ram disk for artwork jpegs
     if len(ramdisk) > 1 and '/' in ramdisk:
         ramdisk_size = config.ramdisk_size  # Ram disk size
-        radio.execCommand("sudo mkdir %s" % ramdisk) 
+        radio.execCommand("sudo mkdir -p %s" % ramdisk) 
         cmd = "sudo mount -t tmpfs -o size=%s tmpfs %s" % (ramdisk_size,ramdisk) 
         radio.execCommand(cmd) 
         station_artwork_file = ramdisk + '/' + "station_artwork_file.jpg"
@@ -1756,7 +1756,7 @@ if __name__ == "__main__":
         if radioEvent.detected():
             log.message("radioEvent.detected", log.DEBUG)
             handleEvent(radio,radioEvent)
-            display_artwork = True   # Force Artwork display first time in
+            # XXXXXXXXXXXX DEBUG display_artwork = True   # Force Artwork display first time in
         elif radio.getReload():
             displayLoadingSource(screen,myfont,radio,message)
             radio.loadSource()      # Load new source
@@ -1804,7 +1804,7 @@ if __name__ == "__main__":
                 if len(artwork_file) > 0:
                     ArtworkImage = displayArtwork(screen,display,artwork_file)
                     IgnoreSearchEvents = True
-                else:
+                else: 
                     SearchWindow = drawSearchWindow(surface,screen,display,searchID)
 
                 # Display the information window

@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: install_recording.sh,v 1.14 2025/10/23 14:10:12 bob Exp $
+# $Id: install_recording.sh,v 1.16 2026/04/26 16:39:17 bob Exp $
 #
 # Raspberry Pi Internet Radio - Install LiquidSoap
 # This script installs and configures LiquidSoap recording utility
@@ -18,6 +18,7 @@ export LC_ALL=C
 
 FLAGS=$1
 DIR=/usr/share/radio
+
 # Test flag - change to current directory
 if [[ ${FLAGS} == "-t" ]]; then
     DIR=$(pwd)
@@ -26,6 +27,9 @@ fi
 OS_RELEASE=/etc/os-release
 LOGDIR=${DIR}/logs
 LOG=${LOGDIR}/install_record.log
+SCRIPTS_DIR=${DIR}/scripts
+PREFS_DIR=/etc/apt/preferences.d
+LIQUIDSOAP_PREF=liquidsoap.pref 
 
 sudo rm -f ${LOG}
 echo "$0 configuration log, $(date) " | tee ${LOG}
@@ -104,17 +108,6 @@ done
 # Configure record switch 
 sudo sed -i -e "0,/^record_switch=/{s/record_switch=.*/record_switch=${GPIO}/}" ${CONFIG}
 
-echo "Installing liquidsoap recording software"  | tee -a ${LOG}
-
-echo "The system needs to downgraded to the standard distribution for liquidsoap to work" | tee -a ${LOG};
-CMD="sudo apt-get dist-upgrade"
-echo ${CMD}  | tee -a ${LOG}; 
-${CMD} | tee -a ${LOG};
-
-#CMD="sudo apt-get -y install opam"
-#echo ${CMD}  | tee -a ${LOG}; 
-#${CMD} | tee -a ${LOG};
-
 echo "Release ID $(release_id) $(codename)"
 
 if [[ $(release_id) -ge 13 ]]; then
@@ -130,35 +123,17 @@ CMD="sudo apt-get install -y ${LIBS}"
 echo ${CMD} | tee -a ${LOG};
 ${CMD} | tee -a ${LOG};
 
-#CMD="sudo apt-get -y install libfdk-aac2 libjemalloc2 liblo7 libpcre3 libportaudio2"
-#echo ${CMD}  | tee -a ${LOG}; 
-#${CMD} | tee -a ${LOG};
+# Install Debian copy of liquidsoap 
+echo "Installing liquidsoap recording software"  | tee -a ${LOG}
+echo "Get liquidsoap package from the Debian repository not the Raspberry Pi one" | tee -a ${LOG};
+echo "${PREFS_DIR}/${LIQUIDSOAP_PREF}"
+if [[ ! -f ${PREFS_DIR}/${LIQUIDSOAP_PREF} ]]; then
+    CMD="sudo cp ${SCRIPTS_DIR}/${LIQUIDSOAP_PREF} ${PREFS_DIR}/${LIQUIDSOAP_PREF}"
+    echo ${CMD}; ${CMD}
+fi
 
-# Install distribution copy of liquidsoap 
-sudo apt-get install liquidsoap -y
-
-# Downgrade ffmpeg
-sudo apt-get dist-upgrade
-CMD="sudo apt-cache policy ffmpeg"
-echo ${CMD}  | tee -a ${LOG};
-${CMD} | tee -a ${LOG}
-
-CMD="sudo apt-get remove ffmpeg" 
-echo ${CMD}  | tee -a ${LOG};
-${CMD} | tee -a ${LOG}
-
-sleep 2 
-CMD="sudo apt-get install ffmpeg"
-echo ${CMD}  | tee -a ${LOG};
-${CMD} | tee -a ${LOG};
-
-echo "Create ${FFMPEG_PREF}" | tee -a ${LOG};
-TMP_PREF="/tmp/ffmpeg_pref"
-echo "Package: ffmpeg ${LIBS}" > ${TMP_PREF}
-echo "Pin: origin deb.debian.org" >> ${TMP_PREF}
-echo "Pin-Priority: 1001" >> ${TMP_PREF}
-sudo cp ${TMP_PREF} ${FFMPEG_PREF} 
-cat ${FFMPEG_PREF}
+CMD="sudo apt-get install liquidsoap -y"
+echo ${CMD}; ${CMD}
 
 echo "Configured record_switch in ${CONFIG}" | tee -a ${LOG};
 grep "^record_switch=" ${CONFIG} | tee -a ${LOG};

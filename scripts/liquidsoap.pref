@@ -1,0 +1,4 @@
+Package: ffmpeg libavcodec-dev /libavcodec[0-9]*/ /libavdevice[0-9]*/ /libavfilter[0-9]*/ libavformat-dev /libavformat[0-9]*/ libavutil-dev /libavutil[0-9]*/ /libpostproc[0-9]*/ libswresample-dev /libswresample[0-9]*/ libswscale-dev /libswscale[0-9]*
+Pin: origin deb.debian.org
+Pin-Priority: 1001
+

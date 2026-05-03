@@ -3,7 +3,7 @@
 # Raspberry Pi Graphical Internet Radio
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: vgradio.py,v 1.56 2026/01/02 15:18:26 bob Exp $
+# $Id: vgradio.py,v 1.57 2026/04/22 10:52:19 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -518,11 +518,17 @@ def drawScaleNames(screen,radio,playlist,index,maxLabels,lmargin):
     lineInc = 1
     while x < maxLabels:
         try:
-            text = uEncode(playlist[index])
+            name = uEncode(playlist[index])
         except:
             break
-        text = text[0:tSize]
-        textsurface = font.render(text, False, (color))
+        name = name[0:tSize]
+        leng = len(name)
+
+        # Strip * from station name (Only used by gradio)
+        if leng > 1 and '*' == name[leng - 1]:
+            name = name[:leng-1] # Strip '*'
+
+        textsurface = font.render(name, False, (color))
         line = (xPos,yPos)
         screen.blit(textsurface,line)
         index += 1

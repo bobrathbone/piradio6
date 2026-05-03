@@ -321,6 +321,12 @@ record_cleanup=no
 load_recordings=no
 ```
 
+Ram disk is used to store artwork jpeg's used by the full version of
+the graphical radio. It is used instead of continually writing artwork
+jpeg or png files to an SD card
+**ramdisk=/mnt/ramdisk**
+**ramdisk_size=10M**
+
 The SCREEN Section
 ==================
 Parameters for the Graphical programs **gradio.py** and **vgradio.py**
