@@ -4,7 +4,7 @@
 # Raspberry Pi Graphical Internet Radio 
 # This program interfaces with the Music Player Daemon MPD
 #
-# $Id: gradio.py,v 1.125 2026/04/28 14:19:21 bob Exp $
+# $Id: gradio.py,v 1.126 2026/05/09 14:46:30 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -579,7 +579,7 @@ def getArtwork(station_artwork=False):
     use_search_name = radio.useSearchName()
 
     if use_search_name:
-        log.message("Use search name" + str(use_search_name), log.DEBUG)
+        log.message("Use search name " + str(use_search_name), log.DEBUG)
 
     # Artwork for media (mp3 etc) files 
     if source_type == radio.source.MEDIA:

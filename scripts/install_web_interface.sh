@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Web Interface
-# $Id: install_web_interface.sh,v 1.14 2026/01/13 09:41:51 bob Exp $
+# $Id: install_web_interface.sh,v 1.16 2026/05/08 13:22:49 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -13,6 +13,9 @@
 #
 # Disclaimer: Software is provided as is and absolutly no warranties are implied or given.
 #        The authors shall not be liable for any loss or damage however caused.
+
+# This script requires an English locale(C)
+export LC_ALL=C
 
 FLAGS=$1
 DIR=/usr/share/radio
@@ -75,22 +78,13 @@ fi
 echo "$0 configuration log, $(date) " | tee ${LOG}
 echo "Installing radio Web interface for $(codename) OS " | tee -a ${LOG}
 
+echo "Stopping the Apache Web Server and MySql" | tee -a ${LOG}
+sudo apachectl stop | tee -a ${LOG}
+sudo systemctl stop mysql | tee -a ${LOG}
+
 # Apache Web server installation
 echo "Installing Apache Web server" | tee -a ${LOG}
 sudo apt-get -y install apache2 php libapache2-mod-php  | tee -a ${LOG}
-
-# Install PHP
-#if [[ $(release_id) -ge 12 ]]; then
-#    echo "Installing PHP8.2" | tee -a ${LOG}
-#    sudo apt-get -y install php8.2-gd php8.2-mbstring | tee -a ${LOG}
-#else
-#    echo "Installing PHP7.4" | tee -a ${LOG}
-#    sudo apt-get -y install php7.4-gd php7.4-mbstring | tee -a ${LOG}
-#fi
-
-# Remove redundant packages
-# Don't use autoremove as it causes problems
-#sudo apt-get -y autoremove | tee -a ${LOG}
 
 # Install MariaDB database.
 echo "Installing PHP and Radio Web software" | tee -a ${LOG}
@@ -150,13 +144,19 @@ sudo apt-get -y install mariadb-server
 sudo apt-get -y --fix-broken install | tee -a ${LOG}
 
 
-#sudo apachectl restart | tee -a ${LOG}
+echo "Restarting the Apache Web Server and MySql" | tee -a ${LOG}
+sudo apachectl restart | tee -a ${LOG}
+sudo systemctl restart mysql | tee -a ${LOG}
 
 echo "Setting up MariaDB database" | tee -a ${LOG}
 sudo mysql --execute="SELECT PASSWORD('raspberry')" | tee -a ${LOG}
 sudo mysql --execute="GRANT USAGE ON *.* TO 'pi'@'localhost' IDENTIFIED BY PASSWORD '*1844F2B11CCAEF3B31F573A1384F608BB6DE3DF9'" | tee -a ${LOG}
 sudo mysql --execute="GRANT ALL PRIVILEGES ON ompd.* TO 'pi'@'localhost'"| tee -a ${LOG}
 sudo mysql --execute="FLUSH PRIVILEGES" | tee -a ${LOG}
+
+# Remove redundant packages
+sudo apt-get -y autoremove | tee -a ${LOG}
+
 
 # Convert md files (Tutorials) to html and copy them to /var/www/html/docs
 sudo  ${SCRIPTS_DIR}/copy_html_docs.sh | tee -a ${LOG}

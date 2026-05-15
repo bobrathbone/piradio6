@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Raspberry Pi Internet Radio Configuration Class
-# $Id: config_class.py,v 1.144 2026/04/20 08:53:07 bob Exp $
+# $Id: config_class.py,v 1.145 2026/05/14 09:11:06 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -20,6 +20,7 @@ from log_class import Log
 from constants import *
 import RPi.GPIO as GPIO
 import pdb
+import locale
 
 # System files
 ConfigFile = "/etc/radiod.conf"
@@ -27,6 +28,9 @@ Airplay = "/usr/local/bin/shairport-sync"
 
 log = Log()
 config = configparser.ConfigParser(interpolation=None)
+
+loc = locale.setlocale(category=locale.LC_CTYPE)
+locale.setlocale(locale.LC_TIME,loc)
 
 class Configuration:
     # Input source
