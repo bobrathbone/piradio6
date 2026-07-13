@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=gradio
+Comment=Start graphic version of the radio
+Exec=sudo /usr/share/radio/gradio.py
+Terminal=false
+Type=Application
+NoDisplay=true
+
+

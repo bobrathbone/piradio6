@@ -1,6 +1,6 @@
 ### Commented entries have reasonable defaults.
 ### Uncomment to edit them.
-# $Id: piradio,v 1.153 2026/04/26 16:22:23 bob Exp $
+# $Id: piradio,v 1.154 2026/06/17 18:13:18 bob Exp $
 # This package must be built under Raspbian Buster or Bookworm (Not Jessie or earlier)
 # This is both the 32-bit and 64-bit version
 # Source: <source package name; defaults to package name>
@@ -93,6 +93,7 @@ Files:  radiod.py /usr/share/radio/
     no_display.py /usr/share/radio/
     radio_daemon.py /usr/share/radio/
     wiring.py /usr/share/radio/
+    radio.desktop /usr/share/radio/
     test_gpios.py /usr/share/radio/
     test_events.py /usr/share/radio/
     docs/config_tutorial.md /usr/share/radio/docs

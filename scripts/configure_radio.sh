@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio
-# $Id: configure_radio.sh,v 1.63 2026/04/18 12:16:15 bob Exp $
+# $Id: configure_radio.sh,v 1.68 2026/07/13 08:05:38 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -60,11 +60,14 @@ MANAGE_PIP2=/usr/lib/python3.13/EXTERNALLY-MANAGED  # For Trixie
 FFMPEG=/usr/bin/ffmpeg
 X_INSTALLED='no'   # 'yes' = X-Windows installed
 WALLPAPER==/usr/share/rpd-wallpaper
+SEARCH_ROWS=8   # Search window size (gradiod.py only)
+
+RADIO_DESKTOP=radio.desktop
+XDG_AUTOSTART=/etc/xdg/autostart
+
 
 # X-Window parameters
 LXSESSION="no"
-LABWC_DIR=/home/$USER/.config/labwc
-LABWC_AUTOSTART=${LABWC_DIR}/autostart
 LABWC=/usr/bin/labwc
 FULLSCREEN=""   # Start graphic radio fullscreen
 SCREEN_SIZE="800x480"   # Screen size 800x480, 720x480 or 480x320
@@ -1161,7 +1164,8 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
         "4" "7-inch TFT touch-screen (800x480)" \
         "5" "HDMI television or monitor (1024x600)" \
         "6" "Osoyoo 3.5 inch SPI touch-screen (480x320)" \
-        "7" "Do not change configuration" 3>&1 1>&2 2>&3) 
+        "7" "Osoyoo 5-inch DSI touch-screen (800x480)" \
+        "8" "Do not change configuration" 3>&1 1>&2 2>&3) 
 
         exitstatus=$?
         if [[ $exitstatus != 0 ]]; then
@@ -1185,12 +1189,12 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
         elif [[ ${ans} == '3' ]]; then
             DESC="Adafruit TFT touch-screens"
             SCREEN_SIZE="480x320"
-            #ADAFRUIT_SSD1306=1	
             ADAFRUIT_TFT=1	
 
         elif [[ ${ans} == '4' ]]; then
             DESC="7-inch TFT touch-screen (800x480)"
             SCREEN_SIZE="800x480"
+            SEARCH_ROWS=11   
 
         elif [[ ${ans} == '5' ]]; then
             DESC="HDMI television or monitor"
@@ -1206,6 +1210,10 @@ elif [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
                 exit 0
             fi
 
+        elif [[ ${ans} == '7' ]]; then
+            DESC="Osoyoo 5-inch DSI touch-screen"
+            SCREEN_SIZE="800x480"
+            SEARCH_ROWS=11   
 
         else
             DESC="Graphical display type unchanged"    
@@ -1324,26 +1332,26 @@ fi
 if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
     echo "Configuring X-Windows configuration for automatic start" | tee -a ${LOG}
     if [[ -f ${LABWC} ]]; then
-        echo "${LABWC_AUTOSTART}" | tee -a ${LOG}
+        echo "Configure ${XDG_AUTOSTART}/${RADIO_DESKTOP}" | tee -a ${LOG}
         if [[ ${LXSESSION} == "yes" ]]; then
-            if [[ ! -d ${LABWC_AUTOSTART} ]]; then
-                touch ${LABWC_AUTOSTART}
+            if [[ ! -d ${XDG_AUTOSTART}/${RADIO_DESKTOP} ]]; then
+                cmd="sudo cp ${DIR}/${RADIO_DESKTOP} ${XDG_AUTOSTART}/${RADIO_DESKTOP}"	
+                echo ${cmd} | tee -a ${LOG}
+                $cmd
+                # All "/" characters need to be escaped with "\/" for sed"
+                PROG="\/usr\/share\/radio\/${GPROG}.py"  
+                sudo sed -i -e "0,/^Exec=/{s/Exec=.*/Exec=sudo ${PROG}/}" ${XDG_AUTOSTART}/${RADIO_DESKTOP}
             fi
-            sed -i '/gradio/d' ${LABWC_AUTOSTART} >/dev/null 2>&1
-            cmd="sudo /usr/share/radio/${GPROG}.py &"
-            echo ${cmd} | tee -a ${LABWC_AUTOSTART} 
-            chown -R pi:pi ${LABWC_DIR}
-            echo "autostart: $(cat ${LABWC_AUTOSTART})" | tee -a ${LOG}
         fi
 
-        # Set up desktop radio execution icon
+        # Set up desktop radio execution icons
         echo "Setting up desktop icons in /home/${USER}/Desktop/" | tee -a ${LOG}
         cmd="sudo cp ${DIR}/Desktop/gradio.desktop /home/${USER}/Desktop/."
-        echo ${cmd}; $cmd
+        echo ${cmd} | tee -a ${LOG}
+        $cmd
         cmd="sudo cp ${DIR}/Desktop/vgradio.desktop /home/${USER}/Desktop/."
+        echo ${cmd} | tee -a ${LOG}
         echo ${cmd}; $cmd
-        sudo chmod +x /home/${USER}/Desktop/gradio.desktop
-        sudo chmod +x /home/${USER}/Desktop/vgradio.desktop
 
         echo "Setting up screen size to ${SCREEN_SIZE} pixels" | tee -a ${LOG}
         sudo sed -i -e "0,/^screen_size/{s/screen_size.*/screen_size=${SCREEN_SIZE}/}" ${CONFIG}
@@ -1354,15 +1362,17 @@ if [[ ${DISPLAY_TYPE} == "GRAPHICAL" ]]; then
         fi
         echo "fullscreen=${FULLSCREEN}" | tee -a ${LOG}
 
-        #XXXXX cmd="sudo systemctl disable radiod.service"
-        #echo ${cmd} | tee -a ${LOG}
-        #${cmd}
+        echo "Disable LCD version of the radio software" | tee -a ${LOG}
+        cmd="sudo systemctl disable radiod.service"
+        echo ${cmd} | tee -a ${LOG}
+        ${cmd}
     fi
 else
-    if [[ -f ${LABWC_AUTOSTART} ]]; then
-        echo "   ${LABWC_AUTOSTART}" | tee -a ${LOG}
-        sed -i '/gradio/d' ${LABWC_AUTOSTART}
-        sed -i '/vgradio/d' ${LABWC_AUTOSTART}
+    if [[ -f ${XDG_AUTOSTART}/${RADIO_DESKTOP} ]]; then
+    echo "Disable graphical versions of the radio" | tee -a ${LOG}
+	cmd="sudo rm -f ${XDG_AUTOSTART}/${RADIO_DESKTOP}"
+	echo ${cmd} | tee -a ${LOG}
+    ${cmd}
     fi
 fi  # End of ${DISPLAY_TYPE} == "GRAPHICAL" 
 
@@ -1411,6 +1421,7 @@ if [[ ${DISPLAY_TYPE} != "" ]]; then
     sudo sed -i -e "0,/^volume_range/{s/volume_range.*/volume_range=${VOLUME_RANGE}/}" ${CONFIG}
     sudo sed -i -e "0,/^scroll_speed/{s/scroll_speed.*/scroll_speed=${SCROLL_SPEED}/}" ${CONFIG}
     sudo sed -i -e "0,/^font_size/{s/font_size.*/font_size=${FONT_SIZE}/}" ${CONFIG}
+    sudo sed -i -e "0,/^search_window_rows/{s/search_window_rows.*/search_window_rows=${SEARCH_ROWS}/}" ${CONFIG}
 fi
 
 if [[ $DATE_FORMAT != "" ]]; then

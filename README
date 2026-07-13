@@ -13,7 +13,7 @@ To configure the radio software and components run: radio-config from the comman
 
 Version 8.3 release notes
 -------------------------
-Release 14th May 2026 - Build 7
+Release 13th July 2026 - Build 8
 1) Added Waveshare 3.5" SPI touchscreen and installation script
 2) Added Osoyoo 3.5" SPI touchscreen and installation script
 3) Added support for the Osoyoo 5" DSI touchscreen 
@@ -28,6 +28,7 @@ Release 14th May 2026 - Build 7
 12) Correct graphic radio volume display fault (displaying search window and artworkwork together)
 13) Correct Web Interface installation error (restart Apache 2 and MySql)
 14) Force date and time to use the system locale so that days/months are in local language
+15) X-Windows and Wayland desktops now started using XDG. See /etc/xdg/autostart/gradio.desktop
 
 Version 8.2 release notes
 -------------------------

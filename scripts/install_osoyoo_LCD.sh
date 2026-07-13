@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -x
 # Raspberry Pi Internet Radio Osoyoo LCDs configuration script
-# $Id: install_osoyoo_LCD.sh,v 1.10 2026/02/06 13:15:05 bob Exp $
+# $Id: install_osoyoo_LCD.sh,v 1.11 2026/06/17 18:13:19 bob Exp $
 #
 # Author : Bob Rathbone
 # Site   : http://www.bobrathbone.com
@@ -354,15 +354,15 @@ cat  ${BASH_PROFILE} | tee -a ${LOG}
 
 # For some reason  labwc/autostart will not start gradio.py on a small touchscreen
 # This workaround launches gradio.py from .profile (Ignored if using an SSH login"
-echo "" | tee -a ${LOG}
-echo "Add start gradio.py command to ${PROFILE}" | tee -a ${LOG}
-grep "gradio.py" ${PROFILE}
-if [[ $? != 0 ]]; then      # Do not seperate from above
-    echo "" | tee -a ${LOG}
-    echo "Adding \"${GRADIO}\" to ${PROFILE}"  | tee -a ${LOG}
-    echo "# Added by ${PROG}" >> ${PROFILE}
-    echo "sudo ${GRADIO} &" >> ${PROFILE}
-fi
+#echo "" | tee -a ${LOG}
+#echo "Add start gradio.py command to ${PROFILE}" | tee -a ${LOG}
+#grep "gradio.py" ${PROFILE}
+#if [[ $? != 0 ]]; then      # Do not seperate from above
+#    echo "" | tee -a ${LOG}
+#    echo "Adding \"${GRADIO}\" to ${PROFILE}"  | tee -a ${LOG}
+#    echo "# Added by ${PROG}" >> ${PROFILE}
+#    echo "sudo ${GRADIO} &" >> ${PROFILE}
+#fi
 
 echo ""  | tee -a ${LOG} 
 echo "Set CLI to auto login (User ${USER})"  | tee -a ${LOG} 
