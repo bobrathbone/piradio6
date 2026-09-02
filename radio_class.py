@@ -1785,7 +1785,8 @@ class Radio:
         changed = False
         source_type = self.source.getType()
         self.currentsong = self.client.currentsong()
-        current_id = int(self.currentsong.get("pos")) + 1
+        pos = self.currentsong.get("pos")
+        current_id = int(pos) + 1 if pos is not None else self.current_id
         status = self.client.status()
         current_volume = int(status.get("volume"))
 
