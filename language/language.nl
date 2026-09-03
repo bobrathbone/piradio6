@@ -12,8 +12,6 @@ search: Zoek
 source_radio: Internet Radio
 source_media: Muziekselectie
 sleeping: Slapen
-
-# Aanvullende vertalingen
 airplay: Airplay
 alarm: Alarm
 alarmhours: Alarmuren
@@ -72,3 +70,4 @@ wait: Even geduld
 waiting_for_network: Wachten op netwerk
 waiting_for_spotify_client: Wachten op Spotify-client
 yes: ja
+
