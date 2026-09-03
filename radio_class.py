@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Raspberry Pi Internet Radio Class
-# $Id: radio_class.py,v 1.239 2026/04/21 06:43:37 bob Exp $
+# $Id: radio_class.py,v 1.240 2026/09/02 09:03:48 bob Exp $
 # 
 #
 # Author : Bob Rathbone
@@ -360,8 +360,8 @@ class Radio:
                 # Google DNS
                 s.connect(('8.8.8.8', 1))
                 self.ip_addr = s.getsockname()[0]
-            except Exception:
-                IP = ''
+            except Exception as e:
+                log.message( str(e), log.ERROR)
             finally:
                 s.close()
         return self.ip_addr
@@ -1784,12 +1784,18 @@ class Radio:
     def checkClientChange(self):
         changed = False
         source_type = self.source.getType()
-        self.currentsong = self.client.currentsong()
-        current_id = int(self.currentsong.get("pos")) + 1
-        status = self.client.status()
-        current_volume = int(status.get("volume"))
 
-        file = self.currentsong.get("file")
+        try:
+            self.currentsong = self.client.currentsong()
+            current_id = int(self.currentsong.get("pos")) + 1
+            status = self.client.status()
+            current_volume = int(status.get("volume"))
+            file = self.currentsong.get("file")
+        except Exception as e:
+            log.message(str(e), log.ERROR)
+            file = None 
+            return False
+
         if file != None:
             if source_type == self.source.RADIO or source_type == self.source.MEDIA:
                 source_type = self.getStreamType(file) 
