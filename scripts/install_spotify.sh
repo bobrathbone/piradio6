@@ -71,7 +71,8 @@ else
 fi
 echo "Audio device ${AUDIO_DEVICE} ${SPOTIFY_DEVICE}" | tee -a ${LOG}
 # Set the audio device card number in the Spotify service
-sudo sed -i -e "0,/^ExecStart=/{s/librespot.*/librespot --device=hw:${CARD},0/}" ${SPOTIFY_SERVICE}
+# Only change the ExecStart line, the Documentation= URLs also contain "librespot"
+sudo sed -i -e "s/^\(ExecStart=.*librespot\).*/\1 --device=hw:${CARD},0/" ${SPOTIFY_SERVICE}
 #sudo sed -i -e "0,/^ExecStart=/{s/librespot.*/librespot --device=${SPOTIFY_DEVICE}" ${SPOTIFY_SERVICE}
 echo "Changes made to ${SPOTIFY_SERVICE}" | tee -a ${LOG}
 grep "^ExecStart=" ${SPOTIFY_SERVICE} | tee -a ${LOG}
