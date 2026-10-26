@@ -117,7 +117,26 @@ class Volume:
         return status
 
     # Get mixer volume (This is the variable level - not the preset)
+    # Read the actual mixer level so that changes made elsewhere (for example
+    # the Spotify app or alsamixer) are used instead of a stale value
     def _getMixerVolume(self):
+        if self.mixer_volume_id > 0:
+            cmd = "amixer -c" + str(self.audio_out_card) + " " + self.mixer_device\
+                  + " cget numid=" + str(self.mixer_volume_id)
+            try:
+                max_vol = 0
+                value = -1
+                for line in os.popen(cmd).read().splitlines():
+                    for field in line.replace(";", ",").split(","):
+                        field = field.strip()
+                        if field.startswith("max="):
+                            max_vol = int(field[4:])
+                        elif field.startswith(": values="):
+                            value = int(field[9:])
+                if max_vol > 0 and value >= 0:
+                    self.mixer_volume = int(round(value * 100 / max_vol))
+            except Exception as e:
+                log.message("volume._getMixerVolume " + str(e), log.DEBUG)
         return self.mixer_volume
 
     # Set the volume depending upon the source
